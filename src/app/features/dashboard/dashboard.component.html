@@ -1,0 +1,343 @@
+<div style="display: flex; flex-direction: column; gap: 24px;">
+
+  <!-- Welcome Banner -->
+  <div style="background: linear-gradient(135deg, rgba(16, 185, 129, 0.15) 0%, rgba(15, 23, 42, 0.85) 60%, rgba(245, 158, 11, 0.12) 100%); border: 1px solid rgba(16, 185, 129, 0.25); border-radius: var(--radius-lg); padding: 24px 28px; position: relative; overflow: hidden;">
+    <div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 16px;">
+      <div>
+        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 6px;">
+          <span class="badge-pill badge-emerald">Planta Operativa</span>
+          <span style="font-size: 0.82rem; color: var(--text-muted); text-transform: capitalize;">{{ currentDateStr }}</span>
+        </div>
+        <h1 style="font-size: 1.85rem; font-weight: 800; line-height: 1.2;">
+          Panel de Control Despulpadora 🍍
+        </h1>
+        <p style="color: var(--text-muted); font-size: 0.92rem; margin-top: 4px; max-width: 650px;">
+          Monitoreo en tiempo real de recepción, formulación de pulpa en cava, alistamiento digital de pedidos y rutas de entrega.
+        </p>
+      </div>
+
+      <div style="display: flex; flex-wrap: wrap; gap: 10px;">
+        <a routerLink="/calculator" class="btn btn-secondary" style="gap: 8px;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2.5">
+            <line x1="12" y1="5" x2="12" y2="19"></line>
+            <line x1="5" y1="12" x2="19" y2="12"></line>
+          </svg>
+          <span>Nueva Formulación</span>
+        </a>
+        <a routerLink="/orders" class="btn btn-primary" style="gap: 8px;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+          </svg>
+          <span>Gestión de Pedidos</span>
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- KPI 4 Cards Grid -->
+  <div class="kpi-grid">
+    <!-- Card 1: Ventas Hoy -->
+    <div class="kpi-card hover-lift">
+      <div class="kpi-icon-wrapper" style="background: rgba(16, 185, 129, 0.15); color: #10b981;">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <line x1="12" y1="1" x2="12" y2="23"></line>
+          <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
+        </svg>
+      </div>
+      <div>
+        <div class="kpi-title">Facturación Estimada Hoy</div>
+        <div class="kpi-value">{{ formatCOP(stateService.todayRevenue()) }}</div>
+        <div class="kpi-trend" style="color: var(--color-primary);">
+          <span>Actividad comercial activa</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Card 2: Pulpa Producida -->
+    <div class="kpi-card hover-lift">
+      <div class="kpi-icon-wrapper" style="background: rgba(245, 158, 11, 0.15); color: #f59e0b;">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
+          <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
+          <line x1="12" y1="22.08" x2="12" y2="12"></line>
+        </svg>
+      </div>
+      <div>
+        <div class="kpi-title">Pulpa Total en Cava</div>
+        <div class="kpi-value">{{ stateService.totalStockKg().toFixed(1) }} <span style="font-size: 1rem; font-weight: 500;">Kg</span></div>
+        <div class="kpi-trend" style="color: var(--color-secondary);">
+          <span>{{ stateService.fruits().length }} Frutas tropicales</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Card 3: En Picking / Alistamiento -->
+    <div class="kpi-card hover-lift">
+      <div class="kpi-icon-wrapper" style="background: rgba(139, 92, 246, 0.15); color: #8b5cf6;">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <circle cx="12" cy="12" r="10"></circle>
+          <polyline points="12 6 12 12 16 14"></polyline>
+        </svg>
+      </div>
+      <div>
+        <div class="kpi-title">En Alistamiento (Picking)</div>
+        <div class="kpi-value">{{ ordersByStatus().picking + ordersByStatus().pending }} <span style="font-size: 1rem; font-weight: 500;">pedidos</span></div>
+        <div class="kpi-trend" style="color: #c084fc;">
+          <span>Prioridad de despacho</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Card 4: En Ruta / Despacho -->
+    <div class="kpi-card hover-lift">
+      <div class="kpi-icon-wrapper" style="background: rgba(59, 130, 246, 0.15); color: #3b82f6;">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <rect x="1" y="3" width="15" height="13"></rect>
+          <polygon points="16 8 20 8 23 11 23 16 16 16 16 8"></polygon>
+          <circle cx="5.5" cy="18.5" r="2.5"></circle>
+          <circle cx="18.5" cy="18.5" r="2.5"></circle>
+        </svg>
+      </div>
+      <div>
+        <div class="kpi-title">En Ruta de Entrega</div>
+        <div class="kpi-value">{{ ordersByStatus().dispatched }} <span style="font-size: 1rem; font-weight: 500;">despachos</span></div>
+        <div class="kpi-trend" style="color: #60a5fa;">
+          <span>{{ ordersByStatus().delivered }} entregados con éxito</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Pipeline de Pedidos & Alertas de Stock (2 Columns) -->
+  <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 20px;">
+    <!-- Column 1: Pipeline Flujo de Pedidos -->
+    <div class="card hover-lift">
+      <div class="card-header" style="justify-content: space-between;">
+        <h3 class="card-title" style="display: flex; align-items: center; gap: 8px;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
+          </svg>
+          Flujo de Estados de Pedidos
+        </h3>
+        <a routerLink="/orders" class="btn btn-outline" style="padding: 4px 10px; font-size: 0.75rem;">Ver Todos</a>
+      </div>
+      <div class="card-body">
+        <div style="display: flex; flex-direction: column; gap: 12px;">
+          <!-- Status item 1 -->
+          <div style="display: flex; align-items: center; justify-content: space-between; padding: 10px 14px; border-radius: var(--radius-sm); background: rgba(255, 255, 255, 0.03); border: 1px solid var(--border-subtle);">
+            <div style="display: flex; align-items: center; gap: 10px;">
+              <span style="width: 10px; height: 10px; border-radius: 50%; background: #f59e0b;"></span>
+              <span style="font-weight: 600; font-size: 0.88rem;">Pendientes de Aprobación</span>
+            </div>
+            <span class="badge badge-warning">{{ ordersByStatus().pending }}</span>
+          </div>
+
+          <!-- Status item 2 -->
+          <div style="display: flex; align-items: center; justify-content: space-between; padding: 10px 14px; border-radius: var(--radius-sm); background: rgba(255, 255, 255, 0.03); border: 1px solid var(--border-subtle);">
+            <div style="display: flex; align-items: center; gap: 10px;">
+              <span style="width: 10px; height: 10px; border-radius: 50%; background: #8b5cf6;"></span>
+              <span style="font-weight: 600; font-size: 0.88rem;">En Alistamiento (Picking en Cava)</span>
+            </div>
+            <span class="badge badge-purple">{{ ordersByStatus().picking }}</span>
+          </div>
+
+          <!-- Status item 3 -->
+          <div style="display: flex; align-items: center; justify-content: space-between; padding: 10px 14px; border-radius: var(--radius-sm); background: rgba(255, 255, 255, 0.03); border: 1px solid var(--border-subtle);">
+            <div style="display: flex; align-items: center; gap: 10px;">
+              <span style="width: 10px; height: 10px; border-radius: 50%; background: #3b82f6;"></span>
+              <span style="font-weight: 600; font-size: 0.88rem;">Facturados y Empacados</span>
+            </div>
+            <span class="badge badge-blue">{{ ordersByStatus().billed }}</span>
+          </div>
+
+          <!-- Status item 4 -->
+          <div style="display: flex; align-items: center; justify-content: space-between; padding: 10px 14px; border-radius: var(--radius-sm); background: rgba(255, 255, 255, 0.03); border: 1px solid var(--border-subtle);">
+            <div style="display: flex; align-items: center; gap: 10px;">
+              <span style="width: 10px; height: 10px; border-radius: 50%; background: #06b6d4;"></span>
+              <span style="font-weight: 600; font-size: 0.88rem;">En Ruta de Reparto</span>
+            </div>
+            <span class="badge badge-info">{{ ordersByStatus().dispatched }}</span>
+          </div>
+
+          <!-- Status item 5 -->
+          <div style="display: flex; align-items: center; justify-content: space-between; padding: 10px 14px; border-radius: var(--radius-sm); background: rgba(255, 255, 255, 0.03); border: 1px solid var(--border-subtle);">
+            <div style="display: flex; align-items: center; gap: 10px;">
+              <span style="width: 10px; height: 10px; border-radius: 50%; background: #10b981;"></span>
+              <span style="font-weight: 600; font-size: 0.88rem;">Entregados Satisfactoriamente</span>
+            </div>
+            <span class="badge badge-success">{{ ordersByStatus().delivered }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Column 2: Alertas de Stock Bajo -->
+    <div class="card hover-lift">
+      <div class="card-header" style="justify-content: space-between;">
+        <h3 class="card-title" style="display: flex; align-items: center; gap: 8px; color: #fb7185;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"></path>
+            <line x1="12" y1="9" x2="12" y2="13"></line>
+            <line x1="12" y1="17" x2="12.01" y2="17"></line>
+          </svg>
+          Alertas de Stock Bajo en Cava
+        </h3>
+        <span class="badge badge-danger">{{ lowStockItems().length }} alertas</span>
+      </div>
+      <div class="card-body">
+        @if (lowStockItems().length === 0) {
+          <div style="text-align: center; padding: 24px; color: var(--text-muted);">
+            <span style="font-size: 2rem;">✅</span>
+            <div style="font-weight: 600; margin-top: 8px;">Todos los stocks están en niveles óptimos</div>
+            <div style="font-size: 0.8rem; color: var(--text-dim);">No hay presentaciones bajo el umbral mínimo configurado</div>
+          </div>
+        } @else {
+          <div style="display: flex; flex-direction: column; gap: 10px; max-height: 240px; overflow-y: auto;">
+            @for (item of lowStockItems(); track item.fruitName + item.size) {
+              <div style="display: flex; align-items: center; justify-content: space-between; padding: 8px 12px; border-radius: var(--radius-sm); background: rgba(239, 68, 68, 0.08); border: 1px solid rgba(239, 68, 68, 0.2);">
+                <div style="display: flex; align-items: center; gap: 8px;">
+                  <span style="font-size: 1.2rem;">{{ item.emoji }}</span>
+                  <div>
+                    <div style="font-weight: 700; font-size: 0.88rem;">{{ item.fruitName }} ({{ item.size }})</div>
+                    <div style="font-size: 0.75rem; color: var(--text-muted);">Mínimo requerido: {{ item.min }} uds</div>
+                  </div>
+                </div>
+                <div style="text-align: right;">
+                  <div style="font-weight: 800; font-size: 0.95rem; color: #ef4444;">{{ item.current }} uds</div>
+                  <a routerLink="/calculator" style="font-size: 0.72rem; color: var(--color-primary); font-weight: 600; text-decoration: underline;">Programar lote</a>
+                </div>
+              </div>
+            }
+          </div>
+        }
+      </div>
+    </div>
+  </div>
+
+  <!-- Live Cava Inventory Summary -->
+  <div class="card">
+    <div class="card-header" style="justify-content: space-between;">
+      <div>
+        <h3 class="card-title">Inventario en Tiempo Real - Cava Central</h3>
+        <p class="card-subtitle">Existencias por presentación (140g, 250g, 500g, 1000g) y peso total neto</p>
+      </div>
+      <a routerLink="/settings" class="btn btn-outline" style="font-size: 0.8rem;">Ajustar Catálogo</a>
+    </div>
+    <div class="card-body" style="padding: 0;">
+      <div class="table-container">
+        <table>
+          <thead>
+            <tr>
+              <th>Fruta</th>
+              <th>Categoría</th>
+              <th>140g</th>
+              <th>250g</th>
+              <th>500g</th>
+              <th>1000g (1Kg)</th>
+              <th>Fruta Fresca</th>
+              <th>Total Pulpa</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (fruit of stateService.fruits(); track fruit.id) {
+              <tr>
+                <td>
+                  <div style="display: flex; align-items: center; gap: 10px;">
+                    <span style="font-size: 1.3rem;">{{ fruit.emoji }}</span>
+                    <div>
+                      <div style="font-weight: 700;">{{ fruit.name }}</div>
+                      <div style="font-size: 0.75rem; color: var(--text-dim); font-style: italic;">{{ fruit.scientificName }}</div>
+                    </div>
+                  </div>
+                </td>
+                <td>
+                  <span class="badge badge-info">{{ fruit.category }}</span>
+                </td>
+                <td>
+                  <span [style.color]="fruit.stock.g140 <= fruit.minStock.g140 ? '#ef4444' : 'inherit'" style="font-weight: 600;">
+                    {{ fruit.stock.g140 }} uds
+                  </span>
+                </td>
+                <td>
+                  <span [style.color]="fruit.stock.g250 <= fruit.minStock.g250 ? '#ef4444' : 'inherit'" style="font-weight: 600;">
+                    {{ fruit.stock.g250 }} uds
+                  </span>
+                </td>
+                <td>
+                  <span [style.color]="fruit.stock.g500 <= fruit.minStock.g500 ? '#ef4444' : 'inherit'" style="font-weight: 600;">
+                    {{ fruit.stock.g500 }} uds
+                  </span>
+                </td>
+                <td>
+                  <span [style.color]="fruit.stock.g1000 <= fruit.minStock.g1000 ? '#ef4444' : 'inherit'" style="font-weight: 600;">
+                    {{ fruit.stock.g1000 }} uds
+                  </span>
+                </td>
+                <td>
+                  <span style="font-weight: 700; color: #38bdf8;">{{ fruit.freshStockKg }} Kg</span>
+                </td>
+                <td>
+                  <span class="badge badge-success" style="font-weight: 700; font-size: 0.85rem;">
+                    {{ calculateKg(fruit) }} Kg
+                  </span>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Recent Batches Card -->
+  <div class="card">
+    <div class="card-header" style="justify-content: space-between;">
+      <div>
+        <h3 class="card-title">Últimos Lotes de Despulpado Realizados</h3>
+        <p class="card-subtitle">Trazabilidad de rendimiento y costo por kilogramo</p>
+      </div>
+      <a routerLink="/calculator" class="btn btn-secondary" style="font-size: 0.8rem;">Ver Historial Completo</a>
+    </div>
+    <div class="card-body" style="padding: 0;">
+      <div class="table-container">
+        <table>
+          <thead>
+            <tr>
+              <th>Código Lote</th>
+              <th>Fruta</th>
+              <th>Fruta Bruta</th>
+              <th>Pulpa Obtenida</th>
+              <th>Rendimiento</th>
+              <th>Operario</th>
+              <th>Fecha</th>
+              <th>Estado</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (batch of stateService.batches().slice(0, 5); track batch.batchId) {
+              <tr>
+                <td style="font-family: monospace; font-weight: 700; color: var(--color-primary);">
+                  {{ batch.batchCode }}
+                </td>
+                <td>{{ batch.fruitName }}</td>
+                <td>{{ batch.grossFruitKg }} Kg</td>
+                <td style="font-weight: 700;">{{ batch.pulpProducedKg }} Kg</td>
+                <td>
+                  <span class="badge badge-warning" style="font-weight: 700;">{{ batch.realYieldPercentage }}%</span>
+                </td>
+                <td>{{ batch.operatorName || 'Jefe de Planta' }}</td>
+                <td style="font-size: 0.8rem; color: var(--text-muted);">
+                  {{ batch.productionDate | date:'short' }}
+                </td>
+                <td>
+                  <span class="badge badge-success">Completado</span>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+</div>

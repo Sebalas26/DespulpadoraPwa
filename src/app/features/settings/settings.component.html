@@ -1,0 +1,166 @@
+<div style="display: flex; flex-direction: column; gap: 24px;">
+
+  <!-- Page Header -->
+  <div>
+    <h1 style="font-size: 1.85rem; font-weight: 800; margin-bottom: 4px;">
+      Catálogo de Frutas & Configuración de Cava ⚙️
+    </h1>
+    <p style="color: var(--text-muted); font-size: 0.92rem;">
+      Administración de fichas técnicas, precios vigentes al público y ajustes manuales de existencias.
+    </p>
+  </div>
+
+  <!-- Fruits Catalog Grid -->
+  <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 20px;">
+    @for (fruit of stateService.fruits(); track fruit.id) {
+      <div class="card hover-lift" [style.borderTop]="'4px solid ' + fruit.color">
+        <div class="card-header" style="justify-content: space-between;">
+          <div style="display: flex; align-items: center; gap: 10px;">
+            <span style="font-size: 1.8rem;">{{ fruit.emoji }}</span>
+            <div>
+              <h3 style="font-size: 1.15rem; font-weight: 800; margin: 0;">{{ fruit.name }}</h3>
+              <div style="font-size: 0.75rem; color: var(--text-dim); font-style: italic;">{{ fruit.scientificName }}</div>
+            </div>
+          </div>
+          <span class="badge badge-info">{{ fruit.category }}</span>
+        </div>
+
+        <div class="card-body">
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 10px; border-radius: var(--radius-sm); background: rgba(255, 255, 255, 0.03); margin-bottom: 14px; font-size: 0.8rem;">
+            <div>Rendimiento Base: <strong>{{ (fruit.yieldRate * 100).toFixed(0) }}%</strong></div>
+            <div>Fruta en Cava: <strong style="color: #38bdf8;">{{ fruit.freshStockKg }} Kg</strong></div>
+          </div>
+
+          <!-- Prices & Stock Table -->
+          <div style="font-size: 0.75rem; font-weight: 700; color: var(--text-dim); text-transform: uppercase; margin-bottom: 8px;">
+            Precios y Stock en Cava:
+          </div>
+
+          <div style="display: flex; flex-direction: column; gap: 6px; margin-bottom: 16px;">
+            <div style="display: flex; justify-content: space-between; font-size: 0.85rem; padding: 4px 0; border-bottom: 1px solid var(--border-subtle);">
+              <span>140g: <strong>{{ fruit.stock.g140 }} uds</strong></span>
+              <span style="color: #10b981; font-weight: 700;">{{ formatCOP(fruit.prices.g140) }}</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; font-size: 0.85rem; padding: 4px 0; border-bottom: 1px solid var(--border-subtle);">
+              <span>250g: <strong>{{ fruit.stock.g250 }} uds</strong></span>
+              <span style="color: #10b981; font-weight: 700;">{{ formatCOP(fruit.prices.g250) }}</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; font-size: 0.85rem; padding: 4px 0; border-bottom: 1px solid var(--border-subtle);">
+              <span>500g: <strong>{{ fruit.stock.g500 }} uds</strong></span>
+              <span style="color: #10b981; font-weight: 700;">{{ formatCOP(fruit.prices.g500) }}</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; font-size: 0.85rem; padding: 4px 0;">
+              <span>1000g (1Kg): <strong>{{ fruit.stock.g1000 }} uds</strong></span>
+              <span style="color: #10b981; font-weight: 700;">{{ formatCOP(fruit.prices.g1000) }}</span>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            class="btn btn-outline"
+            style="width: 100%; justify-content: center; font-size: 0.82rem; gap: 6px;"
+            (click)="openAdjust(fruit)"
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+            </svg>
+            <span>Ajustar Stock Manual</span>
+          </button>
+        </div>
+      </div>
+    }
+  </div>
+
+  <!-- Commercial Promotions Card -->
+  <div class="card">
+    <div class="card-header">
+      <h3 class="card-title">Combos & Promociones Comerciales Activas</h3>
+    </div>
+    <div class="card-body" style="padding: 0;">
+      <div class="table-container">
+        <table>
+          <thead>
+            <tr>
+              <th>Nombre de la Promoción</th>
+              <th>Descripción</th>
+              <th>Descuento</th>
+              <th>Obsequio Comercial</th>
+              <th>Distintivo</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (promo of promotions(); track promo.id) {
+              <tr>
+                <td style="font-weight: 700;">{{ promo.name }}</td>
+                <td style="font-size: 0.85rem; color: var(--text-muted);">{{ promo.description }}</td>
+                <td>
+                  <span class="badge badge-success">{{ promo.discountPercent }}% OFF</span>
+                </td>
+                <td style="font-weight: 600; color: #f59e0b;">{{ promo.freeItemName }}</td>
+                <td>
+                  <span class="badge badge-purple">{{ promo.badge }}</span>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ADJUST STOCK MODAL -->
+@if (showAdjustModal() && selectedFruitForAdjust()) {
+  <div class="modal-overlay" (click)="showAdjustModal.set(false)">
+    <div class="modal-content" style="max-width: 440px;" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3 class="modal-title">Ajuste de Stock: {{ selectedFruitForAdjust()?.name }}</h3>
+        <button class="modal-close" (click)="showAdjustModal.set(false)">&times;</button>
+      </div>
+
+      <div class="modal-body">
+        <div class="form-group">
+          <label class="form-label">Presentación a Modificar</label>
+          <select class="form-control" [ngModel]="adjustGrammage()" (ngModelChange)="adjustGrammage.set($event)">
+            <option value="g140">Bolsa 140g</option>
+            <option value="g250">Bolsa 250g</option>
+            <option value="g500">Bolsa 500g</option>
+            <option value="g1000">Bolsa 1000g (1 Kg)</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Cantidad de Unidades</label>
+          <input
+            type="number"
+            min="1"
+            class="form-control"
+            [ngModel]="adjustDelta()"
+            (ngModelChange)="adjustDelta.set($event)"
+          />
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Motivo del Ajuste</label>
+          <input
+            type="text"
+            class="form-control"
+            [ngModel]="adjustReason()"
+            (ngModelChange)="adjustReason.set($event)"
+          />
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn btn-outline" style="color: #ef4444; border-color: rgba(239, 68, 68, 0.4);" (click)="submitAdjust(false)">
+          - Descontar Stock
+        </button>
+        <button class="btn btn-primary" (click)="submitAdjust(true)">
+          + Sumar al Stock
+        </button>
+      </div>
+    </div>
+  </div>
+}

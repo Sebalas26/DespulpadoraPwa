@@ -1,0 +1,166 @@
+<div style="display: flex; flex-direction: column; gap: 24px;">
+
+  <!-- Header & Actions -->
+  <div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 16px;">
+    <div>
+      <h1 style="font-size: 1.85rem; font-weight: 800; margin-bottom: 4px;">
+        Gastos & Flujo de Caja 💰
+      </h1>
+      <p style="color: var(--text-muted); font-size: 0.92rem;">
+        Control de egresos, insumos de planta, empaques y costos operativos en tiempo real.
+      </p>
+    </div>
+
+    <button
+      type="button"
+      class="btn btn-primary"
+      style="gap: 8px;"
+      (click)="showNewExpenseModal.set(true)"
+    >
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+        <line x1="12" y1="5" x2="12" y2="19"></line>
+        <line x1="5" y1="12" x2="19" y2="12"></line>
+      </svg>
+      <span>Registrar Egreso / Gasto</span>
+    </button>
+  </div>
+
+  <!-- Summary KPI Card -->
+  <div class="card hover-lift" style="background: linear-gradient(135deg, rgba(15, 23, 42, 0.85) 0%, rgba(244, 63, 94, 0.1) 100%);">
+    <div class="card-body" style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 20px;">
+      <div>
+        <div style="font-size: 0.82rem; color: var(--text-muted); text-transform: uppercase; font-weight: 700;">
+          Total Egresos Registrados
+        </div>
+        <div style="font-size: 2.2rem; font-weight: 800; color: #fb7185; margin-top: 4px;">
+          {{ formatCOP(totalExpenses()) }}
+        </div>
+        <div style="font-size: 0.8rem; color: var(--text-dim); margin-top: 2px;">
+          {{ stateService.expenses().length }} operaciones de salida de caja menor
+        </div>
+      </div>
+
+      <div style="display: flex; gap: 10px;">
+        <select class="form-control" style="width: 240px;" [ngModel]="filterCategory()" (ngModelChange)="filterCategory.set($event)">
+          <option value="all">Todas las Categorías</option>
+          @for (cat of categories; track cat) {
+            <option [value]="cat">{{ cat }}</option>
+          }
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <!-- Expenses Table -->
+  <div class="card">
+    <div class="card-header" style="justify-content: space-between;">
+      <h3 class="card-title">Comprobantes de Salida de Caja</h3>
+      <span class="badge badge-warning">{{ filteredExpenses().length }} registros</span>
+    </div>
+    <div class="card-body" style="padding: 0;">
+      <div class="table-container">
+        <table>
+          <thead>
+            <tr>
+              <th>Comprobante</th>
+              <th>Categoría</th>
+              <th>Descripción</th>
+              <th>Fecha</th>
+              <th>Monto</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (exp of filteredExpenses(); track exp.expenseId) {
+              <tr>
+                <td style="font-family: monospace; font-weight: 700; color: var(--color-primary);">
+                  {{ exp.receiptNumber }}
+                </td>
+                <td>
+                  <span class="badge badge-purple">{{ exp.categoryName }}</span>
+                </td>
+                <td style="font-weight: 600;">{{ exp.description }}</td>
+                <td style="font-size: 0.8rem; color: var(--text-muted);">
+                  {{ exp.expenseDate }}
+                </td>
+                <td style="font-weight: 800; color: #ef4444; font-size: 0.95rem;">
+                  {{ formatCOP(exp.amount) }}
+                </td>
+              </tr>
+            }
+            @if (filteredExpenses().length === 0) {
+              <tr>
+                <td colspan="5" style="text-align: center; padding: 32px; color: var(--text-muted);">
+                  No hay gastos registrados en esta categoría.
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- NEW EXPENSE MODAL -->
+@if (showNewExpenseModal()) {
+  <div class="modal-overlay" (click)="showNewExpenseModal.set(false)">
+    <div class="modal-content" style="max-width: 480px;" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3 class="modal-title">Registrar Nuevo Gasto de Planta</h3>
+        <button class="modal-close" (click)="showNewExpenseModal.set(false)">&times;</button>
+      </div>
+
+      <div class="modal-body">
+        <div class="form-group">
+          <label class="form-label">Categoría de Egreso</label>
+          <select class="form-control" [ngModel]="newCategoryName()" (ngModelChange)="newCategoryName.set($event)">
+            @for (cat of categories; track cat) {
+              <option [value]="cat">{{ cat }}</option>
+            }
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Descripción del Gasto *</label>
+          <input
+            type="text"
+            class="form-control"
+            [ngModel]="newDescription()"
+            (ngModelChange)="newDescription.set($event)"
+            placeholder="ej: 500 bolsas selladas 140g para pulpa"
+          />
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px;">
+          <div class="form-group">
+            <label class="form-label">Valor en Pesos ($ COP) *</label>
+            <input
+              type="number"
+              min="1000"
+              step="5000"
+              class="form-control"
+              [ngModel]="newAmount()"
+              (ngModelChange)="newAmount.set($event)"
+            />
+          </div>
+          <div class="form-group">
+            <label class="form-label">No. Recibo / Factura</label>
+            <input
+              type="text"
+              class="form-control"
+              [ngModel]="newReceipt()"
+              (ngModelChange)="newReceipt.set($event)"
+              placeholder="REC-1024"
+            />
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn btn-outline" (click)="showNewExpenseModal.set(false)">Cancelar</button>
+        <button class="btn btn-primary" (click)="submitExpense()">Guardar Egreso</button>
+      </div>
+    </div>
+  </div>
+}

@@ -1,0 +1,140 @@
+<div style="display: flex; flex-direction: column; gap: 24px;">
+
+  <!-- Header -->
+  <div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 16px;">
+    <div>
+      <h1 style="font-size: 1.85rem; font-weight: 800; margin-bottom: 4px;">
+        Gestión de Usuarios del Sistema 🛡️
+      </h1>
+      <p style="color: var(--text-muted); font-size: 0.92rem;">
+        Administración de cuentas, roles asignados y sedes autorizadas para operadores y administradores.
+      </p>
+    </div>
+
+    <button
+      type="button"
+      class="btn btn-primary"
+      style="gap: 8px;"
+      (click)="showCreateModal.set(true)"
+    >
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+        <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
+        <circle cx="9" cy="7" r="4"></circle>
+        <line x1="19" y1="8" x2="19" y2="14"></line>
+        <line x1="22" y1="11" x2="16" y2="11"></line>
+      </svg>
+      <span>Crear Nuevo Usuario</span>
+    </button>
+  </div>
+
+  <!-- Users Table Card -->
+  <div class="card">
+    <div class="card-header" style="justify-content: space-between;">
+      <h3 class="card-title">Usuarios Registrados</h3>
+      <span class="badge badge-purple">{{ users().length }} cuentas activas</span>
+    </div>
+    <div class="card-body" style="padding: 0;">
+      <div class="table-container">
+        <table>
+          <thead>
+            <tr>
+              <th>Usuario</th>
+              <th>Nombre Completo</th>
+              <th>Correo Electrónico</th>
+              <th>Rol Asignado</th>
+              <th>Sedes Permitidas</th>
+              <th>Estado</th>
+              <th>Acción</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (user of users(); track user.userId) {
+              <tr>
+                <td style="font-weight: 700; font-family: monospace; color: var(--color-primary);">
+                  {{ user.username }}
+                </td>
+                <td style="font-weight: 600;">{{ user.fullName }}</td>
+                <td style="font-size: 0.85rem; color: var(--text-muted);">{{ user.email }}</td>
+                <td>
+                  <span class="badge badge-purple">{{ user.roleName }}</span>
+                </td>
+                <td>
+                  @for (branch of user.branches; track branch.branchId) {
+                    <span class="badge-pill badge-emerald" style="font-size: 0.72rem; margin-right: 4px;">
+                      {{ branch.name }}
+                    </span>
+                  }
+                </td>
+                <td>
+                  <span class="badge" [ngClass]="user.isActive ? 'badge-success' : 'badge-danger'">
+                    {{ user.isActive ? 'Activo' : 'Inactivo' }}
+                  </span>
+                </td>
+                <td>
+                  <button
+                    type="button"
+                    class="btn btn-outline"
+                    style="padding: 4px 8px; font-size: 0.75rem;"
+                    [style.color]="user.isActive ? '#ef4444' : '#10b981'"
+                    (click)="toggleUserStatus(user)"
+                  >
+                    {{ user.isActive ? 'Desactivar' : 'Activar' }}
+                  </button>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- CREATE USER MODAL -->
+@if (showCreateModal()) {
+  <div class="modal-overlay" (click)="showCreateModal.set(false)">
+    <div class="modal-content" style="max-width: 480px;" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3 class="modal-title">Crear Nuevo Usuario</h3>
+        <button class="modal-close" (click)="showCreateModal.set(false)">&times;</button>
+      </div>
+
+      <div class="modal-body">
+        <div class="form-group">
+          <label class="form-label">Nombre de Usuario *</label>
+          <input type="text" class="form-control" [ngModel]="newUsername()" (ngModelChange)="newUsername.set($event)" placeholder="ej: jruiz" />
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Nombre Completo *</label>
+          <input type="text" class="form-control" [ngModel]="newFullName()" (ngModelChange)="newFullName.set($event)" placeholder="ej: Juan Ruiz Gómez" />
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Correo Electrónico *</label>
+          <input type="email" class="form-control" [ngModel]="newEmail()" (ngModelChange)="newEmail.set($event)" placeholder="juan@despulpadora.com" />
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Contraseña Inicial</label>
+          <input type="text" class="form-control" [ngModel]="newPassword()" (ngModelChange)="newPassword.set($event)" />
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Rol del Sistema</label>
+          <select class="form-control" [ngModel]="newRoleId()" (ngModelChange)="newRoleId.set($event)">
+            @for (role of roles(); track role.roleId) {
+              <option [value]="role.roleId">{{ role.name }}</option>
+            }
+          </select>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn btn-outline" (click)="showCreateModal.set(false)">Cancelar</button>
+        <button class="btn btn-primary" (click)="submitNewUser()">Guardar Usuario</button>
+      </div>
+    </div>
+  </div>
+}

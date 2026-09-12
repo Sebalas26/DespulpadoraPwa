@@ -1,0 +1,144 @@
+<div style="display: flex; flex-direction: column; gap: 24px;">
+
+  <!-- Header -->
+  <div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 16px;">
+    <div>
+      <h1 style="font-size: 1.85rem; font-weight: 800; margin-bottom: 4px;">
+        Roles & Matriz de Privilegios RBAC 🔐
+      </h1>
+      <p style="color: var(--text-muted); font-size: 0.92rem;">
+        Asignación dinámica de permisos sobre módulos, operaciones y acciones de planta.
+      </p>
+    </div>
+
+    <button
+      type="button"
+      class="btn btn-primary"
+      style="gap: 8px;"
+      (click)="showCreateRoleModal.set(true)"
+    >
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+        <line x1="12" y1="5" x2="12" y2="19"></line>
+        <line x1="5" y1="12" x2="19" y2="12"></line>
+      </svg>
+      <span>Crear Nuevo Rol</span>
+    </button>
+  </div>
+
+  <!-- Role Selector & Matrix Layout -->
+  <div style="display: grid; grid-template-columns: 280px 1fr; gap: 24px; align-items: start;">
+
+    <!-- Left: Roles List -->
+    <div class="card">
+      <div class="card-header">
+        <h3 class="card-title">Roles del Sistema</h3>
+      </div>
+      <div class="card-body" style="padding: 12px; display: flex; flex-direction: column; gap: 8px;">
+        @for (role of roles(); track role.roleId) {
+          <button
+            type="button"
+            (click)="selectRole(role.roleId)"
+            style="display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; border-radius: var(--radius-sm); border: 1px solid; cursor: pointer; text-align: left; transition: all 0.2s;"
+            [style.borderColor]="selectedRoleId() === role.roleId ? 'var(--color-primary)' : 'var(--border-subtle)'"
+            [style.background]="selectedRoleId() === role.roleId ? 'rgba(16, 185, 129, 0.12)' : 'transparent'"
+          >
+            <div>
+              <div style="font-weight: 700; font-size: 0.9rem; color: var(--text-main);">
+                {{ role.name }}
+              </div>
+              <div style="font-size: 0.72rem; color: var(--text-dim);">
+                {{ role.isSystemRole ? 'Rol de Sistema (Fijo)' : 'Personalizado' }}
+              </div>
+            </div>
+            @if (selectedRoleId() === role.roleId) {
+              <span style="color: var(--color-primary); font-size: 1.1rem;">✔</span>
+            }
+          </button>
+        }
+      </div>
+    </div>
+
+    <!-- Right: Permissions Matrix -->
+    <div class="card">
+      <div class="card-header" style="justify-content: space-between;">
+        <div>
+          <h3 class="card-title">Matriz de Acciones Asignadas</h3>
+          <p class="card-subtitle">
+            Habilite o deshabilite privilegios específicos para el rol seleccionado
+          </p>
+        </div>
+        <button
+          type="button"
+          class="btn btn-primary"
+          style="padding: 8px 16px; font-size: 0.85rem;"
+          (click)="savePermissions()"
+        >
+          Guardar Permisos
+        </button>
+      </div>
+
+      <div class="card-body">
+        <div style="display: flex; flex-direction: column; gap: 24px;">
+          @for (mod of modules(); track mod.moduleId) {
+            <div style="border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 18px; background: rgba(255, 255, 255, 0.02);">
+              <div style="font-size: 0.95rem; font-weight: 800; color: #fff; margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
+                <span style="display: inline-block; width: 6px; height: 16px; background: var(--color-primary); border-radius: 3px;"></span>
+                <span>{{ mod.name }}</span>
+              </div>
+
+              <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 12px;">
+                @for (action of mod.actions; track action.actionId) {
+                  <label
+                    style="display: flex; align-items: flex-start; gap: 10px; padding: 10px 14px; border-radius: var(--radius-sm); border: 1px solid var(--border-subtle); background: rgba(15, 23, 42, 0.5); cursor: pointer;"
+                  >
+                    <input
+                      type="checkbox"
+                      [checked]="assignedActionIds().has(action.actionId)"
+                      (change)="toggleAction(action.actionId)"
+                      style="accent-color: var(--color-primary); cursor: pointer; margin-top: 3px; width: 16px; height: 16px;"
+                    />
+                    <div>
+                      <div style="font-weight: 600; font-size: 0.85rem;">{{ action.name }}</div>
+                      <div style="font-size: 0.72rem; font-family: monospace; color: var(--text-dim);">{{ action.slug }}</div>
+                    </div>
+                  </label>
+                }
+              </div>
+            </div>
+          }
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+</div>
+
+<!-- CREATE ROLE MODAL -->
+@if (showCreateRoleModal()) {
+  <div class="modal-overlay" (click)="showCreateRoleModal.set(false)">
+    <div class="modal-content" style="max-width: 440px;" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3 class="modal-title">Crear Nuevo Rol de Usuario</h3>
+        <button class="modal-close" (click)="showCreateRoleModal.set(false)">&times;</button>
+      </div>
+
+      <div class="modal-body">
+        <div class="form-group">
+          <label class="form-label">Nombre del Rol *</label>
+          <input type="text" class="form-control" [ngModel]="newRoleName()" (ngModelChange)="newRoleName.set($event)" placeholder="ej: Supervisor de Cava" />
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Descripción</label>
+          <input type="text" class="form-control" [ngModel]="newRoleDesc()" (ngModelChange)="newRoleDesc.set($event)" placeholder="Permite supervisar pedidos y despachos" />
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn btn-outline" (click)="showCreateRoleModal.set(false)">Cancelar</button>
+        <button class="btn btn-primary" (click)="submitNewRole()">Guardar Rol</button>
+      </div>
+    </div>
+  </div>
+}

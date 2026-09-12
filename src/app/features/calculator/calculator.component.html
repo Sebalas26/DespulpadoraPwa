@@ -1,0 +1,315 @@
+<div style="display: flex; flex-direction: column; gap: 24px;">
+
+  <!-- Page Header -->
+  <div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 16px;">
+    <div>
+      <h1 style="font-size: 1.85rem; font-weight: 800; margin-bottom: 4px;">
+        Calculadora de Formulación & Rendimientos ⚖️
+      </h1>
+      <p style="color: var(--text-muted); font-size: 0.92rem;">
+        Balance de materia prima, agua potable adicionada permitida y simulación de empaque por presentación.
+      </p>
+    </div>
+  </div>
+
+  <!-- Fruit Selection Chips -->
+  <div class="card" style="padding: 16px;">
+    <div style="font-size: 0.78rem; font-weight: 700; color: var(--text-dim); text-transform: uppercase; margin-bottom: 12px; letter-spacing: 0.05em;">
+      Seleccione Fruta para Formulación:
+    </div>
+    <div style="display: flex; gap: 10px; overflow-x: auto; padding-bottom: 6px;">
+      @for (fruit of stateService.fruits(); track fruit.id) {
+        <button
+          type="button"
+          (click)="selectFruit(fruit)"
+          [style.borderColor]="selectedFruitId() === fruit.id ? fruit.color : 'var(--border-subtle)'"
+          [style.background]="selectedFruitId() === fruit.id ? fruit.bgColor : 'rgba(15, 23, 42, 0.4)'"
+          style="display: flex; align-items: center; gap: 10px; padding: 10px 16px; border-radius: var(--radius-md); border: 1.5px solid; cursor: pointer; white-space: nowrap; transition: all 0.2s; flex-shrink: 0;"
+          class="hover-lift"
+        >
+          <span style="font-size: 1.4rem;">{{ fruit.emoji }}</span>
+          <div style="text-align: left;">
+            <div style="font-weight: 700; font-size: 0.9rem; color: var(--text-main);">{{ fruit.name }}</div>
+            <div style="font-size: 0.72rem; color: var(--text-muted);">Rend. Base: {{ (fruit.yieldRate * 100).toFixed(0) }}%</div>
+          </div>
+        </button>
+      }
+    </div>
+  </div>
+
+  <!-- Two-Column Formulation Console -->
+  <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(360px, 1fr)); gap: 24px;">
+
+    <!-- Left Column: Inputs & Distribution -->
+    <div class="card">
+      <div class="card-header">
+        <h3 class="card-title" style="display: flex; align-items: center; gap: 8px;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="4" y1="21" x2="4" y2="14"></line>
+            <line x1="4" y1="10" x2="4" y2="3"></line>
+            <line x1="12" y1="21" x2="12" y2="12"></line>
+            <line x1="12" y1="8" x2="12" y2="3"></line>
+            <line x1="20" y1="21" x2="20" y2="16"></line>
+            <line x1="20" y1="12" x2="20" y2="3"></line>
+            <line x1="1" y1="14" x2="7" y2="14"></line>
+            <line x1="9" y1="8" x2="15" y2="8"></line>
+            <line x1="17" y1="16" x2="23" y2="16"></line>
+          </svg>
+          Parámetros de Entrada de Planta
+        </h3>
+      </div>
+      <div class="card-body">
+        <!-- Fresh Fruit Weight Input -->
+        <div class="form-group">
+          <label class="form-label" style="display: flex; justify-content: space-between;">
+            <span>Peso Fruta Fresca Recibida (Kg)</span>
+            <span style="color: var(--color-primary); font-weight: 700;">{{ freshKg() }} Kg</span>
+          </label>
+          <input
+            type="number"
+            min="1"
+            max="10000"
+            step="5"
+            class="form-control"
+            [ngModel]="freshKg()"
+            (ngModelChange)="freshKg.set($event)"
+          />
+        </div>
+
+        <!-- Water Addition Slider -->
+        <div class="form-group">
+          <label class="form-label" style="display: flex; justify-content: space-between;">
+            <span>Agua Potable Adicionada (%)</span>
+            <span style="color: #38bdf8; font-weight: 700;">{{ waterPercent() }}% ({{ waterKg().toFixed(1) }} Kg/L)</span>
+          </label>
+          <input
+            type="range"
+            min="0"
+            max="15"
+            step="1"
+            style="width: 100%; accent-color: #38bdf8;"
+            [ngModel]="waterPercent()"
+            (ngModelChange)="waterPercent.set($event)"
+          />
+          <div style="display: flex; justify-content: space-between; font-size: 0.72rem; color: var(--text-dim); margin-top: 4px;">
+            <span>0% (Pura 100%)</span>
+            <span>Estándar: 8%</span>
+            <span>15% (Máx. permitido)</span>
+          </div>
+        </div>
+
+        <!-- Brix & Operator Inputs -->
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px;">
+          <div class="form-group">
+            <label class="form-label">Grados Brix (°Bx)</label>
+            <input
+              type="text"
+              class="form-control"
+              [ngModel]="brixValue()"
+              (ngModelChange)="brixValue.set($event)"
+              placeholder="15.0"
+            />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Operario de Turno</label>
+            <input
+              type="text"
+              class="form-control"
+              [ngModel]="operator()"
+              (ngModelChange)="operator.set($event)"
+            />
+          </div>
+        </div>
+
+        <div style="border-top: 1px solid var(--border-subtle); padding-top: 16px; margin-top: 8px;">
+          <div style="font-size: 0.85rem; font-weight: 700; margin-bottom: 12px; display: flex; justify-content: space-between;">
+            <span>Distribución de Empaque por Presentación</span>
+            <span [style.color]="(distribution().g140 + distribution().g250 + distribution().g500 + distribution().g1000) === 100 ? '#10b981' : '#f59e0b'">
+              Total: {{ distribution().g140 + distribution().g250 + distribution().g500 + distribution().g1000 }}%
+            </span>
+          </div>
+
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+            <div>
+              <label class="form-label" style="font-size: 0.78rem;">140g (%)</label>
+              <input type="number" min="0" max="100" class="form-control" [ngModel]="distribution().g140" (ngModelChange)="updateDistribution('g140', $event)" />
+            </div>
+            <div>
+              <label class="form-label" style="font-size: 0.78rem;">250g (%)</label>
+              <input type="number" min="0" max="100" class="form-control" [ngModel]="distribution().g250" (ngModelChange)="updateDistribution('g250', $event)" />
+            </div>
+            <div>
+              <label class="form-label" style="font-size: 0.78rem;">500g (%)</label>
+              <input type="number" min="0" max="100" class="form-control" [ngModel]="distribution().g500" (ngModelChange)="updateDistribution('g500', $event)" />
+            </div>
+            <div>
+              <label class="form-label" style="font-size: 0.78rem;">1000g / 1Kg (%)</label>
+              <input type="number" min="0" max="100" class="form-control" [ngModel]="distribution().g1000" (ngModelChange)="updateDistribution('g1000', $event)" />
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right Column: Results & Mass Balance -->
+    <div style="display: flex; flex-direction: column; gap: 20px;">
+      <!-- Mass Balance Card -->
+      <div class="card" style="background: linear-gradient(135deg, rgba(15, 23, 42, 0.9) 0%, rgba(16, 185, 129, 0.08) 100%);">
+        <div class="card-header" style="justify-content: space-between;">
+          <h3 class="card-title">Balance de Masa Calculado</h3>
+          <span class="badge badge-success" style="font-weight: 700; font-size: 0.85rem;">
+            Rendimiento: {{ effectiveYield() }}%
+          </span>
+        </div>
+        <div class="card-body">
+          <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; text-align: center; margin-bottom: 20px;">
+            <div style="padding: 12px; border-radius: var(--radius-sm); background: rgba(255, 255, 255, 0.04); border: 1px solid var(--border-subtle);">
+              <div style="font-size: 0.75rem; color: var(--text-muted);">Fruta Bruta</div>
+              <div style="font-size: 1.35rem; font-weight: 800; color: #fff;">{{ freshKg() }} Kg</div>
+            </div>
+            <div style="padding: 12px; border-radius: var(--radius-sm); background: rgba(239, 68, 68, 0.08); border: 1px solid rgba(239, 68, 68, 0.2);">
+              <div style="font-size: 0.75rem; color: #fb7185;">Merma / Semilla</div>
+              <div style="font-size: 1.35rem; font-weight: 800; color: #ef4444;">{{ wasteKg() }} Kg</div>
+            </div>
+            <div style="padding: 12px; border-radius: var(--radius-sm); background: rgba(16, 185, 129, 0.12); border: 1px solid rgba(16, 185, 129, 0.3);">
+              <div style="font-size: 0.75rem; color: #34d399;">Pulpa Neta Cava</div>
+              <div style="font-size: 1.35rem; font-weight: 800; color: #10b981;">{{ totalNetPulpKg() }} Kg</div>
+            </div>
+          </div>
+
+          <!-- Portions Result Grid -->
+          <div style="font-size: 0.82rem; font-weight: 700; color: var(--text-dim); text-transform: uppercase; margin-bottom: 10px;">
+            Unidades a Empacar por Presentación:
+          </div>
+          <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 24px;">
+            <div style="padding: 10px; border-radius: var(--radius-sm); background: rgba(15, 23, 42, 0.6); border: 1px solid var(--border-subtle); text-align: center;">
+              <div style="font-size: 0.72rem; color: var(--text-muted);">140g</div>
+              <div style="font-size: 1.2rem; font-weight: 800; color: #f59e0b;">{{ portions140() }}</div>
+              <div style="font-size: 0.68rem; color: var(--text-dim);">bolsas</div>
+            </div>
+            <div style="padding: 10px; border-radius: var(--radius-sm); background: rgba(15, 23, 42, 0.6); border: 1px solid var(--border-subtle); text-align: center;">
+              <div style="font-size: 0.72rem; color: var(--text-muted);">250g</div>
+              <div style="font-size: 1.2rem; font-weight: 800; color: #8b5cf6;">{{ portions250() }}</div>
+              <div style="font-size: 0.68rem; color: var(--text-dim);">bolsas</div>
+            </div>
+            <div style="padding: 10px; border-radius: var(--radius-sm); background: rgba(15, 23, 42, 0.6); border: 1px solid var(--border-subtle); text-align: center;">
+              <div style="font-size: 0.72rem; color: var(--text-muted);">500g</div>
+              <div style="font-size: 1.2rem; font-weight: 800; color: #3b82f6;">{{ portions500() }}</div>
+              <div style="font-size: 0.68rem; color: var(--text-dim);">bolsas</div>
+            </div>
+            <div style="padding: 10px; border-radius: var(--radius-sm); background: rgba(15, 23, 42, 0.6); border: 1px solid var(--border-subtle); text-align: center;">
+              <div style="font-size: 0.72rem; color: var(--text-muted);">1 Kg</div>
+              <div style="font-size: 1.2rem; font-weight: 800; color: #10b981;">{{ portions1000() }}</div>
+              <div style="font-size: 0.68rem; color: var(--text-dim);">bolsas</div>
+            </div>
+          </div>
+
+          <!-- Retail Value -->
+          <div style="display: flex; align-items: center; justify-content: space-between; padding: 14px 18px; border-radius: var(--radius-md); background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.25); margin-bottom: 20px;">
+            <div>
+              <div style="font-size: 0.78rem; color: var(--text-muted); text-transform: uppercase; font-weight: 700;">Valor Comercial Estimado</div>
+              <div style="font-size: 1.45rem; font-weight: 800; color: #10b981;">{{ formatCOP(estimatedValue()) }}</div>
+            </div>
+            <span style="font-size: 1.8rem;">💰</span>
+          </div>
+
+          <!-- Save Batch Button -->
+          <button
+            type="button"
+            class="btn btn-primary"
+            style="width: 100%; justify-content: center; padding: 14px; font-size: 1rem; font-weight: 700; box-shadow: 0 4px 20px rgba(16, 185, 129, 0.35);"
+            (click)="saveBatch()"
+          >
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+              <polyline points="17 21 17 13 7 13 7 21"></polyline>
+              <polyline points="7 3 7 8 15 8"></polyline>
+            </svg>
+            <span>Registrar Lote de Producción</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Historical Batches Table -->
+  <div class="card">
+    <div class="card-header" style="justify-content: space-between; flex-wrap: wrap; gap: 14px;">
+      <div>
+        <h3 class="card-title">Historial de Lotes Procesados en Planta</h3>
+        <p class="card-subtitle">Registros auditables de rendimiento y trazabilidad por operario</p>
+      </div>
+
+      <!-- Filters & Search -->
+      <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+        <input
+          type="text"
+          class="form-control"
+          style="width: 200px; padding: 6px 12px; font-size: 0.85rem;"
+          placeholder="Buscar lote o fruta..."
+          [ngModel]="searchTerm()"
+          (ngModelChange)="searchTerm.set($event)"
+        />
+        <select
+          class="form-control"
+          style="width: 160px; padding: 6px 10px; font-size: 0.85rem;"
+          [ngModel]="filterFruit()"
+          (ngModelChange)="filterFruit.set($event)"
+        >
+          <option value="all">Todas las Frutas</option>
+          @for (fruit of stateService.fruits(); track fruit.id) {
+            <option [value]="fruit.name">{{ fruit.name }}</option>
+          }
+        </select>
+      </div>
+    </div>
+    <div class="card-body" style="padding: 0;">
+      <div class="table-container">
+        <table>
+          <thead>
+            <tr>
+              <th>Código Lote</th>
+              <th>Fruta</th>
+              <th>Fruta Fresca</th>
+              <th>Pulpa Obtenida</th>
+              <th>Rendimiento</th>
+              <th>Operario</th>
+              <th>Fecha y Hora</th>
+              <th>Estado</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (batch of filteredBatches(); track batch.batchId) {
+              <tr>
+                <td style="font-family: monospace; font-weight: 700; color: var(--color-primary);">
+                  {{ batch.batchCode }}
+                </td>
+                <td style="font-weight: 600;">{{ batch.fruitName }}</td>
+                <td>{{ batch.grossFruitKg }} Kg</td>
+                <td style="font-weight: 700; color: #10b981;">{{ batch.pulpProducedKg }} Kg</td>
+                <td>
+                  <span class="badge badge-warning" style="font-weight: 700;">{{ batch.realYieldPercentage }}%</span>
+                </td>
+                <td>{{ batch.operatorName || 'Jefe de Planta' }}</td>
+                <td style="font-size: 0.8rem; color: var(--text-muted);">
+                  {{ batch.productionDate | date:'medium' }}
+                </td>
+                <td>
+                  <span class="badge badge-success">Aprobado</span>
+                </td>
+              </tr>
+            }
+            @if (filteredBatches().length === 0) {
+              <tr>
+                <td colspan="8" style="text-align: center; padding: 32px; color: var(--text-muted);">
+                  No se encontraron lotes con los criterios de búsqueda.
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+</div>
