@@ -19,6 +19,11 @@ export const routes: Routes = [
     canActivate: [guestGuard]
   },
   {
+    path: 'kds',
+    loadComponent: () => import('./features/orders/kds/kds.component').then(m => m.KdsComponent),
+    canActivate: [authGuard]
+  },
+  {
     path: '',
     component: MainLayoutComponent,
     canActivate: [authGuard],

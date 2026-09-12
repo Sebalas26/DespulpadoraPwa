@@ -1,6 +1,7 @@
 import { Component, computed, inject, signal, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { RouterLink } from '@angular/router';
 import { StateService } from '../../core/services/state.service';
 import { NotificationService } from '../../core/services/notification.service';
 import { OrderDto, OrderStatus } from '../../core/models/business.models';
@@ -10,7 +11,7 @@ import confetti from 'canvas-confetti';
 @Component({
   selector: 'app-orders',
   standalone: true,
-  imports: [CommonModule, FormsModule, DeliveryMapComponent],
+  imports: [CommonModule, FormsModule, RouterLink, DeliveryMapComponent],
   templateUrl: './orders.component.html',
   styleUrls: ['./orders.component.scss']
 })
