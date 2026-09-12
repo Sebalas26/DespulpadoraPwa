@@ -81,7 +81,7 @@
         <div style="display: flex; flex-direction: column; gap: 24px;">
           @for (mod of modules(); track mod.moduleId) {
             <div style="border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 18px; background: rgba(255, 255, 255, 0.02);">
-              <div style="font-size: 0.95rem; font-weight: 800; color: #fff; margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
+              <div style="font-size: 0.95rem; font-weight: 800; color: var(--text-main); margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
                 <span style="display: inline-block; width: 6px; height: 16px; background: var(--color-primary); border-radius: 3px;"></span>
                 <span>{{ mod.name }}</span>
               </div>
@@ -89,7 +89,7 @@
               <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 12px;">
                 @for (action of mod.actions; track action.actionId) {
                   <label
-                    style="display: flex; align-items: flex-start; gap: 10px; padding: 10px 14px; border-radius: var(--radius-sm); border: 1px solid var(--border-subtle); background: rgba(15, 23, 42, 0.5); cursor: pointer;"
+                    style="display: flex; align-items: flex-start; gap: 10px; padding: 10px 14px; border-radius: var(--radius-sm); border: 1px solid var(--border-subtle); background: var(--bg-subtle); cursor: pointer;"
                   >
                     <input
                       type="checkbox"

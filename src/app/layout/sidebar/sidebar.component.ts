@@ -20,7 +20,7 @@ import { BranchDto } from '../../core/models/auth.models';
           </svg>
         </div>
         <div>
-          <div class="brand-title">Pulpas del Valle</div>
+          <div class="brand-title">DGL</div>
           <div class="brand-subtitle">Planta & ERP 4.0</div>
         </div>
       </div>

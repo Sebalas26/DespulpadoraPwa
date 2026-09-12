@@ -1,21 +1,31 @@
-import { Component, computed, inject, signal } from '@angular/core';
+import { Component, computed, inject, signal, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { StateService } from '../../core/services/state.service';
 import { NotificationService } from '../../core/services/notification.service';
 import { OrderDto, OrderStatus } from '../../core/models/business.models';
+import { DeliveryMapComponent } from './delivery-map.component';
 import confetti from 'canvas-confetti';
 
 @Component({
   selector: 'app-orders',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, DeliveryMapComponent],
   templateUrl: './orders.component.html',
   styleUrls: ['./orders.component.scss']
 })
 export class OrdersComponent {
   readonly stateService = inject(StateService);
   readonly notification = inject(NotificationService);
+
+  @ViewChild('deliveryMapRef') deliveryMapRef?: DeliveryMapComponent;
+
+  openPlannerFromParent() {
+    this.activeSubTab.set('despachos');
+    setTimeout(() => {
+      this.deliveryMapRef?.openRoutePlanner();
+    }, 100);
+  }
 
   // Active Sub-tab
   readonly activeSubTab = signal<'picking' | 'facturacion' | 'despachos'>('picking');
@@ -41,11 +51,11 @@ export class OrdersComponent {
   readonly selectedOrderForInvoice = signal<OrderDto | null>(null);
 
   // WhatsApp Simulator inputs
-  readonly whatsAppText = signal<string>(`Hola Pulpas del Valle, requiero urgente para Restaurante El Portal del Valle:
+  readonly whatsAppText = signal<string>(`Hola DGL , requiero urgente para Restaurante El Portal de la 93:
 - 10 pulpas de Maracuyá de 1000g
 - 8 pulpas de Mango Tommy de 1000g
 - 6 pulpas de Mora de 500g
-Dirección: Calle 45 # 12-30, Cali
+Dirección: Calle 93A # 13-25, Bogotá Norte
 Contacto: Chef Carlos Gómez (315 456 7890)
 Pago por Transferencia Bancolombia`);
 
@@ -92,7 +102,7 @@ Pago por Transferencia Bancolombia`);
     if (nextPicked === totalQty) {
       try {
         confetti({ particleCount: 40, spread: 50, origin: { y: 0.7 } });
-      } catch {}
+      } catch { }
     }
   }
 
@@ -101,7 +111,7 @@ Pago por Transferencia Bancolombia`);
     if (nextStatus === 'DELIVERED') {
       try {
         confetti({ particleCount: 100, spread: 70, origin: { y: 0.5 } });
-      } catch {}
+      } catch { }
     }
   }
 
@@ -190,7 +200,7 @@ Pago por Transferencia Bancolombia`);
 
     try {
       confetti({ particleCount: 80, spread: 60, origin: { y: 0.6 } });
-    } catch {}
+    } catch { }
   }
 
   // Manual Order Management

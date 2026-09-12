@@ -96,7 +96,7 @@ export class AuthService {
       isSuperAdmin: isSuper,
       isAdmin: isSuper,
       companyId: 1,
-      companyName: 'Pulpas del Valle S.A.S.',
+      companyName: 'DGL S.A.S.',
       allowMultipleSessions: true,
       maxActiveSessionsPerUser: 5,
       token: 'mock-jwt-token-demo-offline-pwa',
