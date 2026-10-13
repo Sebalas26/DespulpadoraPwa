@@ -4,13 +4,46 @@
   <div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 16px;">
     <div>
       <h1 style="font-size: 1.85rem; font-weight: 800; margin-bottom: 4px;">
-        Calculadora de Formulación & Rendimientos ⚖️
+        Control de Producción & Mermas ⚖️
       </h1>
       <p style="color: var(--text-muted); font-size: 0.92rem;">
-        Balance de materia prima, agua potable adicionada permitida y simulación de empaque por presentación.
+        Formulación de pulpa, rendimientos por lote y auditoría algorítmica de "Venta Ideal vs Venta Real".
       </p>
     </div>
+
+    <!-- Navigation Tabs -->
+    <div style="display: flex; gap: 8px;">
+      <button
+        type="button"
+        class="btn"
+        [ngClass]="activeTab() === 'formulation' ? 'btn-primary' : 'btn-outline'"
+        (click)="activeTab.set('formulation')"
+        style="gap: 8px; font-size: 0.85rem;"
+      >
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="4" y="2" width="16" height="20" rx="2"></rect>
+          <line x1="8" y1="6" x2="16" y2="6"></line>
+        </svg>
+        <span>Calculadora de Formulación</span>
+      </button>
+
+      <button
+        type="button"
+        class="btn"
+        [ngClass]="activeTab() === 'loss-audit' ? 'btn-primary' : 'btn-outline'"
+        (click)="activeTab.set('loss-audit')"
+        style="gap: 8px; font-size: 0.85rem;"
+      >
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
+        </svg>
+        <span>Venta Ideal vs Real (Mermas)</span>
+        <span class="badge badge-warning" style="font-size: 0.7rem; padding: 2px 6px;">Módulo 3</span>
+      </button>
+    </div>
   </div>
+
+  @if (activeTab() === 'formulation') {
 
   <!-- Fruit Selection Chips -->
   <div class="card" style="padding: 16px;">
@@ -311,5 +344,181 @@
       </div>
     </div>
   </div>
+
+  } @else if (activeTab() === 'loss-audit') {
+
+    <!-- RESUMEN AUDITORÍA DE MERMAS (MÓDULO 3) -->
+    <div class="kpi-grid">
+      <!-- Card 1: Pérdidas en Unidades -->
+      <div class="kpi-card hover-lift">
+        <div class="kpi-icon-wrapper kpi-icon-amber">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <polyline points="23 18 13.5 8.5 8.5 13.5 1 6"></polyline>
+            <polyline points="17 18 23 18 23 12"></polyline>
+          </svg>
+        </div>
+        <div>
+          <div class="kpi-title">Diferencia Total en Unidades</div>
+          <div class="kpi-value" [style.color]="totalLossUnits() > 0 ? '#ef4444' : '#10b981'">
+            -{{ totalLossUnits() }} <span style="font-size: 1rem; font-weight: 500;">uds</span>
+          </div>
+          <div class="kpi-trend" [ngClass]="totalLossUnits() > 0 ? 'kpi-trend-amber' : 'kpi-trend-emerald'">
+            <span>{{ totalLossUnits() > 0 ? 'Unidades en merma o maduración' : 'Cava 100% cuadrada' }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Card 2: Descuadre en Dinero -->
+      <div class="kpi-card hover-lift">
+        <div class="kpi-icon-wrapper" [ngClass]="totalLossMoney() > 0 ? 'kpi-icon-amber' : 'kpi-icon-emerald'">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <line x1="12" y1="1" x2="12" y2="23"></line>
+            <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
+          </svg>
+        </div>
+        <div>
+          <div class="kpi-title">Diferencia en Dinero ($ COP)</div>
+          <div class="kpi-value" [style.color]="totalLossMoney() > 0 ? '#ef4444' : '#10b981'">
+            -{{ formatCOP(totalLossMoney()) }}
+          </div>
+          <div class="kpi-trend" [ngClass]="totalLossMoney() > 0 ? 'kpi-trend-amber' : 'kpi-trend-emerald'">
+            <span>Cruzar con registros de cava</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Card 3: Venta Ideal Teórica -->
+      <div class="kpi-card hover-lift">
+        <div class="kpi-icon-wrapper kpi-icon-blue">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
+            <line x1="8" y1="21" x2="16" y2="21"></line>
+            <line x1="12" y1="17" x2="12" y2="21"></line>
+          </svg>
+        </div>
+        <div>
+          <div class="kpi-title">Venta Ideal (Producción × Precio)</div>
+          <div class="kpi-value">{{ formatCOP(totalIdealRevenue()) }}</div>
+          <div class="kpi-trend kpi-trend-blue">
+            <span>Potencial teórico total</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Card 4: Venta Real Facturada -->
+      <div class="kpi-card hover-lift">
+        <div class="kpi-icon-wrapper kpi-icon-emerald">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+            <polyline points="22 4 12 14.01 9 11.01"></polyline>
+          </svg>
+        </div>
+        <div>
+          <div class="kpi-title">Venta Real Facturada</div>
+          <div class="kpi-value" style="color: #10b981;">{{ formatCOP(totalRealRevenue()) }}</div>
+          <div class="kpi-trend kpi-trend-emerald">
+            <span>Cobrado en órdenes activas</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TABLA DE CONCILIACIÓN IDEAL VS REAL -->
+    <div class="card">
+      <div class="card-header" style="justify-content: space-between; flex-wrap: wrap; gap: 12px;">
+        <div>
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <span style="font-size: 1.2rem;">🔬</span>
+            <h3 class="card-title">Conciliación: Venta Ideal vs Venta Real por Fruta</h3>
+          </div>
+          <p class="card-subtitle">
+            Algoritmo de control estricto de mermas: cruce de unidades producidas vs unidades facturadas
+          </p>
+        </div>
+        <span class="badge badge-info">{{ stateService.idealVsRealLossAudit().length }} frutas auditadas</span>
+      </div>
+
+      <div class="card-body" style="padding: 0;">
+        <div class="table-container">
+          <table>
+            <thead>
+              <tr>
+                <th>Fruta</th>
+                <th style="text-align: right;">Uds Producidas</th>
+                <th style="text-align: right;">Uds Facturadas</th>
+                <th style="text-align: right;">Dif. Unidades</th>
+                <th style="text-align: right;">Venta Ideal ($)</th>
+                <th style="text-align: right;">Venta Real ($)</th>
+                <th style="text-align: right;">Dif. Dinero ($)</th>
+                <th style="text-align: center;">% Merma</th>
+                <th>Diagnóstico</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (audit of stateService.idealVsRealLossAudit(); track audit.fruitId) {
+                <tr>
+                  <td>
+                    <div style="font-weight: 700; color: var(--text-main);">{{ audit.fruitName }}</div>
+                    <div style="font-size: 0.72rem; color: var(--text-dim);">Lotes del mes</div>
+                  </td>
+                  <td style="text-align: right; font-weight: 600;">
+                    {{ audit.unitsProduced }} uds
+                  </td>
+                  <td style="text-align: right; font-weight: 600;">
+                    {{ audit.unitsBilled }} uds
+                  </td>
+                  <td style="text-align: right; font-weight: 700;">
+                    <span [style.color]="audit.unitsDifference < 0 ? '#ef4444' : '#10b981'">
+                      {{ audit.unitsDifference > 0 ? '+' : '' }}{{ audit.unitsDifference }} uds
+                    </span>
+                  </td>
+                  <td style="text-align: right; font-weight: 600;">
+                    {{ formatCOP(audit.idealRevenue) }}
+                  </td>
+                  <td style="text-align: right; font-weight: 700; color: #10b981;">
+                    {{ formatCOP(audit.realRevenue) }}
+                  </td>
+                  <td style="text-align: right; font-weight: 700;">
+                    <span [style.color]="audit.moneyDifference < 0 ? '#ef4444' : '#10b981'">
+                      {{ audit.moneyDifference > 0 ? '+' : '' }}{{ formatCOP(audit.moneyDifference) }}
+                    </span>
+                  </td>
+                  <td style="text-align: center;">
+                    <span
+                      class="badge"
+                      [ngClass]="audit.lossPercentage > 20 ? 'badge-danger' : (audit.lossPercentage > 5 ? 'badge-warning' : 'badge-success')"
+                    >
+                      {{ audit.lossPercentage }}%
+                    </span>
+                  </td>
+                  <td>
+                    <span style="font-size: 0.8rem; color: var(--text-muted);">
+                      {{ audit.notes }}
+                    </span>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- NOTA METODOLÓGICA DEL EXCEL -->
+    <div class="card" style="background: rgba(245, 158, 11, 0.05); border-left: 4px solid #f59e0b;">
+      <div class="card-body" style="padding: 16px;">
+        <div style="display: flex; gap: 12px; align-items: flex-start;">
+          <span style="font-size: 1.5rem;">💡</span>
+          <div>
+            <div style="font-weight: 700; margin-bottom: 4px;">Regla de Negocio: Algoritmo de Mermas</div>
+            <div style="font-size: 0.84rem; color: var(--text-muted); line-height: 1.5;">
+              La <strong>Venta Ideal</strong> se calcula multiplicando cada kilogramo o porción empacada registrada en los lotes por su precio de venta de lista. La <strong>Venta Real</strong> suma el valor efectivamente cobrado en las órdenes facturadas. Cualquier brecha negativa señala producto en merma operativa (adherido a maquinaria, evaporación o mermas de cava) o producto que aún no ha sido facturado.
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  }
 
 </div>

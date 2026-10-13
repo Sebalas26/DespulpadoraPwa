@@ -4,11 +4,19 @@ import { RouterOutlet } from '@angular/router';
 import { SidebarComponent } from '../sidebar/sidebar.component';
 import { HeaderComponent } from '../header/header.component';
 import { MobileNavComponent } from '../mobile-nav/mobile-nav.component';
+import { VoiceOrderModalComponent } from '../../features/orders/voice-orders/voice-order-modal.component';
 
 @Component({
   selector: 'app-main-layout',
   standalone: true,
-  imports: [CommonModule, RouterOutlet, SidebarComponent, HeaderComponent, MobileNavComponent],
+  imports: [
+    CommonModule,
+    RouterOutlet,
+    SidebarComponent,
+    HeaderComponent,
+    MobileNavComponent,
+    VoiceOrderModalComponent
+  ],
   template: `
     <div class="app-container">
       <app-sidebar></app-sidebar>
@@ -19,6 +27,7 @@ import { MobileNavComponent } from '../mobile-nav/mobile-nav.component';
         </div>
       </main>
       <app-mobile-nav></app-mobile-nav>
+      <app-voice-order-modal></app-voice-order-modal>
     </div>
   `
 })

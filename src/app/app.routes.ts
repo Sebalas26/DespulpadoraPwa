@@ -9,6 +9,7 @@ import { ShiftsComponent } from './features/shifts/shifts.component';
 import { HrComponent } from './features/hr/hr.component';
 import { AccountingComponent } from './features/accounting/accounting.component';
 import { SettingsComponent } from './features/settings/settings.component';
+import { ReportsComponent } from './features/reports/reports.component';
 import { AdminUsersComponent } from './features/admin/users/users.component';
 import { AdminRolesComponent } from './features/admin/roles/roles.component';
 
@@ -36,6 +37,7 @@ export const routes: Routes = [
       { path: 'hr', component: HrComponent },
       { path: 'accounting', component: AccountingComponent },
       { path: 'settings', component: SettingsComponent },
+      { path: 'reports', component: ReportsComponent },
       { path: 'admin/users', component: AdminUsersComponent, canActivate: [adminGuard] },
       { path: 'admin/roles', component: AdminRolesComponent, canActivate: [adminGuard] }
     ]

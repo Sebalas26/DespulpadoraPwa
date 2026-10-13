@@ -1,9 +1,10 @@
 import { Component, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { ActivatedRoute } from '@angular/router';
 import { StateService } from '../../core/services/state.service';
 import { NotificationService } from '../../core/services/notification.service';
-import { EmployeeDto } from '../../core/models/business.models';
+import { EmployeeArea, EmployeeDto, EmployeeGender, PayrollSettlementDto } from '../../core/models/business.models';
 
 @Component({
   selector: 'app-hr',
@@ -15,16 +16,43 @@ import { EmployeeDto } from '../../core/models/business.models';
 export class HrComponent {
   readonly stateService = inject(StateService);
   readonly notification = inject(NotificationService);
+  private readonly route = inject(ActivatedRoute);
+  readonly Math = Math;
+
+  readonly activeTab = signal<'employees' | 'payroll'>('employees');
+
+  constructor() {
+    this.route.queryParams.subscribe(params => {
+      if (params['tab'] === 'payroll') {
+        this.activeTab.set('payroll');
+      } else if (params['tab'] === 'employees') {
+        this.activeTab.set('employees');
+      }
+    });
+  }
 
   readonly showPayslipModal = signal<boolean>(false);
   readonly showCertificateModal = signal<boolean>(false);
   readonly showNewEmployeeModal = signal<boolean>(false);
+  readonly showSettlementModal = signal<boolean>(false);
   readonly selectedEmployee = signal<EmployeeDto | null>(null);
+  readonly activeSettlement = signal<PayrollSettlementDto | null>(null);
+
+  // Settlement Form fields
+  readonly selectedPeriodId = signal<number>(1);
+  readonly settleEmpId = signal<number>(1);
+  readonly settleDays = signal<number>(15);
+  readonly settleDeliveries = signal<number>(0);
+  readonly settleOvertime = signal<number>(0);
+  readonly settleBonuses = signal<number>(0);
+  readonly settleDeductions = signal<number>(0);
 
   // New Employee Form fields
   readonly newFirstName = signal<string>('');
   readonly newLastName = signal<string>('');
   readonly newDoc = signal<string>('');
+  readonly newGender = signal<EmployeeGender>('MASCULINO');
+  readonly newArea = signal<EmployeeArea>('PRODUCCION');
   readonly newPosition = signal<string>('Operario de Planta');
   readonly newDepartment = signal<string>('Producción');
   readonly newSalary = signal<number>(1600000);
@@ -33,12 +61,74 @@ export class HrComponent {
 
   openPayslip(emp: EmployeeDto) {
     this.selectedEmployee.set(emp);
+    this.activeSettlement.set(null);
+    this.showPayslipModal.set(true);
+  }
+
+  openSettlementPayslip(settlement: PayrollSettlementDto) {
+    const emp = this.stateService.employees().find(e => e.employeeId === settlement.employeeId) || null;
+    this.selectedEmployee.set(emp);
+    this.activeSettlement.set(settlement);
     this.showPayslipModal.set(true);
   }
 
   openCertificate(emp: EmployeeDto) {
     this.selectedEmployee.set(emp);
     this.showCertificateModal.set(true);
+  }
+
+  openSettlementDialog(emp?: EmployeeDto) {
+    if (emp) {
+      this.settleEmpId.set(emp.employeeId);
+      this.settleDeliveries.set(emp.area === 'DOMICILIOS' ? 28 : 0);
+    } else if (this.stateService.employees().length > 0) {
+      this.settleEmpId.set(this.stateService.employees()[0].employeeId);
+    }
+    this.settleDays.set(15);
+    this.showSettlementModal.set(true);
+  }
+
+  onSettleEmployeeSelect(id: number) {
+    this.settleEmpId.set(id);
+    const emp = this.stateService.employees().find(e => e.employeeId === id);
+    if (emp?.area === 'DOMICILIOS') {
+      this.settleDeliveries.set(28);
+    } else {
+      this.settleDeliveries.set(0);
+    }
+  }
+
+  submitSettlement() {
+    try {
+      const settlement = this.stateService.settlePayroll({
+        periodId: this.selectedPeriodId(),
+        employeeId: this.settleEmpId(),
+        daysWorked: this.settleDays(),
+        deliveryCount: this.settleDeliveries(),
+        overtimeAmount: this.settleOvertime(),
+        otherBonuses: this.settleBonuses(),
+        otherDeductions: this.settleDeductions()
+      });
+
+      this.showSettlementModal.set(false);
+      this.openSettlementPayslip(settlement);
+    } catch (e: any) {
+      this.notification.error('Error', e.message || 'Error al liquidar nómina');
+    }
+  }
+
+  quickSettleAllActive() {
+    let count = 0;
+    this.stateService.employees().filter(e => e.isActive).forEach(emp => {
+      this.stateService.settlePayroll({
+        periodId: this.selectedPeriodId(),
+        employeeId: emp.employeeId,
+        daysWorked: 15,
+        deliveryCount: emp.area === 'DOMICILIOS' ? 32 : 0
+      });
+      count++;
+    });
+    this.notification.success('Nómina Quincenal Completa', `Se liquidaron ${count} colaboradores con éxito`);
   }
 
   printCurrentDocument() {
@@ -57,9 +147,13 @@ export class HrComponent {
       lastName: this.newLastName(),
       fullName: `${this.newFirstName()} ${this.newLastName()}`,
       identificationNumber: this.newDoc(),
+      gender: this.newGender(),
+      area: this.newArea(),
       position: this.newPosition(),
-      department: this.newDepartment(),
+      department: this.newArea() === 'PRODUCCION' ? 'Producción' : (this.newArea() === 'DOMICILIOS' ? 'Logística' : 'Administración'),
       baseSalary: this.newSalary(),
+      transportAllowance: 162000,
+      deliveryBonusRate: this.newArea() === 'DOMICILIOS' ? 3500 : 0,
       phone: this.newPhone(),
       email: this.newEmail(),
       hireDate: new Date().toISOString().substring(0, 10),

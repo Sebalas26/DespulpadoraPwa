@@ -7,92 +7,242 @@
         Personal & Gestión de Nómina 👥
       </h1>
       <p style="color: var(--text-muted); font-size: 0.92rem;">
-        Administración del equipo de planta, liquidación quincenal y generación de certificados laborales.
+        Administración del equipo de planta, liquidación quincenal automática y generación de desprendibles oficiales.
       </p>
     </div>
 
-    <button type="button" class="btn btn-primary" style="gap: 8px;" (click)="showNewEmployeeModal.set(true)">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-        <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
+    <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+      <button type="button" class="btn btn-outline" style="gap: 8px;" (click)="quickSettleAllActive()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="20 6 9 17 4 12"></polyline>
+        </svg>
+        <span>Liquidar Todos (15 días)</span>
+      </button>
+
+      <button type="button" class="btn btn-secondary" style="gap: 8px;" (click)="openSettlementDialog()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="10"></circle>
+          <polyline points="12 6 12 12 16 14"></polyline>
+        </svg>
+        <span>Liquidar Quincena</span>
+      </button>
+
+      <button type="button" class="btn btn-primary" style="gap: 8px;" (click)="showNewEmployeeModal.set(true)">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
+          <circle cx="9" cy="7" r="4"></circle>
+          <line x1="19" y1="8" x2="19" y2="14"></line>
+          <line x1="22" y1="11" x2="16" y2="11"></line>
+        </svg>
+        <span>Vincular Colaborador</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Navigation Tabs -->
+  <div style="display: flex; gap: 8px; border-bottom: 1px solid var(--border-subtle); padding-bottom: 8px;">
+    <button
+      type="button"
+      class="btn"
+      [ngClass]="activeTab() === 'employees' ? 'btn-primary' : 'btn-outline'"
+      (click)="activeTab.set('employees')"
+      style="gap: 8px; font-size: 0.85rem;"
+    >
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
         <circle cx="9" cy="7" r="4"></circle>
-        <line x1="19" y1="8" x2="19" y2="14"></line>
-        <line x1="22" y1="11" x2="16" y2="11"></line>
+        <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+        <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
       </svg>
-      <span>Vincular Colaborador</span>
+      <span>Plantilla de Personal ({{ stateService.employees().length }})</span>
+    </button>
+
+    <button
+      type="button"
+      class="btn"
+      [ngClass]="activeTab() === 'payroll' ? 'btn-primary' : 'btn-outline'"
+      (click)="activeTab.set('payroll')"
+      style="gap: 8px; font-size: 0.85rem;"
+    >
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <rect x="2" y="4" width="20" height="16" rx="2"></rect>
+        <line x1="12" y1="8" x2="12" y2="16"></line>
+        <line x1="8" y1="12" x2="16" y2="12"></line>
+      </svg>
+      <span>Liquidaciones Quincenales Realizadas</span>
+      <span class="badge badge-success" style="font-size: 0.7rem; padding: 2px 6px;">{{ stateService.payrollSettlements().length }}</span>
     </button>
   </div>
 
-  <!-- Employees Table Card -->
-  <div class="card">
-    <div class="card-header" style="justify-content: space-between;">
-      <div>
-        <h3 class="card-title">Plantilla de Colaboradores Activos</h3>
-        <p class="card-subtitle">Personal operativo, logístico y administrativo de la sede</p>
+  @if (activeTab() === 'employees') {
+
+    <!-- Employees Table Card -->
+    <div class="card">
+      <div class="card-header" style="justify-content: space-between;">
+        <div>
+          <h3 class="card-title">Plantilla de Colaboradores Activos</h3>
+          <p class="card-subtitle">Atributos base: Nombre, Género, Área operativa, Salario y liquidación quincenal base</p>
+        </div>
+        <span class="badge badge-success">{{ stateService.employees().length }} vinculados</span>
       </div>
-      <span class="badge badge-success">{{ stateService.employees().length }} vinculados</span>
-    </div>
-    <div class="card-body" style="padding: 0;">
-      <div class="table-container">
-        <table>
-          <thead>
-            <tr>
-              <th>Colaborador</th>
-              <th>Documento</th>
-              <th>Cargo / Rol</th>
-              <th>Departamento</th>
-              <th>Salario Básico</th>
-              <th>Neto Estimado</th>
-              <th>Acciones</th>
-            </tr>
-          </thead>
-          <tbody>
-            @for (emp of stateService.employees(); track emp.employeeId) {
-            <tr>
-              <td>
-                <div style="font-weight: 700;">{{ emp.fullName }}</div>
-                <div style="font-size: 0.75rem; color: var(--text-dim);">{{ emp.email }}</div>
-              </td>
-              <td style="font-family: monospace;">{{ emp.identificationNumber }}</td>
-              <td>
-                <span class="badge badge-info">{{ emp.position }}</span>
-              </td>
-              <td>{{ emp.department }}</td>
-              <td style="font-weight: 600;">{{ formatCOP(emp.baseSalary) }}</td>
-              <td style="font-weight: 700; color: #10b981;">
-                {{ formatCOP(calculateNetPay(emp.baseSalary)) }}
-              </td>
-              <td>
-                <div style="display: flex; gap: 6px;">
-                  <button type="button" class="btn btn-outline" style="padding: 4px 8px; font-size: 0.75rem; gap: 4px;"
-                    (click)="openPayslip(emp)" title="Generar Desprendible de Nómina">
-                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-                      <polyline points="14 2 14 8 20 8"></polyline>
-                      <line x1="16" y1="13" x2="8" y2="13"></line>
-                      <line x1="16" y1="17" x2="8" y2="17"></line>
-                      <polyline points="10 9 9 9 8 9"></polyline>
-                    </svg>
-                    <span>Desprendible</span>
-                  </button>
-                  <button type="button" class="btn btn-outline" style="padding: 4px 8px; font-size: 0.75rem; gap: 4px;"
-                    (click)="openCertificate(emp)" title="Generar Certificado Laboral">
-                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                      <circle cx="12" cy="8" r="7"></circle>
-                      <polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"></polyline>
-                    </svg>
-                    <span>Certificado</span>
-                  </button>
-                </div>
-              </td>
-            </tr>
-            }
-          </tbody>
-        </table>
+      <div class="card-body" style="padding: 0;">
+        <div class="table-container">
+          <table>
+            <thead>
+              <tr>
+                <th>Colaborador</th>
+                <th>Género</th>
+                <th>Área / Cargo</th>
+                <th>Salario Básico Mes</th>
+                <th>Quincena Base (15d)</th>
+                <th>Aux. Transporte</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (emp of stateService.employees(); track emp.employeeId) {
+              <tr>
+                <td>
+                  <div style="font-weight: 700; color: var(--text-main);">{{ emp.fullName }}</div>
+                  <div style="font-size: 0.75rem; color: var(--text-dim); font-family: monospace;">CC: {{ emp.identificationNumber }}</div>
+                </td>
+                <td>
+                  <span class="badge" [ngClass]="emp.gender === 'FEMENINO' ? 'badge-purple' : 'badge-info'">
+                    {{ emp.gender === 'FEMENINO' ? '👩 Femenino' : '👨 Masculino' }}
+                  </span>
+                </td>
+                <td>
+                  <div style="display: flex; flex-direction: column; gap: 2px;">
+                    <span class="badge" [ngClass]="emp.area === 'PRODUCCION' ? 'badge-warning' : (emp.area === 'DOMICILIOS' ? 'badge-info' : 'badge-emerald')">
+                      {{ emp.area || emp.department }}
+                    </span>
+                    <span style="font-size: 0.75rem; color: var(--text-muted);">{{ emp.position }}</span>
+                  </div>
+                </td>
+                <td style="font-weight: 600;">{{ formatCOP(emp.baseSalary) }}</td>
+                <td style="font-weight: 700; color: #10b981;">
+                  {{ formatCOP(Math.round(emp.baseSalary / 2)) }}
+                </td>
+                <td>
+                  <span style="font-size: 0.8rem; color: var(--text-muted);">
+                    {{ emp.transportAllowance ? formatCOP(emp.transportAllowance) : 'No aplica' }}
+                  </span>
+                </td>
+                <td>
+                  <div style="display: flex; gap: 6px;">
+                    <button type="button" class="btn btn-secondary" style="padding: 4px 8px; font-size: 0.75rem; gap: 4px;"
+                      (click)="openSettlementDialog(emp)" title="Liquidar Quincena">
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <polyline points="12 6 12 12 16 14"></polyline>
+                      </svg>
+                      <span>Liquidar</span>
+                    </button>
+                    <button type="button" class="btn btn-outline" style="padding: 4px 8px; font-size: 0.75rem; gap: 4px;"
+                      (click)="openPayslip(emp)" title="Generar Desprendible de Nómina">
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                        <polyline points="14 2 14 8 20 8"></polyline>
+                        <line x1="16" y1="13" x2="8" y2="13"></line>
+                        <line x1="16" y1="17" x2="8" y2="17"></line>
+                      </svg>
+                      <span>Desprendible</span>
+                    </button>
+                    <button type="button" class="btn btn-outline" style="padding: 4px 8px; font-size: 0.75rem; gap: 4px;"
+                      (click)="openCertificate(emp)" title="Generar Certificado Laboral">
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="8" r="7"></circle>
+                        <polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"></polyline>
+                      </svg>
+                      <span>Certificado</span>
+                    </button>
+                  </div>
+                </td>
+              </tr>
+              }
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
-  </div>
+
+  } @else if (activeTab() === 'payroll') {
+
+    <!-- TABLA DE LIQUIDACIONES QUINCENALES REALIZADAS -->
+    <div class="card">
+      <div class="card-header" style="justify-content: space-between; flex-wrap: wrap; gap: 12px;">
+        <div>
+          <h3 class="card-title">Historial de Liquidaciones Quincenales</h3>
+          <p class="card-subtitle">Cálculo automatizado: Salario proporcional + Auxilio de transporte + Domicilios menos aportes ley (Salud/Pensión 4%)</p>
+        </div>
+        <button type="button" class="btn btn-primary" style="font-size: 0.8rem; gap: 6px;" (click)="openSettlementDialog()">
+          <span>+ Nueva Liquidación</span>
+        </button>
+      </div>
+      <div class="card-body" style="padding: 0;">
+        <div class="table-container">
+          <table>
+            <thead>
+              <tr>
+                <th>Colaborador</th>
+                <th>Área</th>
+                <th style="text-align: center;">Días</th>
+                <th style="text-align: right;">Básico Ganado</th>
+                <th style="text-align: right;">Aux. Transporte</th>
+                <th style="text-align: right;">Bonos/Domicilios</th>
+                <th style="text-align: right;">Deducciones (8%)</th>
+                <th style="text-align: right;">Total a Pagar</th>
+                <th style="text-align: center;">Acción</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (st of stateService.payrollSettlements(); track st.settlementId) {
+                <tr>
+                  <td>
+                    <div style="font-weight: 700;">{{ st.employeeName }}</div>
+                    <div style="font-size: 0.72rem; color: var(--text-dim);">Liquidado: {{ st.settledAt | date:'shortDate' }}</div>
+                  </td>
+                  <td>
+                    <span class="badge" [ngClass]="st.area === 'PRODUCCION' ? 'badge-warning' : (st.area === 'DOMICILIOS' ? 'badge-info' : 'badge-emerald')">
+                      {{ st.area }}
+                    </span>
+                  </td>
+                  <td style="text-align: center; font-weight: 600;">{{ st.daysWorked }} d</td>
+                  <td style="text-align: right;">{{ formatCOP(st.baseSalaryEarned) }}</td>
+                  <td style="text-align: right;">{{ formatCOP(st.transportAllowanceEarned) }}</td>
+                  <td style="text-align: right; color: #38bdf8;">
+                    {{ st.deliveryBonuses > 0 ? formatCOP(st.deliveryBonuses) : '-' }}
+                  </td>
+                  <td style="text-align: right; color: #ef4444;">
+                    -{{ formatCOP(st.totalDeductions) }}
+                  </td>
+                  <td style="text-align: right; font-weight: 800; color: #10b981; font-size: 0.95rem;">
+                    {{ formatCOP(st.netPayable) }}
+                  </td>
+                  <td style="text-align: center;">
+                    <button type="button" class="btn btn-outline" style="padding: 4px 8px; font-size: 0.75rem;" (click)="openSettlementPayslip(st)">
+                      Ver Desprendible
+                    </button>
+                  </td>
+                </tr>
+              }
+              @if (stateService.payrollSettlements().length === 0) {
+                <tr>
+                  <td colspan="9" style="text-align: center; padding: 36px; color: var(--text-muted);">
+                    No hay liquidaciones registradas para este período. Haz clic en "Liquidar Quincena" o "Liquidar Todos" para procesar automáticamente.
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+  }
 
 </div>
+
 
 <!-- PAYSLIP MODAL -->
 @if (showPayslipModal() && selectedEmployee()) {
@@ -107,15 +257,21 @@
       style="background: #ffffff; color: #000000; font-family: sans-serif; font-size: 0.88rem; padding: 28px; border-radius: 8px;">
       <div style="text-align: center; border-bottom: 2px solid #000; padding-bottom: 12px; margin-bottom: 16px;">
         <h2 style="font-size: 1.3rem; font-weight: 800; margin: 0; color: #000;">DGL S.A.S.</h2>
-        <div style="font-size: 0.8rem; color: #444;">NIT: 901.458.789-2 · Comprobante de Pago de Nómina</div>
-        <div style="font-size: 0.78rem; color: #666;">Periodo: 01 al 30 del Mes en Curso</div>
+        <div style="font-size: 0.8rem; color: #444;">NIT: 901.458.789-2 · Comprobante de Pago de Nómina Quincenal</div>
+        <div style="font-size: 0.78rem; color: #666;">
+          {{ activeSettlement() ? (activeSettlement()!.periodId === 1 ? 'Periodo: 1ra Quincena (01 al 15)' : 'Periodo: 2da Quincena (16 al 30)') : 'Periodo: Quincena en Curso' }}
+        </div>
       </div>
 
       <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 18px; font-size: 0.85rem;">
-        <div><strong>Colaborador:</strong> {{ selectedEmployee()?.fullName }}</div>
+        <div><strong>Colaborador:</strong> {{ activeSettlement() ? activeSettlement()!.employeeName : selectedEmployee()?.fullName }}</div>
         <div><strong>Documento:</strong> {{ selectedEmployee()?.identificationNumber }}</div>
         <div><strong>Cargo:</strong> {{ selectedEmployee()?.position }}</div>
-        <div><strong>Área:</strong> {{ selectedEmployee()?.department }}</div>
+        <div><strong>Área:</strong> {{ activeSettlement() ? activeSettlement()!.area : selectedEmployee()?.department }}</div>
+        @if (activeSettlement()) {
+          <div><strong>Días Laborados:</strong> {{ activeSettlement()!.daysWorked }} días</div>
+          <div><strong>Fecha Liquidación:</strong> {{ activeSettlement()!.settledAt | date:'short' }}</div>
+        }
       </div>
 
       <div style="border: 1px solid #ccc; border-radius: 4px; overflow: hidden; margin-bottom: 16px;">
@@ -128,29 +284,70 @@
             </tr>
           </thead>
           <tbody>
-            <tr style="border-bottom: 1px solid #eee;">
-              <td style="padding: 8px;">Sueldo Básico (30 días)</td>
-              <td style="padding: 8px; text-align: right;">{{ formatCOP(selectedEmployee()!.baseSalary) }}</td>
-              <td style="padding: 8px; text-align: right;">-</td>
-            </tr>
-            <tr style="border-bottom: 1px solid #eee;">
-              <td style="padding: 8px;">Auxilio Legal de Transporte</td>
-              <td style="padding: 8px; text-align: right;">{{
-                formatCOP(calculateTransportAllowance(selectedEmployee()!.baseSalary)) }}</td>
-              <td style="padding: 8px; text-align: right;">-</td>
-            </tr>
-            <tr style="border-bottom: 1px solid #eee;">
-              <td style="padding: 8px;">Aporte Salud (EPS 4%)</td>
-              <td style="padding: 8px; text-align: right;">-</td>
-              <td style="padding: 8px; text-align: right; color: #c00;">{{
-                formatCOP(calculateHealthDeduction(selectedEmployee()!.baseSalary)) }}</td>
-            </tr>
-            <tr>
-              <td style="padding: 8px;">Aporte Pensión (Fondo 4%)</td>
-              <td style="padding: 8px; text-align: right;">-</td>
-              <td style="padding: 8px; text-align: right; color: #c00;">{{
-                formatCOP(calculatePensionDeduction(selectedEmployee()!.baseSalary)) }}</td>
-            </tr>
+            @if (activeSettlement(); as st) {
+              <tr style="border-bottom: 1px solid #eee;">
+                <td style="padding: 8px;">Sueldo Básico Quincenal ({{ st.daysWorked }} días)</td>
+                <td style="padding: 8px; text-align: right;">{{ formatCOP(st.baseSalaryEarned) }}</td>
+                <td style="padding: 8px; text-align: right;">-</td>
+              </tr>
+              <tr style="border-bottom: 1px solid #eee;">
+                <td style="padding: 8px;">Auxilio Legal de Transporte (Prorrateado)</td>
+                <td style="padding: 8px; text-align: right;">{{ formatCOP(st.transportAllowanceEarned) }}</td>
+                <td style="padding: 8px; text-align: right;">-</td>
+              </tr>
+              @if (st.deliveryBonuses > 0) {
+                <tr style="border-bottom: 1px solid #eee;">
+                  <td style="padding: 8px;">Bonificación por Domicilios Entregados</td>
+                  <td style="padding: 8px; text-align: right; color: #0d652d; font-weight: 600;">+{{ formatCOP(st.deliveryBonuses) }}</td>
+                  <td style="padding: 8px; text-align: right;">-</td>
+                </tr>
+              }
+              @if (st.overtimeAmount > 0) {
+                <tr style="border-bottom: 1px solid #eee;">
+                  <td style="padding: 8px;">Horas Extras & Recargos</td>
+                  <td style="padding: 8px; text-align: right;">+{{ formatCOP(st.overtimeAmount) }}</td>
+                  <td style="padding: 8px; text-align: right;">-</td>
+                </tr>
+              }
+              <tr style="border-bottom: 1px solid #eee;">
+                <td style="padding: 8px;">Aporte Salud EPS (4% Salarial)</td>
+                <td style="padding: 8px; text-align: right;">-</td>
+                <td style="padding: 8px; text-align: right; color: #c00;">{{ formatCOP(st.healthDeduction) }}</td>
+              </tr>
+              <tr style="border-bottom: 1px solid #eee;">
+                <td style="padding: 8px;">Aporte Pensión Fondo (4% Salarial)</td>
+                <td style="padding: 8px; text-align: right;">-</td>
+                <td style="padding: 8px; text-align: right; color: #c00;">{{ formatCOP(st.pensionDeduction) }}</td>
+              </tr>
+              @if (st.otherDeductions > 0) {
+                <tr>
+                  <td style="padding: 8px;">Otras Deducciones / Anticipos</td>
+                  <td style="padding: 8px; text-align: right;">-</td>
+                  <td style="padding: 8px; text-align: right; color: #c00;">{{ formatCOP(st.otherDeductions) }}</td>
+                </tr>
+              }
+            } @else {
+              <tr style="border-bottom: 1px solid #eee;">
+                <td style="padding: 8px;">Sueldo Básico Proyectado (30 días)</td>
+                <td style="padding: 8px; text-align: right;">{{ formatCOP(selectedEmployee()!.baseSalary) }}</td>
+                <td style="padding: 8px; text-align: right;">-</td>
+              </tr>
+              <tr style="border-bottom: 1px solid #eee;">
+                <td style="padding: 8px;">Auxilio Legal de Transporte</td>
+                <td style="padding: 8px; text-align: right;">{{ formatCOP(calculateTransportAllowance(selectedEmployee()!.baseSalary)) }}</td>
+                <td style="padding: 8px; text-align: right;">-</td>
+              </tr>
+              <tr style="border-bottom: 1px solid #eee;">
+                <td style="padding: 8px;">Aporte Salud (EPS 4%)</td>
+                <td style="padding: 8px; text-align: right;">-</td>
+                <td style="padding: 8px; text-align: right; color: #c00;">{{ formatCOP(calculateHealthDeduction(selectedEmployee()!.baseSalary)) }}</td>
+              </tr>
+              <tr>
+                <td style="padding: 8px;">Aporte Pensión (Fondo 4%)</td>
+                <td style="padding: 8px; text-align: right;">-</td>
+                <td style="padding: 8px; text-align: right; color: #c00;">{{ formatCOP(calculatePensionDeduction(selectedEmployee()!.baseSalary)) }}</td>
+              </tr>
+            }
           </tbody>
         </table>
       </div>
@@ -158,7 +355,9 @@
       <div
         style="display: flex; justify-content: space-between; align-items: center; padding: 12px; background: #e6f4ea; border-radius: 6px; font-weight: 800; font-size: 1.05rem;">
         <span>NETO TOTAL TRANSFERIDO:</span>
-        <span style="color: #0d652d;">{{ formatCOP(calculateNetPay(selectedEmployee()!.baseSalary)) }}</span>
+        <span style="color: #0d652d;">
+          {{ activeSettlement() ? formatCOP(activeSettlement()!.netPayable) : formatCOP(calculateNetPay(selectedEmployee()!.baseSalary)) }}
+        </span>
       </div>
     </div>
 
@@ -234,10 +433,115 @@
 </div>
 }
 
+<!-- SETTLEMENT MODAL (LIQUIDACIÓN QUINCENAL) -->
+@if (showSettlementModal()) {
+<div class="modal-overlay" (click)="showSettlementModal.set(false)">
+  <div class="modal-content" style="max-width: 540px;" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h3 class="modal-title">Liquidación Quincenal Automática 💰</h3>
+      <button class="modal-close" (click)="showSettlementModal.set(false)">&times;</button>
+    </div>
+
+    <div class="modal-body">
+      <p style="font-size: 0.84rem; color: var(--text-muted); margin-bottom: 16px;">
+        Algoritmo legal de nómina: Salario base por días trabajados + auxilio de transporte prorrateado + bonificación por entregas menos aportes a salud (4%) y pensión (4%).
+      </p>
+
+      <div class="form-group" style="margin-bottom: 14px;">
+        <label class="form-label">Seleccionar Colaborador *</label>
+        <select class="form-control" [ngModel]="settleEmpId()" (ngModelChange)="onSettleEmployeeSelect($event)">
+          @for (emp of stateService.employees(); track emp.employeeId) {
+            <option [value]="emp.employeeId">
+              {{ emp.fullName }} — {{ emp.area || emp.department }} ({{ formatCOP(emp.baseSalary) }}/mes)
+            </option>
+          }
+        </select>
+      </div>
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px;">
+        <div class="form-group">
+          <label class="form-label">Período Quincenal *</label>
+          <select class="form-control" [ngModel]="selectedPeriodId()" (ngModelChange)="selectedPeriodId.set($event)">
+            @for (p of stateService.payrollPeriods(); track p.periodId) {
+              <option [value]="p.periodId">
+                {{ p.fortnight === 1 ? '1ra Quincena (01-15)' : '2da Quincena (16-30)' }} - Mes {{ p.month }}/{{ p.year }}
+              </option>
+            }
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Días Laborados (Máx. 15) *</label>
+          <input
+            type="number"
+            class="form-control"
+            min="1"
+            max="15"
+            [ngModel]="settleDays()"
+            (ngModelChange)="settleDays.set($event)"
+          />
+        </div>
+      </div>
+
+      <!-- Campo condicional para domiciliarios -->
+      <div class="form-group" style="margin-bottom: 14px;">
+        <label class="form-label">Domicilios Entregados en la Quincena (Tarifa $3.500 c/u)</label>
+        <input
+          type="number"
+          class="form-control"
+          min="0"
+          [ngModel]="settleDeliveries()"
+          (ngModelChange)="settleDeliveries.set($event)"
+          placeholder="0"
+        />
+        <div style="font-size: 0.74rem; color: var(--text-dim); margin-top: 4px;">
+          Bono calculado: {{ formatCOP(settleDeliveries() * 3500) }}
+        </div>
+      </div>
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px;">
+        <div class="form-group">
+          <label class="form-label">Horas Extras / Otros Bonos ($)</label>
+          <input
+            type="number"
+            class="form-control"
+            min="0"
+            step="10000"
+            [ngModel]="settleOvertime()"
+            (ngModelChange)="settleOvertime.set($event)"
+            placeholder="0"
+          />
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Otras Deducciones / Préstamos ($)</label>
+          <input
+            type="number"
+            class="form-control"
+            min="0"
+            step="10000"
+            [ngModel]="settleDeductions()"
+            (ngModelChange)="settleDeductions.set($event)"
+            placeholder="0"
+          />
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-footer">
+      <button type="button" class="btn btn-outline" (click)="showSettlementModal.set(false)">Cancelar</button>
+      <button type="button" class="btn btn-primary" (click)="submitSettlement()">
+        <span>Liquidar & Ver Desprendible</span>
+      </button>
+    </div>
+  </div>
+</div>
+}
+
 <!-- NEW EMPLOYEE MODAL -->
 @if (showNewEmployeeModal()) {
 <div class="modal-overlay" (click)="showNewEmployeeModal.set(false)">
-  <div class="modal-content" style="max-width: 520px;" (click)="$event.stopPropagation()">
+  <div class="modal-content" style="max-width: 540px;" (click)="$event.stopPropagation()">
     <div class="modal-header">
       <h3 class="modal-title">Vincular Nuevo Colaborador</h3>
       <button class="modal-close" (click)="showNewEmployeeModal.set(false)">&times;</button>
@@ -270,13 +574,34 @@
         </div>
       </div>
 
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px;">
+        <div class="form-group">
+          <label class="form-label">Género *</label>
+          <select class="form-control" [ngModel]="newGender()" (ngModelChange)="newGender.set($event)">
+            <option value="MASCULINO">👨 Masculino</option>
+            <option value="FEMENINO">👩 Femenino</option>
+            <option value="OTRO">Otro</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Área Operativa *</label>
+          <select class="form-control" [ngModel]="newArea()" (ngModelChange)="newArea.set($event)">
+            <option value="PRODUCCION">🏭 Producción & Despulpado</option>
+            <option value="DOMICILIOS">🛵 Domicilios & Flota</option>
+            <option value="VENTAS">💼 Ventas & Mostrador</option>
+            <option value="ADMINISTRACION">📑 Administración & Finanzas</option>
+          </select>
+        </div>
+      </div>
+
       <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px;">
         <div class="form-group">
           <label class="form-label">Cargo</label>
           <input type="text" class="form-control" [ngModel]="newPosition()" (ngModelChange)="newPosition.set($event)" />
         </div>
         <div class="form-group">
-          <label class="form-label">Salario Básico (COP)</label>
+          <label class="form-label">Salario Básico Mensual (COP)</label>
           <input type="number" class="form-control" [ngModel]="newSalary()" (ngModelChange)="newSalary.set($event)" />
         </div>
       </div>

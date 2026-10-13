@@ -1,117 +1,1773 @@
-<div style="display: flex; flex-direction: column; gap: 24px;">
+<div style="display: flex; flex-direction: column; gap: 20px;">
 
   <!-- Page Header -->
-  <div>
-    <h1 style="font-size: 1.85rem; font-weight: 800; margin-bottom: 4px;">
-      Catálogo de Frutas & Configuración de Cava ⚙️
-    </h1>
-    <p style="color: var(--text-muted); font-size: 0.92rem;">
-      Administración de fichas técnicas, precios vigentes al público y ajustes manuales de existencias.
-    </p>
+  <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 16px;">
+    <div>
+      <h1 style="font-size: 1.85rem; font-weight: 800; margin-bottom: 4px; display: flex; align-items: center; gap: 10px;">
+        <span>Configuración de la Planta & Sistema</span>
+        <span style="font-size: 1.3rem;">⚙️</span>
+      </h1>
+      <p style="color: var(--text-muted); font-size: 0.92rem; margin: 0;">
+        Información general de la empresa para facturación, cuentas de usuarios, roles de seguridad y catálogo de cava.
+      </p>
+    </div>
   </div>
 
-  <!-- Fruits Catalog Grid -->
-  <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 20px;">
-    @for (fruit of stateService.fruits(); track fruit.id) {
-      <div class="card hover-lift" [style.borderTop]="'4px solid ' + fruit.color">
-        <div class="card-header" style="justify-content: space-between;">
-          <div style="display: flex; align-items: center; gap: 10px;">
-            <span style="font-size: 1.8rem;">{{ fruit.emoji }}</span>
-            <div>
-              <h3 style="font-size: 1.15rem; font-weight: 800; margin: 0;">{{ fruit.name }}</h3>
-              <div style="font-size: 0.75rem; color: var(--text-dim); font-style: italic;">{{ fruit.scientificName }}</div>
+  <!-- Main Navigation Tabs: General | Usuarios | Roles | Inventario en Cava -->
+  <div style="display: flex; gap: 8px; border-bottom: 1px solid var(--border-subtle); padding-bottom: 8px; overflow-x: auto;">
+    <button
+      type="button"
+      class="btn"
+      [ngClass]="activeTab() === 'general' ? 'btn-primary' : 'btn-outline'"
+      (click)="activeTab.set('general')"
+      style="gap: 8px; font-size: 0.85rem;"
+    >
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
+        <line x1="8" y1="21" x2="16" y2="21"></line>
+        <line x1="12" y1="17" x2="12" y2="21"></line>
+      </svg>
+      <span>General (Empresa & Facturación)</span>
+    </button>
+
+    <button
+      type="button"
+      class="btn"
+      [ngClass]="activeTab() === 'users' ? 'btn-primary' : 'btn-outline'"
+      (click)="activeTab.set('users')"
+      style="gap: 8px; font-size: 0.85rem;"
+    >
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
+        <circle cx="9" cy="7" r="4"></circle>
+        <path d="M22 21v-2a4 4 0 0 0-3-3.87"></path>
+        <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+      </svg>
+      <span>Usuarios del Sistema</span>
+    </button>
+
+    <button
+      type="button"
+      class="btn"
+      [ngClass]="activeTab() === 'roles' ? 'btn-primary' : 'btn-outline'"
+      (click)="activeTab.set('roles')"
+      style="gap: 8px; font-size: 0.85rem;"
+    >
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+        <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+      </svg>
+      <span>Roles & Permisos (RBAC)</span>
+    </button>
+
+    <button
+      type="button"
+      class="btn"
+      [ngClass]="activeTab() === 'inventory' ? 'btn-primary' : 'btn-outline'"
+      (click)="activeTab.set('inventory')"
+      style="gap: 8px; font-size: 0.85rem;"
+    >
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
+        <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
+        <line x1="12" y1="22.08" x2="12" y2="12"></line>
+      </svg>
+      <span>Inventario en Cava</span>
+      <span class="badge badge-warning" style="font-size: 0.7rem; padding: 2px 6px;">
+        {{ stateService.productVariants().length }}
+      </span>
+    </button>
+  </div>
+
+  <!-- ========================================== -->
+  <!-- TAB 1: GENERAL (EMPRESA & FACTURACIÓN)     -->
+  <!-- ========================================== -->
+  @if (activeTab() === 'general') {
+    <div class="company-settings-grid">
+      <!-- Left Column: Settings Form -->
+      <div class="company-form-container">
+        <!-- 1. Identificación Comercial -->
+        <div class="settings-section-card">
+          <div class="section-card-header">
+            <h3 class="section-card-title">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
+                <line x1="8" y1="21" x2="16" y2="21"></line>
+                <line x1="12" y1="17" x2="12" y2="21"></line>
+              </svg>
+              <span>Identificación Comercial & Razón Social</span>
+            </h3>
+            <p class="section-card-desc">Datos oficiales de la empresa para facturas de venta, tickets POS y remisiones.</p>
+          </div>
+
+          <div class="form-grid-2">
+            <div class="form-field-group">
+              <label class="field-label-text">Nombre Comercial</label>
+              <input
+                type="text"
+                class="settings-input"
+                [ngModel]="companyForm().companyName"
+                (ngModelChange)="updateCompanyField('companyName', $event)"
+                placeholder="Ej: DGL Pulpas Naturales"
+              />
+              <span class="field-hint-text">Nombre de marca visible para los clientes</span>
+            </div>
+
+            <div class="form-field-group">
+              <label class="field-label-text">Razón Social Legal</label>
+              <input
+                type="text"
+                class="settings-input"
+                [ngModel]="companyForm().legalName"
+                (ngModelChange)="updateCompanyField('legalName', $event)"
+                placeholder="Ej: Despulpadora DGL S.A.S."
+              />
+              <span class="field-hint-text">Nombre registrado en Cámara de Comercio</span>
+            </div>
+
+            <div class="form-field-group">
+              <label class="field-label-text">NIT / Identificación Tributaria</label>
+              <input
+                type="text"
+                class="settings-input"
+                [ngModel]="companyForm().nit"
+                (ngModelChange)="updateCompanyField('nit', $event)"
+                placeholder="Ej: 901.458.789-2"
+              />
+              <span class="field-hint-text">Incluye el dígito de verificación</span>
+            </div>
+
+            <div class="form-field-group">
+              <label class="field-label-text">Eslogan / Subtítulo</label>
+              <input
+                type="text"
+                class="settings-input"
+                [ngModel]="companyForm().tagline"
+                (ngModelChange)="updateCompanyField('tagline', $event)"
+                placeholder="Ej: Planta de Transformación de Frutas Tropicales"
+              />
+              <span class="field-hint-text">Aparece bajo el nombre en el ticket</span>
             </div>
           </div>
-          <span class="badge badge-info">{{ fruit.category }}</span>
         </div>
 
-        <div class="card-body">
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 10px; border-radius: var(--radius-sm); background: rgba(255, 255, 255, 0.03); margin-bottom: 14px; font-size: 0.8rem;">
-            <div>Rendimiento Base: <strong>{{ (fruit.yieldRate * 100).toFixed(0) }}%</strong></div>
-            <div>Fruta en Cava: <strong style="color: #38bdf8;">{{ fruit.freshStockKg }} Kg</strong></div>
+        <!-- 2. Logotipo de la Empresa -->
+        <div class="settings-section-card">
+          <div class="section-card-header">
+            <h3 class="section-card-title">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="3" y="3" width="18" height="18" rx="2"></rect>
+                <circle cx="8.5" cy="8.5" r="1.5"></circle>
+                <polyline points="21 15 16 10 5 21"></polyline>
+              </svg>
+              <span>Logotipo de la Empresa</span>
+            </h3>
+            <p class="section-card-desc">Logotipo que se imprime en la cabecera de la factura y tickets POS de 80mm.</p>
           </div>
 
-          <!-- Prices & Stock Table -->
-          <div style="font-size: 0.75rem; font-weight: 700; color: var(--text-dim); text-transform: uppercase; margin-bottom: 8px;">
-            Precios y Stock en Cava:
+          <div class="logo-uploader-row">
+            <div class="logo-thumbnail-preview">
+              @if (companyForm().logoUrl) {
+                <img [src]="companyForm().logoUrl" alt="Logo Previsualización" />
+              } @else {
+                <div class="logo-placeholder">
+                  <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                    <rect x="3" y="3" width="18" height="18" rx="2"></rect>
+                    <circle cx="8.5" cy="8.5" r="1.5"></circle>
+                    <polyline points="21 15 16 10 5 21"></polyline>
+                  </svg>
+                  <span style="font-size: 0.65rem; margin-top: 4px;">Sin logo</span>
+                </div>
+              }
+            </div>
+
+            <div class="logo-uploader-inputs">
+              <div class="form-field-group">
+                <label class="field-label-text">URL de la Imagen o Subir Archivo</label>
+                <div style="display: flex; gap: 8px;">
+                  <input
+                    type="text"
+                    class="settings-input"
+                    [ngModel]="companyForm().logoUrl"
+                    (ngModelChange)="updateCompanyField('logoUrl', $event)"
+                    placeholder="https://... o sube una imagen directa"
+                  />
+                  <label class="btn btn-outline" style="cursor: pointer; white-space: nowrap; gap: 6px; padding: 0 14px;">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                      <polyline points="17 8 12 3 7 8"></polyline>
+                      <line x1="12" y1="3" x2="12" y2="15"></line>
+                    </svg>
+                    <span>Subir</span>
+                    <input type="file" accept="image/*" style="display: none;" (change)="onLogoFileSelected($event)" />
+                  </label>
+                  @if (companyForm().logoUrl) {
+                    <button type="button" class="btn btn-outline" style="color: #ef4444;" (click)="removeLogo()" title="Quitar logo">
+                      ✕
+                    </button>
+                  }
+                </div>
+                <span class="field-hint-text">Formatos recomendados: PNG o SVG transparente (máx. 2MB).</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 3. Ubicación & Contacto -->
+        <div class="settings-section-card">
+          <div class="section-card-header">
+            <h3 class="section-card-title">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+                <circle cx="12" cy="10" r="3"></circle>
+              </svg>
+              <span>Ubicación de Planta & Contacto Comercial</span>
+            </h3>
+            <p class="section-card-desc">Dirección física y canales de comunicación impresos en comprobantes.</p>
           </div>
 
-          <div style="display: flex; flex-direction: column; gap: 6px; margin-bottom: 16px;">
-            <div style="display: flex; justify-content: space-between; font-size: 0.85rem; padding: 4px 0; border-bottom: 1px solid var(--border-subtle);">
-              <span>140g: <strong>{{ fruit.stock.g140 }} uds</strong></span>
-              <span style="color: #10b981; font-weight: 700;">{{ formatCOP(fruit.prices.g140) }}</span>
+          <div class="form-grid-2">
+            <div class="form-field-group col-span-2">
+              <label class="field-label-text">Dirección de la Planta / Bodega</label>
+              <input
+                type="text"
+                class="settings-input"
+                [ngModel]="companyForm().address"
+                (ngModelChange)="updateCompanyField('address', $event)"
+                placeholder="Ej: Calle 19 # 4-88, Bodega 3, Zona Industrial"
+              />
             </div>
-            <div style="display: flex; justify-content: space-between; font-size: 0.85rem; padding: 4px 0; border-bottom: 1px solid var(--border-subtle);">
-              <span>250g: <strong>{{ fruit.stock.g250 }} uds</strong></span>
-              <span style="color: #10b981; font-weight: 700;">{{ formatCOP(fruit.prices.g250) }}</span>
+
+            <div class="form-field-group">
+              <label class="field-label-text">Ciudad / Municipio</label>
+              <input
+                type="text"
+                class="settings-input"
+                [ngModel]="companyForm().city"
+                (ngModelChange)="updateCompanyField('city', $event)"
+                placeholder="Ej: Cali"
+              />
             </div>
-            <div style="display: flex; justify-content: space-between; font-size: 0.85rem; padding: 4px 0; border-bottom: 1px solid var(--border-subtle);">
-              <span>500g: <strong>{{ fruit.stock.g500 }} uds</strong></span>
-              <span style="color: #10b981; font-weight: 700;">{{ formatCOP(fruit.prices.g500) }}</span>
+
+            <div class="form-field-group">
+              <label class="field-label-text">Departamento / Estado</label>
+              <input
+                type="text"
+                class="settings-input"
+                [ngModel]="companyForm().department"
+                (ngModelChange)="updateCompanyField('department', $event)"
+                placeholder="Ej: Valle del Cauca"
+              />
             </div>
-            <div style="display: flex; justify-content: space-between; font-size: 0.85rem; padding: 4px 0;">
-              <span>1000g (1Kg): <strong>{{ fruit.stock.g1000 }} uds</strong></span>
-              <span style="color: #10b981; font-weight: 700;">{{ formatCOP(fruit.prices.g1000) }}</span>
+
+            <div class="form-field-group">
+              <label class="field-label-text">Teléfono Fijo / PBX</label>
+              <input
+                type="text"
+                class="settings-input"
+                [ngModel]="companyForm().phone"
+                (ngModelChange)="updateCompanyField('phone', $event)"
+                placeholder="Ej: +57 (602) 489 5000"
+              />
+            </div>
+
+            <div class="form-field-group">
+              <label class="field-label-text">WhatsApp Ventas & Pedidos</label>
+              <input
+                type="text"
+                class="settings-input"
+                [ngModel]="companyForm().whatsapp"
+                (ngModelChange)="updateCompanyField('whatsapp', $event)"
+                placeholder="Ej: +57 310 456 7890"
+              />
+            </div>
+
+            <div class="form-field-group">
+              <label class="field-label-text">Correo Electrónico General</label>
+              <input
+                type="email"
+                class="settings-input"
+                [ngModel]="companyForm().email"
+                (ngModelChange)="updateCompanyField('email', $event)"
+                placeholder="Ej: contacto@pulpasdgl.com"
+              />
+            </div>
+
+            <div class="form-field-group">
+              <label class="field-label-text">Correo de Facturación Electrónica</label>
+              <input
+                type="email"
+                class="settings-input"
+                [ngModel]="companyForm().billingEmail"
+                (ngModelChange)="updateCompanyField('billingEmail', $event)"
+                placeholder="Ej: facturacion@pulpasdgl.com"
+              />
+              <span class="field-hint-text">Para recepción de XML/PDF de facturación</span>
             </div>
           </div>
+        </div>
+
+        <!-- 4. Horarios Operativos -->
+        <div class="settings-section-card">
+          <div class="section-card-header">
+            <h3 class="section-card-title">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10"></circle>
+                <polyline points="12 6 12 12 16 14"></polyline>
+              </svg>
+              <span>Horarios de Atención & Despacho</span>
+            </h3>
+            <p class="section-card-desc">Información horaria comunicada a los clientes en tickets y confirmaciones.</p>
+          </div>
+
+          <div class="form-grid-2">
+            <div class="form-field-group">
+              <label class="field-label-text">Horario de Atención en Planta</label>
+              <input
+                type="text"
+                class="settings-input"
+                [ngModel]="companyForm().operatingHours"
+                (ngModelChange)="updateCompanyField('operatingHours', $event)"
+                placeholder="Ej: Lunes a Sábado: 6:00 AM - 5:00 PM"
+              />
+            </div>
+
+            <div class="form-field-group">
+              <label class="field-label-text">Horarios de Rutas de Entrega</label>
+              <input
+                type="text"
+                class="settings-input"
+                [ngModel]="companyForm().dispatchHours"
+                (ngModelChange)="updateCompanyField('dispatchHours', $event)"
+                placeholder="Ej: Rutas de Entrega: 7:00 AM y 2:00 PM"
+              />
+            </div>
+          </div>
+        </div>
+
+        <!-- 5. Parámetros Tributarios & Facturación -->
+        <div class="settings-section-card">
+          <div class="section-card-header">
+            <h3 class="section-card-title">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                <polyline points="14 2 14 8 20 8"></polyline>
+                <line x1="16" y1="13" x2="8" y2="13"></line>
+                <line x1="16" y1="17" x2="8" y2="17"></line>
+              </svg>
+              <span>Parámetros Tributarios & Facturación (DIAN / POS)</span>
+            </h3>
+            <p class="section-card-desc">Resolución y textos legales obligatorios en facturas de venta.</p>
+          </div>
+
+          <div class="form-grid-2">
+            <div class="form-field-group col-span-2">
+              <label class="field-label-text">Régimen Tributario</label>
+              <input
+                type="text"
+                class="settings-input"
+                [ngModel]="companyForm().taxRegime"
+                (ngModelChange)="updateCompanyField('taxRegime', $event)"
+                placeholder="Ej: Responsable de IVA - Régimen Común"
+              />
+            </div>
+
+            <div class="form-field-group col-span-2">
+              <label class="field-label-text">Resolución DIAN de Facturación</label>
+              <input
+                type="text"
+                class="settings-input"
+                [ngModel]="companyForm().dianResolution"
+                (ngModelChange)="updateCompanyField('dianResolution', $event)"
+                placeholder="Ej: Resolución DIAN No. 18764000293 de 2026. Prefijo DGL del 1 al 10000"
+              />
+            </div>
+
+            <div class="form-field-group">
+              <label class="field-label-text">Prefijo de Facturación</label>
+              <input
+                type="text"
+                class="settings-input"
+                [ngModel]="companyForm().invoicePrefix"
+                (ngModelChange)="updateCompanyField('invoicePrefix', $event)"
+                placeholder="Ej: DGL-"
+              />
+            </div>
+
+            <div class="form-field-group">
+              <label class="field-label-text">Próximo Consecutivo</label>
+              <input
+                type="number"
+                class="settings-input"
+                [ngModel]="companyForm().invoiceNextNumber"
+                (ngModelChange)="updateCompanyField('invoiceNextNumber', +$event)"
+                placeholder="1045"
+              />
+            </div>
+
+            <div class="form-field-group col-span-2">
+              <label class="field-label-text">Mensaje al Pie de Factura / Ticket POS</label>
+              <textarea
+                class="settings-textarea"
+                [ngModel]="companyForm().invoiceFooterNote"
+                (ngModelChange)="updateCompanyField('invoiceFooterNote', $event)"
+                placeholder="Ej: ¡Gracias por preferir pulpas 100% naturales! Consérvese congelado a -18°C"
+              ></textarea>
+            </div>
+          </div>
+        </div>
+
+        <!-- Botones de Acción -->
+        <div style="display: flex; gap: 12px; margin-top: 10px; margin-bottom: 30px;">
+          <button
+            type="button"
+            class="btn btn-primary"
+            style="gap: 8px; font-weight: 700; padding: 12px 24px; font-size: 0.95rem;"
+            (click)="saveCompanySettings()"
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <polyline points="20 6 9 17 4 12"></polyline>
+            </svg>
+            <span>Guardar Configuración de Empresa</span>
+          </button>
 
           <button
             type="button"
             class="btn btn-outline"
-            style="width: 100%; justify-content: center; font-size: 0.82rem; gap: 6px;"
-            (click)="openAdjust(fruit)"
+            style="font-weight: 600;"
+            (click)="resetCompanyDefaults()"
           >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
-              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
-            </svg>
-            <span>Ajustar Stock Manual</span>
+            Restaurar Predeterminados
           </button>
         </div>
       </div>
-    }
-  </div>
 
-  <!-- Commercial Promotions Card -->
-  <div class="card">
-    <div class="card-header">
-      <h3 class="card-title">Combos & Promociones Comerciales Activas</h3>
-    </div>
-    <div class="card-body" style="padding: 0;">
-      <div class="table-container">
-        <table>
-          <thead>
-            <tr>
-              <th>Nombre de la Promoción</th>
-              <th>Descripción</th>
-              <th>Descuento</th>
-              <th>Obsequio Comercial</th>
-              <th>Distintivo</th>
-            </tr>
-          </thead>
-          <tbody>
-            @for (promo of promotions(); track promo.id) {
-              <tr>
-                <td style="font-weight: 700;">{{ promo.name }}</td>
-                <td style="font-size: 0.85rem; color: var(--text-muted);">{{ promo.description }}</td>
-                <td>
-                  <span class="badge badge-success">{{ promo.discountPercent }}% OFF</span>
-                </td>
-                <td style="font-weight: 600; color: #f59e0b;">{{ promo.freeItemName }}</td>
-                <td>
-                  <span class="badge badge-purple">{{ promo.badge }}</span>
-                </td>
-              </tr>
-            }
-          </tbody>
-        </table>
+      <!-- Right Column: Real-time Live Ticket Preview -->
+      <div class="ticket-preview-wrapper">
+        <div class="ticket-live-card">
+          <div class="ticket-preview-header-bar">
+            <span>Vista Previa del Ticket POS (80mm)</span>
+            <span style="font-size: 0.7rem; background: rgba(255,255,255,0.2); padding: 2px 6px; border-radius: 4px;">En Vivo</span>
+          </div>
+
+          <div class="ticket-live-body">
+            <div class="receipt-center">
+              @if (companyForm().logoUrl) {
+                <img [src]="companyForm().logoUrl" alt="Logo Ticket" style="max-height: 44px; max-width: 130px; margin-bottom: 6px; object-fit: contain;" />
+              }
+              <div class="receipt-title">{{ companyForm().legalName || companyForm().companyName }}</div>
+              <div class="receipt-nit">NIT: {{ companyForm().nit }}</div>
+              <div class="receipt-sub">{{ companyForm().tagline }}</div>
+              <div class="receipt-sub">{{ companyForm().address }}</div>
+              <div class="receipt-sub">{{ companyForm().city }}, {{ companyForm().department }} - {{ companyForm().country }}</div>
+              <div class="receipt-sub">Tel: {{ companyForm().phone }} • WA: {{ companyForm().whatsapp }}</div>
+              <div class="receipt-sub" style="color: #444;">{{ companyForm().taxRegime }}</div>
+              <div class="receipt-sub" style="font-size: 0.65rem; color: #555; margin-top: 2px;">{{ companyForm().dianResolution }}</div>
+
+              <div class="receipt-dashed-line"></div>
+              <div class="receipt-order-num">FACTURA DE VENTA: {{ companyForm().invoicePrefix }}{{ companyForm().invoiceNextNumber }}</div>
+              <div style="font-size: 0.7rem; color: #444;">Fecha: 13/10/2026 10:30 AM</div>
+            </div>
+
+            <div class="receipt-meta-box">
+              <div><strong>CLIENTE:</strong> Restaurante El Portal</div>
+              <div><strong>DIRECCIÓN:</strong> Calle 93A # 13-25, Bogotá Norte</div>
+              <div><strong>TELÉFONO:</strong> +57 310 456 7890</div>
+              <div><strong>PAGO:</strong> Contra Entrega Efectivo</div>
+            </div>
+
+            <table class="receipt-items-table">
+              <thead>
+                <tr>
+                  <th>DESCRIPCIÓN</th>
+                  <th style="text-align: center;">CANT</th>
+                  <th style="text-align: right;">TOTAL</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>Maracuyá (1000g)</td>
+                  <td style="text-align: center;">5</td>
+                  <td style="text-align: right;">$ 55.000</td>
+                </tr>
+                <tr>
+                  <td>Limonada Coco (140g)</td>
+                  <td style="text-align: center;">2</td>
+                  <td style="text-align: right;">$ 14.000</td>
+                </tr>
+              </tbody>
+            </table>
+
+            <div class="receipt-dashed-line"></div>
+
+            <div class="receipt-total-row">
+              <span>TOTAL A PAGAR:</span>
+              <span>$ 69.000</span>
+            </div>
+
+            <div class="receipt-dashed-line"></div>
+
+            <div class="receipt-footer-box">
+              <div>{{ companyForm().invoiceFooterNote }}</div>
+              <div style="margin-top: 4px; font-size: 0.66rem; color: #666;">Horario: {{ companyForm().operatingHours }}</div>
+              <div style="font-size: 0.64rem; color: #666;">Facturación: {{ companyForm().billingEmail }}</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="ticket-info-callout">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink: 0; margin-top: 1px;">
+            <circle cx="12" cy="12" r="10"></circle>
+            <line x1="12" y1="16" x2="12" y2="12"></line>
+            <line x1="12" y1="8" x2="12.01" y2="8"></line>
+          </svg>
+          <div>
+            <strong>Sincronización Automática:</strong> Esta información se refleja inmediatamente en el módulo de <strong>Pedidos (Ticket Térmico POS 80mm)</strong> y en las confirmaciones enviadas a clientes.
+          </div>
+        </div>
       </div>
     </div>
-  </div>
+  }
+
+  <!-- ========================================== -->
+  <!-- TAB 2: USUARIOS DEL SISTEMA                -->
+  <!-- ========================================== -->
+  @else if (activeTab() === 'users') {
+    <app-admin-users></app-admin-users>
+  }
+
+  <!-- ========================================== -->
+  <!-- TAB 3: ROLES Y PERMISOS RBAC               -->
+  <!-- ========================================== -->
+  @else if (activeTab() === 'roles') {
+    <app-admin-roles></app-admin-roles>
+  }
+
+  <!-- ========================================== -->
+  <!-- TAB 4: INVENTARIO EN CAVA                  -->
+  <!-- ========================================== -->
+  @else if (activeTab() === 'inventory') {
+
+    <!-- Sub-header & Subtabs for Inventory -->
+    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 14px; margin-bottom: 14px;">
+      <!-- Subtabs -->
+      <div style="display: flex; gap: 8px;">
+        <button
+          type="button"
+          class="btn"
+          [ngClass]="inventorySubTab() === 'variants' ? 'btn-primary' : 'btn-outline'"
+          (click)="inventorySubTab.set('variants')"
+          style="gap: 8px; font-size: 0.85rem;"
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect>
+            <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path>
+          </svg>
+          <span>Presentaciones Comerciales ({{ stateService.productVariants().length }})</span>
+        </button>
+
+        <button
+          type="button"
+          class="btn"
+          [ngClass]="inventorySubTab() === 'fruits' ? 'btn-primary' : 'btn-outline'"
+          (click)="inventorySubTab.set('fruits')"
+          style="gap: 8px; font-size: 0.85rem;"
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"></circle>
+            <path d="M8 12a4 4 0 0 1 8 0"></path>
+          </svg>
+          <span>Catálogo & Costos Fruta ({{ stateService.fruits().length }})</span>
+        </button>
+      </div>
+
+      <!-- Inventory Actions -->
+      <div class="settings-header-actions">
+        <button
+          type="button"
+          id="btn-open-inventory-settings"
+          class="btn btn-outline"
+          (click)="showSettingsModal.set(true)"
+          style="gap: 8px; font-weight: 600; border-color: var(--primary);"
+          title="Personalizar columnas, categorías y opciones de visualización"
+        >
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="3"></circle>
+            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+          </svg>
+          <span>Ajustes</span>
+        </button>
+
+        <button
+          type="button"
+          id="btn-add-product-variant"
+          class="btn btn-primary"
+          (click)="openNewVariantModal()"
+          style="gap: 8px; font-weight: 600;"
+        >
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="12" y1="5" x2="12" y2="19"></line>
+            <line x1="5" y1="12" x2="19" y2="12"></line>
+          </svg>
+          <span>Nueva Presentación</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- PRESENTACIONES COMERCIALES (INVENTARIO) -->
+    @if (inventorySubTab() === 'variants') {
+
+    <!-- Filter & Toolbar Panel -->
+    <div class="toolbar-container">
+      <!-- Search & Quick Stats -->
+      <div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
+        <div class="search-input-wrapper">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="11" cy="11" r="8"></circle>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+          </svg>
+          <input
+            type="text"
+            class="form-control"
+            placeholder="Buscar por producto, SKU, categoría o fruta..."
+            [ngModel]="searchQuery()"
+            (ngModelChange)="searchQuery.set($event); currentPage.set(1)"
+          />
+        </div>
+
+        <div style="display: flex; align-items: center; gap: 10px; margin-left: auto;">
+          <span style="font-size: 0.82rem; color: var(--text-dim);">Líneas por página:</span>
+          <select
+            class="form-control"
+            style="width: auto; padding: 4px 10px; font-size: 0.82rem;"
+            [ngModel]="pageSize()"
+            (ngModelChange)="setPageSize($event)"
+          >
+            <option [ngValue]="10">10 líneas</option>
+            <option [ngValue]="20">20 líneas</option>
+            <option [ngValue]="50">50 líneas</option>
+            <option value="all">Todas las líneas</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Dynamic Line / Category Filters -->
+      <div class="chips-row">
+        <span class="chip-label">Línea:</span>
+        <button
+          type="button"
+          class="chip-btn"
+          [class.active]="categoryFilter() === 'ALL'"
+          (click)="categoryFilter.set('ALL'); currentPage.set(1)"
+        >
+          <span>Todas</span>
+          <span class="chip-counter">{{ categoryCounts()['ALL'] || 0 }}</span>
+        </button>
+
+        @for (cat of activeCategories(); track cat.id) {
+          <button
+            type="button"
+            class="chip-btn"
+            [class.active]="categoryFilter() === cat.id"
+            (click)="categoryFilter.set(cat.id); currentPage.set(1)"
+          >
+            <span>{{ cat.icon }} {{ cat.name }}</span>
+            <span class="chip-counter">{{ categoryCounts()[cat.id] || 0 }}</span>
+          </button>
+        }
+      </div>
+
+      <!-- Dynamic Grammage Filters -->
+      <div class="chips-row">
+        <span class="chip-label">Gramaje:</span>
+        <button
+          type="button"
+          class="chip-btn"
+          [class.active]="grammageFilter() === 'ALL'"
+          (click)="grammageFilter.set('ALL'); currentPage.set(1)"
+        >
+          <span>Todos los Gramajes</span>
+        </button>
+
+        @for (g of activeGrammages(); track g.key) {
+          <button
+            type="button"
+            class="chip-btn"
+            [class.active]="grammageFilter() === g.value"
+            (click)="grammageFilter.set(g.value); currentPage.set(1)"
+          >
+            <span>{{ g.label }}</span>
+          </button>
+        }
+      </div>
+    </div>
+
+    <!-- Product Variants Table Card -->
+    <div class="card">
+      <div class="card-header" style="justify-content: space-between; flex-wrap: wrap; gap: 12px;">
+        <div>
+          <h3 class="card-title">Inventario de Presentaciones en Tiempo Real</h3>
+          <p class="card-subtitle">Control de stock de producto terminado por gramaje con alerta automática de existencias</p>
+        </div>
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <span class="badge badge-info">{{ filteredVariants().length }} presentaciones encontradas</span>
+          <button
+            type="button"
+            class="btn btn-outline"
+            style="padding: 4px 8px; font-size: 0.75rem; gap: 4px;"
+            (click)="showSettingsModal.set(true)"
+            title="Ajustar columnas visibles"
+          >
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M12 20h9"></path>
+              <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
+            </svg>
+            <span>Configurar Columnas</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="card-body" style="padding: 0;">
+        <div class="table-container">
+          <table>
+            <thead>
+              <tr>
+                @if (isColumnVisible('product')) {
+                  <th class="sortable-th" (click)="setSort('name')">
+                    <span class="th-inner">
+                      Producto & SKU
+                      @if (sortField() === 'name') {
+                        <span class="sort-indicator">{{ sortDirection() === 'asc' ? '▲' : '▼' }}</span>
+                      }
+                    </span>
+                  </th>
+                }
+
+                @if (isColumnVisible('category')) {
+                  <th class="sortable-th" (click)="setSort('category')">
+                    <span class="th-inner">
+                      Línea
+                      @if (sortField() === 'category') {
+                        <span class="sort-indicator">{{ sortDirection() === 'asc' ? '▲' : '▼' }}</span>
+                      }
+                    </span>
+                  </th>
+                }
+
+                @if (isColumnVisible('grammage')) {
+                  <th class="sortable-th" style="text-align: center;" (click)="setSort('grammage')">
+                    <span class="th-inner" style="justify-content: center;">
+                      Presentación
+                      @if (sortField() === 'grammage') {
+                        <span class="sort-indicator">{{ sortDirection() === 'asc' ? '▲' : '▼' }}</span>
+                      }
+                    </span>
+                  </th>
+                }
+
+                @if (isColumnVisible('unitCost')) {
+                  <th style="text-align: right;">Costo Producción</th>
+                }
+
+                @if (isColumnVisible('basePrice')) {
+                  <th class="sortable-th" style="text-align: right;" (click)="setSort('basePrice')">
+                    <span class="th-inner" style="justify-content: flex-end;">
+                      Precio Venta
+                      @if (sortField() === 'basePrice') {
+                        <span class="sort-indicator">{{ sortDirection() === 'asc' ? '▲' : '▼' }}</span>
+                      }
+                    </span>
+                  </th>
+                }
+
+                @if (isColumnVisible('margin')) {
+                  <th class="sortable-th" style="text-align: right;" (click)="setSort('margin')">
+                    <span class="th-inner" style="justify-content: flex-end;">
+                      Margen Unitario
+                      @if (sortField() === 'margin') {
+                        <span class="sort-indicator">{{ sortDirection() === 'asc' ? '▲' : '▼' }}</span>
+                      }
+                    </span>
+                  </th>
+                }
+
+                @if (isColumnVisible('currentStock')) {
+                  <th class="sortable-th" style="text-align: center;" (click)="setSort('currentStock')">
+                    <span class="th-inner" style="justify-content: center;">
+                      Stock en Cava
+                      @if (sortField() === 'currentStock') {
+                        <span class="sort-indicator">{{ sortDirection() === 'asc' ? '▲' : '▼' }}</span>
+                      }
+                    </span>
+                  </th>
+                }
+
+                @if (isColumnVisible('status')) {
+                  <th style="text-align: center;">Estado</th>
+                }
+
+                @if (isColumnVisible('quickAdjust')) {
+                  <th style="text-align: center;">Ajuste Rápido</th>
+                }
+
+                @if (isColumnVisible('actions')) {
+                  <th style="text-align: center;">Acciones</th>
+                }
+              </tr>
+            </thead>
+            <tbody>
+              @for (v of paginatedVariants(); track v.variantId) {
+                <tr>
+                  @if (isColumnVisible('product')) {
+                    <td>
+                      <div style="font-weight: 700; color: var(--text-main);">{{ v.name }}</div>
+                      <div style="font-size: 0.72rem; color: var(--text-dim); font-family: monospace;">{{ v.sku }}</div>
+                    </td>
+                  }
+
+                  @if (isColumnVisible('category')) {
+                    <td>
+                      <span class="badge" [ngClass]="v.category === 'PULPAS' ? 'badge-warning' : (v.category === 'LIMONADAS' ? 'badge-info' : (v.category === 'BATIDOS' ? 'badge-emerald' : 'badge-purple'))">
+                        {{ v.category }}
+                      </span>
+                    </td>
+                  }
+
+                  @if (isColumnVisible('grammage')) {
+                    <td style="text-align: center; font-weight: 700;">
+                      <span class="badge badge-purple">{{ v.grammage }}g</span>
+                    </td>
+                  }
+
+                  @if (isColumnVisible('unitCost')) {
+                    <td style="text-align: right; color: var(--text-muted);">
+                      {{ formatCOP(v.unitCost) }}
+                    </td>
+                  }
+
+                  @if (isColumnVisible('basePrice')) {
+                    <td style="text-align: right; font-weight: 700; color: var(--text-main);">
+                      {{ formatCOP(v.basePrice) }}
+                    </td>
+                  }
+
+                  @if (isColumnVisible('margin')) {
+                    <td style="text-align: right; font-weight: 700; color: #10b981;">
+                      {{ formatCOP(v.basePrice - v.unitCost) }}
+                      <span style="font-size: 0.72rem; color: var(--text-dim); display: block;">
+                        ({{ Math.round(((v.basePrice - v.unitCost) / (v.basePrice || 1)) * 100) }}%)
+                      </span>
+                    </td>
+                  }
+
+                  @if (isColumnVisible('currentStock')) {
+                    <td style="text-align: center;">
+                      <span
+                        style="font-size: 1.05rem; font-weight: 800;"
+                        [style.color]="v.currentStock <= v.minStockAlert ? '#ef4444' : '#10b981'"
+                      >
+                        {{ v.currentStock }} uds
+                      </span>
+                    </td>
+                  }
+
+                  @if (isColumnVisible('status')) {
+                    <td style="text-align: center;">
+                      @if (v.currentStock <= v.minStockAlert) {
+                        <span class="badge badge-danger" style="font-size: 0.7rem; padding: 2px 6px;">¡Stock Bajo!</span>
+                      } @else {
+                        <span class="badge badge-success" style="font-size: 0.7rem; padding: 2px 6px;">Óptimo</span>
+                      }
+                    </td>
+                  }
+
+                  @if (isColumnVisible('quickAdjust')) {
+                    <td style="text-align: center;">
+                      <div style="display: flex; gap: 4px; justify-content: center;">
+                        <button
+                          type="button"
+                          class="btn btn-outline"
+                          style="padding: 2px 8px; font-size: 0.75rem;"
+                          title="Restar 10 unidades"
+                          (click)="adjustVariant(v.variantId, -10)"
+                        >
+                          -10
+                        </button>
+                        <button
+                          type="button"
+                          class="btn btn-outline"
+                          style="padding: 2px 8px; font-size: 0.75rem;"
+                          title="Sumar 10 unidades"
+                          (click)="adjustVariant(v.variantId, 10)"
+                        >
+                          +10
+                        </button>
+                        <button
+                          type="button"
+                          class="btn btn-outline"
+                          style="padding: 2px 8px; font-size: 0.75rem;"
+                          title="Sumar 50 unidades (Lote)"
+                          (click)="adjustVariant(v.variantId, 50)"
+                        >
+                          +50
+                        </button>
+                      </div>
+                    </td>
+                  }
+
+                  @if (isColumnVisible('actions')) {
+                    <td style="text-align: center;">
+                      <div style="display: flex; gap: 6px; justify-content: center;">
+                        <button
+                          type="button"
+                          class="btn btn-outline"
+                          style="padding: 3px 6px; font-size: 0.75rem;"
+                          title="Editar presentación"
+                          (click)="openEditVariantModal(v)"
+                        >
+                          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                          </svg>
+                        </button>
+                        <button
+                          type="button"
+                          class="btn btn-outline"
+                          style="padding: 3px 6px; font-size: 0.75rem; color: #ef4444; border-color: rgba(239,68,68,0.3);"
+                          title="Eliminar presentación"
+                          (click)="deleteVariant(v.variantId, v.name)"
+                        >
+                          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="3 6 5 6 21 6"></polyline>
+                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                          </svg>
+                        </button>
+                      </div>
+                    </td>
+                  }
+                </tr>
+              } @empty {
+                <tr>
+                  <td colspan="10" style="text-align: center; padding: 40px 20px;">
+                    <div style="font-size: 2rem; margin-bottom: 8px;">📦</div>
+                    <div style="font-weight: 700; color: var(--text-main);">No se encontraron presentaciones</div>
+                    <p style="color: var(--text-muted); font-size: 0.85rem; margin-top: 4px;">
+                      Intenta cambiar los filtros de línea, gramaje o el término de búsqueda.
+                    </p>
+                    <button
+                      type="button"
+                      class="btn btn-primary"
+                      style="margin-top: 12px; font-size: 0.82rem;"
+                      (click)="categoryFilter.set('ALL'); grammageFilter.set('ALL'); searchQuery.set('')"
+                    >
+                      Restablecer Filtros
+                    </button>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Pagination Bar -->
+        <div class="pagination-bar">
+          <div style="color: var(--text-muted);">
+            Mostrando <strong>{{ paginationInfo().start }}</strong> a <strong>{{ paginationInfo().end }}</strong> de <strong>{{ paginationInfo().total }}</strong> líneas de inventario
+          </div>
+
+          <div class="pagination-controls">
+            <button
+              type="button"
+              class="page-btn"
+              [disabled]="currentPage() <= 1"
+              (click)="setPage(currentPage() - 1)"
+              title="Página anterior"
+            >
+              &larr;
+            </button>
+
+            @for (p of [].constructor(totalPages()); track $index) {
+              @if ($index + 1 === currentPage() || ($index + 1 <= 5) || ($index + 1 === totalPages())) {
+                <button
+                  type="button"
+                  class="page-btn"
+                  [class.active]="currentPage() === ($index + 1)"
+                  (click)="setPage($index + 1)"
+                >
+                  {{ $index + 1 }}
+                </button>
+              }
+            }
+
+            <button
+              type="button"
+              class="page-btn"
+              [disabled]="currentPage() >= totalPages()"
+              (click)="setPage(currentPage() + 1)"
+              title="Página siguiente"
+            >
+              &rarr;
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  } @else if (inventorySubTab() === 'fruits') {
+
+    <!-- Fruits Catalog Grid -->
+    <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 20px;">
+      @for (fruit of stateService.fruits(); track fruit.id) {
+        <div class="card hover-lift" [style.borderTop]="'4px solid ' + fruit.color">
+          <div class="card-header" style="justify-content: space-between;">
+            <div style="display: flex; align-items: center; gap: 10px;">
+              <span style="font-size: 1.8rem;">{{ fruit.emoji }}</span>
+              <div>
+                <h3 style="font-size: 1.15rem; font-weight: 800; margin: 0;">{{ fruit.name }}</h3>
+                <div style="font-size: 0.75rem; color: var(--text-dim); font-style: italic;">{{ fruit.scientificName }}</div>
+              </div>
+            </div>
+            <span class="badge badge-info">{{ fruit.category }}</span>
+          </div>
+
+          <div class="card-body">
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 10px; border-radius: var(--radius-sm); background: rgba(255, 255, 255, 0.03); margin-bottom: 14px; font-size: 0.8rem;">
+              <div>Rendimiento Base: <strong>{{ (fruit.yieldRate * 100).toFixed(0) }}%</strong></div>
+              <div>Fruta en Cava: <strong style="color: #38bdf8;">{{ fruit.freshStockKg }} Kg</strong></div>
+            </div>
+
+            <!-- Prices & Stock Table -->
+            <div style="font-size: 0.75rem; font-weight: 700; color: var(--text-dim); text-transform: uppercase; margin-bottom: 8px;">
+              Precios y Stock en Cava:
+            </div>
+
+            <div style="display: flex; flex-direction: column; gap: 6px; margin-bottom: 16px;">
+              <div style="display: flex; justify-content: space-between; font-size: 0.85rem; padding: 4px 0; border-bottom: 1px solid var(--border-subtle);">
+                <span>140g: <strong>{{ fruit.stock.g140 }} uds</strong></span>
+                <span style="color: #10b981; font-weight: 700;">{{ formatCOP(fruit.prices.g140) }}</span>
+              </div>
+              <div style="display: flex; justify-content: space-between; font-size: 0.85rem; padding: 4px 0; border-bottom: 1px solid var(--border-subtle);">
+                <span>250g: <strong>{{ fruit.stock.g250 }} uds</strong></span>
+                <span style="color: #10b981; font-weight: 700;">{{ formatCOP(fruit.prices.g250) }}</span>
+              </div>
+              <div style="display: flex; justify-content: space-between; font-size: 0.85rem; padding: 4px 0; border-bottom: 1px solid var(--border-subtle);">
+                <span>500g: <strong>{{ fruit.stock.g500 }} uds</strong></span>
+                <span style="color: #10b981; font-weight: 700;">{{ formatCOP(fruit.prices.g500) }}</span>
+              </div>
+              <div style="display: flex; justify-content: space-between; font-size: 0.85rem; padding: 4px 0;">
+                <span>1000g (1Kg): <strong>{{ fruit.stock.g1000 }} uds</strong></span>
+                <span style="color: #10b981; font-weight: 700;">{{ formatCOP(fruit.prices.g1000) }}</span>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              class="btn btn-outline"
+              style="width: 100%; justify-content: center; font-size: 0.82rem; gap: 6px;"
+              (click)="openAdjust(fruit)"
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+              </svg>
+              <span>Ajustar Stock Manual</span>
+            </button>
+          </div>
+        </div>
+      }
+    </div>
+
+    <!-- Commercial Promotions Card -->
+    <div class="card">
+      <div class="card-header">
+        <h3 class="card-title">Combos & Promociones Comerciales Activas</h3>
+      </div>
+      <div class="card-body" style="padding: 0;">
+        <div class="table-container">
+          <table>
+            <thead>
+              <tr>
+                <th>Nombre de la Promoción</th>
+                <th>Descripción</th>
+                <th>Descuento</th>
+                <th>Obsequio Comercial</th>
+                <th>Distintivo</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (promo of promotions(); track promo.id) {
+                <tr>
+                  <td style="font-weight: 700;">{{ promo.name }}</td>
+                  <td style="font-size: 0.85rem; color: var(--text-muted);">{{ promo.description }}</td>
+                  <td>
+                    <span class="badge badge-success">{{ promo.discountPercent }}% OFF</span>
+                  </td>
+                  <td style="font-weight: 600; color: #f59e0b;">{{ promo.freeItemName }}</td>
+                  <td>
+                    <span class="badge badge-purple">{{ promo.badge }}</span>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+  }
+}
 
 </div>
 
-<!-- ADJUST STOCK MODAL -->
+<!-- ========================================== -->
+<!-- 1. MODAL DE AJUSTES Y PARAMETRIZACIÓN      -->
+<!-- ========================================== -->
+@if (showSettingsModal()) {
+  <div class="modal-overlay" (click)="showSettingsModal.set(false)">
+    <div class="modal-content modal-lg" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <div style="font-size: 1.5rem;">⚙️</div>
+          <div>
+            <h3 class="modal-title" style="margin: 0;">Ajustes de Inventario & Parametrización</h3>
+            <p style="margin: 0; font-size: 0.78rem; color: var(--text-dim);">Configura columnas visibles, líneas de producto, gramajes y opciones de visualización</p>
+          </div>
+        </div>
+        <button class="modal-close" (click)="showSettingsModal.set(false)">&times;</button>
+      </div>
+
+      <!-- Settings Navigation Tabs -->
+      <div class="settings-nav-tabs">
+        <button
+          type="button"
+          class="settings-tab-btn"
+          [class.active]="settingsTab() === 'categories'"
+          (click)="settingsTab.set('categories')"
+        >
+          <span>📂 Líneas & Categorías</span>
+          <span class="badge badge-info" style="font-size: 0.7rem;">{{ categoriesConfig().length }}</span>
+        </button>
+
+        <button
+          type="button"
+          class="settings-tab-btn"
+          [class.active]="settingsTab() === 'grammages'"
+          (click)="settingsTab.set('grammages')"
+        >
+          <span>⚖️ Gramajes (Gramos)</span>
+          <span class="badge badge-purple" style="font-size: 0.7rem;">{{ grammagesConfig().length }}</span>
+        </button>
+
+        <button
+          type="button"
+          class="settings-tab-btn"
+          [class.active]="settingsTab() === 'columns'"
+          (click)="settingsTab.set('columns')"
+        >
+          <span>📊 Columnas Visibles</span>
+          <span class="badge badge-success" style="font-size: 0.7rem;">{{ columnsConfig().length }}</span>
+        </button>
+
+        <button
+          type="button"
+          class="settings-tab-btn"
+          [class.active]="settingsTab() === 'views'"
+          (click)="settingsTab.set('views')"
+        >
+          <span>📄 Opciones de Vista & Líneas</span>
+        </button>
+      </div>
+
+      <div class="modal-body" style="max-height: 65vh; overflow-y: auto;">
+
+        <!-- TAB 1: LÍNEAS / CATEGORÍAS PARAMETRIZABLES -->
+        @if (settingsTab() === 'categories') {
+          <div>
+            <div style="margin-bottom: 16px;">
+              <h4 style="font-size: 1rem; font-weight: 700; margin-bottom: 4px;">Gestión de Líneas y Categorías</h4>
+              <p style="font-size: 0.82rem; color: var(--text-muted); margin: 0;">
+                Personaliza las categorías de productos. Puedes agregar nuevas líneas de negocio (por ejemplo limonadas, batidos u otras familias) para que aparezcan en los filtros y fichas de producto.
+              </p>
+            </div>
+
+            <!-- List of categories -->
+            <div class="param-list-grid">
+              @for (cat of categoriesConfig(); track cat.id) {
+                <div class="param-card" [class.inactive]="!cat.isActive">
+                  <div class="param-info">
+                    <span class="param-icon-badge">{{ cat.icon }}</span>
+                    <div>
+                      <div style="font-weight: 700; font-size: 0.9rem; color: var(--text-main);">{{ cat.name }}</div>
+                      <div style="font-size: 0.74rem; color: var(--text-dim); font-family: monospace;">{{ cat.id }}</div>
+                    </div>
+                  </div>
+
+                  <div style="display: flex; align-items: center; gap: 8px;">
+                    <label class="custom-switch" title="Activar / Desactivar">
+                      <input
+                        type="checkbox"
+                        [checked]="cat.isActive"
+                        (change)="toggleCategory(cat.id)"
+                      />
+                      <span class="slider"></span>
+                    </label>
+
+                    @if (cat.isCustom) {
+                      <button
+                        type="button"
+                        class="btn-icon"
+                        style="width: 28px; height: 28px; color: #ef4444;"
+                        (click)="deleteCustomCategory(cat.id)"
+                        title="Eliminar categoría personalizada"
+                      >
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                          <line x1="18" y1="6" x2="6" y2="18"></line>
+                          <line x1="6" y1="6" x2="18" y2="18"></line>
+                        </svg>
+                      </button>
+                    }
+                  </div>
+                </div>
+              }
+            </div>
+
+            <!-- Add new Category Box -->
+            <div class="add-param-box">
+              <h5 style="font-size: 0.9rem; font-weight: 700; margin-bottom: 10px; display: flex; align-items: center; gap: 6px;">
+                <span>+ Agregar Nueva Categoría / Línea</span>
+              </h5>
+
+              <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px; margin-bottom: 12px;">
+                <div class="form-group" style="margin: 0;">
+                  <label class="form-label" style="font-size: 0.78rem;">Nombre de la Línea *</label>
+                  <input
+                    type="text"
+                    class="form-control"
+                    placeholder="Ej. Jugos Naturales, Infusiones"
+                    [ngModel]="newCategoryName()"
+                    (ngModelChange)="newCategoryName.set($event)"
+                  />
+                </div>
+
+                <div class="form-group" style="margin: 0;">
+                  <label class="form-label" style="font-size: 0.78rem;">Código / Identificador</label>
+                  <input
+                    type="text"
+                    class="form-control"
+                    placeholder="Ej. JUGOS, INFUSIONES"
+                    [ngModel]="newCategoryCode()"
+                    (ngModelChange)="newCategoryCode.set($event)"
+                  />
+                </div>
+
+                <div class="form-group" style="margin: 0;">
+                  <label class="form-label" style="font-size: 0.78rem;">Emoji o Ícono</label>
+                  <input
+                    type="text"
+                    class="form-control"
+                    placeholder="🍹"
+                    [ngModel]="newCategoryIcon()"
+                    (ngModelChange)="newCategoryIcon.set($event)"
+                  />
+                </div>
+
+                <div class="form-group" style="margin: 0;">
+                  <label class="form-label" style="font-size: 0.78rem;">Distintivo de Color</label>
+                  <select
+                    class="form-control"
+                    [ngModel]="newCategoryBadge()"
+                    (ngModelChange)="newCategoryBadge.set($event)"
+                  >
+                    <option value="badge-info">Azul Cian (Info)</option>
+                    <option value="badge-emerald">Verde Esmeralda (Éxito)</option>
+                    <option value="badge-warning">Ámbar (Advertencia)</option>
+                    <option value="badge-purple">Púrpura (Especial)</option>
+                  </select>
+                </div>
+              </div>
+
+              <div style="display: flex; justify-content: flex-end;">
+                <button
+                  type="button"
+                  class="btn btn-primary"
+                  style="font-size: 0.82rem; gap: 6px;"
+                  (click)="addCustomCategory()"
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="12" y1="5" x2="12" y2="19"></line>
+                    <line x1="5" y1="12" x2="19" y2="12"></line>
+                  </svg>
+                  <span>Guardar Nueva Categoría</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        }
+
+        <!-- TAB 2: GRAMAJES PARAMETRIZABLES -->
+        @if (settingsTab() === 'grammages') {
+          <div>
+            <div style="margin-bottom: 16px;">
+              <h4 style="font-size: 1rem; font-weight: 700; margin-bottom: 4px;">Gramajes y Presentaciones Disponibles</h4>
+              <p style="font-size: 0.82rem; color: var(--text-muted); margin: 0;">
+                Configura los gramajes que se muestran en los filtros rápidos y fichas comerciales. Puedes activar, desactivar o añadir nuevos gramajes (ej: 300g, 400g, 2000g).
+              </p>
+            </div>
+
+            <!-- List of grammages -->
+            <div class="param-list-grid">
+              @for (g of grammagesConfig(); track g.key) {
+                <div class="param-card" [class.inactive]="!g.isActive">
+                  <div class="param-info">
+                    <span class="param-icon-badge" style="font-size: 1rem; font-weight: 800; color: #a855f7;">⚖️</span>
+                    <div>
+                      <div style="font-weight: 700; font-size: 0.95rem; color: var(--text-main);">{{ g.label }}</div>
+                      <div style="font-size: 0.74rem; color: var(--text-dim);">{{ g.value }} gramos netos</div>
+                    </div>
+                  </div>
+
+                  <div style="display: flex; align-items: center; gap: 8px;">
+                    <label class="custom-switch" title="Activar / Desactivar">
+                      <input
+                        type="checkbox"
+                        [checked]="g.isActive"
+                        (change)="toggleGrammage(g.key)"
+                      />
+                      <span class="slider"></span>
+                    </label>
+
+                    @if (g.isCustom) {
+                      <button
+                        type="button"
+                        class="btn-icon"
+                        style="width: 28px; height: 28px; color: #ef4444;"
+                        (click)="deleteCustomGrammage(g.key)"
+                        title="Eliminar gramaje personalizado"
+                      >
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                          <line x1="18" y1="6" x2="6" y2="18"></line>
+                          <line x1="6" y1="6" x2="18" y2="18"></line>
+                        </svg>
+                      </button>
+                    }
+                  </div>
+                </div>
+              }
+            </div>
+
+            <!-- Add new Grammage Box -->
+            <div class="add-param-box">
+              <h5 style="font-size: 0.9rem; font-weight: 700; margin-bottom: 10px;">+ Agregar Nuevo Gramaje</h5>
+
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px;">
+                <div class="form-group" style="margin: 0;">
+                  <label class="form-label" style="font-size: 0.78rem;">Gramos (Número) *</label>
+                  <input
+                    type="number"
+                    min="1"
+                    class="form-control"
+                    placeholder="300"
+                    [ngModel]="newGrammageValue()"
+                    (ngModelChange)="newGrammageValue.set($event); newGrammageLabel.set($event + 'g')"
+                  />
+                </div>
+
+                <div class="form-group" style="margin: 0;">
+                  <label class="form-label" style="font-size: 0.78rem;">Etiqueta Visible</label>
+                  <input
+                    type="text"
+                    class="form-control"
+                    placeholder="300g"
+                    [ngModel]="newGrammageLabel()"
+                    (ngModelChange)="newGrammageLabel.set($event)"
+                  />
+                </div>
+              </div>
+
+              <div style="display: flex; justify-content: flex-end;">
+                <button
+                  type="button"
+                  class="btn btn-primary"
+                  style="font-size: 0.82rem; gap: 6px;"
+                  (click)="addCustomGrammage()"
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="12" y1="5" x2="12" y2="19"></line>
+                    <line x1="5" y1="12" x2="19" y2="12"></line>
+                  </svg>
+                  <span>Registrar Gramaje</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        }
+
+        <!-- TAB 3: COLUMNAS VISIBLES DE LA TABLA -->
+        @if (settingsTab() === 'columns') {
+          <div>
+            <div style="margin-bottom: 16px;">
+              <h4 style="font-size: 1rem; font-weight: 700; margin-bottom: 4px;">Columnas Parametrizables de la Tabla</h4>
+              <p style="font-size: 0.82rem; color: var(--text-muted); margin: 0;">
+                Marca o desmarca las columnas que deseas visualizar en la tabla de inventario para adaptar la información a tus necesidades operativas.
+              </p>
+            </div>
+
+            <div style="display: flex; flex-direction: column; gap: 10px;">
+              @for (col of columnsConfig(); track col.key) {
+                <div class="switch-card">
+                  <div class="switch-label-group">
+                    <div class="switch-title">
+                      <span>{{ col.label }}</span>
+                      @if (col.locked) {
+                        <span class="badge badge-warning" style="font-size: 0.65rem; padding: 1px 5px;">Requerida</span>
+                      }
+                    </div>
+                    <div class="switch-desc">{{ col.description }}</div>
+                  </div>
+
+                  <label class="custom-switch">
+                    <input
+                      type="checkbox"
+                      [checked]="col.visible"
+                      [disabled]="col.locked"
+                      (change)="toggleColumn(col.key)"
+                    />
+                    <span class="slider"></span>
+                  </label>
+                </div>
+              }
+            </div>
+          </div>
+        }
+
+        <!-- TAB 4: OPCIONES DE VISTA Y LÍNEAS -->
+        @if (settingsTab() === 'views') {
+          <div>
+            <div style="margin-bottom: 16px;">
+              <h4 style="font-size: 1rem; font-weight: 700; margin-bottom: 4px;">Opciones de Vista & Visualización de Líneas</h4>
+              <p style="font-size: 0.82rem; color: var(--text-muted); margin: 0;">
+                Ajusta cuántas líneas/filas de productos se muestran por página y gestiona los valores predeterminados.
+              </p>
+            </div>
+
+            <div style="display: flex; flex-direction: column; gap: 14px;">
+              <div class="switch-card">
+                <div class="switch-label-group">
+                  <div class="switch-title">Cantidad de Líneas por Página</div>
+                  <div class="switch-desc">Define el número máximo de presentaciones a listar por bloque</div>
+                </div>
+
+                <select
+                  class="form-control"
+                  style="width: 160px;"
+                  [ngModel]="pageSize()"
+                  (ngModelChange)="setPageSize($event)"
+                >
+                  <option [ngValue]="10">10 líneas</option>
+                  <option [ngValue]="20">20 líneas</option>
+                  <option [ngValue]="50">50 líneas</option>
+                  <option value="all">Todas las líneas</option>
+                </select>
+              </div>
+
+              <div class="switch-card">
+                <div class="switch-label-group">
+                  <div class="switch-title">Restablecer Configuración</div>
+                  <div class="switch-desc">Regresa todas las columnas, categorías y opciones de vista a los valores de fábrica</div>
+                </div>
+
+                <button
+                  type="button"
+                  class="btn btn-outline"
+                  style="color: #ef4444; border-color: rgba(239, 68, 68, 0.4); font-size: 0.8rem;"
+                  (click)="resetAllSettingsToDefault()"
+                >
+                  ↺ Restablecer Valores
+                </button>
+              </div>
+            </div>
+          </div>
+        }
+
+      </div>
+
+      <div class="modal-footer" style="justify-content: space-between;">
+        <button
+          type="button"
+          class="btn btn-outline"
+          (click)="resetAllSettingsToDefault()"
+          style="font-size: 0.82rem;"
+        >
+          Restablecer Valores Iniciales
+        </button>
+
+        <button
+          type="button"
+          class="btn btn-primary"
+          (click)="showSettingsModal.set(false)"
+          style="font-size: 0.82rem;"
+        >
+          ✓ Guardar y Cerrar
+        </button>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- ========================================== -->
+<!-- 2. MODAL DE NUEVA PRESENTACIÓN             -->
+<!-- ========================================== -->
+@if (showNewVariantModal()) {
+  <div class="modal-overlay" (click)="showNewVariantModal.set(false)">
+    <div class="modal-content" style="max-width: 540px;" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3 class="modal-title">+ Nueva Presentación de Producto</h3>
+        <button class="modal-close" (click)="showNewVariantModal.set(false)">&times;</button>
+      </div>
+
+      <div class="modal-body">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px;">
+          <!-- Fruit Select -->
+          <div class="form-group" style="margin: 0;">
+            <label class="form-label">Fruta Base *</label>
+            <select
+              class="form-control"
+              [ngModel]="newVariantFruitId()"
+              (ngModelChange)="newVariantFruitId.set($event); onNewVariantFruitChange($event)"
+            >
+              @for (f of stateService.fruits(); track f.id) {
+                <option [ngValue]="f.fruitId || f.id">{{ f.emoji }} {{ f.name }}</option>
+              }
+            </select>
+          </div>
+
+          <!-- Category Select (from parameterized categories!) -->
+          <div class="form-group" style="margin: 0;">
+            <label class="form-label">Línea / Categoría *</label>
+            <select
+              class="form-control"
+              [ngModel]="newVariantCategory()"
+              (ngModelChange)="newVariantCategory.set($event)"
+            >
+              @for (c of activeCategories(); track c.id) {
+                <option [value]="c.id">{{ c.icon }} {{ c.name }}</option>
+              }
+            </select>
+          </div>
+        </div>
+
+        <!-- Grammage Select (from parameterized grammages!) -->
+        <div class="form-group">
+          <label class="form-label">Gramaje / Presentación *</label>
+          <select
+            class="form-control"
+            [ngModel]="newVariantGrammage()"
+            (ngModelChange)="onNewVariantGrammageChange($event)"
+          >
+            @for (g of activeGrammages(); track g.key) {
+              <option [ngValue]="g.value">{{ g.label }}</option>
+            }
+          </select>
+        </div>
+
+        <!-- Name & SKU -->
+        <div class="form-group">
+          <label class="form-label">Nombre Comercial del Producto *</label>
+          <input
+            type="text"
+            class="form-control"
+            placeholder="Ej. Pulpa de Maracuyá 140g"
+            [ngModel]="newVariantName()"
+            (ngModelChange)="newVariantName.set($event)"
+          />
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Código SKU</label>
+          <input
+            type="text"
+            class="form-control"
+            placeholder="Ej. PULP-MAR-140G"
+            [ngModel]="newVariantSku()"
+            (ngModelChange)="newVariantSku.set($event)"
+          />
+        </div>
+
+        <!-- Prices and Costs -->
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px;">
+          <div class="form-group" style="margin: 0;">
+            <label class="form-label">Costo Unitario (COP) *</label>
+            <input
+              type="number"
+              min="0"
+              class="form-control"
+              [ngModel]="newVariantUnitCost()"
+              (ngModelChange)="newVariantUnitCost.set($event)"
+            />
+          </div>
+
+          <div class="form-group" style="margin: 0;">
+            <label class="form-label">Precio de Venta (COP) *</label>
+            <input
+              type="number"
+              min="0"
+              class="form-control"
+              [ngModel]="newVariantBasePrice()"
+              (ngModelChange)="newVariantBasePrice.set($event)"
+            />
+          </div>
+        </div>
+
+        <!-- Stocks -->
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+          <div class="form-group" style="margin: 0;">
+            <label class="form-label">Stock Inicial en Cava (uds)</label>
+            <input
+              type="number"
+              min="0"
+              class="form-control"
+              [ngModel]="newVariantCurrentStock()"
+              (ngModelChange)="newVariantCurrentStock.set($event)"
+            />
+          </div>
+
+          <div class="form-group" style="margin: 0;">
+            <label class="form-label">Alerta Stock Mínimo (uds)</label>
+            <input
+              type="number"
+              min="1"
+              class="form-control"
+              [ngModel]="newVariantMinStock()"
+              (ngModelChange)="newVariantMinStock.set($event)"
+            />
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline" (click)="showNewVariantModal.set(false)">
+          Cancelar
+        </button>
+        <button type="button" class="btn btn-primary" (click)="createVariant()">
+          Guardar Presentación
+        </button>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- ========================================== -->
+<!-- 3. MODAL DE EDITAR PRESENTACIÓN            -->
+<!-- ========================================== -->
+@if (showEditVariantModal() && editingVariant(); as editItem) {
+  <div class="modal-overlay" (click)="showEditVariantModal.set(false)">
+    <div class="modal-content" style="max-width: 500px;" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3 class="modal-title">Editar Presentación: {{ editItem.name }}</h3>
+        <button class="modal-close" (click)="showEditVariantModal.set(false)">&times;</button>
+      </div>
+
+      <div class="modal-body">
+        <div class="form-group">
+          <label class="form-label">Nombre del Producto</label>
+          <input
+            type="text"
+            class="form-control"
+            [(ngModel)]="editItem.name"
+          />
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Código SKU</label>
+          <input
+            type="text"
+            class="form-control"
+            [(ngModel)]="editItem.sku"
+          />
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px;">
+          <div class="form-group" style="margin: 0;">
+            <label class="form-label">Línea / Categoría</label>
+            <select
+              class="form-control"
+              [(ngModel)]="editItem.category"
+            >
+              @for (c of activeCategories(); track c.id) {
+                <option [value]="c.id">{{ c.icon }} {{ c.name }}</option>
+              }
+            </select>
+          </div>
+
+          <div class="form-group" style="margin: 0;">
+            <label class="form-label">Presentación (g)</label>
+            <select
+              class="form-control"
+              [(ngModel)]="editItem.grammage"
+            >
+              @for (g of activeGrammages(); track g.key) {
+                <option [ngValue]="g.value">{{ g.label }}</option>
+              }
+            </select>
+          </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px;">
+          <div class="form-group" style="margin: 0;">
+            <label class="form-label">Costo Producción (COP)</label>
+            <input
+              type="number"
+              class="form-control"
+              [(ngModel)]="editItem.unitCost"
+            />
+          </div>
+
+          <div class="form-group" style="margin: 0;">
+            <label class="form-label">Precio de Venta (COP)</label>
+            <input
+              type="number"
+              class="form-control"
+              [(ngModel)]="editItem.basePrice"
+            />
+          </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+          <div class="form-group" style="margin: 0;">
+            <label class="form-label">Stock en Cava (uds)</label>
+            <input
+              type="number"
+              class="form-control"
+              [(ngModel)]="editItem.currentStock"
+            />
+          </div>
+
+          <div class="form-group" style="margin: 0;">
+            <label class="form-label">Alerta Stock Mínimo</label>
+            <input
+              type="number"
+              class="form-control"
+              [(ngModel)]="editItem.minStockAlert"
+            />
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline" (click)="showEditVariantModal.set(false)">
+          Cancelar
+        </button>
+        <button type="button" class="btn btn-primary" (click)="saveEditVariant()">
+          Guardar Cambios
+        </button>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- ========================================== -->
+<!-- 4. MODAL DE AJUSTE MANUAL DE FRUTA (STOCK) -->
+<!-- ========================================== -->
 @if (showAdjustModal() && selectedFruitForAdjust()) {
   <div class="modal-overlay" (click)="showAdjustModal.set(false)">
     <div class="modal-content" style="max-width: 440px;" (click)="$event.stopPropagation()">

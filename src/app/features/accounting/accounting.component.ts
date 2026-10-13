@@ -1,6 +1,7 @@
 import { Component, computed, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { ActivatedRoute } from '@angular/router';
 import { StateService } from '../../core/services/state.service';
 import { NotificationService } from '../../core/services/notification.service';
 import { ExpenseDto } from '../../core/models/business.models';
@@ -15,9 +16,24 @@ import { ExpenseDto } from '../../core/models/business.models';
 export class AccountingComponent {
   readonly stateService = inject(StateService);
   readonly notification = inject(NotificationService);
+  private readonly route = inject(ActivatedRoute);
 
   readonly showNewExpenseModal = signal<boolean>(false);
   readonly filterCategory = signal<string>('all');
+
+  constructor() {
+    this.route.queryParams.subscribe(params => {
+      if (params['action'] === 'new') {
+        this.showNewExpenseModal.set(true);
+      }
+    });
+
+    if (typeof window !== 'undefined') {
+      window.addEventListener('open-new-expense', () => {
+        this.showNewExpenseModal.set(true);
+      });
+    }
+  }
 
   // Form fields
   readonly newCategoryName = signal<string>('Materia Prima / Fruta Fresca');

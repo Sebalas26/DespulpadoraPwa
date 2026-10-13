@@ -1,6 +1,7 @@
 import { Component, computed, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { ActivatedRoute } from '@angular/router';
 import { StateService } from '../../core/services/state.service';
 import { FruitConfig } from '../../core/data/initial-data';
 import confetti from 'canvas-confetti';
@@ -14,6 +15,37 @@ import confetti from 'canvas-confetti';
 })
 export class CalculatorComponent {
   readonly stateService = inject(StateService);
+  private readonly route = inject(ActivatedRoute);
+
+  // Tab navigation: Formulation vs Loss Audit
+  readonly activeTab = signal<'formulation' | 'loss-audit'>('formulation');
+
+  constructor() {
+    this.route.queryParams.subscribe(params => {
+      if (params['tab'] === 'loss-audit') {
+        this.activeTab.set('loss-audit');
+      } else if (params['tab'] === 'formulation') {
+        this.activeTab.set('formulation');
+      }
+    });
+  }
+
+  // Loss Audit Totals
+  readonly totalLossUnits = computed(() => {
+    return this.stateService.idealVsRealLossAudit().reduce((sum, a) => sum + Math.max(0, -a.unitsDifference), 0);
+  });
+
+  readonly totalLossMoney = computed(() => {
+    return this.stateService.idealVsRealLossAudit().reduce((sum, a) => sum + Math.max(0, -a.moneyDifference), 0);
+  });
+
+  readonly totalIdealRevenue = computed(() => {
+    return this.stateService.idealVsRealLossAudit().reduce((sum, a) => sum + a.idealRevenue, 0);
+  });
+
+  readonly totalRealRevenue = computed(() => {
+    return this.stateService.idealVsRealLossAudit().reduce((sum, a) => sum + a.realRevenue, 0);
+  });
 
   // Form inputs
   readonly selectedFruitId = signal<string>('maracuya');

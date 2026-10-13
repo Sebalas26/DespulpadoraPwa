@@ -1,0 +1,16 @@
+:host {
+  display: block;
+  width: 100%;
+}
+
+@media print {
+  .btn, .tab-nav, select, .no-print {
+    display: none !important;
+  }
+
+  .card {
+    border: 1px solid #ddd !important;
+    box-shadow: none !important;
+    page-break-inside: avoid;
+  }
+}

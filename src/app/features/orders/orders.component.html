@@ -28,10 +28,21 @@
         <span style="font-weight: 700; color: var(--color-primary-text);">Enrutador de Mensajeros</span>
       </button>
 
+      <button type="button" class="btn btn-secondary" style="gap: 8px; border-color: #25d366; background: #f0fdf4; color: #166534;"
+        (click)="voiceOrdersService.openModal()">
+        <span style="font-size: 1.1rem;">🎙️</span>
+        <span style="font-weight: 700;">Audios WhatsApp</span>
+        @if (voiceOrdersService.pendingCount() > 0) {
+          <span style="background: #ef4444; color: #ffffff; font-size: 0.72rem; font-weight: 800; border-radius: 9999px; padding: 1px 7px;">
+            {{ voiceOrdersService.pendingCount() }}
+          </span>
+        }
+      </button>
+
       <button type="button" class="btn btn-secondary" style="gap: 8px; border-color: rgba(16, 185, 129, 0.4);"
         (click)="showWhatsAppModal.set(true)">
         <span style="font-size: 1.1rem;">💬</span>
-        <span>Simular WhatsApp</span>
+        <span>Simular WhatsApp (Texto)</span>
       </button>
 
       <button type="button" class="btn btn-primary" style="gap: 8px;" (click)="showNewOrderModal.set(true)">
@@ -457,10 +468,17 @@
     <div class="modal-body"
       style="background: #ffffff; color: #000000; font-family: monospace; font-size: 0.85rem; padding: 24px; border-radius: 8px;">
       <div style="text-align: center; margin-bottom: 12px;">
-        <h2 style="font-size: 1.25rem; font-weight: 800; margin: 0; color: #000;">DGL S.A.S.</h2>
-        <div style="font-size: 0.78rem;">NIT: 901.458.789-2</div>
-        <div style="font-size: 0.78rem;">Planta de Transformación de Frutas Tropicales</div>
-        <div style="font-size: 0.78rem;">Cali, Valle del Cauca - Colombia</div>
+        @if (stateService.companyInfo().logoUrl) {
+          <img [src]="stateService.companyInfo().logoUrl" alt="Logo Empresa" style="max-height: 48px; max-width: 140px; margin-bottom: 8px; object-fit: contain;" />
+        }
+        <h2 style="font-size: 1.25rem; font-weight: 800; margin: 0; color: #000;">{{ stateService.companyInfo().legalName || stateService.companyInfo().companyName }}</h2>
+        <div style="font-size: 0.78rem; font-weight: 700;">NIT: {{ stateService.companyInfo().nit }}</div>
+        <div style="font-size: 0.78rem;">{{ stateService.companyInfo().tagline }}</div>
+        <div style="font-size: 0.78rem;">{{ stateService.companyInfo().address }}</div>
+        <div style="font-size: 0.78rem;">{{ stateService.companyInfo().city }}, {{ stateService.companyInfo().department }} - {{ stateService.companyInfo().country }}</div>
+        <div style="font-size: 0.76rem;">Tel/WA: {{ stateService.companyInfo().phone }} • {{ stateService.companyInfo().whatsapp }}</div>
+        <div style="font-size: 0.72rem; color: #333;">{{ stateService.companyInfo().taxRegime }}</div>
+        <div style="font-size: 0.70rem; color: #444; margin-top: 2px;">{{ stateService.companyInfo().dianResolution }}</div>
         <div style="border-top: 1px dashed #000; margin: 8px 0;"></div>
         <div style="font-weight: 700;">FACTURA DE VENTA: {{ selectedOrderForInvoice()?.orderNumber }}</div>
         <div style="font-size: 0.75rem;">Fecha: {{ selectedOrderForInvoice()?.createdAt | date:'short' }}</div>
@@ -497,8 +515,8 @@
       </div>
 
       <div style="text-align: center; margin-top: 20px; font-size: 0.72rem;">
-        <div>¡Gracias por preferir pulpas 100% naturales!</div>
-        <div>Consérvese congelado a -18°C</div>
+        <div>{{ stateService.companyInfo().invoiceFooterNote }}</div>
+        <div style="margin-top: 4px; font-size: 0.68rem; color: #555;">Horario de Atención: {{ stateService.companyInfo().operatingHours }}</div>
       </div>
     </div>
 

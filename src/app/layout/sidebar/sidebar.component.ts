@@ -3,7 +3,6 @@ import { CommonModule } from '@angular/common';
 import { RouterLink, RouterLinkActive } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
 import { StateService } from '../../core/services/state.service';
-import { BranchDto } from '../../core/models/auth.models';
 
 @Component({
   selector: 'app-sidebar',
@@ -11,113 +10,153 @@ import { BranchDto } from '../../core/models/auth.models';
   imports: [CommonModule, RouterLink, RouterLinkActive],
   template: `
     <aside class="sidebar">
-      <!-- Brand Logo -->
+      <!-- 1. Brand Logo & Name (Figma style) -->
       <div class="sidebar-header">
-        <div class="logo-box">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
-            <path d="m9 12 2 2 4-4"></path>
+        <div class="dgl-logo-box">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z"></path>
+            <path d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12"></path>
           </svg>
         </div>
-        <div>
-          <div class="brand-title">DGL</div>
-          <div class="brand-subtitle">Planta & ERP 4.0</div>
+        <div class="dgl-brand-text">
+          <span class="dgl-brand-name">DGL</span>
+          <span class="dgl-brand-sub">Gestión de pulpas</span>
         </div>
       </div>
 
-      <!-- Active Branch Selector -->
-      @if (authService.branches().length > 1) {
-        <div style="padding: 0 16px 14px 16px;">
-          <label style="font-size: 0.72rem; text-transform: uppercase; color: var(--text-dim); font-weight: 700; margin-bottom: 6px; display: block;">
-            Sede Operativa
-          </label>
-          <select
-            class="form-control"
-            style="padding: 6px 10px; font-size: 0.8rem;"
-            [value]="authService.selectedBranch()?.branchId"
-            (change)="onBranchChange($event)"
-          >
-            @for (branch of authService.branches(); track branch.branchId) {
-              <option [value]="branch.branchId">{{ branch.name }} {{ branch.isMatrix ? '(Matriz)' : '' }}</option>
-            }
-          </select>
+      <!-- 2. Planta Activa Selector (Figma style) -->
+      <div class="sidebar-plant-selector">
+        <div class="plant-label">PLANTA ACTIVA</div>
+        <div class="plant-select-box">
+          <span class="plant-name">{{ authService.selectedBranch()?.name || 'Cava principal' }}</span>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#6b7280" stroke-width="2.5">
+            <polyline points="6 9 12 15 18 9"></polyline>
+          </svg>
         </div>
-      }
+      </div>
 
-      <!-- Main Navigation Links -->
+      <!-- 3. Navigation Section: GESTIÓN DIARIA -->
       <nav class="sidebar-nav">
-        <div class="nav-section-title">Operaciones de Planta</div>
+        <div class="nav-section-title">GESTIÓN DIARIA</div>
 
-        <a routerLink="/dashboard" routerLinkActive="active" class="nav-item">
-          <span class="nav-icon">
+        <!-- Panel general -->
+        <a routerLink="/dashboard" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }" class="dgl-nav-item">
+          <span class="dgl-nav-icon">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <rect x="3" y="3" width="7" height="7"></rect>
-              <rect x="14" y="3" width="7" height="7"></rect>
-              <rect x="14" y="14" width="7" height="7"></rect>
-              <rect x="3" y="14" width="7" height="7"></rect>
+              <rect x="3" y="3" width="7" height="7" rx="1.5"></rect>
+              <rect x="14" y="3" width="7" height="7" rx="1.5"></rect>
+              <rect x="14" y="14" width="7" height="7" rx="1.5"></rect>
+              <rect x="3" y="14" width="7" height="7" rx="1.5"></rect>
             </svg>
           </span>
-          <span class="nav-text">Panel Central</span>
+          <span class="dgl-nav-text">Panel general</span>
         </a>
 
-        <a routerLink="/calculator" routerLinkActive="active" class="nav-item">
-          <span class="nav-icon">
+        <!-- Pedidos -->
+        <a routerLink="/orders" routerLinkActive="active" class="dgl-nav-item">
+          <span class="dgl-nav-icon">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <rect x="4" y="2" width="16" height="20" rx="2"></rect>
-              <line x1="8" y1="6" x2="16" y2="6"></line>
-              <line x1="16" y1="14" x2="16" y2="18"></line>
-              <path d="M16 10h.01"></path>
-              <path d="M12 10h.01"></path>
-              <path d="M8 10h.01"></path>
-              <path d="M12 14h.01"></path>
-              <path d="M8 14h.01"></path>
-              <path d="M12 18h.01"></path>
-              <path d="M8 18h.01"></path>
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+              <polyline points="14 2 14 8 20 8"></polyline>
+              <line x1="16" y1="13" x2="8" y2="13"></line>
+              <line x1="16" y1="17" x2="8" y2="17"></line>
             </svg>
           </span>
-          <span class="nav-text">Calculadora & Lotes</span>
-        </a>
-
-        <a routerLink="/orders" routerLinkActive="active" class="nav-item">
-          <span class="nav-icon">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"></path>
-              <path d="M3 6h18"></path>
-              <path d="M16 10a4 4 0 0 1-8 0"></path>
-            </svg>
-          </span>
-          <span class="nav-text">Gestión de Pedidos</span>
+          <span class="dgl-nav-text">Pedidos</span>
           @if (stateService.pendingOrdersCount() > 0) {
-            <span class="nav-badge">{{ stateService.pendingOrdersCount() }}</span>
+            <span class="dgl-nav-badge">{{ stateService.pendingOrdersCount() }}</span>
           }
         </a>
 
-        <a routerLink="/kds" routerLinkActive="active" class="nav-item" title="Pantalla limpia KDS estilo restaurante">
-          <span class="nav-icon">
+        <!-- Producción -->
+        <a routerLink="/calculator" routerLinkActive="active" [queryParams]="{ tab: 'formulation' }" class="dgl-nav-item">
+          <span class="dgl-nav-icon">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
-              <line x1="8" y1="21" x2="16" y2="21"></line>
-              <line x1="12" y1="17" x2="12" y2="21"></line>
+              <path d="M6 2v14a4 4 0 0 0 8 0V2"></path>
+              <line x1="6" y1="6" x2="14" y2="6"></line>
+              <line x1="4" y1="2" x2="16" y2="2"></line>
             </svg>
           </span>
-          <span class="nav-text">Pantalla KDS (Cava)</span>
-          <span class="nav-badge" style="background: #8b5cf6;">KDS</span>
+          <span class="dgl-nav-text">Producción</span>
         </a>
 
-        <a routerLink="/shifts" routerLinkActive="active" class="nav-item">
-          <span class="nav-icon">
+        <!-- Lotes -->
+        <a routerLink="/calculator" routerLinkActive="active" [queryParams]="{ tab: 'loss-audit' }" class="dgl-nav-item">
+          <span class="dgl-nav-icon">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <circle cx="12" cy="12" r="10"></circle>
-              <polyline points="12 6 12 12 16 14"></polyline>
+              <polygon points="12 2 2 7 12 12 22 7 12 2"></polygon>
+              <polyline points="2 17 12 22 22 17"></polyline>
+              <polyline points="2 12 12 17 22 12"></polyline>
             </svg>
           </span>
-          <span class="nav-text">Control de Turnos</span>
+          <span class="dgl-nav-text">Lotes</span>
         </a>
 
-        <div class="nav-section-title" style="margin-top: 14px;">Administración</div>
+        <!-- Inventario en cava -->
+        <a routerLink="/settings" routerLinkActive="active" [queryParams]="{ tab: 'variants' }" class="dgl-nav-item">
+          <span class="dgl-nav-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
+              <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
+              <line x1="12" y1="22.08" x2="12" y2="12"></line>
+            </svg>
+          </span>
+          <span class="dgl-nav-text">Inventario en cava</span>
+        </a>
 
-        <a routerLink="/hr" routerLinkActive="active" class="nav-item">
-          <span class="nav-icon">
+        <!-- Ventas -->
+        <a routerLink="/accounting" routerLinkActive="active" [queryParams]="{ view: 'sales' }" class="dgl-nav-item">
+          <span class="dgl-nav-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="12" y1="1" x2="12" y2="23"></line>
+              <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
+            </svg>
+          </span>
+          <span class="dgl-nav-text">Ventas</span>
+        </a>
+
+        <!-- Clientes -->
+        <a routerLink="/reports" routerLinkActive="active" [queryParams]="{ tab: 'clients' }" class="dgl-nav-item">
+          <span class="dgl-nav-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+              <circle cx="9" cy="7" r="4"></circle>
+              <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+              <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+            </svg>
+          </span>
+          <span class="dgl-nav-text">Clientes</span>
+        </a>
+
+        <!-- Finanzas -->
+        <a routerLink="/accounting" routerLinkActive="active" class="dgl-nav-item">
+          <span class="dgl-nav-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="18" y1="20" x2="18" y2="10"></line>
+              <line x1="12" y1="20" x2="12" y2="4"></line>
+              <line x1="6" y1="20" x2="6" y2="14"></line>
+            </svg>
+          </span>
+          <span class="dgl-nav-text">Finanzas</span>
+        </a>
+
+        <!-- Section: SISTEMA & CONFIGURACIÓN -->
+        <div class="nav-section-title" style="margin-top: 14px;">SISTEMA & CONFIGURACIÓN</div>
+
+        <!-- Configuración General -->
+        <a routerLink="/settings" [queryParams]="{ tab: 'general' }" routerLinkActive="active" class="dgl-nav-item">
+          <span class="dgl-nav-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="3"></circle>
+              <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+            </svg>
+          </span>
+          <span class="dgl-nav-text">Configuración</span>
+        </a>
+
+        <!-- Usuarios y roles -->
+        <a routerLink="/settings" [queryParams]="{ tab: 'users' }" routerLinkActive="active" class="dgl-nav-item">
+          <span class="dgl-nav-icon">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
               <circle cx="9" cy="7" r="4"></circle>
@@ -125,76 +164,34 @@ import { BranchDto } from '../../core/models/auth.models';
               <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
             </svg>
           </span>
-          <span class="nav-text">Personal & Nómina</span>
+          <span class="dgl-nav-text">Usuarios y roles</span>
         </a>
 
-        <a routerLink="/accounting" routerLinkActive="active" class="nav-item">
-          <span class="nav-icon">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <line x1="12" y1="1" x2="12" y2="23"></line>
-              <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
-            </svg>
-          </span>
-          <span class="nav-text">Gastos & Caja</span>
-        </a>
-
-        <a routerLink="/settings" routerLinkActive="active" class="nav-item">
-          <span class="nav-icon">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.1a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"></path>
-              <circle cx="12" cy="12" r="3"></circle>
-            </svg>
-          </span>
-          <span class="nav-text">Catálogo de Frutas</span>
-        </a>
-
-        <!-- RBAC Admin Section (Protected) -->
-        @if (authService.isAdmin()) {
-          <div class="nav-section-title" style="margin-top: 14px; color: #8b5cf6;">Seguridad & RBAC</div>
-
-          <a routerLink="/admin/users" routerLinkActive="active" class="nav-item">
-            <span class="nav-icon">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
-                <circle cx="9" cy="7" r="4"></circle>
-                <line x1="19" y1="8" x2="19" y2="14"></line>
-                <line x1="22" y1="11" x2="16" y2="11"></line>
-              </svg>
-            </span>
-            <span class="nav-text">Usuarios del Sistema</span>
-          </a>
-
-          <a routerLink="/admin/roles" routerLinkActive="active" class="nav-item">
-            <span class="nav-icon">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
-                <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
-              </svg>
-            </span>
-            <span class="nav-text">Roles & Permisos</span>
-          </a>
-        }
+        <!-- 4. Promotional / Informational Box (Figma style) -->
+        <div class="dgl-callout-card">
+          <div class="callout-header">
+            <span class="callout-icon">✨</span>
+            <span class="callout-title">Todo en su punto.</span>
+          </div>
+          <p class="callout-text">De la fruta al despacho, tu planta en un solo lugar.</p>
+        </div>
       </nav>
 
-      <!-- Sidebar User Footer -->
+      <!-- 5. Sidebar Footer: User Profile (Figma style) -->
       <div class="sidebar-footer">
-        <div class="user-card">
-          <div class="user-avatar-badge">
-            {{ (authService.currentUser()?.fullName || authService.currentUser()?.username || 'AD').substring(0, 2).toUpperCase() }}
-          </div>
-          <div class="user-details">
-            <div class="user-name">
-              {{ authService.currentUser()?.fullName || authService.currentUser()?.username }}
-            </div>
-            <div class="user-role">
-              {{ authService.currentUser()?.roleName || 'Usuario' }}
-            </div>
+
+        <!-- User Profile Row -->
+        <div class="user-row-box">
+          <div class="user-avatar-circle">AD</div>
+          <div class="user-text-box">
+            <span class="user-display-name">Administrador</span>
+            <span class="user-display-role">Gestión de planta</span>
           </div>
           <button
             type="button"
-            class="logout-btn"
+            class="user-logout-btn"
+            title="Cerrar sesión"
             (click)="authService.logout()"
-            title="Cerrar Sesión"
           >
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
@@ -205,19 +202,272 @@ import { BranchDto } from '../../core/models/auth.models';
         </div>
       </div>
     </aside>
-  `
+  `,
+  styles: [`
+    .sidebar {
+      width: 240px;
+      min-width: 240px;
+      max-width: 240px;
+      background: #ffffff;
+      border-right: 1px solid #eef2ef;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      position: sticky;
+      top: 0;
+      z-index: 40;
+      box-sizing: border-box;
+    }
+
+    .sidebar-header {
+      padding: 20px 18px 16px 18px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .dgl-logo-box {
+      width: 38px;
+      height: 38px;
+      border-radius: 10px;
+      background: #1e5e3a;
+      color: #ffffff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 2px 6px rgba(30, 94, 58, 0.25);
+    }
+
+    .dgl-brand-text {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .dgl-brand-name {
+      font-size: 1.2rem;
+      font-weight: 800;
+      color: #111827;
+      letter-spacing: -0.02em;
+      line-height: 1.1;
+    }
+
+    .dgl-brand-sub {
+      font-size: 0.74rem;
+      color: #6b7280;
+      font-weight: 500;
+    }
+
+    .sidebar-plant-selector {
+      padding: 0 18px 14px 18px;
+    }
+
+    .plant-label {
+      font-size: 0.68rem;
+      font-weight: 700;
+      color: #9ca3af;
+      letter-spacing: 0.05em;
+      margin-bottom: 6px;
+    }
+
+    .plant-select-box {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px 12px;
+      background: #ffffff;
+      border: 1px solid #e5e7eb;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+
+      &:hover {
+        border-color: #1e5e3a;
+      }
+    }
+
+    .plant-name {
+      font-size: 0.84rem;
+      font-weight: 600;
+      color: #111827;
+    }
+
+    .sidebar-nav {
+      flex: 1;
+      padding: 0 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      overflow-y: auto;
+    }
+
+    .nav-section-title {
+      font-size: 0.68rem;
+      font-weight: 700;
+      color: #9ca3af;
+      letter-spacing: 0.05em;
+      padding: 6px 10px 6px 10px;
+    }
+
+    .dgl-nav-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 9px 12px;
+      border-radius: 10px;
+      color: #4b5563;
+      font-size: 0.88rem;
+      font-weight: 500;
+      text-decoration: none;
+      transition: all 0.15s ease;
+      background: transparent;
+
+      &:hover {
+        background: #f3f6f4;
+        color: #111827;
+      }
+
+      &.active {
+        background: #eaf5ee;
+        color: #1e5e3a;
+        font-weight: 700;
+
+        .dgl-nav-icon {
+          color: #1e5e3a;
+        }
+      }
+    }
+
+    .dgl-nav-icon {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #6b7280;
+      flex-shrink: 0;
+    }
+
+    .dgl-nav-text {
+      flex: 1;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .dgl-nav-badge {
+      font-size: 0.7rem;
+      font-weight: 700;
+      padding: 1px 7px;
+      border-radius: 9999px;
+      background: #ef4444;
+      color: #ffffff;
+    }
+
+    .dgl-callout-card {
+      background: #f0f7f2;
+      border: 1px solid #dcf0e2;
+      border-radius: 12px;
+      padding: 12px 14px;
+      margin: 14px 2px;
+    }
+
+    .callout-header {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-bottom: 4px;
+    }
+
+    .callout-icon {
+      font-size: 0.9rem;
+    }
+
+    .callout-title {
+      font-size: 0.82rem;
+      font-weight: 700;
+      color: #111827;
+    }
+
+    .callout-text {
+      font-size: 0.74rem;
+      color: #4b5563;
+      margin: 0;
+      line-height: 1.35;
+    }
+
+    .sidebar-footer {
+      padding: 12px 12px 16px 12px;
+      border-top: 1px solid #eef2ef;
+    }
+
+    .user-row-box {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 6px 8px;
+      border-radius: 10px;
+      background: #fafbf9;
+      border: 1px solid #eef2ef;
+    }
+
+    .user-avatar-circle {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: #fef3c7;
+      color: #92400e;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.78rem;
+      font-weight: 800;
+      border: 1px solid #fde68a;
+      flex-shrink: 0;
+    }
+
+    .user-text-box {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .user-display-name {
+      font-size: 0.82rem;
+      font-weight: 700;
+      color: #111827;
+      line-height: 1.2;
+    }
+
+    .user-display-role {
+      font-size: 0.7rem;
+      color: #6b7280;
+    }
+
+    .user-logout-btn {
+      background: transparent;
+      border: none;
+      color: #9ca3af;
+      cursor: pointer;
+      padding: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 6px;
+      transition: all 0.15s ease;
+
+      &:hover {
+        color: #ef4444;
+        background: #fee2e2;
+      }
+    }
+
+    @media (max-width: 1024px) {
+      .sidebar {
+        display: none;
+      }
+    }
+  `]
 })
 export class SidebarComponent {
   readonly authService = inject(AuthService);
   readonly stateService = inject(StateService);
-
-  onBranchChange(event: Event) {
-    const select = event.target as HTMLSelectElement;
-    const branchId = Number(select.value);
-    const branch = this.authService.branches().find(b => b.branchId === branchId);
-    if (branch) {
-      this.authService.setBranch(branch);
-      this.stateService.refreshAll();
-    }
-  }
 }

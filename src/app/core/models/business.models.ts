@@ -235,11 +235,15 @@ export interface EmployeeDto {
   lastName: string;
   fullName: string;
   identificationNumber: string;
+  gender?: EmployeeGender;
+  area?: EmployeeArea;
   phone?: string;
   email?: string;
   position?: string;
   department?: string;
   baseSalary: number;
+  transportAllowance?: number;
+  deliveryBonusRate?: number;
   hireDate: string;
   isActive: boolean;
   activeShift?: WorkShiftDto;
@@ -364,4 +368,226 @@ export interface CompanyBranchDto {
   isMatrix: boolean;
   companyId: number;
 }
+
+// ==========================================
+// MODULE 1: PRODUCT VARIANTS & ADVANCED CATALOG
+// ==========================================
+export type ProductCategory = 'PULPAS' | 'LIMONADAS' | 'BATIDOS' | 'ESPECIAL' | string;
+
+export interface ProductVariantDto {
+  variantId: number;
+  fruitId: number;
+  fruitName: string;
+  category: ProductCategory;
+  sku: string;
+  name: string;
+  grammage: number;
+  unitCost: number;
+  basePrice: number;
+  minStockAlert: number;
+  currentStock: number;
+  isActive: boolean;
+}
+
+export interface CreateProductVariantDto {
+  fruitId: number;
+  fruitName?: string;
+  category: ProductCategory;
+  grammage: number;
+  sku?: string;
+  name?: string;
+  unitCost: number;
+  basePrice: number;
+  minStockAlert: number;
+  currentStock?: number;
+}
+
+export interface InventoryCategoryConfig {
+  id: string;
+  name: string;
+  icon: string;
+  badgeClass?: string;
+  isCustom?: boolean;
+  isActive: boolean;
+}
+
+export interface InventoryGrammageConfig {
+  key: string;
+  value: number;
+  label: string;
+  isCustom?: boolean;
+  isActive: boolean;
+}
+
+export interface InventoryColumnConfig {
+  key: string;
+  label: string;
+  description: string;
+  visible: boolean;
+  locked?: boolean;
+}
+
+export interface InventorySettingsConfig {
+  pageSize: number | 'all';
+  defaultCategory: string;
+  categories: InventoryCategoryConfig[];
+  grammages: InventoryGrammageConfig[];
+  columns: InventoryColumnConfig[];
+}
+
+// ==========================================
+// MODULE 2: SALES TARGETS & DYNAMIC DASHBOARD KPIS
+// ==========================================
+export interface SalesTargetDto {
+  targetId: number;
+  branchId?: number;
+  year: number;
+  month: number; // 1-12
+  targetRevenue: number;
+  targetUnits?: number;
+  workingDays?: number;
+  notes?: string;
+  createdAt: string;
+}
+
+export interface UpsertSalesTargetDto {
+  branchId?: number;
+  year: number;
+  month: number;
+  targetRevenue: number;
+  targetUnits?: number;
+  notes?: string;
+}
+
+export interface SalesPerformanceKpiDto {
+  currentMonthRevenue: number;
+  previousMonthRevenue: number;
+  growthPercentage: number;
+  grossProfit: number;
+  grossMarginPercentage: number;
+  monthTargetRevenue: number;
+  targetAccumulatedProrated: number;
+  compliancePercentage: number;
+  projectedClosingRevenue: number;
+  totalOrdersCount: number;
+  averageTicketValue: number;
+}
+
+// ==========================================
+// MODULE 3: PRODUCTION OUTPUTS & IDEAL VS REAL LOSS AUDIT
+// ==========================================
+export interface BatchOutputDto {
+  outputId?: number;
+  batchId: number;
+  variantId: number;
+  grammage: 140 | 250 | 500 | 1000;
+  unitsProduced: number;
+  totalWeightKg: number;
+  estimatedRetailValue: number;
+}
+
+export interface IdealVsRealAuditDto {
+  auditId: number;
+  branchId?: number;
+  fruitId?: number;
+  fruitName?: string;
+  periodLabel: string;
+  startDate: string;
+  endDate: string;
+  // Quantities
+  unitsProduced: number;
+  unitsBilled: number;
+  unitsDifference: number; // negative = loss / merma
+  // Financials
+  idealRevenue: number;    // unitsProduced * basePrice
+  realRevenue: number;     // actual billed amount
+  moneyDifference: number; // realRevenue - idealRevenue
+  lossPercentage: number;  // (unitsDifference / unitsProduced) * 100
+  notes?: string;
+  createdAt: string;
+}
+
+// ==========================================
+// MODULE 5: FORTNIGHTLY PAYROLL & ENHANCED HR
+// ==========================================
+export type EmployeeGender = 'MASCULINO' | 'FEMENINO' | 'OTRO';
+export type EmployeeArea = 'PRODUCCION' | 'DOMICILIOS' | 'VENTAS' | 'ADMINISTRACION';
+
+export interface PayrollPeriodDto {
+  periodId: number;
+  year: number;
+  month: number;
+  fortnight: 1 | 2; // 1: Days 1-15 | 2: Days 16-End of month
+  startDate: string;
+  endDate: string;
+  isClosed: boolean;
+  closedAt?: string;
+}
+
+export interface PayrollSettlementDto {
+  settlementId: number;
+  periodId: number;
+  employeeId: number;
+  employeeName: string;
+  gender?: EmployeeGender;
+  area: EmployeeArea;
+  baseSalaryMonthly: number;
+  daysWorked: number;
+  // Earnings (Devengados)
+  baseSalaryEarned: number;         // (baseSalaryMonthly / 30) * daysWorked
+  transportAllowanceEarned: number; // (transportAllowanceMonthly / 30) * daysWorked
+  deliveryBonuses: number;          // count * deliveryRate (para domiciliarios)
+  overtimeAmount: number;
+  otherBonuses: number;
+  totalEarnings: number;
+  // Deductions (Deducciones)
+  healthDeduction: number;          // 4% aporte salud
+  pensionDeduction: number;         // 4% aporte pension
+  otherDeductions: number;          // prestamos, anticipos
+  totalDeductions: number;
+  // Total payable
+  netPayable: number;
+  paymentStatus: 'DRAFT' | 'APPROVED' | 'PAID';
+  settledAt: string;
+}
+
+export interface CreatePayrollSettlementDto {
+  periodId: number;
+  employeeId: number;
+  daysWorked: number;
+  deliveryCount?: number;
+  deliveryBonusRate?: number;
+  overtimeAmount?: number;
+  otherBonuses?: number;
+  otherDeductions?: number;
+  notes?: string;
+}
+
+// ==========================================
+// COMPANY & BILLING CONFIGURATION
+// ==========================================
+export interface CompanyConfig {
+  companyName: string;
+  legalName: string;
+  nit: string;
+  logoUrl?: string;
+  tagline: string;
+  address: string;
+  city: string;
+  department: string;
+  country: string;
+  phone: string;
+  whatsapp: string;
+  email: string;
+  billingEmail: string;
+  operatingHours: string;
+  dispatchHours: string;
+  taxRegime: string;
+  dianResolution: string;
+  invoicePrefix: string;
+  invoiceNextNumber: number;
+  invoiceFooterNote: string;
+}
+
+
 

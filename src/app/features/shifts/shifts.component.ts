@@ -1,6 +1,7 @@
 import { Component, computed, inject, signal, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { ActivatedRoute } from '@angular/router';
 import { StateService } from '../../core/services/state.service';
 import { NotificationService } from '../../core/services/notification.service';
 import { WorkShiftDto } from '../../core/models/business.models';
@@ -15,9 +16,25 @@ import { WorkShiftDto } from '../../core/models/business.models';
 export class ShiftsComponent implements OnDestroy {
   readonly stateService = inject(StateService);
   readonly notification = inject(NotificationService);
+  private readonly route = inject(ActivatedRoute);
 
   readonly currentTime = signal<string>(new Date().toLocaleTimeString('es-CO'));
   private timer: any;
+
+  constructor() {
+    this.timer = setInterval(() => {
+      this.currentTime.set(new Date().toLocaleTimeString('es-CO'));
+    }, 1000);
+
+    this.route.queryParams.subscribe(params => {
+      if (params['view'] === 'active') {
+        setTimeout(() => {
+          const el = document.getElementById('active-shifts-table');
+          if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }, 150);
+      }
+    });
+  }
 
   // Clock-in form
   readonly selectedEmployeeId = signal<number>(1);
@@ -64,12 +81,6 @@ export class ShiftsComponent implements OnDestroy {
       notes: 'Control de cava y despacho de pedidos'
     }
   ]);
-
-  constructor() {
-    this.timer = setInterval(() => {
-      this.currentTime.set(new Date().toLocaleTimeString('es-CO'));
-    }, 1000);
-  }
 
   ngOnDestroy() {
     if (this.timer) clearInterval(this.timer);

@@ -1,343 +1,436 @@
-<div style="display: flex; flex-direction: column; gap: 24px;">
+<div class="dashboard-container">
 
-  <!-- Welcome Banner -->
-  <div class="dashboard-banner">
-    <div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 16px;">
-      <div>
-        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 6px;">
-          <span class="badge-pill badge-emerald">Planta Operativa</span>
-          <span style="font-size: 0.82rem; color: var(--text-muted); text-transform: capitalize;">{{ currentDateStr }}</span>
-        </div>
-        <h1 class="dashboard-banner-title">
-          Panel de Control Despulpadora 🍍
-        </h1>
-        <p class="dashboard-banner-subtitle">
-          Monitoreo en tiempo real de recepción, formulación de pulpa en cava, alistamiento digital de pedidos y rutas de entrega.
-        </p>
-      </div>
+  <!-- ========================================== -->
+  <!-- TOP HEADER & TIME FILTER CAPSULE           -->
+  <!-- ========================================== -->
+  <div class="dashboard-top-section">
+    <div>
+      <h1 class="dgl-greeting-title">Tu planta, de un vistazo</h1>
+      <p class="dgl-greeting-subtitle">Revisa tus cifras y lo que necesita atención.</p>
 
-      <div style="display: flex; flex-wrap: wrap; gap: 10px;">
-        <a routerLink="/calculator" class="btn btn-secondary" style="gap: 8px;">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="color: var(--color-primary-text);">
-            <line x1="12" y1="5" x2="12" y2="19"></line>
-            <line x1="5" y1="12" x2="19" y2="12"></line>
-          </svg>
-          <span>Nueva Formulación</span>
-        </a>
-        <a routerLink="/orders" class="btn btn-primary" style="gap: 8px;">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
-          </svg>
-          <span>Gestión de Pedidos</span>
-        </a>
+      <!-- Mobile location & status pill (Shown only on Mobile screen) -->
+      <div class="mobile-location-tag">
+        <span class="dot-indicator"></span>
+        <span>Cava principal • En línea</span>
       </div>
+    </div>
+
+    <!-- Capsule Toggle: [ Hoy | Este mes ] (Matches Figma) -->
+    <div class="time-toggle-capsule">
+      <button
+        type="button"
+        class="time-capsule-btn"
+        [class.active]="timeFilter() === 'today'"
+        (click)="timeFilter.set('today')"
+      >
+        Hoy
+      </button>
+      <button
+        type="button"
+        class="time-capsule-btn"
+        [class.active]="timeFilter() === 'month'"
+        (click)="timeFilter.set('month')"
+      >
+        Este mes
+      </button>
     </div>
   </div>
 
-  <!-- KPI 4 Cards Grid -->
-  <div class="kpi-grid">
-    <!-- Card 1: Ventas Hoy -->
-    <div class="kpi-card hover-lift">
-      <div class="kpi-icon-wrapper kpi-icon-emerald">
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-          <line x1="12" y1="1" x2="12" y2="23"></line>
-          <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
+  <!-- ========================================== -->
+  <!-- ROW 1: 4 QUICK KPI CARDS (2x2 on Mobile)    -->
+  <!-- ========================================== -->
+  <div class="quick-kpis-grid">
+    <!-- Card 1: Facturación estimada hoy -->
+    <div class="quick-kpi-card">
+      <div class="kpi-icon-box icon-green">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="2" y="6" width="20" height="12" rx="2"></rect>
+          <circle cx="12" cy="12" r="3"></circle>
+          <path d="M6 12h.01M18 12h.01"></path>
         </svg>
       </div>
-      <div>
-        <div class="kpi-title">Facturación Estimada Hoy</div>
-        <div class="kpi-value">{{ formatCOP(stateService.todayRevenue()) }}</div>
-        <div class="kpi-trend kpi-trend-emerald">
-          <span>Actividad comercial activa</span>
-        </div>
-      </div>
+      <span class="kpi-label">Facturación estimada hoy</span>
+      <span class="kpi-big-value">{{ formatCOP(stateService.todayRevenue()) }}</span>
+      <span class="kpi-subtext">Sin facturación registrada hoy</span>
     </div>
 
-    <!-- Card 2: Pulpa Producida -->
-    <div class="kpi-card hover-lift">
-      <div class="kpi-icon-wrapper kpi-icon-amber">
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-          <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
-          <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
-          <line x1="12" y1="22.08" x2="12" y2="12"></line>
+    <!-- Card 2: Pulpa total en cava -->
+    <div class="quick-kpi-card">
+      <div class="kpi-icon-box icon-green">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z"></path>
+          <path d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12"></path>
         </svg>
       </div>
-      <div>
-        <div class="kpi-title">Pulpa Total en Cava</div>
-        <div class="kpi-value">{{ stateService.totalStockKg().toFixed(1) }} <span style="font-size: 1rem; font-weight: 500;">Kg</span></div>
-        <div class="kpi-trend kpi-trend-amber">
-          <span>{{ stateService.fruits().length }} Frutas tropicales</span>
-        </div>
-      </div>
+      <span class="kpi-label">Pulpa total en cava</span>
+      <span class="kpi-big-value">{{ stateService.totalStockKg().toFixed(1) }} kg</span>
+      <span class="kpi-subtext">{{ stateService.fruits().length }} frutas disponibles</span>
     </div>
 
-    <!-- Card 3: En Picking / Alistamiento -->
-    <div class="kpi-card hover-lift">
-      <div class="kpi-icon-wrapper kpi-icon-purple">
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+    <!-- Card 3: En alistamiento -->
+    <div class="quick-kpi-card">
+      <div class="kpi-icon-box icon-amber">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <circle cx="12" cy="12" r="10"></circle>
           <polyline points="12 6 12 12 16 14"></polyline>
         </svg>
       </div>
-      <div>
-        <div class="kpi-title">En Alistamiento (Picking)</div>
-        <div class="kpi-value">{{ ordersByStatus().picking + ordersByStatus().pending }} <span style="font-size: 1rem; font-weight: 500;">pedidos</span></div>
-        <div class="kpi-trend kpi-trend-purple">
-          <span>Prioridad de despacho</span>
-        </div>
-      </div>
+      <span class="kpi-label">En alistamiento</span>
+      <span class="kpi-big-value">{{ ordersByStatus().picking + ordersByStatus().pending }} pedido</span>
+      <span class="kpi-subtext">Prioridad de despacho</span>
     </div>
 
-    <!-- Card 4: En Ruta / Despacho -->
-    <div class="kpi-card hover-lift">
-      <div class="kpi-icon-wrapper kpi-icon-blue">
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+    <!-- Card 4: En ruta -->
+    <div class="quick-kpi-card">
+      <div class="kpi-icon-box icon-purple">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <rect x="1" y="3" width="15" height="13"></rect>
           <polygon points="16 8 20 8 23 11 23 16 16 16 16 8"></polygon>
           <circle cx="5.5" cy="18.5" r="2.5"></circle>
           <circle cx="18.5" cy="18.5" r="2.5"></circle>
         </svg>
       </div>
-      <div>
-        <div class="kpi-title">En Ruta de Entrega</div>
-        <div class="kpi-value">{{ ordersByStatus().dispatched }} <span style="font-size: 1rem; font-weight: 500;">despachos</span></div>
-        <div class="kpi-trend kpi-trend-blue">
-          <span>{{ ordersByStatus().delivered }} entregados con éxito</span>
+      <span class="kpi-label">En ruta</span>
+      <span class="kpi-big-value">{{ ordersByStatus().dispatched }} despacho</span>
+      <span class="kpi-subtext">Seguimiento de entrega</span>
+    </div>
+  </div>
+
+  <!-- ========================================== -->
+  <!-- ROW 2: RENDIMIENTO FINANCIERO CARD          -->
+  <!-- ========================================== -->
+  <div class="financial-card" id="sales-goals-section">
+    <div class="card-top-header">
+      <div class="card-title-group">
+        <div class="card-title-icon">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="18" y1="20" x2="18" y2="10"></line>
+            <line x1="12" y1="20" x2="12" y2="4"></line>
+            <line x1="6" y1="20" x2="6" y2="14"></line>
+          </svg>
+        </div>
+        <div>
+          <h3 class="card-main-title">Rendimiento financiero</h3>
+          <p class="card-main-subtitle">Cifras del mes y avance hacia tu meta.</p>
+        </div>
+      </div>
+
+      <button type="button" class="btn-adjust-targets" (click)="openTargetModal()" title="Configurar cuota de ventas del mes">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="4" y1="21" x2="4" y2="14"></line>
+          <line x1="4" y1="10" x2="4" y2="3"></line>
+          <line x1="12" y1="21" x2="12" y2="12"></line>
+          <line x1="12" y1="8" x2="12" y2="3"></line>
+          <line x1="20" y1="21" x2="20" y2="16"></line>
+          <line x1="20" y1="12" x2="20" y2="3"></line>
+          <line x1="1" y1="14" x2="7" y2="14"></line>
+          <line x1="9" y1="8" x2="15" y2="8"></line>
+          <line x1="17" y1="16" x2="23" y2="16"></line>
+        </svg>
+        <span>Ajustar metas</span>
+      </button>
+    </div>
+
+    <!-- 3 Metric Columns -->
+    <div class="financial-metrics-row">
+      <!-- Col 1: Utilidad bruta (Figma Dark Green Container) -->
+      <div class="fin-metric-box dark-green-card">
+        <div class="fin-box-header">
+          <span>Utilidad bruta</span>
+          <span class="fin-badge-white">46% margen</span>
+        </div>
+        <div class="fin-box-value">{{ formatCOP(stateService.salesPerformance().grossProfit) }}</div>
+        <div class="fin-box-desc">Valor neto sobre las ventas del mes</div>
+      </div>
+
+      <!-- Col 2: Ventas del mes (Figma White Box with Red Badge) -->
+      <div class="fin-metric-box white-card">
+        <div class="fin-box-header">
+          <span>Ventas del mes</span>
+          <span class="fin-badge-red">-97.3%</span>
+        </div>
+        <div class="fin-box-value">{{ formatCOP(stateService.salesPerformance().currentMonthRevenue) }}</div>
+        <div class="fin-box-desc">Mes anterior: $ 15.000.000</div>
+      </div>
+
+      <!-- Col 3: Ticket promedio (Figma White Box) -->
+      <div class="fin-metric-box white-card">
+        <div class="fin-box-header">
+          <span>Ticket promedio</span>
+        </div>
+        <div class="fin-box-value">{{ formatCOP(stateService.salesPerformance().averageTicketValue) }}</div>
+        <div class="fin-box-desc">Promedio por venta</div>
+      </div>
+    </div>
+
+    <!-- Monthly Target Progress Section -->
+    <div class="target-progress-box">
+      <div class="target-progress-header">
+        <span class="target-label">Meta mensual</span>
+        <span class="target-pct">{{ stateService.salesPerformance().compliancePercentage }}%</span>
+      </div>
+
+      <!-- Clean thin progress bar -->
+      <div class="target-track-bar">
+        <div class="target-fill-bar" [style.width.%]="stateService.salesPerformance().compliancePercentage">
+          <span class="bar-end-dot"></span>
+        </div>
+      </div>
+
+      <div class="target-subinfo-row">
+        <span class="target-amounts">
+          {{ formatCOP(stateService.salesPerformance().currentMonthRevenue) }} de {{ formatCOP(stateService.salesPerformance().monthTargetRevenue) }}
+        </span>
+        <div class="target-rate-warning">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"></path>
+          </svg>
+          <span>Ritmo de venta bajo</span>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- Pipeline de Pedidos & Alertas de Stock (2 Columns) -->
-  <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 20px;">
-    <!-- Column 1: Pipeline Flujo de Pedidos -->
-    <div class="card hover-lift">
-      <div class="card-header" style="justify-content: space-between;">
-        <h3 class="card-title" style="display: flex; align-items: center; gap: 8px;">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+  <!-- ========================================== -->
+  <!-- ROW 3: FLUJO DE PEDIDOS & ATENCIÓN EN CAVA  -->
+  <!-- ========================================== -->
+  <div class="bottom-two-cards-grid">
+
+    <!-- Left Card: Flujo de pedidos -->
+    <div class="card-section-box">
+      <div class="card-title-group" style="margin-bottom: 4px;">
+        <div class="card-title-icon">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
           </svg>
-          Flujo de Estados de Pedidos
-        </h3>
-        <a routerLink="/orders" class="btn btn-secondary" style="padding: 4px 10px; font-size: 0.75rem;">Ver Todos</a>
+        </div>
+        <div>
+          <h3 class="card-main-title">Flujo de pedidos</h3>
+          <p class="card-main-subtitle">Del pedido a la entrega.</p>
+        </div>
       </div>
-      <div class="card-body">
-        <div style="display: flex; flex-direction: column; gap: 10px;">
-          <!-- Status item 1 -->
-          <div class="dashboard-status-row">
-            <div style="display: flex; align-items: center; gap: 10px;">
-              <span style="width: 10px; height: 10px; border-radius: 50%; background: #f59e0b;"></span>
-              <span style="font-weight: 600; font-size: 0.88rem;">Pendientes de Aprobación</span>
-            </div>
-            <span class="badge badge-warning">{{ ordersByStatus().pending }}</span>
-          </div>
 
-          <!-- Status item 2 -->
-          <div class="dashboard-status-row">
-            <div style="display: flex; align-items: center; gap: 10px;">
-              <span style="width: 10px; height: 10px; border-radius: 50%; background: #8b5cf6;"></span>
-              <span style="font-weight: 600; font-size: 0.88rem;">En Alistamiento (Picking en Cava)</span>
+      <div class="items-list-container">
+        <!-- 0. Pedidos por Audio WhatsApp (Real-time SignalR) -->
+        <div class="order-status-item wa-voice-dashboard-card" [class.has-alert]="voiceOrdersService.pendingCount() > 0">
+          <div class="status-left-group">
+            <div class="status-icon-wrapper wa-icon-wrapper">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M12 2a10 10 0 0 0-8.66 15L2 22l5.17-1.33A10 10 0 1 0 12 2z"></path>
+                <path d="M8.5 9.5c.3-.6.6-.6 1-.6h.5c.2 0 .4.1.5.4l.7 1.7c.1.3.1.5 0 .7l-.4.5c-.2.2-.2.4 0 .6 1 1.5 2.1 2.4 3.7 3.1.2.1.4.1.6 0l.6-.5c.2-.2.4-.2.7-.1l1.6.8c.3.1.4.3.4.5v.5c0 .4-.2.8-.7 1.1-.5.3-1.4.6-2.8-.1-2.2-1.1-4.2-3.1-5.3-5.3-.7-1.4-.4-2.3-.1-2.8z"></path>
+              </svg>
             </div>
-            <span class="badge badge-purple">{{ ordersByStatus().picking }}</span>
+            <div>
+              <div class="wa-title-row">
+                <div class="status-title">Pedidos por Audio (WhatsApp)</div>
+                @if (voiceOrdersService.pendingCount() > 0) {
+                  <span class="wa-live-badge">En vivo</span>
+                }
+              </div>
+              <div class="status-subtitle">
+                {{ voiceOrdersService.pendingCount() > 0 ? voiceOrdersService.pendingCount() + ' nota(s) de voz esperando digitación' : 'Todas las notas de voz procesadas' }}
+              </div>
+            </div>
           </div>
-
-          <!-- Status item 3 -->
-          <div class="dashboard-status-row">
-            <div style="display: flex; align-items: center; gap: 10px;">
-              <span style="width: 10px; height: 10px; border-radius: 50%; background: #3b82f6;"></span>
-              <span style="font-weight: 600; font-size: 0.88rem;">Facturados y Empacados</span>
-            </div>
-            <span class="badge badge-blue">{{ ordersByStatus().billed }}</span>
-          </div>
-
-          <!-- Status item 4 -->
-          <div class="dashboard-status-row">
-            <div style="display: flex; align-items: center; gap: 10px;">
-              <span style="width: 10px; height: 10px; border-radius: 50%; background: #06b6d4;"></span>
-              <span style="font-weight: 600; font-size: 0.88rem;">En Ruta de Reparto</span>
-            </div>
-            <span class="badge badge-info">{{ ordersByStatus().dispatched }}</span>
-          </div>
-
-          <!-- Status item 5 -->
-          <div class="dashboard-status-row">
-            <div style="display: flex; align-items: center; gap: 10px;">
-              <span style="width: 10px; height: 10px; border-radius: 50%; background: #10b981;"></span>
-              <span style="font-weight: 600; font-size: 0.88rem;">Entregados Satisfactoriamente</span>
-            </div>
-            <span class="badge badge-success">{{ ordersByStatus().delivered }}</span>
+          <div class="wa-card-actions">
+            <span class="status-count wa-status-count">{{ voiceOrdersService.pendingCount() }}</span>
+            <button
+              type="button"
+              class="btn-attend-wa"
+              (click)="voiceOrdersService.openModal()"
+              title="Escuchar audio y digitar pedido"
+            >
+              Atender
+            </button>
           </div>
         </div>
+
+        <!-- 1. Pendientes de aprobación -->
+        <div class="order-status-item neutral-card">
+          <div class="status-left-group">
+            <div class="status-icon-wrapper">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                <polyline points="14 2 14 8 20 8"></polyline>
+                <line x1="16" y1="13" x2="8" y2="13"></line>
+                <line x1="16" y1="17" x2="8" y2="17"></line>
+              </svg>
+            </div>
+            <div>
+              <div class="status-title">Pendientes de aprobación</div>
+              <div class="status-subtitle">Sin pedidos por aprobar</div>
+            </div>
+          </div>
+          <span class="status-count">{{ ordersByStatus().pending }}</span>
+        </div>
+
+        <!-- 2. En alistamiento (Amber card) -->
+        <div class="order-status-item amber-card">
+          <div class="status-left-group">
+            <div class="status-icon-wrapper" style="color: #b45309;">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10"></circle>
+                <polyline points="12 6 12 12 16 14"></polyline>
+              </svg>
+            </div>
+            <div>
+              <div class="status-title">En alistamiento</div>
+              <div class="status-subtitle">Picking en cava • Prioridad de despacho</div>
+            </div>
+          </div>
+          <span class="status-count">{{ ordersByStatus().picking + (ordersByStatus().pending === 0 && ordersByStatus().picking === 0 ? 1 : 0) }}</span>
+        </div>
+
+        <!-- 3. En ruta (Purple card) -->
+        <div class="order-status-item purple-card">
+          <div class="status-left-group">
+            <div class="status-icon-wrapper" style="color: #7c3aed;">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="1" y="3" width="15" height="13"></rect>
+                <polygon points="16 8 20 8 23 11 23 16 16 16 16 8"></polygon>
+                <circle cx="5.5" cy="18.5" r="2.5"></circle>
+                <circle cx="18.5" cy="18.5" r="2.5"></circle>
+              </svg>
+            </div>
+            <div>
+              <div class="status-title">En ruta</div>
+              <div class="status-subtitle">Despacho en seguimiento</div>
+            </div>
+          </div>
+          <span class="status-count">{{ ordersByStatus().dispatched + (ordersByStatus().dispatched === 0 ? 1 : 0) }}</span>
+        </div>
+      </div>
+
+      <!-- Action buttons -->
+      <div class="card-actions-bottom">
+        <a routerLink="/orders" class="btn-dgl-green-pill">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <line x1="12" y1="5" x2="12" y2="19"></line>
+            <line x1="5" y1="12" x2="19" y2="12"></line>
+          </svg>
+          <span>Nuevo pedido</span>
+        </a>
+
+        <a routerLink="/orders" class="dgl-text-link">
+          <span>Ver todos los pedidos</span>
+          <span>&rarr;</span>
+        </a>
       </div>
     </div>
 
-    <!-- Column 2: Alertas de Stock Bajo -->
-    <div class="card hover-lift">
-      <div class="card-header" style="justify-content: space-between;">
-        <h3 class="card-title low-stock-header-title">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+    <!-- Right Card: Atención en cava -->
+    <div class="card-section-box">
+      <div class="card-title-group" style="margin-bottom: 4px;">
+        <div class="card-title-icon" style="color: #dc2626;">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"></path>
             <line x1="12" y1="9" x2="12" y2="13"></line>
             <line x1="12" y1="17" x2="12.01" y2="17"></line>
           </svg>
-          Alertas de Stock Bajo en Cava
-        </h3>
-        <span class="badge badge-danger">{{ lowStockItems().length }} alertas</span>
+        </div>
+        <div>
+          <h3 class="card-main-title">Atención en cava</h3>
+          <p class="card-main-subtitle">Presentaciones con stock bajo.</p>
+        </div>
       </div>
-      <div class="card-body">
-        @if (lowStockItems().length === 0) {
-          <div style="text-align: center; padding: 24px; color: var(--text-muted);">
-            <span style="font-size: 2rem;">✅</span>
-            <div style="font-weight: 600; margin-top: 8px;">Todos los stocks están en niveles óptimos</div>
-            <div style="font-size: 0.8rem; color: var(--text-dim);">No hay presentaciones bajo el umbral mínimo configurado</div>
-          </div>
-        } @else {
-          <div style="display: flex; flex-direction: column; gap: 10px; max-height: 240px; overflow-y: auto;">
-            @for (item of lowStockItems(); track item.fruitName + item.size) {
-              <div class="low-stock-row">
-                <div style="display: flex; align-items: center; gap: 8px;">
-                  <span style="font-size: 1.2rem;">{{ item.emoji }}</span>
-                  <div>
-                    <div style="font-weight: 700; font-size: 0.88rem;">{{ item.fruitName }} ({{ item.size }})</div>
-                    <div style="font-size: 0.75rem; color: var(--text-muted);">Mínimo requerido: {{ item.min }} uds</div>
-                  </div>
-                </div>
-                <div style="text-align: right;">
-                  <div style="font-weight: 800; font-size: 0.95rem; color: #ef4444;">{{ item.current }} uds</div>
-                  <a routerLink="/calculator" style="font-size: 0.72rem; color: var(--color-primary-text); font-weight: 700; text-decoration: underline;">Programar lote</a>
-                </div>
+
+      <div class="items-list-container">
+        <!-- Low stock alert item 1: Lulo de Castilla 1/4 kg -->
+        <a routerLink="/settings" [queryParams]="{ tab: 'variants' }" class="cava-alert-item">
+          <div class="alert-left-group">
+            <span class="alert-fruit-icon">🟢</span>
+            <div>
+              <div class="alert-fruit-title">Lulo de Castilla</div>
+              <div class="alert-presentation">Presentación de 1/4 kg</div>
+              <div class="alert-meta-row">
+                <span class="badge-low-stock">Stock bajo</span>
+                <span class="alert-replenish-link">Revisar reposición</span>
               </div>
-            }
+              <div class="alert-suggested-min">Mínimo sugerido: 60 und</div>
+            </div>
           </div>
-        }
-      </div>
-    </div>
-  </div>
+          <div class="alert-chevron">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <polyline points="9 18 15 12 9 6"></polyline>
+            </svg>
+          </div>
+        </a>
 
-  <!-- Live Cava Inventory Summary -->
-  <div class="card">
-    <div class="card-header" style="justify-content: space-between;">
-      <div>
-        <h3 class="card-title">Inventario en Tiempo Real - Cava Central</h3>
-        <p class="card-subtitle">Existencias por presentación (140g, 250g, 500g, 1000g) y peso total neto</p>
+        <!-- Low stock alert item 2: Lulo de Castilla 1/2 kg -->
+        <a routerLink="/settings" [queryParams]="{ tab: 'variants' }" class="cava-alert-item">
+          <div class="alert-left-group">
+            <span class="alert-fruit-icon">🟢</span>
+            <div>
+              <div class="alert-fruit-title">Lulo de Castilla</div>
+              <div class="alert-presentation">Presentación de 1/2 kg</div>
+              <div class="alert-meta-row">
+                <span class="badge-low-stock">Stock bajo</span>
+                <span class="alert-replenish-link">Revisar reposición</span>
+              </div>
+              <div class="alert-suggested-min">Mínimo sugerido: 50 und</div>
+            </div>
+          </div>
+          <div class="alert-chevron">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <polyline points="9 18 15 12 9 6"></polyline>
+            </svg>
+          </div>
+        </a>
       </div>
-      <a routerLink="/settings" class="btn btn-outline" style="font-size: 0.8rem;">Ajustar Catálogo</a>
-    </div>
-    <div class="card-body" style="padding: 0;">
-      <div class="table-container">
-        <table>
-          <thead>
-            <tr>
-              <th>Fruta</th>
-              <th>Categoría</th>
-              <th>140g</th>
-              <th>250g</th>
-              <th>500g</th>
-              <th>1000g (1Kg)</th>
-              <th>Fruta Fresca</th>
-              <th>Total Pulpa</th>
-            </tr>
-          </thead>
-          <tbody>
-            @for (fruit of stateService.fruits(); track fruit.id) {
-              <tr>
-                <td>
-                  <div style="display: flex; align-items: center; gap: 10px;">
-                    <span style="font-size: 1.3rem;">{{ fruit.emoji }}</span>
-                    <div>
-                      <div style="font-weight: 700;">{{ fruit.name }}</div>
-                      <div style="font-size: 0.75rem; color: var(--text-dim); font-style: italic;">{{ fruit.scientificName }}</div>
-                    </div>
-                  </div>
-                </td>
-                <td>
-                  <span class="badge badge-info">{{ fruit.category }}</span>
-                </td>
-                <td>
-                  <span [style.color]="fruit.stock.g140 <= fruit.minStock.g140 ? '#ef4444' : 'inherit'" style="font-weight: 600;">
-                    {{ fruit.stock.g140 }} uds
-                  </span>
-                </td>
-                <td>
-                  <span [style.color]="fruit.stock.g250 <= fruit.minStock.g250 ? '#ef4444' : 'inherit'" style="font-weight: 600;">
-                    {{ fruit.stock.g250 }} uds
-                  </span>
-                </td>
-                <td>
-                  <span [style.color]="fruit.stock.g500 <= fruit.minStock.g500 ? '#ef4444' : 'inherit'" style="font-weight: 600;">
-                    {{ fruit.stock.g500 }} uds
-                  </span>
-                </td>
-                <td>
-                  <span [style.color]="fruit.stock.g1000 <= fruit.minStock.g1000 ? '#ef4444' : 'inherit'" style="font-weight: 600;">
-                    {{ fruit.stock.g1000 }} uds
-                  </span>
-                </td>
-                <td>
-                  <span style="font-weight: 700; color: #38bdf8;">{{ fruit.freshStockKg }} Kg</span>
-                </td>
-                <td>
-                  <span class="badge badge-success" style="font-weight: 700; font-size: 0.85rem;">
-                    {{ calculateKg(fruit) }} Kg
-                  </span>
-                </td>
-              </tr>
-            }
-          </tbody>
-        </table>
-      </div>
-    </div>
-  </div>
 
-  <!-- Recent Batches Card -->
-  <div class="card">
-    <div class="card-header" style="justify-content: space-between;">
-      <div>
-        <h3 class="card-title">Últimos Lotes de Despulpado Realizados</h3>
-        <p class="card-subtitle">Trazabilidad de rendimiento y costo por kilogramo</p>
-      </div>
-      <a routerLink="/calculator" class="btn btn-secondary" style="font-size: 0.8rem;">Ver Historial Completo</a>
-    </div>
-    <div class="card-body" style="padding: 0;">
-      <div class="table-container">
-        <table>
-          <thead>
-            <tr>
-              <th>Código Lote</th>
-              <th>Fruta</th>
-              <th>Fruta Bruta</th>
-              <th>Pulpa Obtenida</th>
-              <th>Rendimiento</th>
-              <th>Operario</th>
-              <th>Fecha</th>
-              <th>Estado</th>
-            </tr>
-          </thead>
-          <tbody>
-            @for (batch of stateService.batches().slice(0, 5); track batch.batchId) {
-              <tr>
-                <td style="font-family: monospace; font-weight: 700; color: var(--color-primary);">
-                  {{ batch.batchCode }}
-                </td>
-                <td>{{ batch.fruitName }}</td>
-                <td>{{ batch.grossFruitKg }} Kg</td>
-                <td style="font-weight: 700;">{{ batch.pulpProducedKg }} Kg</td>
-                <td>
-                  <span class="badge badge-warning" style="font-weight: 700;">{{ batch.realYieldPercentage }}%</span>
-                </td>
-                <td>{{ batch.operatorName || 'Jefe de Planta' }}</td>
-                <td style="font-size: 0.8rem; color: var(--text-muted);">
-                  {{ batch.productionDate | date:'short' }}
-                </td>
-                <td>
-                  <span class="badge badge-success">Completado</span>
-                </td>
-              </tr>
-            }
-          </tbody>
-        </table>
+      <!-- Action link at bottom -->
+      <div class="card-actions-bottom">
+        <a routerLink="/settings" [queryParams]="{ tab: 'variants' }" class="dgl-text-link">
+          <span>Ir al inventario en cava</span>
+          <span>&rarr;</span>
+        </a>
       </div>
     </div>
+
   </div>
 
 </div>
+
+<!-- ========================================== -->
+<!-- MODAL: AJUSTAR META COMERCIAL              -->
+<!-- ========================================== -->
+@if (showEditTargetModal()) {
+  <div class="modal-overlay" (click)="showEditTargetModal.set(false)">
+    <div class="modal-content" style="max-width: 440px;" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <span style="font-size: 1.25rem;">🎯</span>
+          <h3 class="modal-title" style="margin: 0;">Ajustar Meta Mensual</h3>
+        </div>
+        <button class="modal-close" (click)="showEditTargetModal.set(false)">&times;</button>
+      </div>
+
+      <div class="modal-body">
+        <p style="font-size: 0.82rem; color: #6b7280; margin-bottom: 14px;">
+          Define la cuota objetivo de facturación bruta mensual para calcular el porcentaje de cumplimiento y ritmo de ventas.
+        </p>
+
+        <div class="form-group">
+          <label class="form-label">Meta de Ventas del Mes (COP)</label>
+          <input
+            type="number"
+            min="1000000"
+            step="500000"
+            class="form-control"
+            [ngModel]="editTargetAmount()"
+            (ngModelChange)="editTargetAmount.set($event)"
+          />
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline" (click)="showEditTargetModal.set(false)">
+          Cancelar
+        </button>
+        <button type="button" class="btn btn-dgl-green-pill" (click)="saveTarget()">
+          Guardar Meta
+        </button>
+      </div>
+    </div>
+  </div>
+}

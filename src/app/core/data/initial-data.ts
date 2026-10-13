@@ -194,11 +194,15 @@ export const INITIAL_EMPLOYEES_SAMPLE = [
     lastName: 'Ruiz Gómez',
     fullName: 'Hernando Ruiz Gómez',
     identificationNumber: '79.845.120',
+    gender: 'MASCULINO' as const,
+    area: 'PRODUCCION' as const,
     phone: '310 456 1234',
     email: 'hernando.ruiz@pulpaspro.com',
     position: 'Jefe de Planta & Producción',
     department: 'Producción',
     baseSalary: 2800000,
+    transportAllowance: 162000,
+    deliveryBonusRate: 0,
     hireDate: '2022-03-15',
     isActive: true
   },
@@ -208,11 +212,15 @@ export const INITIAL_EMPLOYEES_SAMPLE = [
     lastName: 'Castillo',
     fullName: 'María Fernanda Castillo',
     identificationNumber: '1.018.445.990',
+    gender: 'FEMENINO' as const,
+    area: 'PRODUCCION' as const,
     phone: '315 789 4521',
     email: 'maria.castillo@pulpaspro.com',
     position: 'Operaria de Despulpado & Calidad',
     department: 'Producción',
     baseSalary: 1600000,
+    transportAllowance: 162000,
+    deliveryBonusRate: 0,
     hireDate: '2023-05-10',
     isActive: true
   },
@@ -222,25 +230,51 @@ export const INITIAL_EMPLOYEES_SAMPLE = [
     lastName: 'Montoya',
     fullName: 'Carlos Andrés Montoya',
     identificationNumber: '98.324.551',
+    gender: 'MASCULINO' as const,
+    area: 'PRODUCCION' as const,
     phone: '312 901 2345',
     email: 'carlos.montoya@pulpaspro.com',
     position: 'Operario de Cava y Empaque',
-    department: 'Logística',
+    department: 'Producción',
     baseSalary: 1550000,
+    transportAllowance: 162000,
+    deliveryBonusRate: 0,
     hireDate: '2023-01-20',
     isActive: true
   },
   {
     employeeId: 4,
+    firstName: 'Julián David',
+    lastName: 'Pérez Silva',
+    fullName: 'Julián David Pérez Silva',
+    identificationNumber: '1.020.334.887',
+    gender: 'MASCULINO' as const,
+    area: 'DOMICILIOS' as const,
+    phone: '311 889 0012',
+    email: 'julian.perez@pulpaspro.com',
+    position: 'Domiciliario & Entregas Flota',
+    department: 'Logística',
+    baseSalary: 1400000,
+    transportAllowance: 162000,
+    deliveryBonusRate: 3500,
+    hireDate: '2023-08-15',
+    isActive: true
+  },
+  {
+    employeeId: 5,
     firstName: 'Sandra Patricia',
     lastName: 'Ospina',
     fullName: 'Sandra Patricia Ospina',
     identificationNumber: '52.981.233',
+    gender: 'FEMENINO' as const,
+    area: 'ADMINISTRACION' as const,
     phone: '320 333 4455',
     email: 'sandra.ospina@pulpaspro.com',
     position: 'Auxiliar Contable y Facturación',
     department: 'Administración',
     baseSalary: 1900000,
+    transportAllowance: 162000,
+    deliveryBonusRate: 0,
     hireDate: '2022-08-01',
     isActive: true
   }
@@ -397,3 +431,231 @@ export const INITIAL_CLIENTS_SAMPLE = [
     isActive: true
   }
 ];
+
+// ==========================================
+// INITIAL PRODUCT VARIANTS (Pulpas, Limonadas, Batidos en 140g, 250g)
+// ==========================================
+export const INITIAL_PRODUCT_VARIANTS = [
+  // PULPAS
+  {
+    variantId: 101,
+    fruitId: 1,
+    fruitName: 'Maracuyá',
+    category: 'PULPAS' as const,
+    sku: 'PULP-MAR-140G',
+    name: 'Pulpa de Maracuyá 140g',
+    grammage: 140 as const,
+    unitCost: 1100,
+    basePrice: 2000,
+    minStockAlert: 50,
+    currentStock: 120,
+    isActive: true
+  },
+  {
+    variantId: 102,
+    fruitId: 1,
+    fruitName: 'Maracuyá',
+    category: 'PULPAS' as const,
+    sku: 'PULP-MAR-250G',
+    name: 'Pulpa de Maracuyá 250g',
+    grammage: 250 as const,
+    unitCost: 1850,
+    basePrice: 3500,
+    minStockAlert: 30,
+    currentStock: 85,
+    isActive: true
+  },
+  {
+    variantId: 103,
+    fruitId: 2,
+    fruitName: 'Mango Tommy',
+    category: 'PULPAS' as const,
+    sku: 'PULP-MAN-140G',
+    name: 'Pulpa de Mango Tommy 140g',
+    grammage: 140 as const,
+    unitCost: 950,
+    basePrice: 1800,
+    minStockAlert: 60,
+    currentStock: 160,
+    isActive: true
+  },
+  {
+    variantId: 104,
+    fruitId: 2,
+    fruitName: 'Mango Tommy',
+    category: 'PULPAS' as const,
+    sku: 'PULP-MAN-250G',
+    name: 'Pulpa de Mango Tommy 250g',
+    grammage: 250 as const,
+    unitCost: 1650,
+    basePrice: 3200,
+    minStockAlert: 40,
+    currentStock: 110,
+    isActive: true
+  },
+  {
+    variantId: 105,
+    fruitId: 3,
+    fruitName: 'Lulo de Castilla',
+    category: 'PULPAS' as const,
+    sku: 'PULP-LUL-140G',
+    name: 'Pulpa de Lulo 140g',
+    grammage: 140 as const,
+    unitCost: 1200,
+    basePrice: 2200,
+    minStockAlert: 50,
+    currentStock: 95,
+    isActive: true
+  },
+  {
+    variantId: 106,
+    fruitId: 3,
+    fruitName: 'Lulo de Castilla',
+    category: 'PULPAS' as const,
+    sku: 'PULP-LUL-250G',
+    name: 'Pulpa de Lulo 250g',
+    grammage: 250 as const,
+    unitCost: 1950,
+    basePrice: 3750,
+    minStockAlert: 30,
+    currentStock: 70,
+    isActive: true
+  },
+  // LIMONADAS
+  {
+    variantId: 201,
+    fruitId: 7, // Limón Mandarino / Coco
+    fruitName: 'Limonada de Coco',
+    category: 'LIMONADAS' as const,
+    sku: 'LIM-COC-140G',
+    name: 'Base Limonada de Coco 140g',
+    grammage: 140 as const,
+    unitCost: 1400,
+    basePrice: 2600,
+    minStockAlert: 30,
+    currentStock: 45,
+    isActive: true
+  },
+  {
+    variantId: 202,
+    fruitId: 7,
+    fruitName: 'Limonada Cerezada',
+    category: 'LIMONADAS' as const,
+    sku: 'LIM-CER-140G',
+    name: 'Base Limonada Cerezada 140g',
+    grammage: 140 as const,
+    unitCost: 1350,
+    basePrice: 2500,
+    minStockAlert: 30,
+    currentStock: 60,
+    isActive: true
+  },
+  // BATIDOS
+  {
+    variantId: 301,
+    fruitId: 8,
+    fruitName: 'Batido Verde Detox',
+    category: 'BATIDOS' as const,
+    sku: 'BAT-DTX-250G',
+    name: 'Batido Verde Detox (Espinaca/Piña/Manzana) 250g',
+    grammage: 250 as const,
+    unitCost: 2100,
+    basePrice: 4200,
+    minStockAlert: 25,
+    currentStock: 50,
+    isActive: true
+  },
+  {
+    variantId: 302,
+    fruitId: 8,
+    fruitName: 'Batido Rojo Antioxidante',
+    category: 'BATIDOS' as const,
+    sku: 'BAT-RED-250G',
+    name: 'Batido Rojo Antioxidante (Frutos Rojos) 250g',
+    grammage: 250 as const,
+    unitCost: 2300,
+    basePrice: 4500,
+    minStockAlert: 25,
+    currentStock: 40,
+    isActive: true
+  }
+];
+
+// ==========================================
+// INITIAL SALES TARGETS (Metas de Venta)
+// ==========================================
+export const INITIAL_SALES_TARGETS_SAMPLE = [
+  {
+    targetId: 1,
+    year: 2026,
+    month: 10, // Octubre 2026
+    targetRevenue: 18000000, // Meta $18'000.000 COP
+    targetUnits: 6500,
+    workingDays: 26,
+    notes: 'Meta comercial temporada regular',
+    createdAt: '2026-10-01T08:00:00'
+  },
+  {
+    targetId: 2,
+    year: 2026,
+    month: 9, // Septiembre 2026
+    targetRevenue: 16500000,
+    targetUnits: 6000,
+    workingDays: 26,
+    notes: 'Meta comercial septiembre',
+    createdAt: '2026-09-01T08:00:00'
+  }
+];
+
+// ==========================================
+// INITIAL PAYROLL PERIODS
+// ==========================================
+export const INITIAL_PAYROLL_PERIODS_SAMPLE = [
+  {
+    periodId: 1,
+    year: 2026,
+    month: 10,
+    fortnight: 1 as const, // 1 - 15 Octubre
+    startDate: '2026-10-01',
+    endDate: '2026-10-15',
+    isClosed: false
+  },
+  {
+    periodId: 2,
+    year: 2026,
+    month: 9,
+    fortnight: 2 as const, // 16 - 30 Septiembre
+    startDate: '2026-09-16',
+    endDate: '2026-09-30',
+    isClosed: true,
+    closedAt: '2026-09-30T18:00:00'
+  }
+];
+
+// ==========================================
+// DEFAULT COMPANY CONFIGURATION (BILLING & GENERAL)
+// ==========================================
+export const DEFAULT_COMPANY_CONFIG = {
+  companyName: 'DGL Pulpas Naturales',
+  legalName: 'Despulpadora DGL S.A.S.',
+  nit: '901.458.789-2',
+  logoUrl: '',
+  tagline: 'Planta de Transformación de Frutas Tropicales',
+  address: 'Calle 19 # 4-88, Bodega 3, Zona Industrial',
+  city: 'Cali',
+  department: 'Valle del Cauca',
+  country: 'Colombia',
+  phone: '+57 (602) 489 5000',
+  whatsapp: '+57 310 456 7890',
+  email: 'contacto@pulpasdgl.com',
+  billingEmail: 'facturacion@pulpasdgl.com',
+  operatingHours: 'Lunes a Sábado: 6:00 AM - 5:00 PM',
+  dispatchHours: 'Rutas de Entrega: 7:00 AM y 2:00 PM',
+  taxRegime: 'Responsable de IVA - Régimen Común',
+  dianResolution: 'Resolución DIAN No. 18764000293 de 2026. Prefijo DGL del 1 al 10000',
+  invoicePrefix: 'DGL-',
+  invoiceNextNumber: 1045,
+  invoiceFooterNote: '¡Gracias por preferir pulpas 100% naturales! Consérvese congelado a -18°C'
+};
+
+

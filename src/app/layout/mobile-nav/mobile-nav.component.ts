@@ -1,4 +1,4 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink, RouterLinkActive } from '@angular/router';
 import { StateService } from '../../core/services/state.service';
@@ -9,61 +9,294 @@ import { AuthService } from '../../core/services/auth.service';
   standalone: true,
   imports: [CommonModule, RouterLink, RouterLinkActive],
   template: `
-    <nav class="mobile-nav">
-      <a routerLink="/dashboard" routerLinkActive="active" class="mobile-nav-item">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <rect x="3" y="3" width="7" height="7"></rect>
-          <rect x="14" y="3" width="7" height="7"></rect>
-          <rect x="14" y="14" width="7" height="7"></rect>
-          <rect x="3" y="14" width="7" height="7"></rect>
+    <!-- Fixed Mobile Bottom Navigation Bar (Figma style) -->
+    <nav class="dgl-mobile-nav">
+      <!-- 1. Panel -->
+      <a routerLink="/dashboard" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }" class="dgl-mobile-nav-item">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="3" y="3" width="7" height="7" rx="1.5"></rect>
+          <rect x="14" y="3" width="7" height="7" rx="1.5"></rect>
+          <rect x="14" y="14" width="7" height="7" rx="1.5"></rect>
+          <rect x="3" y="14" width="7" height="7" rx="1.5"></rect>
         </svg>
-        <span>Inicio</span>
+        <span>Panel</span>
       </a>
 
-      <a routerLink="/calculator" routerLinkActive="active" class="mobile-nav-item">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <rect x="4" y="2" width="16" height="20" rx="2"></rect>
-          <line x1="8" y1="6" x2="16" y2="6"></line>
-          <path d="M16 10h.01"></path>
-          <path d="M12 10h.01"></path>
-          <path d="M8 10h.01"></path>
-          <path d="M12 14h.01"></path>
-          <path d="M8 14h.01"></path>
-        </svg>
-        <span>Lotes</span>
-      </a>
-
-      <a routerLink="/orders" routerLinkActive="active" class="mobile-nav-item">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"></path>
-          <path d="M3 6h18"></path>
-          <path d="M16 10a4 4 0 0 1-8 0"></path>
+      <!-- 2. Pedidos -->
+      <a routerLink="/orders" routerLinkActive="active" class="dgl-mobile-nav-item">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+          <polyline points="14 2 14 8 20 8"></polyline>
+          <line x1="16" y1="13" x2="8" y2="13"></line>
+          <line x1="16" y1="17" x2="8" y2="17"></line>
         </svg>
         <span>Pedidos</span>
         @if (stateService.pendingOrdersCount() > 0) {
-          <span class="mobile-badge">{{ stateService.pendingOrdersCount() }}</span>
+          <span class="dgl-mobile-badge">{{ stateService.pendingOrdersCount() }}</span>
         }
       </a>
 
-      <a routerLink="/shifts" routerLinkActive="active" class="mobile-nav-item">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <circle cx="12" cy="12" r="10"></circle>
-          <polyline points="12 6 12 12 16 14"></polyline>
+      <!-- 3. Cava -->
+      <a routerLink="/settings" routerLinkActive="active" class="dgl-mobile-nav-item">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
+          <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
+          <line x1="12" y1="22.08" x2="12" y2="12"></line>
         </svg>
-        <span>Turnos</span>
+        <span>Cava</span>
       </a>
 
-      <a routerLink="/settings" routerLinkActive="active" class="mobile-nav-item">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <circle cx="12" cy="12" r="3"></circle>
-          <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+      <!-- 4. Más (Menu Drawer Trigger) -->
+      <button type="button" class="dgl-mobile-nav-item" (click)="showMoreDrawer.set(true)">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="3" y1="12" x2="21" y2="12"></line>
+          <line x1="3" y1="6" x2="21" y2="6"></line>
+          <line x1="3" y1="18" x2="21" y2="18"></line>
         </svg>
-        <span>Ajustes</span>
-      </a>
+        <span>Más</span>
+      </button>
     </nav>
-  `
+
+    <!-- Mobile Drawer for "Más" options -->
+    @if (showMoreDrawer()) {
+      <div class="mobile-drawer-overlay" (click)="showMoreDrawer.set(false)">
+        <div class="mobile-drawer-content" (click)="$event.stopPropagation()">
+          <div class="mobile-drawer-header">
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <div style="width: 28px; height: 28px; border-radius: 8px; background: #1e5e3a; color: #fff; display: flex; align-items: center; justify-content: center;">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                  <path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z"></path>
+                </svg>
+              </div>
+              <span style="font-weight: 800; font-size: 1rem; color: #111827;">DGL · Módulos</span>
+            </div>
+            <button class="modal-close" (click)="showMoreDrawer.set(false)">&times;</button>
+          </div>
+
+          <div class="mobile-drawer-body">
+            <a routerLink="/calculator" class="drawer-link-item" (click)="showMoreDrawer.set(false)">
+              <span class="drawer-icon">🥣</span>
+              <div>
+                <div class="drawer-title">Producción & Calculadora</div>
+                <div class="drawer-desc">Formulación por brix y lotes</div>
+              </div>
+            </a>
+
+            <a routerLink="/accounting" class="drawer-link-item" (click)="showMoreDrawer.set(false)">
+              <span class="drawer-icon">📈</span>
+              <div>
+                <div class="drawer-title">Finanzas & Ventas</div>
+                <div class="drawer-desc">Libro de ingresos y gastos</div>
+              </div>
+            </a>
+
+            <a routerLink="/shifts" class="drawer-link-item" (click)="showMoreDrawer.set(false)">
+              <span class="drawer-icon">⏱️</span>
+              <div>
+                <div class="drawer-title">Control de Turnos</div>
+                <div class="drawer-desc">Entradas y salidas de operarios</div>
+              </div>
+            </a>
+
+            <a routerLink="/hr" class="drawer-link-item" (click)="showMoreDrawer.set(false)">
+              <span class="drawer-icon">👥</span>
+              <div>
+                <div class="drawer-title">Nómina & Talento Humano</div>
+                <div class="drawer-desc">Liquidación quincenal y personal</div>
+              </div>
+            </a>
+
+            <a routerLink="/reports" class="drawer-link-item" (click)="showMoreDrawer.set(false)">
+              <span class="drawer-icon">📊</span>
+              <div>
+                <div class="drawer-title">Informes & Auditoría</div>
+                <div class="drawer-desc">Balance de masa y estadísticas</div>
+              </div>
+            </a>
+
+            <a routerLink="/settings" [queryParams]="{ tab: 'general' }" class="drawer-link-item" (click)="showMoreDrawer.set(false)">
+              <span class="drawer-icon">🏢</span>
+              <div>
+                <div class="drawer-title">Configuración General</div>
+                <div class="drawer-desc">Empresa, logo, horarios y facturación</div>
+              </div>
+            </a>
+
+            <a routerLink="/settings" [queryParams]="{ tab: 'users' }" class="drawer-link-item" (click)="showMoreDrawer.set(false)">
+              <span class="drawer-icon">👥</span>
+              <div>
+                <div class="drawer-title">Usuarios y Roles</div>
+                <div class="drawer-desc">Cuentas, permisos y seguridad RBAC</div>
+              </div>
+            </a>
+
+            <div style="margin-top: 14px; padding-top: 14px; border-top: 1px solid #eef2ef;">
+              <button
+                type="button"
+                class="btn btn-outline"
+                style="width: 100%; justify-content: center; color: #dc2626; border-color: #fecaca;"
+                (click)="authService.logout(); showMoreDrawer.set(false)"
+              >
+                Cerrar Sesión
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    }
+  `,
+  styles: [`
+    .dgl-mobile-nav {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 62px;
+      background: #ffffff;
+      border-top: 1px solid #eef2ef;
+      box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.04);
+      display: flex;
+      justify-content: space-around;
+      align-items: center;
+      z-index: 50;
+      padding: 0 10px;
+    }
+
+    @media (min-width: 1025px) {
+      .dgl-mobile-nav {
+        display: none !important;
+      }
+    }
+
+    .dgl-mobile-nav-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 3px;
+      color: #6b7280;
+      font-size: 0.68rem;
+      font-weight: 500;
+      text-decoration: none;
+      background: transparent;
+      border: none;
+      padding: 6px 12px;
+      cursor: pointer;
+      position: relative;
+      transition: all 0.15s ease;
+
+      &:hover {
+        color: #1e5e3a;
+      }
+
+      &.active {
+        color: #1e5e3a;
+        font-weight: 700;
+
+        svg {
+          stroke: #1e5e3a;
+          stroke-width: 2.3;
+        }
+      }
+    }
+
+    .dgl-mobile-badge {
+      position: absolute;
+      top: 3px;
+      right: 12px;
+      min-width: 15px;
+      height: 15px;
+      border-radius: 9999px;
+      background: #dc2626;
+      color: #ffffff;
+      font-size: 0.58rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0 3px;
+    }
+
+    .mobile-drawer-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.45);
+      backdrop-filter: blur(4px);
+      z-index: 90;
+      display: flex;
+      align-items: flex-end;
+      animation: fadeIn 0.2s ease;
+    }
+
+    .mobile-drawer-content {
+      width: 100%;
+      background: #ffffff;
+      border-radius: 20px 20px 0 0;
+      padding: 20px 18px 30px;
+      max-height: 80vh;
+      overflow-y: auto;
+      box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.1);
+      animation: slideUp 0.25s ease;
+    }
+
+    .mobile-drawer-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 16px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid #eef2ef;
+    }
+
+    .drawer-link-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 11px 12px;
+      border-radius: 12px;
+      text-decoration: none;
+      transition: background 0.15s ease;
+      margin-bottom: 4px;
+
+      &:hover {
+        background: #f6f8f7;
+      }
+    }
+
+    .drawer-icon {
+      font-size: 1.3rem;
+      width: 36px;
+      height: 36px;
+      border-radius: 10px;
+      background: #f0f7f2;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .drawer-title {
+      font-size: 0.88rem;
+      font-weight: 700;
+      color: #111827;
+    }
+
+    .drawer-desc {
+      font-size: 0.74rem;
+      color: #6b7280;
+    }
+
+    @keyframes slideUp {
+      from { transform: translateY(100%); }
+      to { transform: translateY(0); }
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+  `]
 })
 export class MobileNavComponent {
   readonly stateService = inject(StateService);
   readonly authService = inject(AuthService);
+  readonly showMoreDrawer = signal<boolean>(false);
 }

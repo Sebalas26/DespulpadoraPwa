@@ -1,9 +1,10 @@
 import { Component, computed, inject, signal, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { RouterLink } from '@angular/router';
+import { ActivatedRoute, RouterLink } from '@angular/router';
 import { StateService } from '../../core/services/state.service';
 import { NotificationService } from '../../core/services/notification.service';
+import { VoiceOrdersService } from '../../core/services/voice-orders.service';
 import { OrderDto, OrderStatus } from '../../core/models/business.models';
 import { DeliveryMapComponent } from './delivery-map.component';
 import confetti from 'canvas-confetti';
@@ -18,14 +19,43 @@ import confetti from 'canvas-confetti';
 export class OrdersComponent {
   readonly stateService = inject(StateService);
   readonly notification = inject(NotificationService);
+  readonly voiceOrdersService = inject(VoiceOrdersService);
+  private readonly route = inject(ActivatedRoute);
 
   @ViewChild('deliveryMapRef') deliveryMapRef?: DeliveryMapComponent;
 
+  constructor() {
+    this.route.queryParams.subscribe(params => {
+      if (params['tab']) {
+        const tab = params['tab'] as 'picking' | 'facturacion' | 'despachos';
+        if (['picking', 'facturacion', 'despachos'].includes(tab)) {
+          this.activeSubTab.set(tab);
+        }
+      }
+      if (params['planner'] === 'true') {
+        this.openPlannerFromParent();
+      }
+    });
+
+    if (typeof window !== 'undefined') {
+      window.addEventListener('open-route-planner', () => {
+        this.openPlannerFromParent();
+      });
+    }
+  }
+
   openPlannerFromParent() {
     this.activeSubTab.set('despachos');
-    setTimeout(() => {
-      this.deliveryMapRef?.openRoutePlanner();
-    }, 100);
+    let attempts = 0;
+    const interval = setInterval(() => {
+      attempts++;
+      if (this.deliveryMapRef) {
+        clearInterval(interval);
+        this.deliveryMapRef.openRoutePlanner();
+      } else if (attempts > 20) {
+        clearInterval(interval);
+      }
+    }, 80);
   }
 
   // Active Sub-tab
