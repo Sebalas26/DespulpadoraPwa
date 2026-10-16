@@ -183,6 +183,76 @@ const INITIAL_BOGOTA_STOPS: DeliveryWaypoint[] = [
   }
 ];
 
+export interface AddressSearchResult {
+  id: string;
+  name: string;
+  label: string;
+  lat: number;
+  lng: number;
+  zone: string;
+  locality?: string;
+}
+
+export interface MapStyleOption {
+  id: string;
+  name: string;
+  shortName: string;
+  badge: string;
+  icon: string;
+  description: string;
+  url: string;
+  maxZoom: number;
+  maxNativeZoom?: number;
+  isDark?: boolean;
+}
+
+export const STADIA_API_KEY = '28312715-2030-4d54-ad98-458156a468d2';
+
+export const MAP_STYLES: MapStyleOption[] = [
+  {
+    id: 'stadia-smooth',
+    name: 'Stadia Maps Alidade Smooth',
+    shortName: 'Stadia Smooth',
+    badge: 'VECTOR RETINA',
+    icon: '⚡',
+    description: 'Cartografía vectorial de alta definición en escala de grises con soporte Retina @2x.',
+    url: `https://tiles.stadiamaps.com/tiles/alidade_smooth/{z}/{x}/{y}{r}.png?api_key=${STADIA_API_KEY}`,
+    maxZoom: 20
+  },
+  {
+    id: 'stadia-dark',
+    name: 'Stadia Maps Alidade Smooth Dark',
+    shortName: 'Stadia Dark',
+    badge: 'MODO NOCHE',
+    icon: '🌙',
+    description: 'Modo oscuro elegante de alto contraste para visibilidad nocturna.',
+    url: `https://tiles.stadiamaps.com/tiles/alidade_smooth_dark/{z}/{x}/{y}{r}.png?api_key=${STADIA_API_KEY}`,
+    maxZoom: 20,
+    isDark: true
+  },
+  {
+    id: 'esri-gray',
+    name: 'Esri World Gray Canvas',
+    shortName: 'Esri Canvas',
+    badge: 'ARCGIS',
+    icon: '🏛️',
+    description: 'Cartografía corporativa en escala de grises de Esri ArcGIS.',
+    url: 'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}',
+    maxZoom: 19,
+    maxNativeZoom: 16
+  },
+  {
+    id: 'osm-standard',
+    name: 'OpenStreetMap Clásico',
+    shortName: 'Color Estándar',
+    badge: 'ESTÁNDAR',
+    icon: '🌐',
+    description: 'Mapa tradicional en colores naturales.',
+    url: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+    maxZoom: 19
+  }
+];
+
 @Component({
   selector: 'app-delivery-map',
   standalone: true,
@@ -198,6 +268,7 @@ const INITIAL_BOGOTA_STOPS: DeliveryWaypoint[] = [
               <span>GPS & TELEMETRÍA EN VIVO · BOGOTÁ & CUNDINAMARCA</span>
             </div>
             <span class="badge-pill badge-emerald">Rutas por Calles & Avenidas Reales</span>
+            <span class="badge-pill badge-stadia">⚡ Stadia Maps Alidade Smooth (@2x Retina)</span>
           </div>
 
           <!-- Controls Toolbar -->
@@ -350,6 +421,113 @@ const INITIAL_BOGOTA_STOPS: DeliveryWaypoint[] = [
           }
 
           <div #mapElement class="leaflet-map-element" id="bogota-cundinamarca-map"></div>
+
+          <!-- Floating Address Geocoder Search Box -->
+          <div class="map-address-search-box" [class.has-dropdown]="showSearchResults() && searchResults().length > 0">
+            <div class="search-input-shell">
+              <span class="search-prefix-icon">
+                @if (isSearchingAddress()) {
+                  <span class="search-mini-spinner"></span>
+                } @else {
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                    <circle cx="11" cy="11" r="8"></circle>
+                    <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                  </svg>
+                }
+              </span>
+
+              <input
+                type="text"
+                class="address-search-input"
+                placeholder="Buscar dirección (ej: Calle 93 # 13, Usaquén, Chía)..."
+                [ngModel]="searchAddressQuery()"
+                (ngModelChange)="onAddressQueryChange($event)"
+                (keydown.enter)="onSearchEnter()"
+                (focus)="onSearchFocus()"
+              />
+
+              @if (searchAddressQuery()) {
+                <button
+                  type="button"
+                  class="search-clear-action"
+                  (click)="clearAddressSearch()"
+                  title="Borrar búsqueda"
+                >
+                  ✕
+                </button>
+              }
+
+              <button
+                type="button"
+                class="search-submit-btn"
+                (click)="onSearchEnter()"
+                title="Ubicar dirección en el mapa"
+              >
+                Buscar
+              </button>
+            </div>
+
+            <!-- Autocomplete Suggestions Dropdown -->
+            @if (showSearchResults() && searchResults().length > 0) {
+              <div class="search-autocomplete-dropdown">
+                <div class="dropdown-header">
+                  <span>📍 DIRECCIONES ENCONTRADAS ({{ searchResults().length }})</span>
+                  <button type="button" class="btn-dismiss-dropdown" (click)="closeSearchResults()">✕</button>
+                </div>
+                <div class="dropdown-scroll-list">
+                  @for (item of searchResults(); track item.id) {
+                    <div class="dropdown-item" (click)="selectAddressResult(item)">
+                      <span class="item-pin-icon">📍</span>
+                      <div class="item-texts">
+                        <div class="item-title">{{ item.name || item.label }}</div>
+                        <div class="item-subtitle">{{ item.label }}</div>
+                        <span class="item-zone-tag">{{ item.zone }}</span>
+                      </div>
+                      <button
+                        type="button"
+                        class="item-order-shortcut"
+                        (click)="$event.stopPropagation(); createOrderFromSearchResult(item)"
+                        title="Crear pedido en esta dirección"
+                      >
+                        + Pedido
+                      </button>
+                    </div>
+                  }
+                </div>
+              </div>
+            }
+          </div>
+
+          <!-- Floating Layer Switcher (Stadia Smooth / Stadia Dark / Esri Canvas) -->
+          <div class="map-floating-layer-switcher">
+            <button
+              type="button"
+              class="layer-switch-btn"
+              [class.active]="selectedMapStyleId() === 'stadia-smooth'"
+              (click)="selectMapStyle('stadia-smooth')"
+              title="Stadia Maps Alidade Smooth (Vector Retina @2x)"
+            >
+              <span>⚡</span> Stadia Smooth
+            </button>
+            <button
+              type="button"
+              class="layer-switch-btn"
+              [class.active]="selectedMapStyleId() === 'stadia-dark'"
+              (click)="selectMapStyle('stadia-dark')"
+              title="Stadia Maps Alidade Smooth Dark (Modo Noche)"
+            >
+              <span>🌙</span> Stadia Dark
+            </button>
+            <button
+              type="button"
+              class="layer-switch-btn"
+              [class.active]="selectedMapStyleId() === 'esri-gray'"
+              (click)="selectMapStyle('esri-gray')"
+              title="Esri World Gray Canvas (ArcGIS)"
+            >
+              <span>🏛️</span> Esri Canvas
+            </button>
+          </div>
 
           <!-- High-Contrast Legend Overlay -->
           <div class="map-legend-overlay">
@@ -817,6 +995,13 @@ const INITIAL_BOGOTA_STOPS: DeliveryWaypoint[] = [
       border: 1px solid rgba(14, 165, 233, 0.25);
     }
 
+    .badge-stadia {
+      background: rgba(245, 158, 11, 0.15);
+      color: #f59e0b;
+      border: 1px solid rgba(245, 158, 11, 0.3);
+      font-weight: 700;
+    }
+
     .map-controls {
       display: flex;
       align-items: center;
@@ -931,6 +1116,19 @@ const INITIAL_BOGOTA_STOPS: DeliveryWaypoint[] = [
       }
     }
 
+    @media (max-width: 768px) {
+      .map-address-search-box {
+        left: 10px;
+        right: 10px;
+        width: auto;
+        top: 10px;
+      }
+      .map-floating-layer-switcher {
+        top: 62px;
+        right: 10px;
+      }
+    }
+
     /* Leaflet Map Card */
     .map-canvas-card {
       position: relative;
@@ -946,6 +1144,280 @@ const INITIAL_BOGOTA_STOPS: DeliveryWaypoint[] = [
       width: 100%;
       height: 540px;
       z-index: 1;
+    }
+
+    /* Floating Address Search Box */
+    .map-address-search-box {
+      position: absolute;
+      top: 14px;
+      left: 14px;
+      z-index: 1000;
+      width: clamp(280px, 34vw, 420px);
+      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+
+      .search-input-shell {
+        display: flex;
+        align-items: center;
+        background: rgba(15, 23, 42, 0.94);
+        backdrop-filter: blur(14px);
+        border: 1px solid rgba(255, 255, 255, 0.16);
+        border-radius: 9999px;
+        padding: 4px 6px 4px 14px;
+        gap: 8px;
+        box-shadow: 0 8px 30px rgba(0, 0, 0, 0.4);
+        transition: all 0.2s ease;
+
+        &:focus-within {
+          border-color: #0ea5e9;
+          box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.25), 0 8px 30px rgba(0, 0, 0, 0.45);
+        }
+      }
+
+      &.has-dropdown .search-input-shell {
+        border-bottom-left-radius: 10px;
+        border-bottom-right-radius: 10px;
+      }
+
+      .search-prefix-icon {
+        color: #94a3b8;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .search-mini-spinner {
+        width: 14px;
+        height: 14px;
+        border: 2px solid rgba(14, 165, 233, 0.3);
+        border-top-color: #0ea5e9;
+        border-radius: 50%;
+        animation: spinSearch 0.8s linear infinite;
+      }
+
+      .address-search-input {
+        flex: 1;
+        min-width: 0;
+        background: transparent;
+        border: none;
+        outline: none;
+        color: #ffffff;
+        font-size: 0.82rem;
+        font-weight: 500;
+        font-family: inherit;
+
+        &::placeholder {
+          color: #94a3b8;
+          font-size: 0.78rem;
+        }
+      }
+
+      .search-clear-action {
+        background: rgba(255, 255, 255, 0.1);
+        border: none;
+        color: #cbd5e1;
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        font-size: 0.65rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: background 0.2s;
+
+        &:hover {
+          background: rgba(255, 255, 255, 0.25);
+          color: #ffffff;
+        }
+      }
+
+      .search-submit-btn {
+        background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%);
+        border: none;
+        color: #ffffff;
+        font-size: 0.75rem;
+        font-weight: 700;
+        padding: 6px 13px;
+        border-radius: 9999px;
+        cursor: pointer;
+        transition: all 0.2s;
+        box-shadow: 0 2px 8px rgba(14, 165, 233, 0.35);
+        white-space: nowrap;
+
+        &:hover {
+          filter: brightness(1.1);
+          transform: translateY(-1px);
+        }
+      }
+
+      .search-autocomplete-dropdown {
+        margin-top: 6px;
+        background: rgba(15, 23, 42, 0.96);
+        backdrop-filter: blur(16px);
+        border: 1px solid rgba(255, 255, 255, 0.16);
+        border-radius: 14px;
+        overflow: hidden;
+        box-shadow: 0 12px 36px rgba(0, 0, 0, 0.5);
+        animation: fadeInDown 0.2s ease;
+
+        .dropdown-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          padding: 8px 14px;
+          border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+          font-size: 0.68rem;
+          font-weight: 800;
+          color: #94a3b8;
+          letter-spacing: 0.5px;
+        }
+
+        .btn-dismiss-dropdown {
+          background: transparent;
+          border: none;
+          color: #94a3b8;
+          font-size: 0.75rem;
+          cursor: pointer;
+          &:hover { color: #fff; }
+        }
+
+        .dropdown-scroll-list {
+          max-height: 250px;
+          overflow-y: auto;
+        }
+
+        .dropdown-item {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          padding: 10px 14px;
+          border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+          cursor: pointer;
+          transition: background 0.15s;
+
+          &:hover {
+            background: rgba(255, 255, 255, 0.08);
+          }
+
+          &:last-child {
+            border-bottom: none;
+          }
+
+          .item-pin-icon {
+            font-size: 1.05rem;
+            flex-shrink: 0;
+          }
+
+          .item-texts {
+            flex: 1;
+            min-width: 0;
+
+            .item-title {
+              font-size: 0.8rem;
+              font-weight: 700;
+              color: #f8fafc;
+              white-space: nowrap;
+              overflow: hidden;
+              text-overflow: ellipsis;
+            }
+
+            .item-subtitle {
+              font-size: 0.7rem;
+              color: #94a3b8;
+              white-space: nowrap;
+              overflow: hidden;
+              text-overflow: ellipsis;
+              margin-top: 1px;
+            }
+
+            .item-zone-tag {
+              display: inline-block;
+              font-size: 0.62rem;
+              font-weight: 700;
+              background: rgba(14, 165, 233, 0.15);
+              color: #38bdf8;
+              padding: 1px 6px;
+              border-radius: 4px;
+              margin-top: 3px;
+            }
+          }
+
+          .item-order-shortcut {
+            background: rgba(16, 185, 129, 0.15);
+            border: 1px solid rgba(16, 185, 129, 0.35);
+            color: #10b981;
+            font-size: 0.72rem;
+            font-weight: 800;
+            padding: 4px 8px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+            flex-shrink: 0;
+
+            &:hover {
+              background: #10b981;
+              color: #ffffff;
+            }
+          }
+        }
+      }
+    }
+
+    @keyframes spinSearch {
+      to { transform: rotate(360deg); }
+    }
+
+    @keyframes fadeInDown {
+      from { opacity: 0; transform: translateY(-6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes pulseSearchPin {
+      0% { transform: scale(0.95); box-shadow: 0 0 16px rgba(14, 165, 233, 0.8); }
+      50% { transform: scale(1.1); box-shadow: 0 0 28px rgba(14, 165, 233, 1); }
+      100% { transform: scale(0.95); box-shadow: 0 0 16px rgba(14, 165, 233, 0.8); }
+    }
+
+    .map-floating-layer-switcher {
+      position: absolute;
+      top: 14px;
+      right: 14px;
+      z-index: 1000;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      background: rgba(15, 23, 42, 0.88);
+      backdrop-filter: blur(12px);
+      padding: 4px;
+      border-radius: 9999px;
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+
+      .layer-switch-btn {
+        background: transparent;
+        border: none;
+        color: #94a3b8;
+        padding: 5px 12px;
+        font-size: 0.76rem;
+        font-weight: 700;
+        border-radius: 9999px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+
+        &:hover {
+          color: #ffffff;
+          background: rgba(255, 255, 255, 0.08);
+        }
+
+        &.active {
+          background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+          color: #0f172a;
+          box-shadow: 0 2px 10px rgba(245, 158, 11, 0.4);
+        }
+      }
     }
 
     .map-marking-banner {
@@ -1734,12 +2206,35 @@ export class DeliveryMapComponent implements OnInit, AfterViewInit, OnDestroy {
 
   @ViewChild('mapElement') mapElement!: ElementRef<HTMLDivElement>;
 
+  // Active Map Tile Style Signal (Defaults to Stadia Maps Alidade Smooth)
+  readonly selectedMapStyleId = signal<string>(
+    (() => {
+      try {
+        return localStorage.getItem('despulpadora_map_style') || 'stadia-smooth';
+      } catch {
+        return 'stadia-smooth';
+      }
+    })()
+  );
+  readonly mapStyles = MAP_STYLES;
+  private currentTileLayer?: L.TileLayer;
+  private currentRefLayer?: L.TileLayer;
+
   // Leaflet Map instance
   private map?: L.Map;
   private courierMarkers: Map<string, L.Marker> = new Map();
   private stopMarkers: Map<number, L.Marker> = new Map();
+  private routeCasingPolylines: Map<string, L.Polyline> = new Map();
   private routePolylines: Map<string, L.Polyline> = new Map();
   private tempPointMarker?: L.Marker;
+
+  // Address Search & Geocoding State
+  readonly searchAddressQuery = signal<string>('');
+  readonly isSearchingAddress = signal<boolean>(false);
+  readonly searchResults = signal<AddressSearchResult[]>([]);
+  readonly showSearchResults = signal<boolean>(false);
+  private searchDebounceTimer?: any;
+  private searchResultMarker?: L.Marker;
 
   // Real Road Network Cache & Coordinates
   private roadSegmentCache: Map<string, [number, number][]> = new Map();
@@ -1915,6 +2410,9 @@ export class DeliveryMapComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   ngOnDestroy() {
+    if (this.searchDebounceTimer) {
+      clearTimeout(this.searchDebounceTimer);
+    }
     if (this.animFrameId) {
       cancelAnimationFrame(this.animFrameId);
     }
@@ -1939,11 +2437,8 @@ export class DeliveryMapComponent implements OnInit, AfterViewInit, OnDestroy {
 
     L.control.zoom({ position: 'bottomright' }).addTo(this.map);
 
-    // Official OpenStreetMap Tile Layer - Crisp, clean, completely watermark-free!
-    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      maxZoom: 19,
-      attribution: '© OpenStreetMap contributors'
-    }).addTo(this.map);
+    // Apply Stadia Maps / configured active layer
+    this.applyTileLayer(this.selectedMapStyleId());
 
     // Add Planta Matriz Cundinamarca Marker
     this.addPlantaMarker();
@@ -1965,6 +2460,75 @@ export class DeliveryMapComponent implements OnInit, AfterViewInit, OnDestroy {
     setTimeout(() => {
       this.map?.invalidateSize();
     }, 250);
+  }
+
+  selectMapStyle(styleId: string) {
+    this.selectedMapStyleId.set(styleId);
+    this.applyTileLayer(styleId);
+
+    const style = MAP_STYLES.find(s => s.id === styleId);
+    if (style) {
+      this.notification.success(
+        `Capa ${style.shortName} Activa`,
+        style.description
+      );
+    }
+  }
+
+  applyTileLayer(styleId: string) {
+    if (!this.map) return;
+
+    const style = MAP_STYLES.find(s => s.id === styleId) || MAP_STYLES[0];
+
+    // Clean up previous layers
+    if (this.currentTileLayer) {
+      this.map.removeLayer(this.currentTileLayer);
+      this.currentTileLayer = undefined;
+    }
+    if (this.currentRefLayer) {
+      this.map.removeLayer(this.currentRefLayer);
+      this.currentRefLayer = undefined;
+    }
+
+    const options: L.TileLayerOptions = {
+      maxZoom: style.maxZoom,
+      maxNativeZoom: style.maxNativeZoom,
+      attribution: style.id.startsWith('stadia')
+        ? '&copy; <a href="https://stadiamaps.com/" target="_blank">Stadia Maps</a> &copy; <a href="https://openmaptiles.org/" target="_blank">OpenMapTiles</a> &copy; <a href="https://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap</a>'
+        : (style.id === 'esri-gray'
+            ? 'Tiles &copy; Esri &mdash; Esri, DeLorme, NAVTEQ'
+            : '&copy; OpenStreetMap contributors')
+    };
+
+    this.currentTileLayer = L.tileLayer(style.url, options).addTo(this.map);
+
+    // If Esri Canvas is active, also add official reference labels
+    if (style.id === 'esri-gray') {
+      this.currentRefLayer = L.tileLayer(
+        'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Reference/MapServer/tile/{z}/{y}/{x}',
+        { maxZoom: 19, maxNativeZoom: 16 }
+      ).addTo(this.map);
+    }
+
+    this.updatePolylineStylesForActiveMap();
+
+    try {
+      localStorage.setItem('despulpadora_map_style', styleId);
+    } catch {}
+  }
+
+  private updatePolylineStylesForActiveMap() {
+    if (!this.map) return;
+    const isDark = this.selectedMapStyleId() === 'stadia-dark';
+    const casingColor = isDark ? '#020617' : '#ffffff';
+    const casingOpacity = isDark ? 0.9 : 0.85;
+
+    this.routeCasingPolylines.forEach(casing => {
+      casing.setStyle({
+        color: casingColor,
+        opacity: casingOpacity
+      });
+    });
   }
 
   private addPlantaMarker() {
@@ -2182,16 +2746,34 @@ export class DeliveryMapComponent implements OnInit, AfterViewInit, OnDestroy {
 
       this.courierFullRoadPaths.set(courier.id, fullRoadPath);
 
-      // Render glowing real road polyline on map
+      // Render glowing real road polyline on map with crisp casing
       if (this.map && fullRoadPath.length > 1) {
+        const isDark = this.selectedMapStyleId() === 'stadia-dark';
+        const casingColor = isDark ? '#020617' : '#ffffff';
+        const casingOpacity = isDark ? 0.9 : 0.85;
+
+        let casing = this.routeCasingPolylines.get(courier.id);
+        if (casing) {
+          casing.setLatLngs(fullRoadPath);
+        } else {
+          casing = L.polyline(fullRoadPath, {
+            color: casingColor,
+            weight: 7,
+            opacity: casingOpacity,
+            lineCap: 'round',
+            lineJoin: 'round'
+          }).addTo(this.map);
+          this.routeCasingPolylines.set(courier.id, casing);
+        }
+
         let polyline = this.routePolylines.get(courier.id);
         if (polyline) {
           polyline.setLatLngs(fullRoadPath);
         } else {
           polyline = L.polyline(fullRoadPath, {
             color: courier.color,
-            weight: 5,
-            opacity: 0.9,
+            weight: 4.5,
+            opacity: 0.95,
             dashArray: '8, 8',
             lineCap: 'round',
             lineJoin: 'round'
@@ -2337,6 +2919,295 @@ export class DeliveryMapComponent implements OnInit, AfterViewInit, OnDestroy {
     if (lat < 4.61 && lng > -74.09) return 'Centro Histórico / Candelaria';
     if (lng < -74.13) return 'Fontibón / Mosquera (Cundinamarca)';
     return 'Bogotá D.C.';
+  }
+
+  // =========================================================================
+  // ADDRESS SEARCH & GEOCODING (STADIA MAPS PELIAS + NOMINATIM FALLBACK)
+  // =========================================================================
+  onAddressQueryChange(query: string) {
+    this.searchAddressQuery.set(query);
+    if (this.searchDebounceTimer) {
+      clearTimeout(this.searchDebounceTimer);
+    }
+
+    const trimmed = query.trim();
+    if (trimmed.length < 3) {
+      this.searchResults.set([]);
+      this.showSearchResults.set(false);
+      this.isSearchingAddress.set(false);
+      return;
+    }
+
+    this.isSearchingAddress.set(true);
+    this.searchDebounceTimer = setTimeout(() => {
+      this.executeAddressSearch(trimmed);
+    }, 280);
+  }
+
+  onSearchFocus() {
+    if (this.searchResults().length > 0) {
+      this.showSearchResults.set(true);
+    }
+  }
+
+  closeSearchResults() {
+    this.showSearchResults.set(false);
+  }
+
+  clearAddressSearch() {
+    this.searchAddressQuery.set('');
+    this.searchResults.set([]);
+    this.showSearchResults.set(false);
+    if (this.searchResultMarker) {
+      this.searchResultMarker.remove();
+      this.searchResultMarker = undefined;
+    }
+  }
+
+  onSearchEnter() {
+    const query = this.searchAddressQuery().trim();
+    if (!query) return;
+
+    const results = this.searchResults();
+    if (results.length > 0) {
+      this.selectAddressResult(results[0]);
+    } else {
+      this.isSearchingAddress.set(true);
+      this.executeAddressSearch(query).then(() => {
+        const updated = this.searchResults();
+        if (updated.length > 0) {
+          this.selectAddressResult(updated[0]);
+        } else {
+          this.notification.warning(
+            'Dirección no encontrada',
+            `No se encontró '${query}'. Intenta con nomenclatura (ej: Calle 93 # 13-25) o punto de referencia.`
+          );
+        }
+      });
+    }
+  }
+
+  async executeAddressSearch(query: string) {
+    try {
+      const encoded = encodeURIComponent(query);
+      // 1. Stadia Maps Pelias Autocomplete (uses customer's API Key & biased to Bogotá)
+      const stadiaUrl = `https://api.stadiamaps.com/geocoding/v1/autocomplete?api_key=${STADIA_API_KEY}&focus.point.lat=4.6850&focus.point.lon=-74.0950&boundary.country=COL&text=${encoded}`;
+
+      const res = await fetch(stadiaUrl);
+      const results: AddressSearchResult[] = [];
+
+      if (res.ok) {
+        const data = await res.json();
+        if (data.features && data.features.length > 0) {
+          for (const feat of data.features) {
+            const coords = feat.geometry?.coordinates;
+            if (!coords || coords.length < 2) continue;
+            const lng = coords[0];
+            const lat = coords[1];
+            const props = feat.properties || {};
+            results.push({
+              id: props.id || props.gid || `${lat}_${lng}`,
+              name: props.name || props.street || query,
+              label: props.label || props.name || query,
+              lat,
+              lng,
+              zone: this.detectBogotaZone(lat, lng),
+              locality: props.locality || props.county || 'Bogotá'
+            });
+          }
+        }
+      }
+
+      // 2. OpenStreetMap Nominatim Fallback if Stadia yields 0 results
+      if (results.length === 0) {
+        const nominatimUrl = `https://nominatim.openstreetmap.org/search?format=json&q=${encoded}&countrycodes=co&viewbox=-74.45,4.95,-73.95,4.45&bounded=0&limit=5`;
+        const nomRes = await fetch(nominatimUrl, {
+          headers: { 'Accept-Language': 'es' }
+        });
+        if (nomRes.ok) {
+          const nomData = await nomRes.json();
+          for (const item of nomData) {
+            const lat = parseFloat(item.lat);
+            const lng = parseFloat(item.lon);
+            results.push({
+              id: item.place_id ? String(item.place_id) : `${lat}_${lng}`,
+              name: item.name || item.display_name.split(',')[0],
+              label: item.display_name,
+              lat,
+              lng,
+              zone: this.detectBogotaZone(lat, lng),
+              locality: 'Bogotá'
+            });
+          }
+        }
+      }
+
+      this.searchResults.set(results);
+      this.showSearchResults.set(results.length > 0);
+    } catch (err) {
+      console.error('Error buscando dirección:', err);
+    } finally {
+      this.isSearchingAddress.set(false);
+    }
+  }
+
+  selectAddressResult(item: AddressSearchResult) {
+    this.showSearchResults.set(false);
+    this.searchAddressQuery.set(item.name || item.label);
+
+    if (!this.map) return;
+
+    // Fly smoothly to the found address
+    this.map.flyTo([item.lat, item.lng], 16, {
+      animate: true,
+      duration: 1.2
+    });
+
+    if (this.searchResultMarker) {
+      this.searchResultMarker.remove();
+      this.searchResultMarker = undefined;
+    }
+
+    const pinHtml = `
+      <div style="
+        position: relative;
+        background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%);
+        color: #ffffff;
+        border: 3px solid #ffffff;
+        box-shadow: 0 0 24px rgba(14, 165, 233, 0.9), 0 4px 12px rgba(0, 0, 0, 0.3);
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.25rem;
+        animation: pulseSearchPin 1.5s infinite;
+        cursor: pointer;
+      ">
+        🔍
+        <span style="
+          position: absolute;
+          bottom: -6px;
+          right: -6px;
+          background: #f59e0b;
+          color: #000;
+          font-size: 0.6rem;
+          font-weight: 900;
+          padding: 2px 5px;
+          border-radius: 9999px;
+          border: 1px solid #fff;
+        ">GPS</span>
+      </div>
+    `;
+
+    const pinIcon = L.divIcon({
+      html: pinHtml,
+      className: '',
+      iconSize: [40, 40],
+      iconAnchor: [20, 20],
+      popupAnchor: [0, -22]
+    });
+
+    const popupHtml = `
+      <div style="min-width: 220px; font-family: inherit; padding: 4px;">
+        <div style="font-size: 0.72rem; font-weight: 800; color: #0ea5e9; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px;">
+          📍 Dirección Localizada
+        </div>
+        <div style="font-size: 0.88rem; font-weight: 700; color: #0f172a; line-height: 1.3; margin-bottom: 6px;">
+          ${item.label}
+        </div>
+        <div style="display: flex; gap: 6px; font-size: 0.73rem; color: #64748b; margin-bottom: 10px; background: #f8fafc; padding: 4px 8px; border-radius: 6px;">
+          <span>Zona: <b>${item.zone || this.detectBogotaZone(item.lat, item.lng)}</b></span>
+        </div>
+        <button
+          id="btn-create-order-from-search"
+          style="
+            width: 100%;
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            color: #ffffff;
+            border: none;
+            padding: 8px 12px;
+            border-radius: 8px;
+            font-weight: 800;
+            font-size: 0.82rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+          "
+        >
+          ➕ Crear Pedido en Esta Dirección
+        </button>
+      </div>
+    `;
+
+    this.searchResultMarker = L.marker([item.lat, item.lng], { icon: pinIcon })
+      .bindPopup(popupHtml, { closeButton: true, autoClose: false })
+      .addTo(this.map);
+
+    this.searchResultMarker.on('popupopen', () => {
+      const btn = document.getElementById('btn-create-order-from-search');
+      if (btn) {
+        btn.onclick = () => {
+          this.createOrderFromSearchResult(item);
+        };
+      }
+    });
+
+    setTimeout(() => {
+      this.searchResultMarker?.openPopup();
+    }, 1250);
+
+    this.notification.info(
+      'Dirección Ubicada',
+      `${item.label} (${item.zone})`
+    );
+  }
+
+  createOrderFromSearchResult(item: AddressSearchResult) {
+    this.newOrderLat.set(item.lat);
+    this.newOrderLng.set(item.lng);
+    const zone = item.zone || this.detectBogotaZone(item.lat, item.lng);
+    this.newOrderZone.set(zone);
+    this.newOrderAddress = item.label;
+    this.newOrderClient = `Cliente ${zone.split(' ')[0]} #${Math.floor(10 + Math.random() * 90)}`;
+
+    if (this.map) {
+      if (this.tempPointMarker) this.tempPointMarker.remove();
+
+      const tempHtml = `
+        <div style="
+          background: #f59e0b;
+          color: #000;
+          border: 3px solid #fff;
+          box-shadow: 0 0 20px rgba(245, 158, 11, 0.9);
+          width: 36px;
+          height: 36px;
+          border-radius: 50%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 1.2rem;
+          animation: markButtonPulse 1s infinite;
+        ">
+          📍
+        </div>
+      `;
+
+      const tempIcon = L.divIcon({
+        html: tempHtml,
+        className: '',
+        iconSize: [36, 36],
+        iconAnchor: [18, 18]
+      });
+
+      this.tempPointMarker = L.marker([item.lat, item.lng], { icon: tempIcon }).addTo(this.map);
+    }
+
+    this.showPointOrderModal.set(true);
   }
 
   selectPulpPreset(preset: { name: string; price: number; kg: number }) {
