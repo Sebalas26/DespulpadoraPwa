@@ -22,15 +22,15 @@ import { AuthService } from '../../core/services/auth.service';
         <span>Panel</span>
       </a>
 
-      <!-- 2. Pedidos -->
-      <a routerLink="/orders" routerLinkActive="active" class="dgl-mobile-nav-item">
+      <!-- 2. Alistamiento -->
+      <a routerLink="/orders" [queryParams]="{ tab: 'picking' }" routerLinkActive="active" class="dgl-mobile-nav-item">
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
           <polyline points="14 2 14 8 20 8"></polyline>
           <line x1="16" y1="13" x2="8" y2="13"></line>
           <line x1="16" y1="17" x2="8" y2="17"></line>
         </svg>
-        <span>Pedidos</span>
+        <span>Picking</span>
         @if (stateService.pendingOrdersCount() > 0) {
           <span class="dgl-mobile-badge">{{ stateService.pendingOrdersCount() }}</span>
         }
@@ -63,17 +63,37 @@ import { AuthService } from '../../core/services/auth.service';
         <div class="mobile-drawer-content" (click)="$event.stopPropagation()">
           <div class="mobile-drawer-header">
             <div style="display: flex; align-items: center; gap: 8px;">
-              <div style="width: 28px; height: 28px; border-radius: 8px; background: #1e5e3a; color: #fff; display: flex; align-items: center; justify-content: center;">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-                  <path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z"></path>
-                </svg>
-              </div>
-              <span style="font-weight: 800; font-size: 1rem; color: #111827;">DGL · Módulos</span>
+              <img src="/logo-dgl.png" alt="DGL Despulpadora" style="width: 32px; height: 32px; object-fit: contain;" />
+              <span style="font-weight: 800; font-size: 1rem; color: #111827;">DGL Despulpadora</span>
             </div>
             <button class="modal-close" (click)="showMoreDrawer.set(false)">&times;</button>
           </div>
 
           <div class="mobile-drawer-body">
+            <a routerLink="/orders" [queryParams]="{ tab: 'picking' }" class="drawer-link-item" (click)="showMoreDrawer.set(false)">
+              <span class="drawer-icon">📦</span>
+              <div>
+                <div class="drawer-title">Alistamiento</div>
+                <div class="drawer-desc">Checklist de pulpa en cava</div>
+              </div>
+            </a>
+
+            <a routerLink="/orders" [queryParams]="{ tab: 'facturacion' }" class="drawer-link-item" (click)="showMoreDrawer.set(false)">
+              <span class="drawer-icon">🧾</span>
+              <div>
+                <div class="drawer-title">Facturación & POS</div>
+                <div class="drawer-desc">Factura ejecutiva corporativa y cobro</div>
+              </div>
+            </a>
+
+            <a routerLink="/orders" [queryParams]="{ tab: 'despachos' }" class="drawer-link-item" (click)="showMoreDrawer.set(false)">
+              <span class="drawer-icon">🚚</span>
+              <div>
+                <div class="drawer-title">Despachos & Rutas</div>
+                <div class="drawer-desc">Control de domiciliarios y entregas</div>
+              </div>
+            </a>
+
             <a routerLink="/calculator" class="drawer-link-item" (click)="showMoreDrawer.set(false)">
               <span class="drawer-icon">🥣</span>
               <div>
@@ -83,10 +103,10 @@ import { AuthService } from '../../core/services/auth.service';
             </a>
 
             <a routerLink="/accounting" class="drawer-link-item" (click)="showMoreDrawer.set(false)">
-              <span class="drawer-icon">📈</span>
+              <span class="drawer-icon">📊</span>
               <div>
-                <div class="drawer-title">Finanzas & Ventas</div>
-                <div class="drawer-desc">Libro de ingresos y gastos</div>
+                <div class="drawer-title">Reportes de Ventas</div>
+                <div class="drawer-desc">Listado tipo Excel y exportación de todo lo vendido</div>
               </div>
             </a>
 

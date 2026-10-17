@@ -226,7 +226,7 @@ interface TicketTimer {
             </div>
           </section>
 
-          <!-- COLUMN 2: EN ALISTAMIENTO EN CAVA (PICKING) -->
+          <!-- COLUMN 2: EN ALISTAMIENTO -->
           <section class="kds-column col-picking">
             <div class="kds-column-header">
               <div class="col-title-group">

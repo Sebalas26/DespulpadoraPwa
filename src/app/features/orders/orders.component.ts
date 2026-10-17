@@ -1,7 +1,7 @@
 import { Component, computed, inject, signal, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { ActivatedRoute, RouterLink } from '@angular/router';
+import { ActivatedRoute } from '@angular/router';
 import { StateService } from '../../core/services/state.service';
 import { NotificationService } from '../../core/services/notification.service';
 import { VoiceOrdersService } from '../../core/services/voice-orders.service';
@@ -13,7 +13,7 @@ import confetti from 'canvas-confetti';
 @Component({
   selector: 'app-orders',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, DeliveryMapComponent],
+  imports: [CommonModule, FormsModule, DeliveryMapComponent],
   templateUrl: './orders.component.html',
   styleUrls: ['./orders.component.scss']
 })
@@ -28,11 +28,11 @@ export class OrdersComponent {
 
   constructor() {
     this.route.queryParams.subscribe(params => {
-      if (params['tab']) {
-        const tab = params['tab'] as 'picking' | 'facturacion' | 'despachos';
-        if (['picking', 'facturacion', 'despachos'].includes(tab)) {
-          this.activeSubTab.set(tab);
-        }
+      const tab = params['tab'] as 'picking' | 'facturacion' | 'despachos' | undefined;
+      if (tab && ['picking', 'facturacion', 'despachos'].includes(tab)) {
+        this.activeSubTab.set(tab);
+      } else {
+        this.activeSubTab.set('picking');
       }
       if (params['planner'] === 'true') {
         this.openPlannerFromParent();
@@ -42,6 +42,9 @@ export class OrdersComponent {
     if (typeof window !== 'undefined') {
       window.addEventListener('open-route-planner', () => {
         this.openPlannerFromParent();
+      });
+      window.addEventListener('open-new-order-modal', () => {
+        this.openCreateOrderModal();
       });
     }
   }
@@ -63,6 +66,29 @@ export class OrdersComponent {
   // Active Sub-tab
   readonly activeSubTab = signal<'picking' | 'facturacion' | 'despachos'>('picking');
 
+  // Weekly Picking Day Cards (Figma design)
+  readonly weekDays = signal<{
+    name: string;
+    count: number;
+    color: 'purple' | 'green' | 'blue' | 'cyan' | 'red';
+    active: boolean;
+    hasIndicator?: boolean;
+  }[]>([
+    { name: 'Lunes', count: 2, color: 'purple', active: false, hasIndicator: true },
+    { name: 'Martes', count: 4, color: 'green', active: false },
+    { name: 'Miércoles', count: 3, color: 'blue', active: false },
+    { name: 'Jueves', count: 12, color: 'green', active: true },
+    { name: 'Viernes', count: 5, color: 'cyan', active: false },
+    { name: 'Sábado', count: 1, color: 'red', active: false },
+    { name: 'Domingo', count: 8, color: 'green', active: true }
+  ]);
+
+  toggleDayCard(index: number) {
+    this.weekDays.update(days =>
+      days.map((d, i) => (i === index ? { ...d, active: !d.active } : d))
+    );
+  }
+
   // Search & Filter
   readonly searchTerm = signal<string>('');
   readonly statusFilter = signal<string>('all');
@@ -77,11 +103,50 @@ export class OrdersComponent {
     this.stateService.orders().filter(o => o.status === 'DISPATCHED').length
   );
 
-  // Modal Dialogs
+  // Aggregated Pulp Summary for Picking Toolbar
+  readonly pulpSummaryText = computed(() => {
+    const pickingOrders = this.stateService
+      .orders()
+      .filter(o => o.status === 'PENDING' || o.status === 'PICKING');
+
+    const totalsMap = new Map<string, number>();
+    pickingOrders.forEach(order => {
+      order.items.forEach(item => {
+        const key = `${item.fruitName} (${item.grammage}g)`;
+        totalsMap.set(key, (totalsMap.get(key) || 0) + item.quantity);
+      });
+    });
+
+    if (totalsMap.size === 0) {
+      return '0 unidades pendientes en cava';
+    }
+
+    const parts: string[] = [];
+    totalsMap.forEach((qty, label) => {
+      parts.push(`${qty}x ${label}`);
+    });
+
+    return parts.join(', ') + '...';
+  });
+
+  // Modal Dialogs & Pro Invoice Studio State
   readonly showWhatsAppModal = signal<boolean>(false);
   readonly showNewOrderModal = signal<boolean>(false);
   readonly showInvoiceModal = signal<boolean>(false);
   readonly selectedOrderForInvoice = signal<OrderDto | null>(null);
+  readonly invoiceFormat = signal<'a4' | 'pos'>('a4');
+  readonly invoiceTaxRate = signal<number>(19); // Default 19% IVA as in DGL invoice
+  readonly itemDiscounts = signal<Record<string, number>>({});
+
+  // Selected order in the Facturación & POS studio view
+  readonly activeBillingOrder = computed<OrderDto | null>(() => {
+    const explicit = this.selectedOrderForInvoice();
+    const list = this.tabOrders();
+    if (explicit && list.some(o => o.orderId === explicit.orderId)) {
+      return explicit;
+    }
+    return list[0] || this.stateService.orders()[0] || null;
+  });
 
   // WhatsApp Simulator inputs
   readonly whatsAppText = signal<string>(`Hola DGL , requiero urgente para Restaurante El Portal de la 93:
@@ -115,7 +180,8 @@ Pago por Transferencia Bancolombia`);
     if (tab === 'picking') {
       list = list.filter(o => o.status === 'PENDING' || o.status === 'PICKING');
     } else if (tab === 'facturacion') {
-      list = list.filter(o => o.status === 'BILLED' || o.status === 'PICKING');
+      const billedOrPicking = list.filter(o => o.status === 'BILLED' || o.status === 'PICKING');
+      list = billedOrPicking.length > 0 ? billedOrPicking : list.filter(o => o.status !== 'CANCELLED');
     } else if (tab === 'despachos') {
       list = list.filter(o => o.status === 'DISPATCHED' || o.status === 'DELIVERED');
     }
@@ -152,14 +218,86 @@ Pago por Transferencia Bancolombia`);
     }
   }
 
-  // Invoice Modal Opener
-  openInvoice(order: OrderDto) {
+  // Invoice Selection & Modal Opener
+  selectBillingOrder(order: OrderDto) {
     this.selectedOrderForInvoice.set(order);
+  }
+
+  openInvoice(order: OrderDto, format: 'a4' | 'pos' = 'a4') {
+    this.selectedOrderForInvoice.set(order);
+    this.invoiceFormat.set(format);
     this.showInvoiceModal.set(true);
   }
 
   printInvoice() {
     window.print();
+  }
+
+  // ==========================================
+  // PRO CORPORATE INVOICE HELPERS (INV/2026/...)
+  // ==========================================
+  getInvoiceCode(order: OrderDto): string {
+    const prefix = this.stateService.companyInfo().invoicePrefix || 'INV/2026/';
+    const baseNum = this.stateService.companyInfo().invoiceNextNumber || 7750;
+    const seq = String(baseNum + (order.orderId % 100)).padStart(5, '0');
+    return `${prefix}${seq}`;
+  }
+
+  getOriginCode(order: OrderDto): string {
+    const seq = String(1097 + (order.orderId % 9000)).padStart(4, '0');
+    return `S0${seq}`;
+  }
+
+  formatInvoiceDate(dateStr?: string): string {
+    const d = dateStr ? new Date(dateStr) : new Date();
+    if (isNaN(d.getTime())) return '17/10/2026';
+    const day = String(d.getDate()).padStart(2, '0');
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const year = d.getFullYear();
+    return `${day}/${month}/${year}`;
+  }
+
+  formatNumberES(val: number): string {
+    return new Intl.NumberFormat('es-CO', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    }).format(val || 0);
+  }
+
+  getItemDiscount(orderId: number, idx: number): number {
+    const key = `${orderId}_${idx}`;
+    return this.itemDiscounts()[key] ?? 0;
+  }
+
+  setItemDiscount(orderId: number, idx: number, val: number) {
+    const clamped = Math.min(100, Math.max(0, Number(val) || 0));
+    const key = `${orderId}_${idx}`;
+    this.itemDiscounts.update(prev => ({ ...prev, [key]: clamped }));
+  }
+
+  getItemImporte(item: { quantity: number; unitPrice: number; subtotal: number }, orderId: number, idx: number): number {
+    const disc = this.getItemDiscount(orderId, idx);
+    const gross = (item.quantity || 0) * (item.unitPrice || 0);
+    return Math.round(gross * (1 - disc / 100));
+  }
+
+  getInvoiceBaseAmount(order: OrderDto): number {
+    return order.items.reduce((sum, item, idx) => sum + this.getItemImporte(item, order.orderId, idx), 0);
+  }
+
+  getInvoiceDiscountSaved(order: OrderDto): number {
+    const gross = order.items.reduce((sum, item) => sum + item.quantity * item.unitPrice, 0);
+    return Math.max(0, gross - this.getInvoiceBaseAmount(order));
+  }
+
+  getInvoiceTaxAmount(order: OrderDto): number {
+    const rate = this.invoiceTaxRate();
+    if (rate <= 0) return 0;
+    return Math.round(this.getInvoiceBaseAmount(order) * (rate / 100));
+  }
+
+  getInvoiceTotalWithTax(order: OrderDto): number {
+    return this.getInvoiceBaseAmount(order) + this.getInvoiceTaxAmount(order);
   }
 
   // WhatsApp Parsing Engine
@@ -240,7 +378,51 @@ Pago por Transferencia Bancolombia`);
     } catch { }
   }
 
-  // Manual Order Management
+  // Manual & Edit Order Management
+  readonly editingOrderId = signal<number | null>(null);
+  readonly editingOrderNumber = signal<string>('');
+
+  readonly manualOrderTotal = computed(() =>
+    this.manualItems().reduce((sum, item) => sum + (Number(item.quantity) || 0) * (Number(item.unitPrice) || 0), 0)
+  );
+
+  openCreateOrderModal() {
+    this.editingOrderId.set(null);
+    this.editingOrderNumber.set('');
+    this.manualClientName.set('');
+    this.manualPhone.set('');
+    this.manualAddress.set('');
+    this.manualAddressSuggestions.set([]);
+    this.selectedManualGeo.set(null);
+    this.manualPaymentMethod.set('Transferencia Bancolombia');
+    this.manualNotes.set('');
+    this.manualItems.set([
+      { fruitName: 'Maracuyá', grammage: 1000, quantity: 5, unitPrice: 11000 }
+    ]);
+    this.showNewOrderModal.set(true);
+  }
+
+  openEditOrderModal(order: OrderDto) {
+    this.editingOrderId.set(order.orderId);
+    this.editingOrderNumber.set(order.orderNumber);
+    this.manualClientName.set(order.clientName || '');
+    this.manualPhone.set(order.clientPhone || '');
+    this.manualAddress.set(order.clientAddress || '');
+    this.manualAddressSuggestions.set([]);
+    this.selectedManualGeo.set(null);
+    this.manualPaymentMethod.set(order.paymentMethodName || 'Transferencia Bancolombia');
+    this.manualNotes.set(order.notes || '');
+    this.manualItems.set(
+      order.items.map(i => ({
+        fruitName: i.fruitName || 'Maracuyá',
+        grammage: (i.grammage as 140 | 250 | 500 | 1000) || 1000,
+        quantity: i.quantity,
+        unitPrice: i.unitPrice
+      }))
+    );
+    this.showNewOrderModal.set(true);
+  }
+
   addManualItem() {
     this.manualItems.update(list => [
       ...list,
@@ -264,15 +446,26 @@ Pago por Transferencia Bancolombia`);
   }
 
   updateManualItemGrammage(index: number, grammage: 140 | 250 | 500 | 1000) {
+    const numGram = Number(grammage) as 140 | 250 | 500 | 1000;
     this.manualItems.update(list => list.map((item, i) => {
       if (i === index) {
         const fruit = this.stateService.fruits().find(f => f.name === item.fruitName);
-        const pKey = `g${grammage}` as 'g140' | 'g250' | 'g500' | 'g1000';
+        const pKey = `g${numGram}` as 'g140' | 'g250' | 'g500' | 'g1000';
         const price = fruit ? fruit.prices[pKey] : item.unitPrice;
-        return { ...item, grammage, unitPrice: price };
+        return { ...item, grammage: numGram, unitPrice: price };
       }
       return item;
     }));
+  }
+
+  updateManualItemQuantity(index: number, qty: number) {
+    const validQty = Math.max(1, Number(qty) || 1);
+    this.manualItems.update(list => list.map((item, i) => (i === index ? { ...item, quantity: validQty } : item)));
+  }
+
+  updateManualItemPrice(index: number, price: number) {
+    const validPrice = Math.max(0, Number(price) || 0);
+    this.manualItems.update(list => list.map((item, i) => (i === index ? { ...item, unitPrice: validPrice } : item)));
   }
 
   onManualAddressChange(val: string) {
@@ -315,22 +508,46 @@ Pago por Transferencia Bancolombia`);
 
     const geo = this.selectedManualGeo();
     const finalAddress = geo ? geo.label : this.manualAddress();
+    const editId = this.editingOrderId();
 
-    this.stateService.createOrder({
-      clientName: this.manualClientName(),
-      clientPhone: this.manualPhone(),
-      clientAddress: finalAddress,
-      items: this.manualItems(),
-      paymentMethodName: this.manualPaymentMethod(),
-      notes: this.manualNotes()
-    });
+    if (editId !== null) {
+      this.stateService.updateOrder(editId, {
+        clientName: this.manualClientName(),
+        clientPhone: this.manualPhone(),
+        clientAddress: finalAddress,
+        items: this.manualItems(),
+        paymentMethodName: this.manualPaymentMethod(),
+        notes: this.manualNotes()
+      });
+    } else {
+      this.stateService.createOrder({
+        clientName: this.manualClientName(),
+        clientPhone: this.manualPhone(),
+        clientAddress: finalAddress,
+        items: this.manualItems(),
+        paymentMethodName: this.manualPaymentMethod(),
+        notes: this.manualNotes()
+      });
+    }
 
     this.showNewOrderModal.set(false);
+    this.editingOrderId.set(null);
+    this.editingOrderNumber.set('');
     this.manualClientName.set('');
     this.manualPhone.set('');
     this.manualAddress.set('');
     this.manualAddressSuggestions.set([]);
     this.selectedManualGeo.set(null);
+  }
+
+  deleteCurrentEditingOrder() {
+    const editId = this.editingOrderId();
+    if (editId !== null) {
+      this.stateService.deleteOrder(editId);
+      this.showNewOrderModal.set(false);
+      this.editingOrderId.set(null);
+      this.editingOrderNumber.set('');
+    }
   }
 
   formatCOP(val: number): string {

@@ -298,7 +298,17 @@ export class StateService {
 
   private loadCompanyInfoFromStorage(): CompanyConfig {
     const data = localStorage.getItem('despulpadora_company_info');
-    return data ? { ...DEFAULT_COMPANY_CONFIG, ...JSON.parse(data) } : DEFAULT_COMPANY_CONFIG;
+    if (!data) return DEFAULT_COMPANY_CONFIG;
+    const parsed = JSON.parse(data) as Partial<CompanyConfig>;
+    if (parsed.nit === '901.458.789-2' || !parsed.logoUrl) {
+      return DEFAULT_COMPANY_CONFIG;
+    }
+    return { ...DEFAULT_COMPANY_CONFIG, ...parsed };
+  }
+
+  syncCompanyInfoSilent(updates: Partial<CompanyConfig>) {
+    this.companyInfo.update(prev => ({ ...prev, ...updates }));
+    this.saveAllToStorage();
   }
 
   updateCompanyInfo(updates: Partial<CompanyConfig>) {
@@ -553,6 +563,71 @@ export class StateService {
     this.notification.success('Pedido Creado', `Orden #${newOrder.orderNumber} por $${totalAmount.toLocaleString('es-CO')}`);
 
     return newOrder;
+  }
+
+  updateOrder(
+    orderId: number,
+    orderData: {
+      clientName: string;
+      clientPhone?: string;
+      clientAddress?: string;
+      items: {
+        fruitName: string;
+        grammage: 140 | 250 | 500 | 1000;
+        quantity: number;
+        unitPrice: number;
+        pickedQuantity?: number;
+      }[];
+      notes?: string;
+      paymentMethodName?: string;
+    }
+  ) {
+    const totalAmount = orderData.items.reduce((sum, item) => sum + (item.quantity * item.unitPrice), 0);
+
+    this.orders.update(list =>
+      list.map(o => {
+        if (o.orderId === orderId) {
+          return {
+            ...o,
+            clientName: orderData.clientName,
+            clientPhone: orderData.clientPhone || o.clientPhone,
+            clientAddress: orderData.clientAddress || o.clientAddress,
+            paymentMethodName: orderData.paymentMethodName || o.paymentMethodName,
+            notes: orderData.notes,
+            totalAmount,
+            items: orderData.items.map(i => {
+              const fruit = this.fruits().find(f => f.name.toLowerCase() === i.fruitName.toLowerCase());
+              const existingItem = o.items.find(
+                ex => ex.fruitName?.toLowerCase() === i.fruitName.toLowerCase() && ex.grammage === i.grammage
+              );
+              const preservedPicked = i.pickedQuantity ?? existingItem?.pickedQuantity ?? 0;
+              return {
+                fruitId: fruit?.fruitId || existingItem?.fruitId || 1,
+                fruitName: i.fruitName,
+                grammage: i.grammage,
+                quantity: i.quantity,
+                unitPrice: i.unitPrice,
+                subtotal: i.quantity * i.unitPrice,
+                pickedQuantity: Math.min(i.quantity, preservedPicked)
+              };
+            })
+          };
+        }
+        return o;
+      })
+    );
+
+    this.saveAllToStorage();
+    this.notification.success('Pedido Modificado', `Los cambios del pedido fueron guardados ($${totalAmount.toLocaleString('es-CO')}).`);
+  }
+
+  deleteOrder(orderId: number) {
+    const target = this.orders().find(o => o.orderId === orderId);
+    this.orders.update(list => list.filter(o => o.orderId !== orderId));
+    this.saveAllToStorage();
+    if (target) {
+      this.notification.info('Pedido Eliminado', `La orden #${target.orderNumber} fue retirada.`);
+    }
   }
 
   updateOrderStatus(orderId: number, newStatus: OrderStatus) {

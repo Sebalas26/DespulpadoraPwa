@@ -1,6 +1,8 @@
 import { Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterLink, RouterLinkActive } from '@angular/router';
+import { Router, RouterLink, RouterLinkActive, NavigationEnd } from '@angular/router';
+import { toSignal } from '@angular/core/rxjs-interop';
+import { filter, map } from 'rxjs/operators';
 import { AuthService } from '../../core/services/auth.service';
 import { StateService } from '../../core/services/state.service';
 
@@ -10,32 +12,16 @@ import { StateService } from '../../core/services/state.service';
   imports: [CommonModule, RouterLink, RouterLinkActive],
   template: `
     <aside class="sidebar">
-      <!-- 1. Brand Logo & Name (Figma style) -->
+      <!-- 1. Brand Logo & Name -->
       <div class="sidebar-header">
-        <div class="dgl-logo-box">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z"></path>
-            <path d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12"></path>
-          </svg>
-        </div>
+        <img src="/logo-dgl.png" alt="DGL Despulpadora" class="dgl-logo-img" />
         <div class="dgl-brand-text">
-          <span class="dgl-brand-name">DGL</span>
+          <span class="dgl-brand-name">DGL Despulpadora</span>
           <span class="dgl-brand-sub">Gestión de pulpas</span>
         </div>
       </div>
 
-      <!-- 2. Planta Activa Selector (Figma style) -->
-      <div class="sidebar-plant-selector">
-        <div class="plant-label">PLANTA ACTIVA</div>
-        <div class="plant-select-box">
-          <span class="plant-name">{{ authService.selectedBranch()?.name || 'Cava principal' }}</span>
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#6b7280" stroke-width="2.5">
-            <polyline points="6 9 12 15 18 9"></polyline>
-          </svg>
-        </div>
-      </div>
-
-      <!-- 3. Navigation Section: GESTIÓN DIARIA -->
+      <!-- 2. Navigation Section: GESTIÓN DIARIA -->
       <nav class="sidebar-nav">
         <div class="nav-section-title">GESTIÓN DIARIA</div>
 
@@ -52,8 +38,8 @@ import { StateService } from '../../core/services/state.service';
           <span class="dgl-nav-text">Panel general</span>
         </a>
 
-        <!-- Pedidos -->
-        <a routerLink="/orders" routerLinkActive="active" class="dgl-nav-item">
+        <!-- Alistamiento -->
+        <a routerLink="/orders" [queryParams]="{ tab: 'picking' }" [class.active]="isOrderTabActive('picking')" class="dgl-nav-item">
           <span class="dgl-nav-icon">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
@@ -62,10 +48,36 @@ import { StateService } from '../../core/services/state.service';
               <line x1="16" y1="17" x2="8" y2="17"></line>
             </svg>
           </span>
-          <span class="dgl-nav-text">Pedidos</span>
+          <span class="dgl-nav-text">Alistamiento</span>
           @if (stateService.pendingOrdersCount() > 0) {
             <span class="dgl-nav-badge">{{ stateService.pendingOrdersCount() }}</span>
           }
+        </a>
+
+        <!-- Facturación & POS -->
+        <a routerLink="/orders" [queryParams]="{ tab: 'facturacion' }" [class.active]="isOrderTabActive('facturacion')" class="dgl-nav-item">
+          <span class="dgl-nav-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+              <polyline points="14 2 14 8 20 8"></polyline>
+              <line x1="12" y1="18" x2="12" y2="12"></line>
+              <line x1="9" y1="15" x2="15" y2="15"></line>
+            </svg>
+          </span>
+          <span class="dgl-nav-text">Facturación & POS</span>
+        </a>
+
+        <!-- Despachos & Rutas -->
+        <a routerLink="/orders" [queryParams]="{ tab: 'despachos' }" [class.active]="isOrderTabActive('despachos')" class="dgl-nav-item">
+          <span class="dgl-nav-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="1" y="3" width="15" height="13"></rect>
+              <polygon points="16 8 20 8 23 11 23 16 16 16 16 8"></polygon>
+              <circle cx="5.5" cy="18.5" r="2.5"></circle>
+              <circle cx="18.5" cy="18.5" r="2.5"></circle>
+            </svg>
+          </span>
+          <span class="dgl-nav-text">Despachos & Rutas</span>
         </a>
 
         <!-- Producción -->
@@ -128,7 +140,7 @@ import { StateService } from '../../core/services/state.service';
           <span class="dgl-nav-text">Clientes</span>
         </a>
 
-        <!-- Finanzas -->
+        <!-- Reportes -->
         <a routerLink="/accounting" routerLinkActive="active" class="dgl-nav-item">
           <span class="dgl-nav-icon">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -137,7 +149,7 @@ import { StateService } from '../../core/services/state.service';
               <line x1="6" y1="20" x2="6" y2="14"></line>
             </svg>
           </span>
-          <span class="dgl-nav-text">Finanzas</span>
+          <span class="dgl-nav-text">Reportes</span>
         </a>
 
         <!-- Section: SISTEMA & CONFIGURACIÓN -->
@@ -220,41 +232,39 @@ import { StateService } from '../../core/services/state.service';
     }
 
     .sidebar-header {
-      padding: 20px 18px 16px 18px;
+      padding: 18px 16px 14px 16px;
       display: flex;
       align-items: center;
-      gap: 12px;
+      gap: 10px;
     }
 
-    .dgl-logo-box {
-      width: 38px;
-      height: 38px;
-      border-radius: 10px;
-      background: #1e5e3a;
-      color: #ffffff;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      box-shadow: 0 2px 6px rgba(30, 94, 58, 0.25);
+    .dgl-logo-img {
+      width: 44px;
+      height: 44px;
+      object-fit: contain;
+      flex-shrink: 0;
     }
 
     .dgl-brand-text {
       display: flex;
       flex-direction: column;
+      overflow: hidden;
     }
 
     .dgl-brand-name {
-      font-size: 1.2rem;
-      font-weight: 800;
+      font-size: 1.02rem;
+      font-weight: 900;
       color: #111827;
       letter-spacing: -0.02em;
-      line-height: 1.1;
+      line-height: 1.15;
+      white-space: nowrap;
     }
 
     .dgl-brand-sub {
       font-size: 0.74rem;
       color: #6b7280;
       font-weight: 500;
+      margin-top: 1px;
     }
 
     .sidebar-plant-selector {
@@ -470,4 +480,20 @@ import { StateService } from '../../core/services/state.service';
 export class SidebarComponent {
   readonly authService = inject(AuthService);
   readonly stateService = inject(StateService);
+  private readonly router = inject(Router);
+
+  private readonly navEnd$ = this.router.events.pipe(
+    filter(e => e instanceof NavigationEnd),
+    map(() => this.router.url)
+  );
+
+  private readonly urlSignal = toSignal(this.navEnd$, { initialValue: this.router.url });
+
+  isOrderTabActive(tab: 'picking' | 'facturacion' | 'despachos'): boolean {
+    const url = this.urlSignal();
+    if (!url.startsWith('/orders')) return false;
+    if (tab === 'facturacion') return url.includes('tab=facturacion');
+    if (tab === 'despachos') return url.includes('tab=despachos');
+    return !url.includes('tab=facturacion') && !url.includes('tab=despachos');
+  }
 }

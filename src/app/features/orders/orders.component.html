@@ -1,342 +1,434 @@
-<div style="display: flex; flex-direction: column; gap: 20px;">
+<div class="orders-module-container">
 
-  <!-- Header & Controls -->
-  <div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 16px;">
-    <div>
-      <h1 style="font-size: 1.85rem; font-weight: 800; margin-bottom: 4px;">
-        Gestión Integral de Pedidos 📦
+  <!-- ========================================================= -->
+  <!-- VIEW 1: ALISTAMIENTO DE PEDIDOS (PICKING) - FIGMA DESIGN  -->
+  <!-- ========================================================= -->
+  @if (activeSubTab() === 'picking') {
+    <!-- Page Title & Subtitle -->
+    <div class="picking-page-header">
+      <h1 class="picking-main-title">
+        Alistamiento de Pedidos 📦
       </h1>
-      <p style="color: var(--text-muted); font-size: 0.92rem;">
-        Flujo de alistamiento en cava (picking), facturación con ticket térmico POS y control de repartidores.
+      <p class="picking-main-subtitle">
+        Flujo de alistamiento, facturación con ticket térmico POS y control de repartidores.
       </p>
     </div>
 
-    <!-- Actions -->
-    <div style="display: flex; flex-wrap: wrap; gap: 10px;">
-      <a routerLink="/kds" class="btn btn-secondary" style="gap: 8px; border-color: rgba(139, 92, 246, 0.5); background: var(--bg-card); text-decoration: none;" title="Abrir pantalla limpia tipo restaurante de alistamiento de pedidos">
-        <span style="font-size: 1.15rem;">🖥️</span>
-        <span style="font-weight: 700; color: #8b5cf6;">Pantalla KDS (Alistamiento)</span>
-      </a>
-
-      <button type="button" class="btn btn-secondary" style="gap: 8px; border-color: rgba(14, 165, 233, 0.45); background: var(--bg-card);"
-        (click)="openPlannerFromParent()">
-        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#0284c7" stroke-width="2.2">
-          <circle cx="6" cy="19" r="3"></circle>
-          <path d="M9 19h8.5a3.5 3.5 0 0 0 0-7h-11a3.5 3.5 0 0 1 0-7H15"></path>
-          <circle cx="18" cy="5" r="3"></circle>
-        </svg>
-        <span style="font-weight: 700; color: var(--color-primary-text);">Enrutador de Mensajeros</span>
-      </button>
-
-      <button type="button" class="btn btn-secondary" style="gap: 8px; border-color: #25d366; background: #f0fdf4; color: #166534;"
-        (click)="voiceOrdersService.openModal()">
-        <span style="font-size: 1.1rem;">🎙️</span>
-        <span style="font-weight: 700;">Audios WhatsApp</span>
-        @if (voiceOrdersService.pendingCount() > 0) {
-          <span style="background: #ef4444; color: #ffffff; font-size: 0.72rem; font-weight: 800; border-radius: 9999px; padding: 1px 7px;">
-            {{ voiceOrdersService.pendingCount() }}
-          </span>
-        }
-      </button>
-
-      <button type="button" class="btn btn-secondary" style="gap: 8px; border-color: rgba(16, 185, 129, 0.4);"
-        (click)="showWhatsAppModal.set(true)">
-        <span style="font-size: 1.1rem;">💬</span>
-        <span>Simular WhatsApp (Texto)</span>
-      </button>
-
-      <button type="button" class="btn btn-primary" style="gap: 8px;" (click)="showNewOrderModal.set(true)">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-          <line x1="12" y1="5" x2="12" y2="19"></line>
-          <line x1="5" y1="12" x2="19" y2="12"></line>
-        </svg>
-        <span>Nuevo Pedido Manual</span>
-      </button>
-    </div>
-  </div>
-
-  <!-- Search and Tab Navigation -->
-  <div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 14px;">
-    <!-- Tab Pills -->
-    <div class="tab-nav">
-      <button type="button" class="tab-button" [class.active]="activeSubTab() === 'picking'"
-        (click)="activeSubTab.set('picking')">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"></path>
-          <path d="M3 6h18"></path>
-          <path d="M16 10a4 4 0 0 1-8 0"></path>
-        </svg>
-        <span>1. Alistamiento (Picking)</span>
-        <span class="badge badge-purple" style="font-size: 0.7rem; padding: 2px 7px;">
-          {{ pickingOrdersCount() }}
-        </span>
-      </button>
-
-      <button type="button" class="tab-button" [class.active]="activeSubTab() === 'facturacion'"
-        (click)="activeSubTab.set('facturacion')">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-          <polyline points="14 2 14 8 20 8"></polyline>
-          <line x1="16" y1="13" x2="8" y2="13"></line>
-          <line x1="16" y1="17" x2="8" y2="17"></line>
-          <polyline points="10 9 9 9 8 9"></polyline>
-        </svg>
-        <span>2. Facturación & POS</span>
-        <span class="badge badge-blue" style="font-size: 0.7rem; padding: 2px 7px;">
-          {{ billedOrdersCount() }}
-        </span>
-      </button>
-
-      <button type="button" class="tab-button" [class.active]="activeSubTab() === 'despachos'"
-        (click)="activeSubTab.set('despachos')">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <rect x="1" y="3" width="15" height="13"></rect>
-          <polygon points="16 8 20 8 23 11 23 16 16 16 16 8"></polygon>
-          <circle cx="5.5" cy="18.5" r="2.5"></circle>
-          <circle cx="18.5" cy="18.5" r="2.5"></circle>
-        </svg>
-        <span>3. Despachos & Rutas</span>
-        <span class="badge badge-info" style="font-size: 0.7rem; padding: 2px 7px;">
-          {{ dispatchedOrdersCount() }}
-        </span>
-      </button>
+    <!-- 7 Day-of-Week Cards Strip -->
+    <div class="picking-days-grid">
+      @for (day of weekDays(); track day.name; let i = $index) {
+        <div
+          class="picking-day-card"
+          [class.is-active]="day.active"
+          (click)="toggleDayCard(i)"
+        >
+          <div class="day-card-top">
+            <span class="day-card-name">{{ day.name }}</span>
+            <span class="day-card-badge" [ngClass]="day.active ? 'badge-active' : 'badge-' + day.color">
+              {{ day.count }}
+            </span>
+          </div>
+          <div class="day-card-bottom">
+            <span class="day-card-sub">
+              {{ day.active ? 'Grouped / Activo' : day.count + ' pedidos' }}
+            </span>
+            @if (day.hasIndicator && !day.active) {
+              <span class="day-mini-indicator">
+                <span class="mini-bar"></span>
+                <span class="mini-dot"></span>
+              </span>
+            }
+          </div>
+        </div>
+      }
     </div>
 
-    <!-- Search Input -->
-    <div style="position: relative;">
-      <input type="text" class="form-control" style="width: 240px; padding: 7px 12px 7px 32px; font-size: 0.85rem;"
-        placeholder="Buscar orden o cliente..." [ngModel]="searchTerm()" (ngModelChange)="searchTerm.set($event)" />
-      <span
-        style="position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: var(--text-dim); pointer-events: none;">
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+    <!-- Summary Bar + Search Input Row -->
+    <div class="picking-toolbar-row">
+      <div class="pulp-summary-pill">
+        <span class="summary-pill-label">Resumen de pulpa a alistar</span>
+        <span class="summary-pill-divider"></span>
+        <span class="summary-pill-text">
+          <strong>Total Pulpa por Alistar:</strong> {{ pulpSummaryText() }}
+        </span>
+      </div>
+
+      <div class="picking-search-box">
+        <svg class="search-box-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <circle cx="11" cy="11" r="8"></circle>
           <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
         </svg>
-      </span>
-    </div>
-  </div>
-
-  <!-- SUBTAB 1: PICKING (ALISTAMIENTO EN CAVA) -->
-  @if (activeSubTab() === 'picking') {
-  <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); gap: 20px;">
-    @for (order of tabOrders(); track order.orderId) {
-    <div class="card hover-lift" style="border-top: 4px solid #8b5cf6;">
-      <div class="card-header" style="justify-content: space-between;">
-        <div>
-          <div style="font-size: 0.75rem; font-family: monospace; color: #8b5cf6; font-weight: 700;">
-            {{ order.orderNumber }}
-          </div>
-          <h4 style="font-size: 1.05rem; font-weight: 700; margin-top: 2px;">{{ order.clientName }}</h4>
-        </div>
-        <span class="badge" [ngClass]="order.status === 'PICKING' ? 'badge-purple' : 'badge-warning'">
-          {{ order.status === 'PICKING' ? 'En Picking' : 'Pendiente' }}
-        </span>
+        <input
+          type="text"
+          class="picking-search-input"
+          placeholder="Buscar orden o cliente..."
+          [ngModel]="searchTerm()"
+          (ngModelChange)="searchTerm.set($event)"
+        />
       </div>
+    </div>
 
-      <div class="card-body">
-        <div
-          style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 12px; display: flex; flex-direction: column; gap: 4px;">
-          <div>📍 {{ order.clientAddress || 'Sin dirección registrada' }}</div>
-          <div>📞 {{ order.clientPhone }}</div>
-          @if (order.notes) {
-          <div style="color: #f59e0b; font-style: italic;">📝 {{ order.notes }}</div>
-          }
-        </div>
-
-        <!-- Items Checklist -->
-        <div
-          style="font-size: 0.78rem; font-weight: 700; color: var(--text-dim); text-transform: uppercase; margin-bottom: 8px;">
-          Checklist de Pulpa en Cava:
-        </div>
-        <div style="display: flex; flex-direction: column; gap: 8px; margin-bottom: 18px;">
-          @for (item of order.items; track (item.fruitName || '') + item.grammage) {
-          <div
-            (click)="toggleItemPicked(order.orderId, item.fruitId, item.grammage, item.quantity, item.pickedQuantity)"
-            style="display: flex; align-items: center; justify-content: space-between; padding: 8px 12px; border-radius: var(--radius-sm); background: rgba(255, 255, 255, 0.03); border: 1px solid var(--border-subtle); cursor: pointer; transition: all 0.2s;"
-            [style.borderColor]="(item.pickedQuantity || 0) >= item.quantity ? '#10b981' : 'var(--border-subtle)'"
-            [style.background]="(item.pickedQuantity || 0) >= item.quantity ? 'rgba(16, 185, 129, 0.1)' : 'rgba(255, 255, 255, 0.03)'">
-            <div style="display: flex; align-items: center; gap: 10px;">
-              <input type="checkbox" [checked]="(item.pickedQuantity || 0) >= item.quantity"
-                style="accent-color: #10b981; cursor: pointer; width: 16px; height: 16px;"
-                (click)="$event.stopPropagation(); toggleItemPicked(order.orderId, item.fruitId, item.grammage, item.quantity, item.pickedQuantity)" />
-              <div>
-                <div style="font-weight: 700; font-size: 0.88rem;"
-                  [style.textDecoration]="(item.pickedQuantity || 0) >= item.quantity ? 'line-through' : 'none'">
-                  {{ item.quantity }}x {{ item.fruitName }} ({{ item.grammage }}g)
-                </div>
-                <div style="font-size: 0.72rem; color: var(--text-dim);">
-                  {{ formatCOP(item.subtotal) }}
-                </div>
+    <!-- Picking Order Cards Grid -->
+    <div class="picking-cards-grid">
+      @for (order of tabOrders(); track order.orderId) {
+        <div class="picking-order-card">
+          <div class="picking-card-top">
+            <!-- Header: Order Code + Client Name + Edit Button & Status Pill -->
+            <div class="picking-card-header">
+              <div class="picking-header-left">
+                <div class="picking-order-code">{{ order.orderNumber }}</div>
+                <h4 class="picking-client-name">{{ order.clientName }}</h4>
+              </div>
+              <div class="picking-header-actions">
+                <button
+                  type="button"
+                  class="btn-edit-order-pill"
+                  title="Modificar datos o productos del pedido"
+                  (click)="openEditOrderModal(order)"
+                >
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3">
+                    <path d="M12 20h9"></path>
+                    <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
+                  </svg>
+                  <span>Editar</span>
+                </button>
+                <span class="picking-status-pill">
+                  {{ order.status === 'PICKING' ? 'EN PICKING' : 'PENDIENTE' }}
+                </span>
               </div>
             </div>
-            <span class="badge"
-              [ngClass]="(item.pickedQuantity || 0) >= item.quantity ? 'badge-success' : 'badge-warning'"
-              style="font-size: 0.7rem;">
-              {{ item.pickedQuantity || 0 }} / {{ item.quantity }}
-            </span>
-          </div>
-          }
-        </div>
 
-        <!-- Footer: Total & Advance Button -->
-        <div
-          style="display: flex; align-items: center; justify-content: space-between; padding-top: 14px; border-top: 1px solid var(--border-subtle);">
-          <div>
-            <div style="font-size: 0.72rem; color: var(--text-muted); text-transform: uppercase;">Total Pedido</div>
-            <div style="font-size: 1.15rem; font-weight: 800; color: #10b981;">{{ formatCOP(order.totalAmount) }}</div>
+            <!-- Address, Phone & Optional Note -->
+            <div class="picking-client-details">
+              <div class="detail-row">
+                <span class="detail-icon">📍</span>
+                <span>{{ order.clientAddress || 'Sin dirección registrada' }}</span>
+              </div>
+              <div class="detail-row">
+                <span class="detail-icon">📞</span>
+                <span>{{ order.clientPhone }}</span>
+              </div>
+              @if (order.notes) {
+                <div class="picking-note-highlight">
+                  📝 {{ order.notes }}
+                </div>
+              }
+            </div>
+
+            <!-- Checklist Section -->
+            <div class="picking-checklist-heading">
+              CHECKLIST DE PULPA EN CAVA:
+            </div>
+
+            <div class="picking-checklist-items">
+              @for (item of order.items; track (item.fruitName || '') + item.grammage) {
+                <div
+                  class="picking-checklist-box"
+                  [class.is-checked]="(item.pickedQuantity || 0) >= item.quantity"
+                  (click)="toggleItemPicked(order.orderId, item.fruitId, item.grammage, item.quantity, item.pickedQuantity)"
+                >
+                  <div class="checklist-box-left">
+                    <input
+                      type="checkbox"
+                      class="checklist-checkbox"
+                      [checked]="(item.pickedQuantity || 0) >= item.quantity"
+                      (click)="$event.stopPropagation(); toggleItemPicked(order.orderId, item.fruitId, item.grammage, item.quantity, item.pickedQuantity)"
+                    />
+                    <div class="checklist-item-texts">
+                      <div
+                        class="checklist-item-title"
+                        [class.line-through]="(item.pickedQuantity || 0) >= item.quantity"
+                      >
+                        {{ item.quantity }}x {{ item.fruitName }} ({{ item.grammage }}g)
+                      </div>
+                      <div class="checklist-item-price">
+                        {{ formatCOP(item.subtotal) }}
+                      </div>
+                    </div>
+                  </div>
+
+                  <span
+                    class="checklist-qty-pill"
+                    [class.is-complete]="(item.pickedQuantity || 0) >= item.quantity"
+                  >
+                    {{ item.pickedQuantity || 0 }} / {{ item.quantity }}
+                  </span>
+                </div>
+              }
+            </div>
           </div>
-          <button type="button" class="btn btn-primary" style="font-size: 0.82rem; padding: 8px 14px;"
-            (click)="advanceOrderStatus(order, 'BILLED')">
-            <span>Alistado · Facturar</span>
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-              <line x1="5" y1="12" x2="19" y2="12"></line>
-              <polyline points="12 5 19 12 12 19"></polyline>
-            </svg>
-          </button>
+
+          <!-- Card Footer: Total + Completar Alistamiento Button -->
+          <div class="picking-card-footer">
+            <div class="footer-total-block">
+              <div class="footer-total-label">TOTAL PEDIDO</div>
+              <div class="footer-total-value">{{ formatCOP(order.totalAmount) }}</div>
+            </div>
+
+            <button
+              type="button"
+              class="btn-complete-picking"
+              (click)="advanceOrderStatus(order, 'BILLED')"
+            >
+              <span>Completar Alistamiento</span>
+              <span class="arrow-icon">→</span>
+            </button>
+          </div>
         </div>
-      </div>
+      }
+
+      @if (tabOrders().length === 0) {
+        <div class="card" style="grid-column: 1 / -1; text-align: center; padding: 48px 24px;">
+          <span style="font-size: 2.5rem;">🎉</span>
+          <h3 style="margin-top: 12px; font-size: 1.25rem;">¡Cava al día! No hay pedidos pendientes de alistamiento</h3>
+          <p style="color: var(--text-muted); font-size: 0.88rem; margin-top: 6px;">
+            Utilice el botón "+ Nuevo pedido" en la barra superior o "Audios WA" para ingresar órdenes al sistema.
+          </p>
+        </div>
+      }
     </div>
-    }
-    @if (tabOrders().length === 0) {
-    <div class="card" style="grid-column: 1 / -1; text-align: center; padding: 48px 24px;">
-      <span style="font-size: 2.5rem;">🎉</span>
-      <h3 style="margin-top: 12px; font-size: 1.25rem;">¡Cava al día! No hay pedidos pendientes de alistamiento</h3>
-      <p style="color: var(--text-muted); font-size: 0.88rem; margin-top: 6px;">
-        Utilice el simulador de WhatsApp o el botón de nuevo pedido para ingresar órdenes al sistema.
-      </p>
-    </div>
-    }
-  </div>
   }
 
-  <!-- SUBTAB 2: FACTURACIÓN & TICKETS POS -->
+  <!-- ========================================================= -->
+  <!-- VIEW 2: FACTURACIÓN & POS - PRO CORPORATE INVOICE STUDIO  -->
+  <!-- ========================================================= -->
   @if (activeSubTab() === 'facturacion') {
-  <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(360px, 1fr)); gap: 20px;">
-    @for (order of tabOrders(); track order.orderId) {
-    <div class="card hover-lift" style="border-top: 4px solid #3b82f6;">
-      <div class="card-header" style="justify-content: space-between;">
-        <div>
-          <div style="font-size: 0.75rem; font-family: monospace; color: #3b82f6; font-weight: 700;">
-            FACTURA · {{ order.orderNumber }}
-          </div>
-          <h4 style="font-size: 1.05rem; font-weight: 700; margin-top: 2px;">{{ order.clientName }}</h4>
-        </div>
-        <span class="badge badge-blue">Listo para Caja</span>
+    <div class="separated-view-header">
+      <div>
+        <h1 class="picking-main-title">Facturación & POS 🧾</h1>
+        <p class="picking-main-subtitle">
+          Emisión de factura ejecutiva formato A4 ({{ stateService.companyInfo().invoicePrefix }}...), control de descuentos/bonificaciones e IVA.
+        </p>
       </div>
 
-      <div class="card-body">
-        <div style="display: flex; flex-direction: column; gap: 8px; margin-bottom: 16px;">
-          <div style="display: flex; justify-content: space-between; font-size: 0.85rem;">
-            <span style="color: var(--text-muted);">Método de Pago:</span>
-            <span style="font-weight: 600;">{{ order.paymentMethodName || 'Efectivo Contraentrega' }}</span>
-          </div>
-          <div style="display: flex; justify-content: space-between; font-size: 0.85rem;">
-            <span style="color: var(--text-muted);">Productos Alistados:</span>
-            <span style="font-weight: 600;">{{ order.items.length }} ítems</span>
-          </div>
-          <div
-            style="display: flex; justify-content: space-between; font-size: 1rem; padding-top: 8px; border-top: 1px solid var(--border-subtle);">
-            <span style="font-weight: 700;">Total a Cobrar:</span>
-            <span style="font-weight: 800; color: #10b981;">{{ formatCOP(order.totalAmount) }}</span>
-          </div>
+      <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 12px;">
+        <!-- Quick Tax Rate Toggle -->
+        <div class="billing-tax-pill">
+          <span class="tax-pill-label">Impuesto:</span>
+          <button
+            type="button"
+            class="tax-pill-btn"
+            [class.active]="invoiceTaxRate() === 19"
+            (click)="invoiceTaxRate.set(19)"
+          >
+            IVA 19%
+          </button>
+          <button
+            type="button"
+            class="tax-pill-btn"
+            [class.active]="invoiceTaxRate() === 0"
+            (click)="invoiceTaxRate.set(0)"
+          >
+            Exento 0%
+          </button>
         </div>
 
-        <div style="display: flex; gap: 10px;">
-          <button type="button" class="btn btn-secondary"
-            style="flex: 1; justify-content: center; font-size: 0.82rem; gap: 6px;" (click)="openInvoice(order)">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <polyline points="6 9 6 2 18 2 18 9"></polyline>
-              <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path>
-              <rect x="6" y="14" width="12" height="8"></rect>
-            </svg>
-            <span>Ver Ticket POS</span>
-          </button>
-
-          <button type="button" class="btn btn-primary"
-            style="flex: 1; justify-content: center; font-size: 0.82rem; gap: 6px;"
-            (click)="advanceOrderStatus(order, 'DISPATCHED')">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <rect x="1" y="3" width="15" height="13"></rect>
-              <polygon points="16 8 20 8 23 11 23 16 16 16 16 8"></polygon>
-              <circle cx="5.5" cy="18.5" r="2.5"></circle>
-              <circle cx="18.5" cy="18.5" r="2.5"></circle>
-            </svg>
-            <span>Despachar a Ruta</span>
-          </button>
+        <div class="picking-search-box">
+          <svg class="search-box-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="11" cy="11" r="8"></circle>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+          </svg>
+          <input
+            type="text"
+            class="picking-search-input"
+            placeholder="Buscar factura o cliente..."
+            [ngModel]="searchTerm()"
+            (ngModelChange)="searchTerm.set($event)"
+          />
         </div>
       </div>
     </div>
-    }
-    @if (tabOrders().length === 0) {
-    <div class="card" style="grid-column: 1 / -1; text-align: center; padding: 48px 24px;">
-      <span style="font-size: 2.5rem;">🧾</span>
-      <h3 style="margin-top: 12px; font-size: 1.25rem;">No hay órdenes esperando facturación</h3>
-      <p style="color: var(--text-muted); font-size: 0.88rem; margin-top: 6px;">
-        Los pedidos alistados en la pestaña de Picking aparecerán aquí para impresión de ticket y despacho.
-      </p>
+
+    <div class="billing-queue-header" style="margin-bottom: 4px;">
+      <span>Órdenes para Facturar ({{ tabOrders().length }})</span>
     </div>
-    }
-  </div>
+
+    <div class="billing-cards-grid">
+      @for (order of tabOrders(); track order.orderId) {
+        <div class="billing-queue-card">
+          <div class="queue-card-top">
+            <div>
+              <div class="queue-inv-code">{{ getInvoiceCode(order) }}</div>
+              <h4 class="queue-client-name">{{ order.clientName }}</h4>
+            </div>
+            <span class="queue-origin-badge">{{ getOriginCode(order) }}</span>
+          </div>
+
+          <div class="queue-card-meta">
+            <span>📅 {{ formatInvoiceDate(order.createdAt) }}</span>
+            <span>•</span>
+            <span>{{ order.items.length }} ítems</span>
+            <span>•</span>
+            <span>{{ order.paymentMethodName || 'Contado' }}</span>
+          </div>
+
+          <!-- Items summary inside the card -->
+          <div class="queue-card-items-summary">
+            @for (item of order.items; track (item.fruitName || '') + item.grammage) {
+              <div class="queue-item-row">
+                <span>[{{ item.grammage }}g] Pulpa de {{ item.fruitName }} <strong>× {{ item.quantity }}</strong></span>
+                <span>$ {{ formatNumberES(item.quantity * item.unitPrice) }}</span>
+              </div>
+            }
+          </div>
+
+          <div class="queue-card-bottom">
+            <div>
+              <div class="queue-total-label">Total Factura</div>
+              <div class="queue-total-val">$ {{ formatNumberES(getInvoiceTotalWithTax(order)) }}</div>
+            </div>
+
+            <div class="queue-card-actions">
+              <button
+                type="button"
+                class="btn-queue-action"
+                title="Modificar pedido"
+                (click)="openEditOrderModal(order)"
+              >
+                ✏️ Editar
+              </button>
+              <button
+                type="button"
+                class="btn-queue-action"
+                title="Abrir e imprimir Factura Corporativa"
+                (click)="openInvoice(order, 'a4')"
+              >
+                🖨️ Imprimir
+              </button>
+              <button
+                type="button"
+                class="btn-queue-dispatch"
+                title="Despachar pedido a ruta"
+                (click)="advanceOrderStatus(order, 'DISPATCHED')"
+              >
+                Despachar →
+              </button>
+            </div>
+          </div>
+        </div>
+      }
+
+      @if (tabOrders().length === 0) {
+        <div class="card" style="grid-column: 1 / -1; text-align: center; padding: 48px 24px;">
+          <span style="font-size: 2.2rem;">🧾</span>
+          <h4 style="margin-top: 8px;">Sin órdenes en cola para facturar</h4>
+          <p style="font-size: 0.85rem; color: var(--text-muted);">
+            Complete el alistamiento de un pedido o cree uno nuevo.
+          </p>
+        </div>
+      }
+    </div>
   }
 
-  <!-- SUBTAB 3: DESPACHOS & RUTAS -->
+  <!-- ========================================================= -->
+  <!-- VIEW 3: DESPACHOS & RUTAS                                 -->
+  <!-- ========================================================= -->
   @if (activeSubTab() === 'despachos') {
-  <!-- Real-time Interactive Delivery Simulation Map & Route Sequencer -->
-  <app-delivery-map #deliveryMapRef></app-delivery-map>
-
-  <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(360px, 1fr)); gap: 20px;">
-    @for (order of tabOrders(); track order.orderId) {
-    <div class="card hover-lift"
-      [style.borderTop]="order.status === 'DELIVERED' ? '4px solid #10b981' : '4px solid #06b6d4'">
-      <div class="card-header" style="justify-content: space-between;">
-        <div>
-          <div style="font-size: 0.75rem; font-family: monospace; font-weight: 700;"
-            [style.color]="order.status === 'DELIVERED' ? '#10b981' : '#06b6d4'">
-            GUÍA · {{ order.orderNumber }}
-          </div>
-          <h4 style="font-size: 1.05rem; font-weight: 700; margin-top: 2px;">{{ order.clientName }}</h4>
-        </div>
-        <span class="badge" [ngClass]="order.status === 'DELIVERED' ? 'badge-success' : 'badge-info'">
-          {{ order.status === 'DELIVERED' ? 'Entregado' : 'En Reparto' }}
-        </span>
+    <div class="separated-view-header">
+      <div>
+        <h1 class="picking-main-title">Despachos & Rutas 🚚</h1>
+        <p class="picking-main-subtitle">
+          Monitoreo GPS de domiciliarios en tiempo real, enrutamiento inteligente y confirmación de recaudo.
+        </p>
       </div>
 
-      <div class="card-body">
-        <div
-          style="display: flex; flex-direction: column; gap: 6px; font-size: 0.85rem; color: var(--text-muted); margin-bottom: 16px;">
-          <div>📍 Destino: <strong style="color: var(--text-main);">{{ order.clientAddress }}</strong></div>
-          <div>📞 Teléfono: {{ order.clientPhone }}</div>
-          <div>💰 Monto a Recaudar: <strong style="color: #10b981;">{{ formatCOP(order.totalAmount) }}</strong></div>
-        </div>
-
-        @if (order.status !== 'DELIVERED') {
-        <button type="button" class="btn btn-primary"
-          style="width: 100%; justify-content: center; font-size: 0.85rem; gap: 8px;"
-          (click)="advanceOrderStatus(order, 'DELIVERED')">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-            <polyline points="20 6 9 17 4 12"></polyline>
+      <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 12px;">
+        <button type="button" class="btn btn-secondary" style="gap: 8px; border-color: rgba(14, 165, 233, 0.45); background: var(--bg-card);"
+          (click)="openPlannerFromParent()">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#0284c7" stroke-width="2.2">
+            <circle cx="6" cy="19" r="3"></circle>
+            <path d="M9 19h8.5a3.5 3.5 0 0 0 0-7h-11a3.5 3.5 0 0 1 0-7H15"></path>
+            <circle cx="18" cy="5" r="3"></circle>
           </svg>
-          <span>Confirmar Entrega y Recaudo</span>
+          <span style="font-weight: 700; color: var(--color-primary-text);">Enrutador de Mensajeros</span>
         </button>
-        } @else {
-        <div
-          style="display: flex; align-items: center; justify-content: center; gap: 8px; padding: 10px; border-radius: var(--radius-sm); background: rgba(16, 185, 129, 0.1); color: #10b981; font-weight: 700; font-size: 0.85rem;">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-            <polyline points="20 6 9 17 4 12"></polyline>
+
+        <div class="picking-search-box">
+          <svg class="search-box-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="11" cy="11" r="8"></circle>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
           </svg>
-          <span>Entrega Exitosa Registrada</span>
+          <input
+            type="text"
+            class="picking-search-input"
+            placeholder="Buscar guía o cliente..."
+            [ngModel]="searchTerm()"
+            (ngModelChange)="searchTerm.set($event)"
+          />
         </div>
-        }
       </div>
     </div>
-    }
-    @if (tabOrders().length === 0) {
-    <div class="card" style="grid-column: 1 / -1; text-align: center; padding: 48px 24px;">
-      <span style="font-size: 2.5rem;">🚚</span>
-      <h3 style="margin-top: 12px; font-size: 1.25rem;">No hay despachos activos en este momento</h3>
+
+    <!-- Real-time Interactive Delivery Simulation Map & Route Sequencer -->
+    <app-delivery-map #deliveryMapRef></app-delivery-map>
+
+    <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(360px, 1fr)); gap: 20px;">
+      @for (order of tabOrders(); track order.orderId) {
+        <div class="card hover-lift"
+          [style.borderTop]="order.status === 'DELIVERED' ? '4px solid #10b981' : '4px solid #06b6d4'">
+          <div class="card-header" style="justify-content: space-between;">
+            <div>
+              <div style="font-size: 0.75rem; font-family: monospace; font-weight: 700;"
+                [style.color]="order.status === 'DELIVERED' ? '#10b981' : '#06b6d4'">
+                GUÍA · {{ order.orderNumber }}
+              </div>
+              <h4 style="font-size: 1.05rem; font-weight: 700; margin-top: 2px;">{{ order.clientName }}</h4>
+            </div>
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <button
+                type="button"
+                class="btn-edit-order-pill"
+                title="Modificar pedido"
+                (click)="openEditOrderModal(order)"
+              >
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3">
+                  <path d="M12 20h9"></path>
+                  <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
+                </svg>
+                <span>Editar</span>
+              </button>
+              <span class="badge" [ngClass]="order.status === 'DELIVERED' ? 'badge-success' : 'badge-info'">
+                {{ order.status === 'DELIVERED' ? 'Entregado' : 'En Reparto' }}
+              </span>
+            </div>
+          </div>
+
+          <div class="card-body">
+            <div
+              style="display: flex; flex-direction: column; gap: 6px; font-size: 0.85rem; color: var(--text-muted); margin-bottom: 16px;">
+              <div>📍 Destino: <strong style="color: var(--text-main);">{{ order.clientAddress }}</strong></div>
+              <div>📞 Teléfono: {{ order.clientPhone }}</div>
+              <div>💰 Monto a Recaudar: <strong style="color: #1e5e3a;">{{ formatCOP(order.totalAmount) }}</strong></div>
+            </div>
+
+            @if (order.status !== 'DELIVERED') {
+              <button type="button" class="btn btn-primary"
+                style="width: 100%; justify-content: center; font-size: 0.85rem; gap: 8px;"
+                (click)="advanceOrderStatus(order, 'DELIVERED')">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                  <polyline points="20 6 9 17 4 12"></polyline>
+                </svg>
+                <span>Confirmar Entrega y Recaudo</span>
+              </button>
+            } @else {
+              <div
+                style="display: flex; align-items: center; justify-content: center; gap: 8px; padding: 10px; border-radius: var(--radius-sm); background: rgba(16, 185, 129, 0.1); color: #10b981; font-weight: 700; font-size: 0.85rem;">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                  <polyline points="20 6 9 17 4 12"></polyline>
+                </svg>
+                <span>Entrega Exitosa Registrada</span>
+              </div>
+            }
+          </div>
+        </div>
+      }
+      @if (tabOrders().length === 0) {
+        <div class="card" style="grid-column: 1 / -1; text-align: center; padding: 48px 24px;">
+          <span style="font-size: 2.5rem;">🚚</span>
+          <h3 style="margin-top: 12px; font-size: 1.25rem;">No hay despachos activos en este momento</h3>
+        </div>
+      }
     </div>
-    }
-  </div>
   }
 
 </div>
@@ -379,12 +471,19 @@
 </div>
 }
 
-<!-- NEW MANUAL ORDER MODAL -->
+<!-- NEW / EDIT MANUAL ORDER MODAL -->
 @if (showNewOrderModal()) {
 <div class="modal-overlay" (click)="showNewOrderModal.set(false)">
-  <div class="modal-content" style="max-width: 600px;" (click)="$event.stopPropagation()">
+  <div class="modal-content" style="max-width: 680px;" (click)="$event.stopPropagation()">
     <div class="modal-header">
-      <h3 class="modal-title">Crear Nuevo Pedido Manual</h3>
+      <div>
+        <h3 class="modal-title">
+          {{ editingOrderId() !== null ? '✏️ Modificar Pedido · ' + editingOrderNumber() : 'Crear Nuevo Pedido Manual' }}
+        </h3>
+        <p style="font-size: 0.78rem; color: var(--text-muted); margin-top: 2px;">
+          {{ editingOrderId() !== null ? 'Corrija cliente, dirección, observaciones, cantidades o precios unitarios.' : 'Registre los datos del cliente y los productos requeridos en cava.' }}
+        </p>
+      </div>
       <button class="modal-close" (click)="showNewOrderModal.set(false)">&times;</button>
     </div>
 
@@ -464,17 +563,54 @@
         }
       </div>
 
+      <!-- Payment Method & Order Notes -->
+      <div style="display: grid; grid-template-columns: 1fr 1.4fr; gap: 14px;">
+        <div class="form-group">
+          <label class="form-label">Método de Pago</label>
+          <select
+            class="form-control"
+            [ngModel]="manualPaymentMethod()"
+            (ngModelChange)="manualPaymentMethod.set($event)"
+          >
+            <option value="Transferencia Bancolombia">Transferencia Bancolombia</option>
+            <option value="Nequi / Daviplata">Nequi / Daviplata</option>
+            <option value="Contra Entrega Efectivo">Contra Entrega Efectivo</option>
+            <option value="Crédito Corporativo 15 días">Crédito Corporativo 15 días</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Nota / Observación del Pedido</label>
+          <input
+            type="text"
+            class="form-control"
+            [ngModel]="manualNotes()"
+            (ngModelChange)="manualNotes.set($event)"
+            placeholder="Ej: Entregar antes de las 11am, pedir por cocina..."
+          />
+        </div>
+      </div>
+
       <!-- Items Table -->
-      <div style="margin-top: 16px;">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-          <label class="form-label" style="margin-bottom: 0;">Productos a Despachar</label>
-          <button type="button" class="btn btn-outline" style="padding: 3px 8px; font-size: 0.75rem;"
-            (click)="addManualItem()">+ Agregar Ítem</button>
+      <div style="margin-top: 8px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+          <label class="form-label" style="margin-bottom: 0; font-weight: 800;">Productos del Pedido</label>
+          <button type="button" class="btn btn-outline" style="padding: 4px 10px; font-size: 0.76rem; font-weight: 700;"
+            (click)="addManualItem()">+ Agregar Pulpa</button>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 2fr 1.1fr 0.8fr 1.1fr 1.2fr auto; gap: 8px; font-size: 0.7rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase; padding: 0 4px 6px;">
+          <span>Fruta</span>
+          <span>Gramaje</span>
+          <span>Cant.</span>
+          <span>Precio Unit.</span>
+          <span style="text-align: right;">Subtotal</span>
+          <span></span>
         </div>
 
         @for (item of manualItems(); track $index) {
         <div
-          style="display: grid; grid-template-columns: 2fr 1.5fr 1fr 1.5fr auto; gap: 8px; align-items: center; margin-bottom: 8px;">
+          style="display: grid; grid-template-columns: 2fr 1.1fr 0.8fr 1.1fr 1.2fr auto; gap: 8px; align-items: center; margin-bottom: 8px;">
           <select class="form-control" [ngModel]="item.fruitName"
             (ngModelChange)="updateManualItemFruit($index, $event)">
             @for (fruit of stateService.fruits(); track fruit.id) {
@@ -484,95 +620,260 @@
 
           <select class="form-control" [ngModel]="item.grammage"
             (ngModelChange)="updateManualItemGrammage($index, $event)">
-            <option [value]="140">140g</option>
-            <option [value]="250">250g</option>
-            <option [value]="500">500g</option>
-            <option [value]="1000">1000g (1Kg)</option>
+            <option [ngValue]="140">140g</option>
+            <option [ngValue]="250">250g</option>
+            <option [ngValue]="500">500g</option>
+            <option [ngValue]="1000">1000g (1Kg)</option>
           </select>
 
-          <input type="number" min="1" class="form-control" [ngModel]="item.quantity"
-            (ngModelChange)="item.quantity = $event" />
+          <input
+            type="number"
+            min="1"
+            class="form-control"
+            [ngModel]="item.quantity"
+            (ngModelChange)="updateManualItemQuantity($index, $event)"
+          />
 
-          <div style="font-weight: 700; font-size: 0.85rem; color: #10b981; text-align: right;">
+          <input
+            type="number"
+            min="0"
+            step="100"
+            class="form-control"
+            [ngModel]="item.unitPrice"
+            (ngModelChange)="updateManualItemPrice($index, $event)"
+            title="Precio unitario COP"
+          />
+
+          <div style="font-weight: 800; font-size: 0.86rem; color: #1e5e3a; text-align: right;">
             {{ formatCOP(item.quantity * item.unitPrice) }}
           </div>
 
-          <button type="button" style="background: none; border: none; color: #ef4444; cursor: pointer;"
-            (click)="removeManualItem($index)">&times;</button>
+          <button
+            type="button"
+            title="Quitar ítem"
+            style="background: #fee2e2; border: none; color: #dc2626; width: 26px; height: 26px; border-radius: 6px; font-weight: 800; cursor: pointer; display: flex; align-items: center; justify-content: center;"
+            (click)="removeManualItem($index)"
+          >&times;</button>
         </div>
         }
+
+        <div style="display: flex; justify-content: flex-end; align-items: center; gap: 12px; margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border-subtle);">
+          <span style="font-size: 0.82rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">Total del Pedido:</span>
+          <span style="font-size: 1.25rem; font-weight: 900; color: #1e5e3a;">{{ formatCOP(manualOrderTotal()) }}</span>
+        </div>
       </div>
     </div>
 
-    <div class="modal-footer">
-      <button class="btn btn-outline" (click)="showNewOrderModal.set(false)">Cancelar</button>
-      <button class="btn btn-primary" (click)="submitManualOrder()">Guardar Pedido</button>
+    <div class="modal-footer" style="justify-content: space-between;">
+      <div>
+        @if (editingOrderId() !== null) {
+          <button
+            type="button"
+            class="btn btn-outline"
+            style="color: #dc2626; border-color: #fecaca; background: #fef2f2;"
+            (click)="deleteCurrentEditingOrder()"
+          >
+            🗑️ Eliminar Pedido
+          </button>
+        }
+      </div>
+      <div style="display: flex; gap: 10px;">
+        <button class="btn btn-outline" (click)="showNewOrderModal.set(false)">Cancelar</button>
+        <button class="btn btn-primary" (click)="submitManualOrder()">
+          {{ editingOrderId() !== null ? 'Guardar Cambios' : 'Guardar Pedido' }}
+        </button>
+      </div>
     </div>
   </div>
 </div>
 }
 
-<!-- THERMAL POS INVOICE MODAL -->
-@if (showInvoiceModal() && selectedOrderForInvoice()) {
-<div class="modal-overlay" (click)="showInvoiceModal.set(false)">
-  <div class="modal-content" style="max-width: 440px;" (click)="$event.stopPropagation()">
-    <div class="modal-header no-print">
-      <h3 class="modal-title">Ticket Térmico POS 80mm</h3>
+<!-- PRO CORPORATE INVOICE MODAL -->
+@if (showInvoiceModal() && selectedOrderForInvoice(); as modalOrder) {
+<div class="modal-overlay invoice-modal-overlay" (click)="showInvoiceModal.set(false)">
+  <div
+    class="modal-content invoice-modal-container"
+    style="max-width: 880px;"
+    (click)="$event.stopPropagation()"
+  >
+    <div class="modal-header no-print" style="flex-wrap: wrap; gap: 12px;">
+      <div style="display: flex; align-items: center; gap: 12px;">
+        <h3 class="modal-title">
+          Factura Ejecutiva · {{ getInvoiceCode(modalOrder) }}
+        </h3>
+      </div>
       <button class="modal-close" (click)="showInvoiceModal.set(false)">&times;</button>
     </div>
 
-    <div class="modal-body"
-      style="background: #ffffff; color: #000000; font-family: monospace; font-size: 0.85rem; padding: 24px; border-radius: 8px;">
-      <div style="text-align: center; margin-bottom: 12px;">
-        @if (stateService.companyInfo().logoUrl) {
-          <img [src]="stateService.companyInfo().logoUrl" alt="Logo Empresa" style="max-height: 48px; max-width: 140px; margin-bottom: 8px; object-fit: contain;" />
-        }
-        <h2 style="font-size: 1.25rem; font-weight: 800; margin: 0; color: #000;">{{ stateService.companyInfo().legalName || stateService.companyInfo().companyName }}</h2>
-        <div style="font-size: 0.78rem; font-weight: 700;">NIT: {{ stateService.companyInfo().nit }}</div>
-        <div style="font-size: 0.78rem;">{{ stateService.companyInfo().tagline }}</div>
-        <div style="font-size: 0.78rem;">{{ stateService.companyInfo().address }}</div>
-        <div style="font-size: 0.78rem;">{{ stateService.companyInfo().city }}, {{ stateService.companyInfo().department }} - {{ stateService.companyInfo().country }}</div>
-        <div style="font-size: 0.76rem;">Tel/WA: {{ stateService.companyInfo().phone }} • {{ stateService.companyInfo().whatsapp }}</div>
-        <div style="font-size: 0.72rem; color: #333;">{{ stateService.companyInfo().taxRegime }}</div>
-        <div style="font-size: 0.70rem; color: #444; margin-top: 2px;">{{ stateService.companyInfo().dianResolution }}</div>
-        <div style="border-top: 1px dashed #000; margin: 8px 0;"></div>
-        <div style="font-weight: 700;">FACTURA DE VENTA: {{ selectedOrderForInvoice()?.orderNumber }}</div>
-        <div style="font-size: 0.75rem;">Fecha: {{ selectedOrderForInvoice()?.createdAt | date:'short' }}</div>
-      </div>
+    <div class="modal-body" style="padding: 16px 20px;">
+      <!-- A4 PRO CORPORATE INVOICE SHEET -->
+      <div class="pro-invoice-sheet modal-sheet-print">
+        <div class="pro-invoice-top-accent"></div>
 
-      <div style="margin-bottom: 12px; font-size: 0.8rem;">
-        <div><strong>CLIENTE:</strong> {{ selectedOrderForInvoice()?.clientName }}</div>
-        <div><strong>DIRECCIÓN:</strong> {{ selectedOrderForInvoice()?.clientAddress }}</div>
-        <div><strong>TELÉFONO:</strong> {{ selectedOrderForInvoice()?.clientPhone }}</div>
-        <div><strong>PAGO:</strong> {{ selectedOrderForInvoice()?.paymentMethodName }}</div>
-      </div>
+        <div class="pro-invoice-header">
+          <div class="pro-brand-block">
+            <img
+              [src]="stateService.companyInfo().logoUrl || '/logo-dgl.png'"
+              alt="DGL Despulpadora"
+              class="pro-brand-logo"
+            />
+            <div class="pro-brand-info">
+              <div class="pro-company-name">{{ stateService.companyInfo().companyName }}</div>
+              <div class="pro-company-legal">{{ stateService.companyInfo().legalName }}</div>
+              <div class="pro-company-tagline">{{ stateService.companyInfo().tagline }}</div>
+            </div>
+          </div>
 
-      <div style="border-top: 1px dashed #000; border-bottom: 1px dashed #000; padding: 6px 0; margin-bottom: 10px;">
-        <div style="display: grid; grid-template-columns: 2fr 1fr 1.5fr; font-weight: 700;">
-          <span>DESCRIPCIÓN</span>
-          <span style="text-align: center;">CANT</span>
-          <span style="text-align: right;">TOTAL</span>
+          <div class="pro-fiscal-block">
+            <div class="pro-nit-pill">NIT: {{ stateService.companyInfo().nit }}</div>
+            <div class="pro-fiscal-country">{{ stateService.companyInfo().country }}</div>
+            <div class="pro-fiscal-regime">{{ stateService.companyInfo().taxRegime }}</div>
+          </div>
         </div>
-      </div>
 
-      @for (item of selectedOrderForInvoice()?.items || []; track (item.fruitName || '') + item.grammage) {
-      <div style="display: grid; grid-template-columns: 2fr 1fr 1.5fr; margin-bottom: 4px;">
-        <span>{{ item.fruitName }} ({{ item.grammage }}g)</span>
-        <span style="text-align: center;">{{ item.quantity }}</span>
-        <span style="text-align: right;">{{ formatCOP(item.subtotal) }}</span>
-      </div>
-      }
+        <div class="pro-recipient-row">
+          <div class="pro-sender-meta">
+            <div class="sender-label">PLANTA DE DESPACHO</div>
+            <div class="sender-val">Sede Principal · Cava Frigorífica (-18°C)</div>
+            <div class="sender-sub">{{ stateService.companyInfo().address }}</div>
+          </div>
 
-      <div style="border-top: 1px dashed #000; margin-top: 12px; padding-top: 8px;">
-        <div style="display: flex; justify-content: space-between; font-size: 1.1rem; font-weight: 800;">
-          <span>TOTAL A PAGAR:</span>
-          <span>{{ formatCOP(selectedOrderForInvoice()!.totalAmount) }}</span>
+          <div class="pro-client-box">
+            <div class="client-box-label">CLIENTE / DESTINATARIO</div>
+            <div class="client-box-name">{{ modalOrder.clientName }}</div>
+            @if (modalOrder.clientAddress) {
+              <div class="client-box-line">{{ modalOrder.clientAddress }}</div>
+            }
+            @if (modalOrder.clientPhone) {
+              <div class="client-box-line">Tel: {{ modalOrder.clientPhone }}</div>
+            }
+            <div class="client-box-country">{{ stateService.companyInfo().country }}</div>
+          </div>
         </div>
-      </div>
 
-      <div style="text-align: center; margin-top: 20px; font-size: 0.72rem;">
-        <div>{{ stateService.companyInfo().invoiceFooterNote }}</div>
-        <div style="margin-top: 4px; font-size: 0.68rem; color: #555;">Horario de Atención: {{ stateService.companyInfo().operatingHours }}</div>
+        <div class="pro-invoice-title-bar">
+          <h2 class="pro-invoice-title">
+            Factura {{ getInvoiceCode(modalOrder) }}
+          </h2>
+          <span class="pro-invoice-status-stamp">DOCUMENTO OFICIAL</span>
+        </div>
+
+        <div class="pro-meta-grid">
+          <div class="pro-meta-cell">
+            <span class="meta-label">Fecha de factura</span>
+            <span class="meta-value">{{ formatInvoiceDate(modalOrder.createdAt) }}</span>
+          </div>
+          <div class="pro-meta-cell">
+            <span class="meta-label">Fecha de vencimiento</span>
+            <span class="meta-value">{{ formatInvoiceDate(modalOrder.createdAt) }}</span>
+          </div>
+          <div class="pro-meta-cell">
+            <span class="meta-label">Origen</span>
+            <span class="meta-value">{{ getOriginCode(modalOrder) }}</span>
+          </div>
+          <div class="pro-meta-cell">
+            <span class="meta-label">Referencia</span>
+            <span class="meta-value">{{ getOriginCode(modalOrder) }}</span>
+          </div>
+        </div>
+
+        <div class="pro-table-wrapper">
+          <table class="pro-invoice-table">
+            <thead>
+              <tr>
+                <th class="col-desc">DESCRIPCIÓN</th>
+                <th class="col-qty">CANTIDAD</th>
+                <th class="col-price">PRECIO UNITARIO</th>
+                <th class="col-disc">DESC.%</th>
+                <th class="col-tax">IMPUESTOS</th>
+                <th class="col-total">IMPORTE</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (item of modalOrder.items; track (item.fruitName || '') + item.grammage; let idx = $index) {
+                <tr [class.is-free-row]="getItemDiscount(modalOrder.orderId, idx) >= 100">
+                  <td class="col-desc">
+                    <span class="grammage-tag">[{{ item.grammage }}g]</span>
+                    <span class="product-upper">PULPA DE {{ item.fruitName | uppercase }}</span>
+                  </td>
+                  <td class="col-qty">{{ item.quantity }} Unidades</td>
+                  <td class="col-price">{{ formatNumberES(item.unitPrice) }}</td>
+                  <td class="col-disc">
+                    <div class="disc-input-wrap">
+                      <input
+                        type="number"
+                        min="0"
+                        max="100"
+                        step="5"
+                        class="disc-inline-input no-print"
+                        [ngModel]="getItemDiscount(modalOrder.orderId, idx)"
+                        (ngModelChange)="setItemDiscount(modalOrder.orderId, idx, $event)"
+                        title="Porcentaje de descuento o bonificación (100% = $0,00)"
+                      />
+                      <span class="print-only-disc">{{ formatNumberES(getItemDiscount(modalOrder.orderId, idx)) }}</span>
+                    </div>
+                  </td>
+                  <td class="col-tax">
+                    @if (getItemDiscount(modalOrder.orderId, idx) < 100 && invoiceTaxRate() > 0) {
+                      <span class="tax-chip">{{ invoiceTaxRate() }}%</span>
+                    } @else {
+                      <span class="tax-exempt">—</span>
+                    }
+                  </td>
+                  <td class="col-total">$ {{ formatNumberES(getItemImporte(item, modalOrder.orderId, idx)) }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+
+        <div class="pro-lower-split">
+          <div class="pro-payment-comm">
+            <div class="comm-main-line">
+              Comunicación de pago: <strong>{{ getInvoiceCode(modalOrder) }}</strong>
+            </div>
+            <div class="comm-sub-box">
+              <div><strong>Método de pago:</strong> {{ modalOrder.paymentMethodName || 'Transferencia Bancolombia / Contado' }}</div>
+              <div><strong>Orden asociada:</strong> {{ modalOrder.orderNumber }} ({{ getOriginCode(modalOrder) }})</div>
+              @if (stateService.companyInfo().dianResolution) {
+                <div><strong>Resolución:</strong> {{ stateService.companyInfo().dianResolution }}</div>
+              }
+              @if (stateService.companyInfo().invoiceFooterNote) {
+                <div style="margin-top: 2px; font-style: italic; color: #64748b;">{{ stateService.companyInfo().invoiceFooterNote }}</div>
+              }
+            </div>
+          </div>
+
+          <div class="pro-totals-box">
+            <div class="totals-row">
+              <span class="totals-label">Importe base</span>
+              <span class="totals-val">$ {{ formatNumberES(getInvoiceBaseAmount(modalOrder)) }}</span>
+            </div>
+            @if (getInvoiceDiscountSaved(modalOrder) > 0) {
+              <div class="totals-row totals-discount-row">
+                <span class="totals-label">Descuento / Bonificación</span>
+                <span class="totals-val">- $ {{ formatNumberES(getInvoiceDiscountSaved(modalOrder)) }}</span>
+              </div>
+            }
+            <div class="totals-row">
+              <span class="totals-label">IVA {{ invoiceTaxRate() }}%</span>
+              <span class="totals-val">$ {{ formatNumberES(getInvoiceTaxAmount(modalOrder)) }}</span>
+            </div>
+            <div class="totals-grand-row">
+              <span class="grand-label">Total</span>
+              <span class="grand-val">$ {{ formatNumberES(getInvoiceTotalWithTax(modalOrder)) }}</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="pro-invoice-footer">
+          <div class="footer-contact-line">
+            <span>{{ stateService.companyInfo().phone }}</span>
+            <span class="footer-dot">·</span>
+            <span>{{ stateService.companyInfo().email }}</span>
+          </div>
+          <div class="footer-page-num">Página 1 / 1</div>
+        </div>
       </div>
     </div>
 
@@ -584,7 +885,7 @@
           <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path>
           <rect x="6" y="14" width="12" height="8"></rect>
         </svg>
-        <span>Imprimir Ticket POS</span>
+        <span>Imprimir / Guardar PDF Factura</span>
       </button>
     </div>
   </div>

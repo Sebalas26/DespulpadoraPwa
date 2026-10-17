@@ -97,7 +97,7 @@
               </svg>
               <span>Identificación Comercial & Razón Social</span>
             </h3>
-            <p class="section-card-desc">Datos oficiales de la empresa para facturas de venta, tickets POS y remisiones.</p>
+            <p class="section-card-desc">Datos oficiales de la empresa para la Factura de Venta Corporativa y remisiones.</p>
           </div>
 
           <div class="form-grid-2">
@@ -108,7 +108,7 @@
                 class="settings-input"
                 [ngModel]="companyForm().companyName"
                 (ngModelChange)="updateCompanyField('companyName', $event)"
-                placeholder="Ej: DGL Pulpas Naturales"
+                placeholder="Ej: DGL Despulpadora"
               />
               <span class="field-hint-text">Nombre de marca visible para los clientes</span>
             </div>
@@ -120,7 +120,7 @@
                 class="settings-input"
                 [ngModel]="companyForm().legalName"
                 (ngModelChange)="updateCompanyField('legalName', $event)"
-                placeholder="Ej: Despulpadora DGL S.A.S."
+                placeholder="Ej: DG Distribuidores Logísticos S.A.S."
               />
               <span class="field-hint-text">Nombre registrado en Cámara de Comercio</span>
             </div>
@@ -132,7 +132,7 @@
                 class="settings-input"
                 [ngModel]="companyForm().nit"
                 (ngModelChange)="updateCompanyField('nit', $event)"
-                placeholder="Ej: 901.458.789-2"
+                placeholder="Ej: 901801042-5"
               />
               <span class="field-hint-text">Incluye el dígito de verificación</span>
             </div>
@@ -144,9 +144,9 @@
                 class="settings-input"
                 [ngModel]="companyForm().tagline"
                 (ngModelChange)="updateCompanyField('tagline', $event)"
-                placeholder="Ej: Planta de Transformación de Frutas Tropicales"
+                placeholder="Ej: Pulpa de Fruta 100% Natural · Calidad Premium"
               />
-              <span class="field-hint-text">Aparece bajo el nombre en el ticket</span>
+              <span class="field-hint-text">Aparece bajo la razón social en la factura</span>
             </div>
           </div>
         </div>
@@ -162,7 +162,7 @@
               </svg>
               <span>Logotipo de la Empresa</span>
             </h3>
-            <p class="section-card-desc">Logotipo que se imprime en la cabecera de la factura y tickets POS de 80mm.</p>
+            <p class="section-card-desc">Logotipo que se imprime en la cabecera de la Factura de Venta Corporativa.</p>
           </div>
 
           <div class="logo-uploader-row">
@@ -355,9 +355,9 @@
                 <line x1="16" y1="13" x2="8" y2="13"></line>
                 <line x1="16" y1="17" x2="8" y2="17"></line>
               </svg>
-              <span>Parámetros Tributarios & Facturación (DIAN / POS)</span>
+              <span>Parámetros Tributarios & Facturación (DIAN)</span>
             </h3>
-            <p class="section-card-desc">Resolución y textos legales obligatorios en facturas de venta.</p>
+            <p class="section-card-desc">Resolución, consecutivo y textos legales obligatorios en la Factura de Venta.</p>
           </div>
 
           <div class="form-grid-2">
@@ -379,7 +379,7 @@
                 class="settings-input"
                 [ngModel]="companyForm().dianResolution"
                 (ngModelChange)="updateCompanyField('dianResolution', $event)"
-                placeholder="Ej: Resolución DIAN No. 18764000293 de 2026. Prefijo DGL del 1 al 10000"
+                placeholder="Ej: Resolución Facturación Electrónica DIAN · Prefijo INV/2026"
               />
             </div>
 
@@ -390,7 +390,7 @@
                 class="settings-input"
                 [ngModel]="companyForm().invoicePrefix"
                 (ngModelChange)="updateCompanyField('invoicePrefix', $event)"
-                placeholder="Ej: DGL-"
+                placeholder="Ej: INV/2026/"
               />
             </div>
 
@@ -401,12 +401,12 @@
                 class="settings-input"
                 [ngModel]="companyForm().invoiceNextNumber"
                 (ngModelChange)="updateCompanyField('invoiceNextNumber', +$event)"
-                placeholder="1045"
+                placeholder="7750"
               />
             </div>
 
             <div class="form-field-group col-span-2">
-              <label class="field-label-text">Mensaje al Pie de Factura / Ticket POS</label>
+              <label class="field-label-text">Mensaje / Nota al Pie de la Factura</label>
               <textarea
                 class="settings-textarea"
                 [ngModel]="companyForm().invoiceFooterNote"
@@ -442,76 +442,191 @@
         </div>
       </div>
 
-      <!-- Right Column: Real-time Live Ticket Preview -->
+      <!-- Right Column: Real-time Live Corporate A4 Invoice Preview -->
       <div class="ticket-preview-wrapper">
-        <div class="ticket-live-card">
-          <div class="ticket-preview-header-bar">
-            <span>Vista Previa del Ticket POS (80mm)</span>
-            <span style="font-size: 0.7rem; background: rgba(255,255,255,0.2); padding: 2px 6px; border-radius: 4px;">En Vivo</span>
+        <div class="pro-invoice-sheet settings-invoice-preview">
+          <div class="pro-invoice-top-accent"></div>
+
+          <!-- 1. Company Header Row -->
+          <div class="pro-invoice-header">
+            <div class="pro-brand-block">
+              <img
+                [src]="companyForm().logoUrl || '/logo-dgl.png'"
+                alt="DGL Despulpadora"
+                class="pro-brand-logo"
+              />
+              <div class="pro-brand-info">
+                <div class="pro-company-name">{{ companyForm().companyName }}</div>
+                <div class="pro-company-legal">{{ companyForm().legalName }}</div>
+                <div class="pro-company-tagline">{{ companyForm().tagline }}</div>
+              </div>
+            </div>
+
+            <div class="pro-fiscal-block">
+              <div class="pro-nit-pill">NIT: {{ companyForm().nit }}</div>
+              <div class="pro-fiscal-country">{{ companyForm().country }}</div>
+              <div class="pro-fiscal-regime">{{ companyForm().taxRegime }}</div>
+            </div>
           </div>
 
-          <div class="ticket-live-body">
-            <div class="receipt-center">
-              @if (companyForm().logoUrl) {
-                <img [src]="companyForm().logoUrl" alt="Logo Ticket" style="max-height: 44px; max-width: 130px; margin-bottom: 6px; object-fit: contain;" />
+          <!-- 2. Recipient / Client Address Block -->
+          <div class="pro-recipient-row">
+            <div class="pro-sender-meta">
+              <div class="sender-label">PLANTA DE DESPACHO</div>
+              <div class="sender-val">Sede Principal · Cava Frigorífica (-18°C)</div>
+              <div class="sender-sub">{{ companyForm().address }}</div>
+              @if (companyForm().city || companyForm().department) {
+                <div class="sender-sub" style="font-size: 0.73rem;">{{ companyForm().city }}{{ companyForm().department ? ', ' + companyForm().department : '' }}</div>
               }
-              <div class="receipt-title">{{ companyForm().legalName || companyForm().companyName }}</div>
-              <div class="receipt-nit">NIT: {{ companyForm().nit }}</div>
-              <div class="receipt-sub">{{ companyForm().tagline }}</div>
-              <div class="receipt-sub">{{ companyForm().address }}</div>
-              <div class="receipt-sub">{{ companyForm().city }}, {{ companyForm().department }} - {{ companyForm().country }}</div>
-              <div class="receipt-sub">Tel: {{ companyForm().phone }} • WA: {{ companyForm().whatsapp }}</div>
-              <div class="receipt-sub" style="color: #444;">{{ companyForm().taxRegime }}</div>
-              <div class="receipt-sub" style="font-size: 0.65rem; color: #555; margin-top: 2px;">{{ companyForm().dianResolution }}</div>
-
-              <div class="receipt-dashed-line"></div>
-              <div class="receipt-order-num">FACTURA DE VENTA: {{ companyForm().invoicePrefix }}{{ companyForm().invoiceNextNumber }}</div>
-              <div style="font-size: 0.7rem; color: #444;">Fecha: 13/10/2026 10:30 AM</div>
             </div>
 
-            <div class="receipt-meta-box">
-              <div><strong>CLIENTE:</strong> Restaurante El Portal</div>
-              <div><strong>DIRECCIÓN:</strong> Calle 93A # 13-25, Bogotá Norte</div>
-              <div><strong>TELÉFONO:</strong> +57 310 456 7890</div>
-              <div><strong>PAGO:</strong> Contra Entrega Efectivo</div>
+            <div class="pro-client-box">
+              <div class="client-box-label">CLIENTE / DESTINATARIO</div>
+              <div class="client-box-name">Crepes & Waffles Zona G</div>
+              <div class="client-box-line">Cra 5 # 69-18, Chapinero, Bogotá</div>
+              <div class="client-box-line">Tel: 315 9906759</div>
+              <div class="client-box-country">{{ companyForm().country }}</div>
             </div>
+          </div>
 
-            <table class="receipt-items-table">
+          <!-- 3. Large Green Invoice Title -->
+          <div class="pro-invoice-title-bar">
+            <h2 class="pro-invoice-title">
+              Factura {{ companyForm().invoicePrefix }}{{ formatPreviewInvoiceNumber() }}
+            </h2>
+            <span class="pro-invoice-status-stamp">BORRADOR ACTIVO</span>
+          </div>
+
+          <!-- 4. 4-Column Metadata Strip -->
+          <div class="pro-meta-grid">
+            <div class="pro-meta-cell">
+              <span class="meta-label">Fecha de factura</span>
+              <span class="meta-value">17/10/2026</span>
+            </div>
+            <div class="pro-meta-cell">
+              <span class="meta-label">Fecha de vencimiento</span>
+              <span class="meta-value">17/10/2026</span>
+            </div>
+            <div class="pro-meta-cell">
+              <span class="meta-label">Origen</span>
+              <span class="meta-value">S07787</span>
+            </div>
+            <div class="pro-meta-cell">
+              <span class="meta-label">Referencia</span>
+              <span class="meta-value">S07787</span>
+            </div>
+          </div>
+
+          <!-- 5. Corporate Line Items Table -->
+          <div class="pro-table-wrapper">
+            <table class="pro-invoice-table">
               <thead>
                 <tr>
-                  <th>DESCRIPCIÓN</th>
-                  <th style="text-align: center;">CANT</th>
-                  <th style="text-align: right;">TOTAL</th>
+                  <th class="col-desc">DESCRIPCIÓN</th>
+                  <th class="col-qty">CANTIDAD</th>
+                  <th class="col-price">PRECIO UNITARIO</th>
+                  <th class="col-disc">DESC.%</th>
+                  <th class="col-tax">IMPUESTOS</th>
+                  <th class="col-total">IMPORTE</th>
                 </tr>
               </thead>
               <tbody>
                 <tr>
-                  <td>Maracuyá (1000g)</td>
-                  <td style="text-align: center;">5</td>
-                  <td style="text-align: right;">$ 55.000</td>
+                  <td class="col-desc">
+                    <span class="grammage-tag">[500g]</span>
+                    <span class="product-upper">PULPA DE LULO DE CASTILLA</span>
+                  </td>
+                  <td class="col-qty">4 Unidades</td>
+                  <td class="col-price">6.600,00</td>
+                  <td class="col-disc">
+                    <div class="disc-input-wrap">
+                      <input type="number" class="disc-inline-input" value="0" readonly />
+                    </div>
+                  </td>
+                  <td class="col-tax"><span class="tax-chip">19%</span></td>
+                  <td class="col-total">$ 26.400,00</td>
                 </tr>
                 <tr>
-                  <td>Limonada Coco (140g)</td>
-                  <td style="text-align: center;">2</td>
-                  <td style="text-align: right;">$ 14.000</td>
+                  <td class="col-desc">
+                    <span class="grammage-tag">[1000g]</span>
+                    <span class="product-upper">PULPA DE MARACUYÁ</span>
+                  </td>
+                  <td class="col-qty">5 Unidades</td>
+                  <td class="col-price">11.000,00</td>
+                  <td class="col-disc">
+                    <div class="disc-input-wrap">
+                      <input type="number" class="disc-inline-input" value="0" readonly />
+                    </div>
+                  </td>
+                  <td class="col-tax"><span class="tax-chip">19%</span></td>
+                  <td class="col-total">$ 55.000,00</td>
+                </tr>
+                <tr class="is-free-row">
+                  <td class="col-desc">
+                    <span class="grammage-tag">[500g]</span>
+                    <span class="product-upper">PULPA DE LULO DE CASTILLA</span>
+                  </td>
+                  <td class="col-qty">2 Unidades</td>
+                  <td class="col-price">6.600,00</td>
+                  <td class="col-disc">
+                    <div class="disc-input-wrap">
+                      <input type="number" class="disc-inline-input" value="100" readonly />
+                    </div>
+                  </td>
+                  <td class="col-tax"><span class="tax-exempt">—</span></td>
+                  <td class="col-total">$ 0,00</td>
                 </tr>
               </tbody>
             </table>
+          </div>
 
-            <div class="receipt-dashed-line"></div>
-
-            <div class="receipt-total-row">
-              <span>TOTAL A PAGAR:</span>
-              <span>$ 69.000</span>
+          <!-- 6. Lower Split: Payment Communication (Left) + Totals Table (Right) -->
+          <div class="pro-lower-split">
+            <div class="pro-payment-comm">
+              <div class="comm-main-line">
+                Comunicación de pago: <strong>{{ companyForm().invoicePrefix }}{{ formatPreviewInvoiceNumber() }}</strong>
+              </div>
+              <div class="comm-sub-box">
+                <div><strong>Resolución:</strong> {{ companyForm().dianResolution }}</div>
+                <div><strong>Horario:</strong> {{ companyForm().operatingHours }}</div>
+                @if (companyForm().invoiceFooterNote) {
+                  <div style="margin-top: 4px; font-style: italic; color: #64748b;">{{ companyForm().invoiceFooterNote }}</div>
+                }
+              </div>
             </div>
 
-            <div class="receipt-dashed-line"></div>
-
-            <div class="receipt-footer-box">
-              <div>{{ companyForm().invoiceFooterNote }}</div>
-              <div style="margin-top: 4px; font-size: 0.66rem; color: #666;">Horario: {{ companyForm().operatingHours }}</div>
-              <div style="font-size: 0.64rem; color: #666;">Facturación: {{ companyForm().billingEmail }}</div>
+            <div class="pro-totals-box">
+              <div class="totals-row">
+                <span class="totals-label">Importe base</span>
+                <span class="totals-val">$ 81.400,00</span>
+              </div>
+              <div class="totals-row totals-discount-row">
+                <span class="totals-label">Descuento / Bonificación</span>
+                <span class="totals-val">- $ 13.200,00</span>
+              </div>
+              <div class="totals-row">
+                <span class="totals-label">IVA 19%</span>
+                <span class="totals-val">$ 15.466,00</span>
+              </div>
+              <div class="totals-grand-row">
+                <span class="grand-label">Total</span>
+                <span class="grand-val">$ 96.866,00</span>
+              </div>
             </div>
+          </div>
+
+          <!-- 7. Official Bottom Footer -->
+          <div class="pro-invoice-footer">
+            <div class="footer-contact-line">
+              <span>{{ companyForm().phone }}</span>
+              @if (companyForm().whatsapp) {
+                <span class="footer-dot">·</span>
+                <span>WA: {{ companyForm().whatsapp }}</span>
+              }
+              <span class="footer-dot">·</span>
+              <span>{{ companyForm().email }}</span>
+            </div>
+            <div class="footer-page-num">Página 1 / 1</div>
           </div>
         </div>
 
@@ -522,7 +637,7 @@
             <line x1="12" y1="8" x2="12.01" y2="8"></line>
           </svg>
           <div>
-            <strong>Sincronización Automática:</strong> Esta información se refleja inmediatamente en el módulo de <strong>Pedidos (Ticket Térmico POS 80mm)</strong> y en las confirmaciones enviadas a clientes.
+            <strong>Sincronización en Tiempo Real:</strong> Todo cambio realizado en este panel actualiza automáticamente la <strong>Factura de Venta Corporativa ({{ companyForm().invoicePrefix }}...)</strong> en el módulo de <strong>Facturación & POS</strong>.
           </div>
         </div>
       </div>

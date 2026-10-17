@@ -7,7 +7,8 @@ import {
   OnInit,
   AfterViewInit,
   ElementRef,
-  ViewChild
+  ViewChild,
+  HostListener
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -411,138 +412,194 @@ export const MAP_STYLES: MapStyleOption[] = [
       <!-- Main Map Visualizer & Live Sidebar Grid -->
       <div class="map-workspace-grid">
         <!-- Leaflet Map Container -->
-        <div class="map-canvas-card">
-          <!-- Hint Banner when in Point-Marking Mode -->
-          @if (isMarkingPointMode()) {
-            <div class="map-marking-banner">
-              <span class="banner-pulse"></span>
-              <span>🎯 MODO MARCADO ACTIVO: Haz clic en cualquier lugar de Bogotá o Cundinamarca para fijar la entrega y crear la orden.</span>
-              <button class="banner-close" (click)="toggleMarkingPointMode()">✕ Cancelar</button>
+        <div
+          class="map-canvas-card"
+          [class.is-map-locked]="mapViewMode() === 'locked'"
+          [class.map-fullscreen-active]="isMapFullscreen()"
+        >
+          <!-- Blurred & Locked Inner Wrapper when mapViewMode() === 'locked' -->
+          <div class="map-blur-target" [class.blurred]="mapViewMode() === 'locked'">
+            <!-- Hint Banner when in Point-Marking Mode -->
+            @if (isMarkingPointMode()) {
+              <div class="map-marking-banner">
+                <span class="banner-pulse"></span>
+                <span>🎯 MODO MARCADO ACTIVO: Haz clic en cualquier lugar de Bogotá o Cundinamarca para fijar la entrega y crear la orden.</span>
+                <button class="banner-close" (click)="toggleMarkingPointMode()">✕ Cancelar</button>
+              </div>
+            }
+
+            <div #mapElement class="leaflet-map-element" id="bogota-cundinamarca-map"></div>
+
+            <!-- Floating Address Geocoder Search Box -->
+            <div class="map-address-search-box" [class.has-dropdown]="showSearchResults() && searchResults().length > 0">
+              <div class="search-input-shell">
+                <span class="search-prefix-icon">
+                  @if (isSearchingAddress()) {
+                    <span class="search-mini-spinner"></span>
+                  } @else {
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                      <circle cx="11" cy="11" r="8"></circle>
+                      <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                    </svg>
+                  }
+                </span>
+
+                <input
+                  type="text"
+                  class="address-search-input"
+                  placeholder="Buscar dirección (ej: Cra 15 # 93-40), coordenadas o link de Maps..."
+                  [ngModel]="searchAddressQuery()"
+                  (ngModelChange)="onAddressQueryChange($event)"
+                  (keydown.enter)="onSearchEnter()"
+                  (focus)="onSearchFocus()"
+                />
+
+                @if (searchAddressQuery()) {
+                  <button
+                    type="button"
+                    class="search-clear-action"
+                    (click)="clearAddressSearch()"
+                    title="Borrar búsqueda"
+                  >
+                    ✕
+                  </button>
+                }
+
+                <button
+                  type="button"
+                  class="search-submit-btn"
+                  (click)="onSearchEnter()"
+                  title="Ubicar dirección en el mapa"
+                >
+                  Buscar
+                </button>
+              </div>
+
+              <!-- Autocomplete Suggestions Dropdown -->
+              @if (showSearchResults() && searchResults().length > 0) {
+                <div class="search-autocomplete-dropdown">
+                  <div class="dropdown-header">
+                    <span>📍 DIRECCIONES ENCONTRADAS ({{ searchResults().length }})</span>
+                    <button type="button" class="btn-dismiss-dropdown" (click)="closeSearchResults()">✕</button>
+                  </div>
+                  <div class="dropdown-scroll-list">
+                    @for (item of searchResults(); track item.id) {
+                      <div class="dropdown-item" (click)="selectAddressResult(item)">
+                        <span class="item-pin-icon">📍</span>
+                        <div class="item-texts">
+                          <div class="item-title">{{ item.name || item.label }}</div>
+                          <div class="item-subtitle">{{ item.label }}</div>
+                          <span class="item-zone-tag">{{ item.zone }}</span>
+                        </div>
+                        <button
+                          type="button"
+                          class="item-order-shortcut"
+                          (click)="$event.stopPropagation(); createOrderFromSearchResult(item)"
+                          title="Crear pedido en esta dirección"
+                        >
+                          + Pedido
+                        </button>
+                      </div>
+                    }
+                  </div>
+                </div>
+              }
+            </div>
+
+            <!-- High-Contrast Legend Overlay -->
+            <div class="map-legend-overlay">
+              <div class="legend-chip legend-chip-planta">
+                <span class="legend-color-dot" style="background: #10b981;"></span>
+                <span>🏭 Cava Matriz (Cota/Calle 80)</span>
+              </div>
+              @for (c of couriers(); track c.id) {
+                <div class="legend-chip" (click)="flyToCourier(c)">
+                  <span class="legend-color-dot" [style.background]="c.color"></span>
+                  <span>{{ c.name.split(' ')[0] }} ({{ c.orderIds.length }} paradas)</span>
+                </div>
+              }
+            </div>
+          </div>
+
+          <!-- OVERLAY SCREEN WITH 2 GREEN BUTTONS WHEN MAP IS LOCKED -->
+          @if (mapViewMode() === 'locked') {
+            <div class="map-locked-screen-overlay">
+              <div class="locked-actions-row">
+                <button
+                  type="button"
+                  class="locked-mode-btn"
+                  (click)="enterLiveMapMode()"
+                >
+                  <span class="live-dot-indicator"></span>
+                  <span>🛵 En Vivo</span>
+                </button>
+
+                <button
+                  type="button"
+                  class="locked-mode-btn"
+                  (click)="enterAllDeliveriesMode()"
+                >
+                  <span>📍 Ver Todas las Entregas</span>
+                </button>
+              </div>
+            </div>
+          } @else {
+            <!-- Floating Mode Switcher Pill in Top-Right when Unlocked -->
+            <div class="map-unlocked-mode-bar">
+              <button
+                type="button"
+                class="unlocked-mode-pill"
+                [class.active]="mapViewMode() === 'live'"
+                (click)="enterLiveMapMode()"
+              >
+                <span class="pulse-dot" style="width: 7px; height: 7px;"></span>
+                <span>En Vivo</span>
+              </button>
+              <button
+                type="button"
+                class="unlocked-mode-pill"
+                [class.active]="mapViewMode() === 'stops'"
+                (click)="enterAllDeliveriesMode()"
+              >
+                <span>📍 Ver Todas las Entregas</span>
+              </button>
+              <button
+                type="button"
+                class="unlocked-mode-close"
+                title="Bloquear mapa y volver a la pantalla de selección"
+                (click)="lockMapOverlay()"
+              >
+                🔒 Bloquear
+              </button>
             </div>
           }
 
-          <div #mapElement class="leaflet-map-element" id="bogota-cundinamarca-map"></div>
-
-          <!-- Floating Address Geocoder Search Box -->
-          <div class="map-address-search-box" [class.has-dropdown]="showSearchResults() && searchResults().length > 0">
-            <div class="search-input-shell">
-              <span class="search-prefix-icon">
-                @if (isSearchingAddress()) {
-                  <span class="search-mini-spinner"></span>
-                } @else {
-                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-                    <circle cx="11" cy="11" r="8"></circle>
-                    <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-                  </svg>
-                }
-              </span>
-
-              <input
-                type="text"
-                class="address-search-input"
-                placeholder="Buscar dirección (ej: Cra 15 # 93-40), coordenadas o link de Maps..."
-                [ngModel]="searchAddressQuery()"
-                (ngModelChange)="onAddressQueryChange($event)"
-                (keydown.enter)="onSearchEnter()"
-                (focus)="onSearchFocus()"
-              />
-
-              @if (searchAddressQuery()) {
-                <button
-                  type="button"
-                  class="search-clear-action"
-                  (click)="clearAddressSearch()"
-                  title="Borrar búsqueda"
-                >
-                  ✕
-                </button>
-              }
-
-              <button
-                type="button"
-                class="search-submit-btn"
-                (click)="onSearchEnter()"
-                title="Ubicar dirección en el mapa"
-              >
-                Buscar
-              </button>
-            </div>
-
-            <!-- Autocomplete Suggestions Dropdown -->
-            @if (showSearchResults() && searchResults().length > 0) {
-              <div class="search-autocomplete-dropdown">
-                <div class="dropdown-header">
-                  <span>📍 DIRECCIONES ENCONTRADAS ({{ searchResults().length }})</span>
-                  <button type="button" class="btn-dismiss-dropdown" (click)="closeSearchResults()">✕</button>
-                </div>
-                <div class="dropdown-scroll-list">
-                  @for (item of searchResults(); track item.id) {
-                    <div class="dropdown-item" (click)="selectAddressResult(item)">
-                      <span class="item-pin-icon">📍</span>
-                      <div class="item-texts">
-                        <div class="item-title">{{ item.name || item.label }}</div>
-                        <div class="item-subtitle">{{ item.label }}</div>
-                        <span class="item-zone-tag">{{ item.zone }}</span>
-                      </div>
-                      <button
-                        type="button"
-                        class="item-order-shortcut"
-                        (click)="$event.stopPropagation(); createOrderFromSearchResult(item)"
-                        title="Crear pedido en esta dirección"
-                      >
-                        + Pedido
-                      </button>
-                    </div>
-                  }
-                </div>
-              </div>
+          <!-- Fullscreen Map Button (Web & Mobile PWA) -->
+          <button
+            type="button"
+            class="map-fullscreen-fab"
+            [class.is-fullscreen]="isMapFullscreen()"
+            (click)="toggleMapFullscreen()"
+            [title]="isMapFullscreen() ? 'Salir de pantalla completa' : 'Ver mapa en pantalla completa'"
+          >
+            @if (isMapFullscreen()) {
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M8 3v3a2 2 0 0 1-2 2H3"></path>
+                <path d="M21 8h-3a2 2 0 0 1-2-2V3"></path>
+                <path d="M3 16h3a2 2 0 0 1 2 2v3"></path>
+                <path d="M16 21v-3a2 2 0 0 1 2-2h3"></path>
+              </svg>
+              <span>Salir Pantalla Completa</span>
+            } @else {
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M15 3h6v6"></path>
+                <path d="M9 21H3v-6"></path>
+                <path d="M21 3l-7 7"></path>
+                <path d="M3 21l7-7"></path>
+              </svg>
+              <span>Pantalla Completa</span>
             }
-          </div>
-
-          <!-- Floating Layer Switcher (Stadia Smooth / Stadia Dark / Esri Canvas) -->
-          <div class="map-floating-layer-switcher">
-            <button
-              type="button"
-              class="layer-switch-btn"
-              [class.active]="selectedMapStyleId() === 'stadia-smooth'"
-              (click)="selectMapStyle('stadia-smooth')"
-              title="Stadia Maps Alidade Smooth (Vector Retina @2x)"
-            >
-              <span>⚡</span> Stadia Smooth
-            </button>
-            <button
-              type="button"
-              class="layer-switch-btn"
-              [class.active]="selectedMapStyleId() === 'stadia-dark'"
-              (click)="selectMapStyle('stadia-dark')"
-              title="Stadia Maps Alidade Smooth Dark (Modo Noche)"
-            >
-              <span>🌙</span> Stadia Dark
-            </button>
-            <button
-              type="button"
-              class="layer-switch-btn"
-              [class.active]="selectedMapStyleId() === 'esri-gray'"
-              (click)="selectMapStyle('esri-gray')"
-              title="Esri World Gray Canvas (ArcGIS)"
-            >
-              <span>🏛️</span> Esri Canvas
-            </button>
-          </div>
-
-          <!-- High-Contrast Legend Overlay -->
-          <div class="map-legend-overlay">
-            <div class="legend-chip legend-chip-planta">
-              <span class="legend-color-dot" style="background: #10b981;"></span>
-              <span>🏭 Cava Matriz (Cota/Calle 80)</span>
-            </div>
-            @for (c of couriers(); track c.id) {
-              <div class="legend-chip" (click)="flyToCourier(c)">
-                <span class="legend-color-dot" [style.background]="c.color"></span>
-                <span>{{ c.name.split(' ')[0] }} ({{ c.orderIds.length }} paradas)</span>
-              </div>
-            }
-          </div>
+          </button>
         </div>
 
         <!-- Couriers Real-Time Status Deck -->
@@ -1120,26 +1177,23 @@ export const MAP_STYLES: MapStyleOption[] = [
     /* Workspace Grid */
     .map-workspace-grid {
       display: grid;
-      grid-template-columns: 1fr 340px;
+      grid-template-columns: 1fr;
       gap: 16px;
-    }
-
-    @media (max-width: 980px) {
-      .map-workspace-grid {
-        grid-template-columns: 1fr;
-      }
     }
 
     @media (max-width: 768px) {
       .map-address-search-box {
-        left: 10px;
-        right: 10px;
-        width: auto;
-        top: 10px;
+        left: 10px !important;
+        right: 10px !important;
+        width: auto !important;
+        top: max(10px, env(safe-area-inset-top, 10px)) !important;
       }
-      .map-floating-layer-switcher {
-        top: 62px;
-        right: 10px;
+      .map-unlocked-mode-bar {
+        top: calc(max(10px, env(safe-area-inset-top, 10px)) + 52px) !important;
+        left: 10px !important;
+        right: 10px !important;
+        justify-content: space-between;
+        overflow-x: auto;
       }
     }
 
@@ -1152,12 +1206,228 @@ export const MAP_STYLES: MapStyleOption[] = [
       overflow: hidden;
       box-shadow: 0 4px 24px rgba(0, 0, 0, 0.1);
       min-height: 520px;
+      transition: border-radius 0.25s ease;
+
+      &.map-fullscreen-active {
+        position: fixed !important;
+        inset: 0 !important;
+        width: 100vw !important;
+        height: 100dvh !important;
+        min-height: 100dvh !important;
+        max-height: 100dvh !important;
+        z-index: 9999 !important;
+        border-radius: 0 !important;
+        border: none !important;
+        margin: 0 !important;
+
+        .leaflet-map-element {
+          width: 100vw !important;
+          height: 100dvh !important;
+        }
+      }
+    }
+
+    .map-blur-target {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      transition: filter 0.35s cubic-bezier(0.4, 0, 0.2, 1), transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+
+      &.blurred {
+        filter: blur(7px) saturate(0.88);
+        pointer-events: none;
+        user-select: none;
+        transform: scale(1.02);
+      }
+    }
+
+    .map-locked-screen-overlay {
+      position: absolute;
+      inset: 0;
+      z-index: 1200;
+      background: rgba(15, 41, 30, 0.18);
+      backdrop-filter: blur(4px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      animation: fadeInDown 0.22s ease;
+    }
+
+    .locked-actions-row {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 16px;
+    }
+
+    @media (max-width: 520px) {
+      .locked-actions-row {
+        flex-direction: column;
+        width: 100%;
+        max-width: 320px;
+
+        .locked-mode-btn {
+          width: 100%;
+        }
+      }
+    }
+
+    .locked-mode-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      padding: 15px 28px;
+      border-radius: var(--radius-full, 9999px);
+      font-size: 0.98rem;
+      font-weight: 800;
+      font-family: var(--font-body);
+      cursor: pointer;
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+      background: var(--color-primary);
+      color: #ffffff;
+      border: 1px solid rgba(255, 255, 255, 0.16);
+      box-shadow: 0 10px 24px rgba(30, 94, 58, 0.38);
+
+      &:hover {
+        background: var(--color-primary-hover);
+        transform: translateY(-2px);
+        box-shadow: 0 14px 30px rgba(30, 94, 58, 0.5);
+      }
+
+      &:active {
+        transform: translateY(0);
+      }
+    }
+
+    .live-dot-indicator {
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      background: #4ade80;
+      box-shadow: 0 0 8px #4ade80;
+      animation: pulseAnim 1.4s infinite;
+      flex-shrink: 0;
+    }
+
+    /* Fullscreen Map Floating Action Button (Web & Mobile PWA) */
+    .map-fullscreen-fab {
+      position: absolute;
+      bottom: max(90px, calc(env(safe-area-inset-bottom, 16px) + 74px));
+      right: 14px;
+      z-index: 1250;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 10px 18px;
+      border-radius: var(--radius-full, 9999px);
+      background: var(--color-primary);
+      color: #ffffff;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      font-size: 0.82rem;
+      font-weight: 800;
+      font-family: var(--font-body);
+      cursor: pointer;
+      box-shadow: 0 8px 22px rgba(30, 94, 58, 0.42);
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+
+      &:hover {
+        background: var(--color-primary-hover);
+        transform: translateY(-2px);
+        box-shadow: 0 12px 28px rgba(30, 94, 58, 0.55);
+      }
+
+      &.is-fullscreen {
+        background: var(--color-primary-hover);
+        border-color: rgba(255, 255, 255, 0.32);
+      }
+    }
+
+    @media (max-width: 768px) {
+      .map-fullscreen-fab {
+        bottom: max(92px, calc(env(safe-area-inset-bottom, 16px) + 76px));
+        right: 12px;
+        padding: 10px 14px;
+        font-size: 0.78rem;
+      }
+    }
+
+    /* Floating Mode Switcher when Unlocked */
+    .map-unlocked-mode-bar {
+      position: absolute;
+      top: max(14px, env(safe-area-inset-top, 14px));
+      right: 14px;
+      z-index: 1000;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(15, 23, 42, 0.92);
+      backdrop-filter: blur(12px);
+      padding: 5px;
+      border-radius: 9999px;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+    }
+
+    .unlocked-mode-pill {
+      background: transparent;
+      border: none;
+      color: #cbd5e1;
+      font-size: 0.76rem;
+      font-weight: 700;
+      padding: 6px 13px;
+      border-radius: 9999px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      white-space: nowrap;
+      transition: all 0.2s ease;
+
+      &:hover {
+        color: #ffffff;
+        background: rgba(255, 255, 255, 0.1);
+      }
+
+      &.active {
+        background: var(--color-primary);
+        color: #ffffff;
+        font-weight: 800;
+        box-shadow: 0 2px 10px rgba(30, 94, 58, 0.45);
+      }
+    }
+
+    .unlocked-mode-close {
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.16);
+      color: #f8fafc;
+      font-size: 0.73rem;
+      font-weight: 700;
+      padding: 5px 11px;
+      border-radius: 9999px;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.2s ease;
+
+      &:hover {
+        background: rgba(239, 68, 68, 0.85);
+        border-color: transparent;
+      }
     }
 
     .leaflet-map-element {
       width: 100%;
       height: 540px;
       z-index: 1;
+    }
+
+    @media (max-width: 768px) {
+      .leaflet-map-element {
+        height: 440px;
+      }
     }
 
     /* Floating Address Search Box */
@@ -1558,11 +1828,9 @@ export const MAP_STYLES: MapStyleOption[] = [
     }
 
     .couriers-list {
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-      overflow-y: auto;
-      max-height: 480px;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 14px;
     }
 
     .courier-card {
@@ -2255,8 +2523,12 @@ export class DeliveryMapComponent implements OnInit, AfterViewInit, OnDestroy {
   private roadSegmentCache: Map<string, [number, number][]> = new Map();
   private courierFullRoadPaths: Map<string, [number, number][]> = new Map();
 
+  // Map Overlay & Display Mode ('locked' = blurred overlay with 2 buttons, 'live' = routes + couriers, 'stops' = delivery points only)
+  readonly mapViewMode = signal<'locked' | 'live' | 'stops'>('locked');
+  readonly isMapFullscreen = signal<boolean>(false);
+
   // Real-time Simulation Engine Signals
-  readonly isSimulating = signal<boolean>(true);
+  readonly isSimulating = signal<boolean>(false);
   readonly simulationSpeed = signal<number>(1); // 1x, 2x, 4x
   private animFrameId?: any;
   private lastTimestamp = 0;
@@ -2425,6 +2697,7 @@ export class DeliveryMapComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   ngOnDestroy() {
+    document.body.style.overflow = '';
     if (this.searchDebounceTimer) {
       clearTimeout(this.searchDebounceTimer);
     }
@@ -2766,6 +3039,7 @@ export class DeliveryMapComponent implements OnInit, AfterViewInit, OnDestroy {
         const isDark = this.selectedMapStyleId() === 'stadia-dark';
         const casingColor = isDark ? '#020617' : '#ffffff';
         const casingOpacity = isDark ? 0.9 : 0.85;
+        const showRoutes = this.mapViewMode() !== 'stops';
 
         let casing = this.routeCasingPolylines.get(courier.id);
         if (casing) {
@@ -2777,7 +3051,8 @@ export class DeliveryMapComponent implements OnInit, AfterViewInit, OnDestroy {
             opacity: casingOpacity,
             lineCap: 'round',
             lineJoin: 'round'
-          }).addTo(this.map);
+          });
+          if (showRoutes) casing.addTo(this.map);
           this.routeCasingPolylines.set(courier.id, casing);
         }
 
@@ -2792,7 +3067,8 @@ export class DeliveryMapComponent implements OnInit, AfterViewInit, OnDestroy {
             dashArray: '8, 8',
             lineCap: 'round',
             lineJoin: 'round'
-          }).addTo(this.map);
+          });
+          if (showRoutes) polyline.addTo(this.map);
           this.routePolylines.set(courier.id, polyline);
         }
       }
@@ -2842,7 +3118,10 @@ export class DeliveryMapComponent implements OnInit, AfterViewInit, OnDestroy {
         iconAnchor: [18, 18]
       });
 
-      const marker = L.marker([courier.lat, courier.lng], { icon: courierIcon }).addTo(this.map!);
+      const marker = L.marker([courier.lat, courier.lng], { icon: courierIcon });
+      if (this.mapViewMode() !== 'stops') {
+        marker.addTo(this.map!);
+      }
 
       marker.bindPopup(`
         <div style="font-family: var(--font-body); padding: 4px;">
@@ -2864,6 +3143,9 @@ export class DeliveryMapComponent implements OnInit, AfterViewInit, OnDestroy {
   // DYNAMIC MAP POINT-MARKING & ORDER CREATION
   // =========================================================================
   toggleMarkingPointMode() {
+    if (this.mapViewMode() === 'locked') {
+      this.enterAllDeliveriesMode();
+    }
     this.isMarkingPointMode.update(val => !val);
     if (this.isMarkingPointMode()) {
       this.notification.info(
@@ -3527,7 +3809,96 @@ export class DeliveryMapComponent implements OnInit, AfterViewInit, OnDestroy {
     this.renderStopMarkers();
   }
 
+  enterLiveMapMode() {
+    this.mapViewMode.set('live');
+    this.isSimulating.set(true);
+    this.syncMapLayersForMode();
+    if (this.map) {
+      setTimeout(() => {
+        this.map?.invalidateSize();
+        this.fitMapToAllStops();
+      }, 60);
+    }
+  }
+
+  enterAllDeliveriesMode() {
+    this.mapViewMode.set('stops');
+    this.isSimulating.set(false);
+    this.syncMapLayersForMode();
+    if (this.map) {
+      setTimeout(() => {
+        this.map?.invalidateSize();
+        this.fitMapToAllStops();
+      }, 60);
+    }
+  }
+
+  lockMapOverlay() {
+    this.mapViewMode.set('locked');
+    this.isSimulating.set(false);
+  }
+
+  toggleMapFullscreen() {
+    const nextState = !this.isMapFullscreen();
+    this.isMapFullscreen.set(nextState);
+    document.body.style.overflow = nextState ? 'hidden' : '';
+
+    // Refresh Leaflet canvas dimensions for both Web and Mobile PWA
+    setTimeout(() => {
+      this.map?.invalidateSize();
+    }, 80);
+    setTimeout(() => {
+      this.map?.invalidateSize();
+    }, 260);
+  }
+
+  @HostListener('document:keydown.escape')
+  onEscapeKey() {
+    if (this.isMapFullscreen()) {
+      this.toggleMapFullscreen();
+    }
+  }
+
+  private syncMapLayersForMode() {
+    if (!this.map) return;
+
+    const mode = this.mapViewMode();
+    if (mode === 'stops') {
+      // Hide moving courier markers and route polylines so only assigned delivery points are shown
+      this.routeCasingPolylines.forEach(p => p.remove());
+      this.routePolylines.forEach(p => p.remove());
+      this.courierMarkers.forEach(m => m.remove());
+    } else if (mode === 'live') {
+      // Restore route polylines and live courier markers onto the map
+      this.routeCasingPolylines.forEach(p => {
+        if (!this.map!.hasLayer(p)) p.addTo(this.map!);
+      });
+      this.routePolylines.forEach(p => {
+        if (!this.map!.hasLayer(p)) p.addTo(this.map!);
+      });
+      this.courierMarkers.forEach(m => {
+        if (!this.map!.hasLayer(m)) m.addTo(this.map!);
+      });
+    }
+  }
+
+  private fitMapToAllStops() {
+    if (!this.map) return;
+    const coords: [number, number][] = [
+      [PLANTA_MATRIZ_LAT, PLANTA_MATRIZ_LNG],
+      ...this.deliveryStops().map(s => [s.lat, s.lng] as [number, number])
+    ];
+    if (coords.length > 1) {
+      const bounds = L.latLngBounds(coords);
+      this.map.flyToBounds(bounds, { padding: [48, 48], maxZoom: 13, duration: 1.0 });
+    }
+  }
+
   toggleSimulation() {
+    if (this.mapViewMode() !== 'live') {
+      this.enterLiveMapMode();
+      return;
+    }
     this.isSimulating.update(v => !v);
   }
 
@@ -3560,6 +3931,11 @@ export class DeliveryMapComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   selectCourier(id: string) {
+    if (this.mapViewMode() !== 'live') {
+      this.mapViewMode.set('live');
+      this.isSimulating.set(true);
+      this.syncMapLayersForMode();
+    }
     this.selectedCourierId.set(id);
     const courier = this.couriers().find(c => c.id === id);
     if (courier && this.map) {

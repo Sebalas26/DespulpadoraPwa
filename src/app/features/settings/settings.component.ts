@@ -65,7 +65,16 @@ export class SettingsComponent {
   readonly companyForm = signal<CompanyConfig>({ ...this.stateService.companyInfo() });
 
   updateCompanyField<K extends keyof CompanyConfig>(field: K, value: CompanyConfig[K]) {
-    this.companyForm.update(curr => ({ ...curr, [field]: value }));
+    this.companyForm.update(curr => {
+      const next = { ...curr, [field]: value };
+      this.stateService.syncCompanyInfoSilent(next);
+      return next;
+    });
+  }
+
+  formatPreviewInvoiceNumber(): string {
+    const num = this.companyForm().invoiceNextNumber || 7750;
+    return String(num).padStart(5, '0');
   }
 
   saveCompanySettings() {

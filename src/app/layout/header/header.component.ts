@@ -1,6 +1,6 @@
 import { Component, computed, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Router, RouterLink, NavigationEnd } from '@angular/router';
+import { Router, NavigationEnd } from '@angular/router';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { filter, map } from 'rxjs/operators';
 import { AuthService } from '../../core/services/auth.service';
@@ -10,7 +10,7 @@ import { VoiceOrdersService } from '../../core/services/voice-orders.service';
 @Component({
   selector: 'app-header',
   standalone: true,
-  imports: [CommonModule, RouterLink],
+  imports: [CommonModule],
   template: `
     <header class="topbar">
       <!-- Desktop Left: Breadcrumbs -->
@@ -22,16 +22,11 @@ import { VoiceOrdersService } from '../../core/services/voice-orders.service';
         </div>
       </div>
 
-      <!-- Mobile Top Bar: DGL Logo + Notification + Avatar (Matches Figma Mobile Header) -->
+      <!-- Mobile Top Bar: DGL Logo + Notification + Avatar -->
       <div class="mobile-only-header only-mobile">
         <div class="mobile-brand">
-          <div class="mobile-logo-icon">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-              <path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z"></path>
-              <path d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12"></path>
-            </svg>
-          </div>
-          <span class="mobile-brand-title">DGL</span>
+          <img src="/logo-dgl.png" alt="DGL Despulpadora" style="width: 34px; height: 34px; object-fit: contain;" />
+          <span class="mobile-brand-title">DGL Despulpadora</span>
         </div>
       </div>
 
@@ -42,39 +37,6 @@ import { VoiceOrdersService } from '../../core/services/voice-orders.service';
           <span class="online-dot" [style.background]="stateService.isOnline() ? '#1e5e3a' : '#dc2626'"></span>
           <span class="online-text">{{ stateService.isOnline() ? 'En línea' : 'Desconectado' }}</span>
         </div>
-
-        <!-- Search Icon Button -->
-        <button
-          type="button"
-          class="topbar-icon-btn no-mobile"
-          title="Buscar en la planta"
-          (click)="onSearchClick()"
-        >
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <circle cx="11" cy="11" r="8"></circle>
-            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-          </svg>
-        </button>
-
-        <!-- WhatsApp Voice Orders Alert Button -->
-        <button
-          type="button"
-          class="topbar-wa-btn"
-          [class.has-pending]="voiceOrdersService.pendingCount() > 0"
-          title="Atención de Pedidos por Audio (WhatsApp Business)"
-          (click)="voiceOrdersService.openModal()"
-        >
-          <div class="wa-btn-icon-wrapper">
-            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M12 2a10 10 0 0 0-8.66 15L2 22l5.17-1.33A10 10 0 1 0 12 2z"></path>
-              <path d="M8.5 9.5c.3-.6.6-.6 1-.6h.5c.2 0 .4.1.5.4l.7 1.7c.1.3.1.5 0 .7l-.4.5c-.2.2-.2.4 0 .6 1 1.5 2.1 2.4 3.7 3.1.2.1.4.1.6 0l.6-.5c.2-.2.4-.2.7-.1l1.6.8c.3.1.4.3.4.5v.5c0 .4-.2.8-.7 1.1-.5.3-1.4.6-2.8-.1-2.2-1.1-4.2-3.1-5.3-5.3-.7-1.4-.4-2.3-.1-2.8z"></path>
-            </svg>
-          </div>
-          <span class="wa-btn-text no-mobile">Audios WA</span>
-          @if (voiceOrdersService.pendingCount() > 0) {
-            <span class="wa-badge-count">{{ voiceOrdersService.pendingCount() }}</span>
-          }
-        </button>
 
         <!-- Notification Bell -->
         <button
@@ -97,17 +59,18 @@ import { VoiceOrdersService } from '../../core/services/voice-orders.service';
         </div>
 
         <!-- Primary CTA: + Nuevo pedido (Desktop Figma button) -->
-        <a
-          routerLink="/orders"
+        <button
+          type="button"
           class="btn btn-dgl-primary no-mobile"
           title="Crear un nuevo pedido para alistamiento"
+          (click)="onNewOrderClick()"
         >
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
             <line x1="12" y1="5" x2="12" y2="19"></line>
             <line x1="5" y1="12" x2="19" y2="12"></line>
           </svg>
           <span>Nuevo pedido</span>
-        </a>
+        </button>
       </div>
     </header>
   `,
@@ -369,13 +332,17 @@ export class HeaderComponent {
   readonly currentRouteTitle = computed(() => {
     const url = this.urlSignal();
     if (url.startsWith('/dashboard')) return 'Panel general';
-    if (url.startsWith('/orders')) return 'Pedidos';
+    if (url.startsWith('/orders')) {
+      if (url.includes('tab=facturacion')) return 'Facturación & POS';
+      if (url.includes('tab=despachos')) return 'Despachos & Rutas';
+      return 'Alistamiento de Pedidos';
+    }
     if (url.startsWith('/calculator')) return 'Producción & Lotes';
     if (url.startsWith('/settings')) return 'Inventario en cava';
-    if (url.startsWith('/accounting')) return 'Finanzas';
+    if (url.startsWith('/accounting')) return 'Reportes';
     if (url.startsWith('/shifts')) return 'Turnos';
     if (url.startsWith('/hr')) return 'Nómina & Talento Humano';
-    if (url.startsWith('/reports')) return 'Informes';
+    if (url.startsWith('/reports')) return 'Clientes & Informes';
     if (url.startsWith('/admin')) return 'Administración';
     return 'Panel general';
   });
@@ -384,6 +351,18 @@ export class HeaderComponent {
     const searchInput = document.querySelector('input[type="text"]') as HTMLInputElement;
     if (searchInput) {
       searchInput.focus();
+    }
+  }
+
+  onNewOrderClick() {
+    if (!this.router.url.startsWith('/orders')) {
+      this.router.navigate(['/orders'], { queryParams: { tab: 'picking' } }).then(() => {
+        setTimeout(() => {
+          window.dispatchEvent(new CustomEvent('open-new-order-modal'));
+        }, 60);
+      });
+    } else {
+      window.dispatchEvent(new CustomEvent('open-new-order-modal'));
     }
   }
 }

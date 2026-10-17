@@ -636,26 +636,26 @@ export const INITIAL_PAYROLL_PERIODS_SAMPLE = [
 // DEFAULT COMPANY CONFIGURATION (BILLING & GENERAL)
 // ==========================================
 export const DEFAULT_COMPANY_CONFIG = {
-  companyName: 'DGL Pulpas Naturales',
-  legalName: 'Despulpadora DGL S.A.S.',
-  nit: '901.458.789-2',
-  logoUrl: '',
-  tagline: 'Planta de Transformación de Frutas Tropicales',
-  address: 'Calle 19 # 4-88, Bodega 3, Zona Industrial',
-  city: 'Cali',
-  department: 'Valle del Cauca',
+  companyName: 'DGL Despulpadora',
+  legalName: 'DG Distribuidores Logísticos S.A.S.',
+  nit: '901801042-5',
+  logoUrl: '/logo-dgl.png',
+  tagline: 'Pulpa de Fruta 100% Natural · Calidad Premium',
+  address: 'Bogotá D.C., Colombia',
+  city: 'Bogotá D.C.',
+  department: 'Cundinamarca',
   country: 'Colombia',
-  phone: '+57 (602) 489 5000',
-  whatsapp: '+57 310 456 7890',
-  email: 'contacto@pulpasdgl.com',
-  billingEmail: 'facturacion@pulpasdgl.com',
+  phone: '3124450389',
+  whatsapp: '+57 312 445 0389',
+  email: 'dgdistribuidores.l@gmail.com',
+  billingEmail: 'dgdistribuidores.l@gmail.com',
   operatingHours: 'Lunes a Sábado: 6:00 AM - 5:00 PM',
   dispatchHours: 'Rutas de Entrega: 7:00 AM y 2:00 PM',
   taxRegime: 'Responsable de IVA - Régimen Común',
-  dianResolution: 'Resolución DIAN No. 18764000293 de 2026. Prefijo DGL del 1 al 10000',
-  invoicePrefix: 'DGL-',
-  invoiceNextNumber: 1045,
-  invoiceFooterNote: '¡Gracias por preferir pulpas 100% naturales! Consérvese congelado a -18°C'
+  dianResolution: 'Resolución Facturación Electrónica DIAN · Prefijo INV/2026',
+  invoicePrefix: 'INV/2026/',
+  invoiceNextNumber: 7750,
+  invoiceFooterNote: '¡Gracias por preferir DGL Despulpadora — Pulpas 100% Naturales! Consérvese congelado a -18°C'
 };
 
 
