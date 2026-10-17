@@ -448,7 +448,7 @@ interface TicketTimer {
       flex-direction: column;
       background: #0f172a;
       color: #f8fafc;
-      font-family: var(--font-body, 'SF Pro Display', -apple-system, sans-serif);
+      font-family: var(--font-body, 'Lato', -apple-system, sans-serif);
       user-select: none;
       transition: background-color 0.3s, color 0.3s;
     }

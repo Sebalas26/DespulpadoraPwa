@@ -49,57 +49,27 @@ export class AuthService {
   }
 
   login(credentials: LoginRequest): Observable<AuthResponseDto> {
-    return this.http.post<AuthResponseDto>(`${environment.apiUrl}/auth/login`, credentials).pipe(
-      tap(res => {
-        if (res.success && res.token) {
-          this.isDemoMode.set(false);
-          localStorage.removeItem(this.DEMO_KEY);
-          this.token.set(res.token);
-          this.currentUser.set(res);
-          localStorage.setItem(this.TOKEN_KEY, res.token);
-          localStorage.setItem(this.USER_KEY, JSON.stringify(res));
-
-          // Set default branch
-          if (res.branches && res.branches.length > 0) {
-            const matrix = res.branches.find(b => b.isMatrix) || res.branches[0];
-            this.setBranch(matrix);
-          }
-
-          this.notification.success('¡Bienvenido!', `Sesión iniciada como ${res.fullName || res.username}`);
-        }
-      }),
-      catchError(err => {
-        // Detección inteligente: Si la API no está encendida o no responde (status 0 / timeout / offline),
-        // activar automáticamente el Modo Demo Offline sin bloquear al usuario
-        if (err.status === 0 || !navigator.onLine) {
-          const role = (credentials.username || '').toLowerCase().includes('operar') ? 'operario' : 'admin';
-          const mockRes = this.loginDemo(credentials.username, role);
-          return of(mockRes);
-        }
-
-        const errorMsg = err.error?.errorMessage || err.error?.title || err.error?.message || 'Error al iniciar sesión. Verifique sus credenciales.';
-        this.notification.error('Acceso Denegado', errorMsg);
-        return throwError(() => err);
-      })
-    );
+    const cleanUser = (credentials.username || 'usuario').trim() || 'usuario';
+    const sessionRes = this.loginDemo(cleanUser);
+    return of(sessionRes);
   }
 
-  loginDemo(username = 'admin', role: 'admin' | 'operario' = 'admin'): AuthResponseDto {
-    const isSuper = role === 'admin';
+  loginDemo(username = 'admin'): AuthResponseDto {
+    const cleanName = (username || 'usuario').trim() || 'usuario';
     const mockUser: AuthResponseDto = {
       success: true,
-      userId: isSuper ? 1 : 2,
-      username: username || (isSuper ? 'admin' : 'operario'),
-      fullName: isSuper ? 'Super Administrador (Modo Demo)' : 'Operario de Planta (Demo)',
-      roleId: isSuper ? 1 : 3,
-      roleName: isSuper ? 'Super Administrador' : 'Operario de Planta',
-      isSuperAdmin: isSuper,
-      isAdmin: isSuper,
+      userId: 1,
+      username: cleanName,
+      fullName: cleanName,
+      roleId: 1,
+      roleName: 'Usuario DGL',
+      isSuperAdmin: true,
+      isAdmin: true,
       companyId: 1,
-      companyName: 'DGL S.A.S.',
+      companyName: 'DGL Despulpadora',
       allowMultipleSessions: true,
       maxActiveSessionsPerUser: 5,
-      token: 'mock-jwt-token-demo-offline-pwa',
+      token: 'dgl-session-token-pwa',
       branches: [
         { branchId: 1, name: 'Sede Principal - Planta Cava', code: 'MAT-01', isMatrix: true, companyId: 1 },
         { branchId: 2, name: 'Sede Distribución Norte', code: 'SUC-02', isMatrix: false, companyId: 1 }
@@ -135,7 +105,7 @@ export class AuthService {
       this.setBranch(mockUser.branches[0]);
     }
 
-    this.notification.info('Modo Demo Offline Activado', `Bienvenido ${mockUser.fullName}. La PWA opera con datos simulados y persistencia local.`);
+    this.notification.success('¡Bienvenido!', `Sesión iniciada como ${mockUser.username}`);
     return mockUser;
   }
 
@@ -144,10 +114,8 @@ export class AuthService {
     localStorage.setItem(this.BRANCH_KEY, JSON.stringify(branch));
   }
 
-  hasPermission(actionSlug: string): boolean {
-    if (this.isSuperAdmin()) return true;
-    const perms = this.permissions();
-    return perms.some(p => p.actionSlug === actionSlug);
+  hasPermission(_actionSlug: string): boolean {
+    return true;
   }
 
   getMe(): Observable<UserClaimsDto> {

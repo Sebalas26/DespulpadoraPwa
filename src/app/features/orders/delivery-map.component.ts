@@ -13,6 +13,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { StateService } from '../../core/services/state.service';
 import { NotificationService } from '../../core/services/notification.service';
+import { GeocodingService } from '../../core/services/geocoding.service';
 import { OrderDto } from '../../core/models/business.models';
 import confetti from 'canvas-confetti';
 import * as L from 'leaflet';
@@ -439,7 +440,7 @@ export const MAP_STYLES: MapStyleOption[] = [
               <input
                 type="text"
                 class="address-search-input"
-                placeholder="Buscar dirección (ej: Calle 93 # 13, Usaquén, Chía)..."
+                placeholder="Buscar dirección (ej: Cra 15 # 93-40), coordenadas o link de Maps..."
                 [ngModel]="searchAddressQuery()"
                 (ngModelChange)="onAddressQueryChange($event)"
                 (keydown.enter)="onSearchEnter()"
@@ -675,13 +676,26 @@ export const MAP_STYLES: MapStyleOption[] = [
                 </div>
 
                 <div class="form-group half-col">
-                  <label class="form-label">Dirección / Referencia</label>
-                  <input
-                    type="text"
-                    class="form-input"
-                    [(ngModel)]="newOrderAddress"
-                    placeholder="Ej. Cra 15 # 93-40, Bogotá"
-                  />
+                  <label class="form-label">Dirección / Coordenadas</label>
+                  <div style="display: flex; gap: 6px;">
+                    <input
+                      type="text"
+                      class="form-input"
+                      style="flex: 1;"
+                      [(ngModel)]="newOrderAddress"
+                      (keydown.enter)="geocodeModalAddress()"
+                      placeholder="Ej. Cra 15 # 93-40, Bogotá"
+                    />
+                    <button
+                      type="button"
+                      class="btn btn-sm btn-secondary"
+                      style="padding: 0 10px; font-size: 0.78rem; flex-shrink: 0;"
+                      (click)="geocodeModalAddress()"
+                      title="Calcular coordenadas GPS automáticamente a partir de esta dirección"
+                    >
+                      📍 Ubicar
+                    </button>
+                  </div>
                 </div>
 
                 <div class="form-group half-col">
@@ -2203,6 +2217,7 @@ export const MAP_STYLES: MapStyleOption[] = [
 export class DeliveryMapComponent implements OnInit, AfterViewInit, OnDestroy {
   private readonly stateService = inject(StateService);
   private readonly notification = inject(NotificationService);
+  private readonly geocodingService = inject(GeocodingService);
 
   @ViewChild('mapElement') mapElement!: ElementRef<HTMLDivElement>;
 
@@ -2872,6 +2887,13 @@ export class DeliveryMapComponent implements OnInit, AfterViewInit, OnDestroy {
     this.newOrderClient = `Cliente ${zone.split(' ')[0]} #${Math.floor(10 + Math.random() * 90)}`;
     this.newOrderAddress = `Dirección en ${zone}`;
 
+    // Obtener automáticamente la dirección vial real del punto clicado
+    this.geocodingService.reverseGeocodeLabel(latlng.lat, latlng.lng).then(revAddr => {
+      if (revAddr) {
+        this.newOrderAddress = revAddr;
+      }
+    });
+
     if (this.map) {
       if (this.tempPointMarker) this.tempPointMarker.remove();
 
@@ -2907,22 +2929,41 @@ export class DeliveryMapComponent implements OnInit, AfterViewInit, OnDestroy {
     this.showPointOrderModal.set(true);
   }
 
+  async geocodeModalAddress() {
+    const addr = (this.newOrderAddress || '').trim();
+    if (!addr) return;
+
+    const best = await this.geocodingService.geocodeBestMatch(addr);
+    if (best) {
+      this.newOrderLat.set(best.lat);
+      this.newOrderLng.set(best.lng);
+      this.newOrderZone.set(best.zone);
+      this.newOrderAddress = best.label;
+
+      if (this.map) {
+        this.map.flyTo([best.lat, best.lng], 16, { animate: true, duration: 1.0 });
+        if (this.tempPointMarker) {
+          this.tempPointMarker.setLatLng([best.lat, best.lng]);
+        }
+      }
+      this.notification.success(
+        'Coordenadas Calculadas',
+        `${best.label} (${best.lat.toFixed(5)}, ${best.lng.toFixed(5)})`
+      );
+    } else {
+      this.notification.warning(
+        'No se pudo ubicar',
+        'Intenta escribir la dirección como Calle 93 # 13-25 o pega las coordenadas.'
+      );
+    }
+  }
+
   private detectBogotaZone(lat: number, lng: number): string {
-    if (lat > 4.82) return 'Chía (Cundinamarca Norte)';
-    if (lat > 4.78 && lng < -74.08) return 'Cota (Cundinamarca)';
-    if (lat > 4.70 && lng > -74.05) return 'Usaquén / Santa Bárbara';
-    if (lat > 4.71 && lng < -74.07) return 'Suba Oriental';
-    if (lat > 4.66 && lng > -74.06) return 'Chicó / Parque 93';
-    if (lat > 4.63 && lng > -74.07) return 'Chapinero / Teusaquillo';
-    if (lat > 4.63 && lng < -74.09) return 'Salitre / Corferias';
-    if (lat < 4.62 && lng < -74.13) return 'Kennedy / Bosa';
-    if (lat < 4.61 && lng > -74.09) return 'Centro Histórico / Candelaria';
-    if (lng < -74.13) return 'Fontibón / Mosquera (Cundinamarca)';
-    return 'Bogotá D.C.';
+    return this.geocodingService.detectBogotaZone(lat, lng);
   }
 
   // =========================================================================
-  // ADDRESS SEARCH & GEOCODING (STADIA MAPS PELIAS + NOMINATIM FALLBACK)
+  // ADDRESS SEARCH & GEOCODING (ARCGIS COLOMBIA + STADIA + NOMINATIM + BOGOTA GRID)
   // =========================================================================
   onAddressQueryChange(query: string) {
     this.searchAddressQuery.set(query);
@@ -2941,7 +2982,7 @@ export class DeliveryMapComponent implements OnInit, AfterViewInit, OnDestroy {
     this.isSearchingAddress.set(true);
     this.searchDebounceTimer = setTimeout(() => {
       this.executeAddressSearch(trimmed);
-    }, 280);
+    }, 260);
   }
 
   onSearchFocus() {
@@ -2980,7 +3021,7 @@ export class DeliveryMapComponent implements OnInit, AfterViewInit, OnDestroy {
         } else {
           this.notification.warning(
             'Dirección no encontrada',
-            `No se encontró '${query}'. Intenta con nomenclatura (ej: Calle 93 # 13-25) o punto de referencia.`
+            `No se encontró '${query}'. Intenta con nomenclatura (ej: Calle 93 # 13-25), coordenadas o punto de referencia.`
           );
         }
       });
@@ -2989,58 +3030,16 @@ export class DeliveryMapComponent implements OnInit, AfterViewInit, OnDestroy {
 
   async executeAddressSearch(query: string) {
     try {
-      const encoded = encodeURIComponent(query);
-      // 1. Stadia Maps Pelias Autocomplete (uses customer's API Key & biased to Bogotá)
-      const stadiaUrl = `https://api.stadiamaps.com/geocoding/v1/autocomplete?api_key=${STADIA_API_KEY}&focus.point.lat=4.6850&focus.point.lon=-74.0950&boundary.country=COL&text=${encoded}`;
-
-      const res = await fetch(stadiaUrl);
-      const results: AddressSearchResult[] = [];
-
-      if (res.ok) {
-        const data = await res.json();
-        if (data.features && data.features.length > 0) {
-          for (const feat of data.features) {
-            const coords = feat.geometry?.coordinates;
-            if (!coords || coords.length < 2) continue;
-            const lng = coords[0];
-            const lat = coords[1];
-            const props = feat.properties || {};
-            results.push({
-              id: props.id || props.gid || `${lat}_${lng}`,
-              name: props.name || props.street || query,
-              label: props.label || props.name || query,
-              lat,
-              lng,
-              zone: this.detectBogotaZone(lat, lng),
-              locality: props.locality || props.county || 'Bogotá'
-            });
-          }
-        }
-      }
-
-      // 2. OpenStreetMap Nominatim Fallback if Stadia yields 0 results
-      if (results.length === 0) {
-        const nominatimUrl = `https://nominatim.openstreetmap.org/search?format=json&q=${encoded}&countrycodes=co&viewbox=-74.45,4.95,-73.95,4.45&bounded=0&limit=5`;
-        const nomRes = await fetch(nominatimUrl, {
-          headers: { 'Accept-Language': 'es' }
-        });
-        if (nomRes.ok) {
-          const nomData = await nomRes.json();
-          for (const item of nomData) {
-            const lat = parseFloat(item.lat);
-            const lng = parseFloat(item.lon);
-            results.push({
-              id: item.place_id ? String(item.place_id) : `${lat}_${lng}`,
-              name: item.name || item.display_name.split(',')[0],
-              label: item.display_name,
-              lat,
-              lng,
-              zone: this.detectBogotaZone(lat, lng),
-              locality: 'Bogotá'
-            });
-          }
-        }
-      }
+      const geocoded = await this.geocodingService.searchAddress(query);
+      const results: AddressSearchResult[] = geocoded.map(item => ({
+        id: item.id,
+        name: item.name,
+        label: item.label,
+        lat: item.lat,
+        lng: item.lng,
+        zone: item.zone,
+        locality: item.locality
+      }));
 
       this.searchResults.set(results);
       this.showSearchResults.set(results.length > 0);
@@ -3619,6 +3618,23 @@ export class DeliveryMapComponent implements OnInit, AfterViewInit, OnDestroy {
           }
           return c;
         }));
+
+        // Georreferenciar automáticamente la dirección real del pedido
+        if (order.clientAddress && order.clientAddress.trim().length >= 4) {
+          this.geocodingService.geocodeBestMatch(order.clientAddress).then(geo => {
+            if (geo) {
+              this.deliveryStops.update(stops =>
+                stops.map(s =>
+                  s.id === order.orderId
+                    ? { ...s, lat: geo.lat, lng: geo.lng, zone: geo.zone }
+                    : s
+                )
+              );
+              this.renderStopMarkers();
+              this.buildAndRenderRealRoadRoutes();
+            }
+          });
+        }
       }
     });
   }

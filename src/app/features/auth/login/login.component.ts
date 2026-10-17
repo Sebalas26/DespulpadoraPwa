@@ -20,7 +20,7 @@ export class LoginComponent {
 
   readonly loginForm: FormGroup = this.fb.group({
     username: ['admin', [Validators.required]],
-    password: ['Admin2026*', [Validators.required, Validators.minLength(4)]],
+    password: ['123456', [Validators.required]],
     rememberMe: [true]
   });
 
@@ -34,43 +34,21 @@ export class LoginComponent {
     this.showPassword.update(v => !v);
   }
 
-  fillDemoCredentials(role: 'admin' | 'operario') {
-    if (role === 'admin') {
-      this.loginForm.patchValue({
-        username: 'admin',
-        password: 'Admin2026*'
-      });
-      this.notification.info('Credenciales Cargadas', 'Super Administrador (admin)');
-    } else {
-      this.loginForm.patchValue({
-        username: 'operario',
-        password: 'Operario2026*'
-      });
-      this.notification.info('Credenciales Cargadas', 'Operario de Planta (operario)');
-    }
-  }
-
-  enterDemoMode(role: 'admin' | 'operario' = 'admin') {
-    const username = this.loginForm.get('username')?.value || (role === 'admin' ? 'admin' : 'operario');
-    this.auth.loginDemo(username, role);
-    this.router.navigate(['/dashboard']);
-  }
-
   onSubmit() {
-    if (this.loginForm.invalid || this.isSubmitting()) return;
+    if (this.isSubmitting()) return;
+
+    const rawUsername = (this.loginForm.get('username')?.value || '').trim() || 'usuario';
+    const rawPassword = this.loginForm.get('password')?.value || '1234';
 
     this.isSubmitting.set(true);
-    const { username, password } = this.loginForm.value;
-
-    this.auth.login({ username, password }).subscribe({
-      next: (res) => {
+    this.auth.login({ username: rawUsername, password: rawPassword }).subscribe({
+      next: () => {
         this.isSubmitting.set(false);
-        if (res.success) {
-          this.router.navigate(['/dashboard']);
-        }
+        this.router.navigate(['/dashboard']);
       },
       error: () => {
         this.isSubmitting.set(false);
+        this.router.navigate(['/dashboard']);
       }
     });
   }

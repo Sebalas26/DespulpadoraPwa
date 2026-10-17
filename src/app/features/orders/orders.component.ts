@@ -5,6 +5,7 @@ import { ActivatedRoute, RouterLink } from '@angular/router';
 import { StateService } from '../../core/services/state.service';
 import { NotificationService } from '../../core/services/notification.service';
 import { VoiceOrdersService } from '../../core/services/voice-orders.service';
+import { GeocodingService, GeocodedLocation } from '../../core/services/geocoding.service';
 import { OrderDto, OrderStatus } from '../../core/models/business.models';
 import { DeliveryMapComponent } from './delivery-map.component';
 import confetti from 'canvas-confetti';
@@ -20,6 +21,7 @@ export class OrdersComponent {
   readonly stateService = inject(StateService);
   readonly notification = inject(NotificationService);
   readonly voiceOrdersService = inject(VoiceOrdersService);
+  readonly geocodingService = inject(GeocodingService);
   private readonly route = inject(ActivatedRoute);
 
   @ViewChild('deliveryMapRef') deliveryMapRef?: DeliveryMapComponent;
@@ -94,6 +96,10 @@ Pago por Transferencia Bancolombia`);
   readonly manualClientName = signal<string>('');
   readonly manualPhone = signal<string>('');
   readonly manualAddress = signal<string>('');
+  readonly manualAddressSuggestions = signal<GeocodedLocation[]>([]);
+  readonly selectedManualGeo = signal<GeocodedLocation | null>(null);
+  readonly isSearchingManualAddress = signal<boolean>(false);
+  private manualAddressDebounce?: any;
   readonly manualPaymentMethod = signal<string>('Transferencia Bancolombia');
   readonly manualNotes = signal<string>('');
   readonly manualItems = signal<{ fruitName: string; grammage: 140 | 250 | 500 | 1000; quantity: number; unitPrice: number }[]>([
@@ -269,16 +275,51 @@ Pago por Transferencia Bancolombia`);
     }));
   }
 
+  onManualAddressChange(val: string) {
+    this.manualAddress.set(val);
+    this.selectedManualGeo.set(null);
+
+    if (this.manualAddressDebounce) {
+      clearTimeout(this.manualAddressDebounce);
+    }
+
+    const trimmed = (val || '').trim();
+    if (trimmed.length < 3) {
+      this.manualAddressSuggestions.set([]);
+      this.isSearchingManualAddress.set(false);
+      return;
+    }
+
+    this.isSearchingManualAddress.set(true);
+    this.manualAddressDebounce = setTimeout(async () => {
+      const results = await this.geocodingService.searchAddress(trimmed);
+      this.manualAddressSuggestions.set(results);
+      if (results.length > 0) {
+        this.selectedManualGeo.set(results[0]);
+      }
+      this.isSearchingManualAddress.set(false);
+    }, 280);
+  }
+
+  selectManualAddressSuggestion(loc: GeocodedLocation) {
+    this.manualAddress.set(loc.label);
+    this.selectedManualGeo.set(loc);
+    this.manualAddressSuggestions.set([]);
+  }
+
   submitManualOrder() {
     if (!this.manualClientName() || this.manualItems().length === 0) {
       this.notification.warning('Campos incompletos', 'Indique el nombre del cliente y al menos 1 producto');
       return;
     }
 
+    const geo = this.selectedManualGeo();
+    const finalAddress = geo ? geo.label : this.manualAddress();
+
     this.stateService.createOrder({
       clientName: this.manualClientName(),
       clientPhone: this.manualPhone(),
-      clientAddress: this.manualAddress(),
+      clientAddress: finalAddress,
       items: this.manualItems(),
       paymentMethodName: this.manualPaymentMethod(),
       notes: this.manualNotes()
@@ -288,6 +329,8 @@ Pago por Transferencia Bancolombia`);
     this.manualClientName.set('');
     this.manualPhone.set('');
     this.manualAddress.set('');
+    this.manualAddressSuggestions.set([]);
+    this.selectedManualGeo.set(null);
   }
 
   formatCOP(val: number): string {

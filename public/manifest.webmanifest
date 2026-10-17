@@ -1,8 +1,8 @@
 {
-  "name": "Despulpadora del Valle - ERP & Planta",
-  "short_name": "PulpasValle",
-  "theme_color": "#090d16",
-  "background_color": "#090d16",
+  "name": "DGL Despulpadora - ERP & Planta",
+  "short_name": "DGL Despulpadora",
+  "theme_color": "#f5f2eb",
+  "background_color": "#f5f2eb",
   "display": "standalone",
   "scope": "./",
   "start_url": "./",
