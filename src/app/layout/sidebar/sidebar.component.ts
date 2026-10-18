@@ -11,7 +11,7 @@ import { StateService } from '../../core/services/state.service';
   standalone: true,
   imports: [CommonModule, RouterLink, RouterLinkActive],
   template: `
-    <aside class="sidebar">
+    <aside class="sidebar" [class.collapsed]="stateService.isSidebarCollapsed()">
       <!-- 1. Brand Logo & Name -->
       <div class="sidebar-header">
         <img src="/logo-dgl.png" alt="DGL Despulpadora" class="dgl-logo-img" />
@@ -19,6 +19,18 @@ import { StateService } from '../../core/services/state.service';
           <span class="dgl-brand-name">DGL Despulpadora</span>
           <span class="dgl-brand-sub">Gestión de pulpas</span>
         </div>
+        <button
+          type="button"
+          class="sidebar-collapse-btn"
+          title="Ocultar menú lateral"
+          (click)="stateService.toggleSidebar()"
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+            <line x1="9" y1="3" x2="9" y2="21"></line>
+            <polyline points="15 15 12 12 15 9"></polyline>
+          </svg>
+        </button>
       </div>
 
       <!-- 2. Navigation Section: GESTIÓN DIARIA -->
@@ -117,7 +129,7 @@ import { StateService } from '../../core/services/state.service';
         </a>
 
         <!-- Ventas -->
-        <a routerLink="/accounting" routerLinkActive="active" [queryParams]="{ view: 'sales' }" class="dgl-nav-item">
+        <a routerLink="/reports" routerLinkActive="active" [queryParams]="{ view: 'sales' }" class="dgl-nav-item">
           <span class="dgl-nav-icon">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <line x1="12" y1="1" x2="12" y2="23"></line>
@@ -127,8 +139,20 @@ import { StateService } from '../../core/services/state.service';
           <span class="dgl-nav-text">Ventas</span>
         </a>
 
+        <!-- Reportes -->
+        <a routerLink="/reports" routerLinkActive="active" class="dgl-nav-item">
+          <span class="dgl-nav-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="18" y1="20" x2="18" y2="10"></line>
+              <line x1="12" y1="20" x2="12" y2="4"></line>
+              <line x1="6" y1="20" x2="6" y2="14"></line>
+            </svg>
+          </span>
+          <span class="dgl-nav-text">Reportes</span>
+        </a>
+
         <!-- Clientes -->
-        <a routerLink="/reports" routerLinkActive="active" [queryParams]="{ tab: 'clients' }" class="dgl-nav-item">
+        <a routerLink="/accounting" routerLinkActive="active" class="dgl-nav-item">
           <span class="dgl-nav-icon">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
@@ -138,18 +162,6 @@ import { StateService } from '../../core/services/state.service';
             </svg>
           </span>
           <span class="dgl-nav-text">Clientes</span>
-        </a>
-
-        <!-- Reportes -->
-        <a routerLink="/accounting" routerLinkActive="active" class="dgl-nav-item">
-          <span class="dgl-nav-icon">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <line x1="18" y1="20" x2="18" y2="10"></line>
-              <line x1="12" y1="20" x2="12" y2="4"></line>
-              <line x1="6" y1="20" x2="6" y2="14"></line>
-            </svg>
-          </span>
-          <span class="dgl-nav-text">Reportes</span>
         </a>
 
         <!-- Section: SISTEMA & CONFIGURACIÓN -->
@@ -229,30 +241,47 @@ import { StateService } from '../../core/services/state.service';
       top: 0;
       z-index: 40;
       box-sizing: border-box;
+      overflow: hidden;
+      transition: width 0.25s cubic-bezier(0.4, 0, 0.2, 1),
+                  min-width 0.25s cubic-bezier(0.4, 0, 0.2, 1),
+                  max-width 0.25s cubic-bezier(0.4, 0, 0.2, 1),
+                  opacity 0.2s ease,
+                  border-color 0.2s ease;
+
+      &.collapsed {
+        width: 0;
+        min-width: 0;
+        max-width: 0;
+        border-right-width: 0;
+        opacity: 0;
+        pointer-events: none;
+      }
     }
 
     .sidebar-header {
-      padding: 18px 16px 14px 16px;
+      padding: 16px 12px 14px 14px;
       display: flex;
       align-items: center;
-      gap: 10px;
+      gap: 8px;
+      justify-content: space-between;
     }
 
     .dgl-logo-img {
-      width: 44px;
-      height: 44px;
+      width: 40px;
+      height: 40px;
       object-fit: contain;
       flex-shrink: 0;
     }
 
     .dgl-brand-text {
+      flex: 1;
       display: flex;
       flex-direction: column;
       overflow: hidden;
     }
 
     .dgl-brand-name {
-      font-size: 1.02rem;
+      font-size: 0.96rem;
       font-weight: 900;
       color: #111827;
       letter-spacing: -0.02em;
@@ -261,10 +290,32 @@ import { StateService } from '../../core/services/state.service';
     }
 
     .dgl-brand-sub {
-      font-size: 0.74rem;
+      font-size: 0.72rem;
       color: #6b7280;
       font-weight: 500;
       margin-top: 1px;
+      white-space: nowrap;
+    }
+
+    .sidebar-collapse-btn {
+      width: 28px;
+      height: 28px;
+      border-radius: 7px;
+      border: 1px solid #e5e7eb;
+      background: #f8faf8;
+      color: #4b5563;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      flex-shrink: 0;
+      transition: all 0.18s ease;
+
+      &:hover {
+        background: #eaf5ee;
+        border-color: #1e5e3a;
+        color: #1e5e3a;
+      }
     }
 
     .sidebar-plant-selector {

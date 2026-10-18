@@ -1,378 +1,194 @@
-<div class="reports-excel-page">
+<div class="clients-page">
 
-  <!-- Top Header & Export Actions (No Large Cards) -->
-  <div class="excel-page-header">
+  <!-- Page Header -->
+  <div class="clients-header">
     <div>
-      <h1 class="excel-page-title">Reportes de Ventas</h1>
-      <p class="excel-page-subtitle">
-        Libro detallado tipo Excel con todo lo vendido, filtros por período y exportación directa.
+      <h1 class="clients-title">Creación de Clientes</h1>
+      <p class="clients-subtitle">
+        Registra y administra los clientes comerciales, restaurantes y distribuidores de la planta.
       </p>
-    </div>
-
-    <div class="excel-export-actions">
-      <button
-        type="button"
-        class="btn btn-secondary btn-sm"
-        (click)="exportToCsv()"
-        title="Descargar archivo CSV separado por punto y coma"
-      >
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
-          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-          <polyline points="14 2 14 8 20 8"></polyline>
-          <line x1="8" y1="13" x2="16" y2="13"></line>
-          <line x1="8" y1="17" x2="16" y2="17"></line>
-        </svg>
-        <span>Exportar CSV</span>
-      </button>
-
-      <button
-        type="button"
-        class="btn btn-primary"
-        (click)="exportToExcel()"
-        title="Descargar libro de Excel (.xls) con todo lo vendido"
-      >
-        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3">
-          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-          <polyline points="7 10 12 15 17 10"></polyline>
-          <line x1="12" y1="15" x2="12" y2="3"></line>
-        </svg>
-        <span>Exportar a Excel (.xls)</span>
-      </button>
     </div>
   </div>
 
-  <!-- Unified Filter Toolbar (Hoy, Ayer, Día, Mes, Año, Rango de Fechas + Search) -->
-  <div class="excel-toolbar-card">
-    <div class="toolbar-row-primary">
-      <!-- Period Filter Buttons -->
-      <div class="date-filter-pills">
-        <button
-          type="button"
-          class="filter-pill-btn"
-          [class.active]="dateFilterType() === 'today'"
-          (click)="setDateFilter('today')"
-        >
-          Hoy
-        </button>
-        <button
-          type="button"
-          class="filter-pill-btn"
-          [class.active]="dateFilterType() === 'yesterday'"
-          (click)="setDateFilter('yesterday')"
-        >
-          Ayer
-        </button>
-        <button
-          type="button"
-          class="filter-pill-btn"
-          [class.active]="dateFilterType() === 'day'"
-          (click)="setDateFilter('day')"
-        >
-          Día
-        </button>
-        <button
-          type="button"
-          class="filter-pill-btn"
-          [class.active]="dateFilterType() === 'month'"
-          (click)="setDateFilter('month')"
-        >
-          Mes
-        </button>
-        <button
-          type="button"
-          class="filter-pill-btn"
-          [class.active]="dateFilterType() === 'year'"
-          (click)="setDateFilter('year')"
-        >
-          Año
-        </button>
-        <button
-          type="button"
-          class="filter-pill-btn"
-          [class.active]="dateFilterType() === 'range'"
-          (click)="setDateFilter('range')"
-        >
-          Rango de fechas
-        </button>
-        <button
-          type="button"
-          class="filter-pill-btn"
-          [class.active]="dateFilterType() === 'all'"
-          (click)="setDateFilter('all')"
-        >
-          Todo
-        </button>
-      </div>
-
-      <!-- Contextual Date Inputs depending on selected period filter -->
-      <div class="date-contextual-inputs">
-        @if (dateFilterType() === 'day') {
-          <div class="inline-date-field">
-            <label>Seleccionar día:</label>
-            <input
-              type="date"
-              class="excel-input"
-              [ngModel]="selectedDay()"
-              (ngModelChange)="selectedDay.set($event)"
-            />
-          </div>
-        }
-
-        @if (dateFilterType() === 'month') {
-          <div class="inline-date-field">
-            <label>Seleccionar mes:</label>
-            <input
-              type="month"
-              class="excel-input"
-              [ngModel]="selectedMonth()"
-              (ngModelChange)="selectedMonth.set($event)"
-            />
-          </div>
-        }
-
-        @if (dateFilterType() === 'year') {
-          <div class="inline-date-field">
-            <label>Seleccionar año:</label>
-            <select
-              class="excel-input"
-              [ngModel]="selectedYear()"
-              (ngModelChange)="selectedYear.set($event)"
-            >
-              @for (yr of availableYears; track yr) {
-                <option [value]="yr">{{ yr }}</option>
-              }
-            </select>
-          </div>
-        }
-
-        @if (dateFilterType() === 'range') {
-          <div class="inline-date-field">
-            <label>Desde:</label>
-            <input
-              type="date"
-              class="excel-input"
-              [ngModel]="rangeStartDate()"
-              (ngModelChange)="rangeStartDate.set($event)"
-            />
-            <label>Hasta:</label>
-            <input
-              type="date"
-              class="excel-input"
-              [ngModel]="rangeEndDate()"
-              (ngModelChange)="rangeEndDate.set($event)"
-            />
-          </div>
-        }
-      </div>
-    </div>
-
-    <!-- Secondary Row: Search, Fruit Filter, Payment Filter & View Mode -->
-    <div class="toolbar-row-secondary">
-      <div class="excel-search-wrap">
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
-          <circle cx="11" cy="11" r="8"></circle>
-          <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-        </svg>
-        <input
-          type="text"
-          class="excel-search-input"
-          placeholder="Filtrar en la hoja por factura, cliente, fruta, teléfono o medio de pago..."
-          [ngModel]="searchQuery()"
-          (ngModelChange)="searchQuery.set($event)"
-        />
-        @if (searchQuery()) {
-          <button type="button" class="clear-search-btn" (click)="searchQuery.set('')">✕</button>
+  <div class="clients-workspace-grid">
+    <!-- Left Card: Client Creation Form -->
+    <div class="client-form-card">
+      <div class="form-card-header">
+        <h3 class="form-card-title">
+          {{ editingClientId() !== null ? '✏️ Editar Cliente' : '➕ Nuevo Cliente' }}
+        </h3>
+        @if (editingClientId() !== null) {
+          <button type="button" class="btn-cancel-edit" (click)="resetForm()">Cancelar edición</button>
         }
       </div>
 
-      <div class="excel-Quick-filters">
-        <select
-          class="excel-select"
-          [ngModel]="selectedFruitFilter()"
-          (ngModelChange)="selectedFruitFilter.set($event)"
-        >
-          <option value="all">Todas las Pulpas / Productos</option>
-          @for (f of availableFruits(); track f) {
-            <option [value]="f">{{ f }}</option>
+      <div class="form-card-body">
+        <div class="form-group">
+          <label class="form-label">Nombre o Razón Social *</label>
+          <input
+            type="text"
+            class="form-control"
+            placeholder="Ej: Restaurante Wok Parque 93"
+            [ngModel]="fullName()"
+            (ngModelChange)="fullName.set($event)"
+          />
+        </div>
+
+        <div class="form-row-2">
+          <div class="form-group">
+            <label class="form-label">NIT / Cédula</label>
+            <input
+              type="text"
+              class="form-control"
+              placeholder="Ej: 900.876.543-1"
+              [ngModel]="identificationNumber()"
+              (ngModelChange)="identificationNumber.set($event)"
+            />
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Teléfono / WhatsApp *</label>
+            <input
+              type="text"
+              class="form-control"
+              placeholder="Ej: 315 456 7890"
+              [ngModel]="phone()"
+              (ngModelChange)="phone.set($event)"
+            />
+          </div>
+        </div>
+
+        <div class="form-row-2">
+          <div class="form-group">
+            <label class="form-label">Ciudad / Municipio</label>
+            <input
+              type="text"
+              class="form-control"
+              placeholder="Ej: Bogotá D.C."
+              [ngModel]="city()"
+              (ngModelChange)="city.set($event)"
+            />
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Correo Electrónico</label>
+            <input
+              type="email"
+              class="form-control"
+              placeholder="compras@empresa.com"
+              [ngModel]="email()"
+              (ngModelChange)="email.set($event)"
+            />
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Dirección de Entrega</label>
+          <input
+            type="text"
+            class="form-control"
+            placeholder="Ej: Calle 93A # 13-25, Chicó Norte"
+            [ngModel]="address()"
+            (ngModelChange)="address.set($event)"
+          />
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Observaciones / Horario de Recepción</label>
+          <textarea
+            rows="2"
+            class="form-control"
+            placeholder="Ej: Entregar antes de las 11:00 AM por entrada de proveedores"
+            [ngModel]="notes()"
+            (ngModelChange)="notes.set($event)"
+          ></textarea>
+        </div>
+
+        <div class="form-actions">
+          @if (editingClientId() !== null) {
+            <button type="button" class="btn btn-secondary" (click)="resetForm()"> Limpiar </button>
           }
-        </select>
-
-        <select
-          class="excel-select"
-          [ngModel]="selectedPaymentFilter()"
-          (ngModelChange)="selectedPaymentFilter.set($event)"
-        >
-          <option value="all">Todos los Medios de Pago</option>
-          @for (p of availablePayments; track p) {
-            <option [value]="p">{{ p }}</option>
-          }
-        </select>
-
-        <div class="view-mode-switch">
-          <button
-            type="button"
-            class="mode-switch-btn"
-            [class.active]="viewMode() === 'items'"
-            (click)="viewMode.set('items')"
-            title="Ver cada producto vendido en su propia fila"
-          >
-            Por Producto
-          </button>
-          <button
-            type="button"
-            class="mode-switch-btn"
-            [class.active]="viewMode() === 'orders'"
-            (click)="viewMode.set('orders')"
-            title="Ver agrupado por factura/pedido"
-          >
-            Por Factura
+          <button type="button" class="btn btn-primary btn-full" (click)="saveClient()">
+            {{ editingClientId() !== null ? 'Guardar Cambios del Cliente' : '+ Crear Cliente' }}
           </button>
         </div>
       </div>
     </div>
-  </div>
 
-  <!-- Excel Workbook Container -->
-  <div class="excel-sheet-wrapper">
-    <!-- Compact Excel Formula / Status Strip -->
-    <div class="excel-formula-bar">
-      <div class="formula-left">
-        <span class="sheet-tag">HOJA_VENTAS.XLS</span>
-        <span class="formula-divider">|</span>
-        <span class="formula-period">Período: <strong>{{ activePeriodLabel() }}</strong></span>
-        <span class="formula-divider">|</span>
-        <span class="formula-count"><strong>{{ activeRows().length }}</strong> registros</span>
+    <!-- Right Card: Registered Clients List -->
+    <div class="client-list-card">
+      <div class="list-card-header">
+        <div>
+          <h3 class="form-card-title">Clientes Registrados ({{ filteredClients().length }})</h3>
+        </div>
+        <div class="client-search-box">
+          <input
+            type="text"
+            class="form-control"
+            placeholder="Buscar cliente por nombre, NIT o teléfono..."
+            [ngModel]="searchQuery()"
+            (ngModelChange)="searchQuery.set($event)"
+          />
+        </div>
       </div>
 
-      <div class="formula-right">
-        <span class="inline-stat">Unidades: <strong>{{ totalUnitsSold() }} unds</strong></span>
-        <span class="formula-divider">·</span>
-        <span class="inline-stat">Peso: <strong>{{ totalKgSold() }} kg</strong></span>
-        <span class="formula-divider">·</span>
-        <span class="inline-stat total-highlight">Total Vendido: <strong>{{ formatCOP(totalRevenueCOP()) }}</strong></span>
+      <div class="clients-table-wrap">
+        <table class="clients-table">
+          <thead>
+            <tr>
+              <th>Cliente / Razón Social</th>
+              <th>NIT / CC</th>
+              <th>Teléfono</th>
+              <th>Dirección / Ciudad</th>
+              <th style="text-align: right;">Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (client of filteredClients(); track client.clientId) {
+              <tr>
+                <td>
+                  <div class="client-name-main">{{ client.fullName }}</div>
+                  @if (client.email) {
+                    <div class="client-email-sub">{{ client.email }}</div>
+                  }
+                </td>
+                <td class="mono-text">{{ client.identificationNumber }}</td>
+                <td>{{ client.phone }}</td>
+                <td>
+                  <div>{{ client.address || 'Sin dirección' }}</div>
+                  <div class="client-city-sub">{{ client.city || 'Bogotá D.C.' }}</div>
+                </td>
+                <td style="text-align: right; white-space: nowrap;">
+                  <button
+                    type="button"
+                    class="action-icon-btn"
+                    title="Editar cliente"
+                    (click)="editClient(client)"
+                  >
+                    ✏️
+                  </button>
+                  <button
+                    type="button"
+                    class="action-icon-btn danger"
+                    title="Eliminar cliente"
+                    (click)="deleteClient(client.clientId)"
+                  >
+                    🗑️
+                  </button>
+                </td>
+              </tr>
+            }
+
+            @if (filteredClients().length === 0) {
+              <tr>
+                <td colspan="5" style="text-align: center; padding: 32px; color: var(--text-muted);">
+                  No se encontraron clientes con ese criterio.
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
       </div>
-    </div>
-
-    <!-- Spreadsheet Grid Table -->
-    <div class="excel-table-scroll">
-      <table class="excel-grid-table">
-        <thead>
-          <tr class="excel-col-letters">
-            <th class="col-row-num">#</th>
-            <th>A</th>
-            <th>B</th>
-            <th>C</th>
-            <th>D</th>
-            <th>E</th>
-            <th>F</th>
-            <th>G</th>
-            <th>H</th>
-            <th>I</th>
-            <th>J</th>
-            <th>K</th>
-          </tr>
-          <tr class="excel-col-headers">
-            <th class="col-row-num">Fila</th>
-            <th class="sortable" (click)="toggleSort('date')">
-              Fecha / Hora
-              @if (sortField() === 'date') { <span>{{ sortAsc() ? '▲' : '▼' }}</span> }
-            </th>
-            <th class="sortable" (click)="toggleSort('invoice')">
-              N° Factura
-              @if (sortField() === 'invoice') { <span>{{ sortAsc() ? '▲' : '▼' }}</span> }
-            </th>
-            <th>N° Pedido</th>
-            <th class="sortable" (click)="toggleSort('client')">
-              Cliente
-              @if (sortField() === 'client') { <span>{{ sortAsc() ? '▲' : '▼' }}</span> }
-            </th>
-            <th class="sortable" (click)="toggleSort('product')">
-              {{ viewMode() === 'items' ? 'Producto / Pulpa' : 'Detalle de Productos Vendidos' }}
-              @if (sortField() === 'product') { <span>{{ sortAsc() ? '▲' : '▼' }}</span> }
-            </th>
-            <th class="sortable text-center" (click)="toggleSort('grammage')">
-              Gramaje
-              @if (sortField() === 'grammage') { <span>{{ sortAsc() ? '▲' : '▼' }}</span> }
-            </th>
-            <th class="sortable text-right" (click)="toggleSort('quantity')">
-              Cant. (Unds)
-              @if (sortField() === 'quantity') { <span>{{ sortAsc() ? '▲' : '▼' }}</span> }
-            </th>
-            <th class="sortable text-right" (click)="toggleSort('weightKg')">
-              Peso (Kg)
-              @if (sortField() === 'weightKg') { <span>{{ sortAsc() ? '▲' : '▼' }}</span> }
-            </th>
-            <th class="sortable text-right" (click)="toggleSort('unitPrice')">
-              Precio Unit.
-              @if (sortField() === 'unitPrice') { <span>{{ sortAsc() ? '▲' : '▼' }}</span> }
-            </th>
-            <th>Método de Pago</th>
-            <th class="sortable text-right" (click)="toggleSort('subtotal')">
-              Total Vendido ($ COP)
-              @if (sortField() === 'subtotal') { <span>{{ sortAsc() ? '▲' : '▼' }}</span> }
-            </th>
-          </tr>
-        </thead>
-
-        <tbody>
-          @for (row of activeRows(); track row.rowId; let idx = $index) {
-            <tr>
-              <td class="col-row-num">{{ idx + 1 }}</td>
-              <td class="cell-mono">
-                <span class="date-val">{{ row.dateStr }}</span>
-                <span class="time-val">{{ row.timeStr }}</span>
-              </td>
-              <td class="cell-mono cell-invoice">{{ row.invoiceNumber }}</td>
-              <td class="cell-mono cell-order">{{ row.orderNumber }}</td>
-              <td class="cell-client">
-                <div class="client-primary">{{ row.clientName }}</div>
-                <div class="client-sub">{{ row.clientPhone }}</div>
-              </td>
-              <td class="cell-product">{{ row.fruitName }}</td>
-              <td class="text-center cell-mono">
-                @if (viewMode() === 'items') {
-                  <span class="grammage-pill">{{ row.grammage }}g</span>
-                } @else {
-                  <span class="grammage-pill">Mixto</span>
-                }
-              </td>
-              <td class="text-right cell-num">{{ row.quantity }}</td>
-              <td class="text-right cell-num">{{ row.weightKg.toFixed(2) }} kg</td>
-              <td class="text-right cell-num">{{ formatCOP(row.unitPrice) }}</td>
-              <td>
-                <span class="payment-cell-tag">{{ row.paymentMethod }}</span>
-              </td>
-              <td class="text-right cell-num cell-total">{{ formatCOP(row.subtotal) }}</td>
-            </tr>
-          }
-
-          @if (activeRows().length === 0) {
-            <tr>
-              <td colspan="12" class="excel-empty-state">
-                No se encontraron ventas para el período seleccionado ({{ activePeriodLabel() }}).
-                <button type="button" class="btn-reset-inline" (click)="clearFilters()">
-                  Ver todo el histórico
-                </button>
-              </td>
-            </tr>
-          }
-        </tbody>
-
-        @if (activeRows().length > 0) {
-          <tfoot>
-            <tr class="excel-totals-row">
-              <td class="col-row-num">Σ</td>
-              <td colspan="6" class="text-right totals-label">
-                TOTALES ({{ activeRows().length }} registros · {{ activePeriodLabel() }}):
-              </td>
-              <td class="text-right cell-num">{{ totalUnitsSold() }}</td>
-              <td class="text-right cell-num">{{ totalKgSold().toFixed(2) }} kg</td>
-              <td colspan="2"></td>
-              <td class="text-right cell-num totals-grand">{{ formatCOP(totalRevenueCOP()) }}</td>
-            </tr>
-          </tfoot>
-        }
-      </table>
     </div>
   </div>
 

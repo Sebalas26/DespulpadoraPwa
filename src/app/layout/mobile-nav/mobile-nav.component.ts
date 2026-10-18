@@ -103,10 +103,10 @@ import { AuthService } from '../../core/services/auth.service';
             </a>
 
             <a routerLink="/accounting" class="drawer-link-item" (click)="showMoreDrawer.set(false)">
-              <span class="drawer-icon">📊</span>
+              <span class="drawer-icon">👥</span>
               <div>
-                <div class="drawer-title">Reportes de Ventas</div>
-                <div class="drawer-desc">Listado tipo Excel y exportación de todo lo vendido</div>
+                <div class="drawer-title">Clientes</div>
+                <div class="drawer-desc">Creación y directorio de clientes</div>
               </div>
             </a>
 
@@ -129,8 +129,8 @@ import { AuthService } from '../../core/services/auth.service';
             <a routerLink="/reports" class="drawer-link-item" (click)="showMoreDrawer.set(false)">
               <span class="drawer-icon">📊</span>
               <div>
-                <div class="drawer-title">Informes & Auditoría</div>
-                <div class="drawer-desc">Balance de masa y estadísticas</div>
+                <div class="drawer-title">Reportes</div>
+                <div class="drawer-desc">Listado tipo Excel y exportación de todo lo vendido</div>
               </div>
             </a>
 

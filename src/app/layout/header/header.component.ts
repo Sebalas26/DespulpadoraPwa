@@ -13,11 +13,33 @@ import { VoiceOrdersService } from '../../core/services/voice-orders.service';
   imports: [CommonModule],
   template: `
     <header class="topbar">
-      <!-- Desktop Left: Breadcrumbs -->
+      <!-- Desktop Left: (Sidebar Toggle + Brand when collapsed) + Dynamic Module Title -->
       <div class="topbar-left no-mobile">
+        @if (stateService.isSidebarCollapsed()) {
+          <button
+            type="button"
+            class="sidebar-toggle-btn"
+            title="Mostrar menú lateral"
+            (click)="stateService.toggleSidebar()"
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+              <line x1="9" y1="3" x2="9" y2="21"></line>
+              <polyline points="13 9 16 12 13 15"></polyline>
+            </svg>
+          </button>
+
+          <div class="header-collapsed-brand">
+            <img src="/logo-dgl.png" alt="DGL Despulpadora" class="header-logo-img" />
+            <div class="header-brand-text">
+              <span class="header-brand-name">DGL Despulpadora</span>
+              <span class="header-brand-sub">Gestión de pulpas</span>
+            </div>
+          </div>
+          <span class="header-brand-divider"></span>
+        }
+
         <div class="dgl-breadcrumb">
-          <span class="breadcrumb-root">Planta de pulpas</span>
-          <span class="breadcrumb-separator">›</span>
           <span class="breadcrumb-current">{{ currentRouteTitle() }}</span>
         </div>
       </div>
@@ -89,26 +111,91 @@ import { VoiceOrdersService } from '../../core/services/voice-orders.service';
       box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
     }
 
+    .topbar-left {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .sidebar-toggle-btn {
+      width: 30px;
+      height: 30px;
+      border-radius: 8px;
+      border: 1px solid #e5e7eb;
+      background: #f8faf8;
+      color: #374151;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      flex-shrink: 0;
+      transition: all 0.18s ease;
+
+      &:hover {
+        background: #eaf5ee;
+        border-color: #1e5e3a;
+        color: #1e5e3a;
+      }
+    }
+
+    .header-collapsed-brand {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      animation: fadeInBrand 0.2s ease;
+    }
+
+    @keyframes fadeInBrand {
+      from { opacity: 0; transform: translateX(-6px); }
+      to { opacity: 1; transform: translateX(0); }
+    }
+
+    .header-logo-img {
+      width: 38px;
+      height: 38px;
+      object-fit: contain;
+      flex-shrink: 0;
+    }
+
+    .header-brand-text {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .header-brand-name {
+      font-size: 0.94rem;
+      font-weight: 900;
+      color: #111827;
+      letter-spacing: -0.02em;
+      line-height: 1.15;
+      white-space: nowrap;
+    }
+
+    .header-brand-sub {
+      font-size: 0.7rem;
+      color: #6b7280;
+      font-weight: 500;
+      margin-top: 1px;
+      white-space: nowrap;
+    }
+
+    .header-brand-divider {
+      width: 1px;
+      height: 24px;
+      background: #e5e7eb;
+      flex-shrink: 0;
+    }
+
     .dgl-breadcrumb {
       display: flex;
       align-items: center;
       gap: 8px;
-      font-size: 0.85rem;
-    }
-
-    .breadcrumb-root {
-      color: #6b7280;
-      font-weight: 500;
-    }
-
-    .breadcrumb-separator {
-      color: #9ca3af;
-      font-size: 0.9rem;
+      font-size: 0.92rem;
     }
 
     .breadcrumb-current {
       color: #111827;
-      font-weight: 700;
+      font-weight: 800;
     }
 
     .mobile-only-header {
@@ -339,10 +426,10 @@ export class HeaderComponent {
     }
     if (url.startsWith('/calculator')) return 'Producción & Lotes';
     if (url.startsWith('/settings')) return 'Inventario en cava';
-    if (url.startsWith('/accounting')) return 'Reportes';
+    if (url.startsWith('/accounting')) return 'Clientes';
     if (url.startsWith('/shifts')) return 'Turnos';
     if (url.startsWith('/hr')) return 'Nómina & Talento Humano';
-    if (url.startsWith('/reports')) return 'Clientes & Informes';
+    if (url.startsWith('/reports')) return 'Reportes';
     if (url.startsWith('/admin')) return 'Administración';
     return 'Panel general';
   });

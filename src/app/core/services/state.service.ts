@@ -68,9 +68,17 @@ export class StateService {
 
   readonly isLoading = signal<boolean>(false);
   readonly isOnline = signal<boolean>(navigator.onLine);
+  readonly isSidebarCollapsed = signal<boolean>(false);
   readonly activeTheme = signal<'dark' | 'light'>(
     (localStorage.getItem('despulpadora_theme') as 'dark' | 'light') || 'light'
   );
+
+  toggleSidebar() {
+    this.isSidebarCollapsed.update(v => !v);
+    if (typeof window !== 'undefined') {
+      setTimeout(() => window.dispatchEvent(new Event('resize')), 260);
+    }
+  }
 
   // Computed Business Metrics
   readonly totalStockKg = computed(() => {
@@ -525,6 +533,7 @@ export class StateService {
     }[];
     notes?: string;
     paymentMethodName?: string;
+    courierName?: string;
   }): OrderDto {
     const totalAmount = orderData.items.reduce((sum, item) => sum + (item.quantity * item.unitPrice), 0);
 
@@ -542,6 +551,7 @@ export class StateService {
       totalAmount,
       isPaid: false,
       paymentMethodName: orderData.paymentMethodName || 'Contra Entrega Efectivo',
+      courierName: orderData.courierName,
       notes: orderData.notes,
       createdAt: new Date().toISOString(),
       items: orderData.items.map(i => {
@@ -580,6 +590,8 @@ export class StateService {
       }[];
       notes?: string;
       paymentMethodName?: string;
+      courierName?: string;
+      status?: OrderStatus;
     }
   ) {
     const totalAmount = orderData.items.reduce((sum, item) => sum + (item.quantity * item.unitPrice), 0);
@@ -593,6 +605,8 @@ export class StateService {
             clientPhone: orderData.clientPhone || o.clientPhone,
             clientAddress: orderData.clientAddress || o.clientAddress,
             paymentMethodName: orderData.paymentMethodName || o.paymentMethodName,
+            courierName: orderData.courierName !== undefined ? orderData.courierName : o.courierName,
+            status: orderData.status || o.status,
             notes: orderData.notes,
             totalAmount,
             items: orderData.items.map(i => {
@@ -878,6 +892,47 @@ export class StateService {
     this.productVariants.set(INITIAL_PRODUCT_VARIANTS);
     this.saveAllToStorage();
     this.notification.info('Catálogo Restablecido', 'Se cargaron las presentaciones predeterminadas.');
+  }
+
+  // ==========================================
+  // CLIENTS CRUD
+  // ==========================================
+  createClient(dto: CreateClientDto): ClientDto {
+    const nextId = Math.max(0, ...this.clients().map(c => c.clientId)) + 1;
+    const newClient: ClientDto = {
+      clientId: nextId,
+      fullName: dto.fullName.trim(),
+      identificationTypeId: dto.identificationTypeId ?? 1,
+      identificationNumber: dto.identificationNumber.trim(),
+      phone: dto.phone.trim(),
+      email: dto.email?.trim() || '',
+      address: dto.address?.trim() || '',
+      city: dto.city?.trim() || 'Bogotá D.C.',
+      notes: dto.notes?.trim() || '',
+      isActive: true
+    };
+
+    this.clients.update(list => [newClient, ...list]);
+    this.saveAllToStorage();
+    this.notification.success('Cliente Creado', `${newClient.fullName} fue registrado exitosamente.`);
+    return newClient;
+  }
+
+  updateClient(clientId: number, changes: Partial<ClientDto>) {
+    this.clients.update(list =>
+      list.map(c => (c.clientId === clientId ? { ...c, ...changes } : c))
+    );
+    this.saveAllToStorage();
+    this.notification.success('Cliente Actualizado', 'Los datos del cliente han sido guardados.');
+  }
+
+  deleteClient(clientId: number) {
+    const target = this.clients().find(c => c.clientId === clientId);
+    this.clients.update(list => list.filter(c => c.clientId !== clientId));
+    this.saveAllToStorage();
+    if (target) {
+      this.notification.info('Cliente Eliminado', `${target.fullName} fue retirado del directorio.`);
+    }
   }
 }
 

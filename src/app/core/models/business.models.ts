@@ -151,6 +151,7 @@ export interface OrderDto {
   items: OrderItemDto[];
   paymentMethodId?: number;
   paymentMethodName?: string;
+  courierName?: string;
   isPaid: boolean;
   notes?: string;
   createdAt: string;

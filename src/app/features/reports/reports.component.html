@@ -11,8 +11,142 @@
       </p>
     </div>
 
-    <!-- Export & Print Buttons -->
-    <div style="display: flex; flex-wrap: wrap; gap: 10px;">
+    <!-- Period Filter + Export & Print Buttons -->
+    <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 12px;">
+      <!-- Enhanced Period Filter Bar: Hoy, Ayer, Mes, Año, Rango -->
+      <div class="period-filter-container no-print">
+        <span class="period-label">Período:</span>
+
+        <div class="period-Segmented-group">
+          <button
+            type="button"
+            class="period-pill-btn"
+            [class.active]="selectedDateFilter() === 'today'"
+            (click)="setDateFilter('today')"
+          >
+            Hoy
+          </button>
+
+          <button
+            type="button"
+            class="period-pill-btn"
+            [class.active]="selectedDateFilter() === 'yesterday'"
+            (click)="setDateFilter('yesterday')"
+          >
+            Ayer
+          </button>
+
+          <button
+            type="button"
+            class="period-pill-btn"
+            [class.active]="selectedDateFilter() === 'month'"
+            (click)="setDateFilter('month')"
+          >
+            Mes
+          </button>
+
+          <button
+            type="button"
+            class="period-pill-btn"
+            [class.active]="selectedDateFilter() === 'year'"
+            (click)="setDateFilter('year')"
+          >
+            Año
+          </button>
+
+          <button
+            type="button"
+            class="period-pill-btn"
+            [class.active]="selectedDateFilter() === 'range'"
+            (click)="setDateFilter('range')"
+          >
+            Rango
+          </button>
+        </div>
+
+        <!-- Contextual Date Display & Selector Capsule -->
+        <div class="selected-date-capsule">
+          <span class="capsule-cal-icon">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+              <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+              <line x1="16" y1="2" x2="16" y2="6"></line>
+              <line x1="8" y1="2" x2="8" y2="6"></line>
+              <line x1="3" y1="10" x2="21" y2="10"></line>
+            </svg>
+          </span>
+
+          @if (selectedDateFilter() === 'today') {
+            <span class="capsule-date-text">Hoy · {{ todayFormattedDisplay() }}</span>
+          }
+
+          @if (selectedDateFilter() === 'yesterday') {
+            <span class="capsule-date-text">Ayer · {{ yesterdayFormattedDisplay() }}</span>
+          }
+
+          @if (selectedDateFilter() === 'month') {
+            <div class="capsule-select-pair">
+              <select
+                class="capsule-inline-select"
+                [ngModel]="selectedMonthNumber()"
+                (ngModelChange)="selectedMonthNumber.set($event)"
+                title="Seleccionar mes"
+              >
+                @for (m of monthsList; track m.value) {
+                  <option [value]="m.value">{{ m.label }}</option>
+                }
+              </select>
+              <span class="capsule-dot">·</span>
+              <select
+                class="capsule-inline-select year-select"
+                [ngModel]="selectedYear()"
+                (ngModelChange)="selectedYear.set($event)"
+                title="Seleccionar año"
+              >
+                @for (yr of availableYears(); track yr) {
+                  <option [value]="yr">{{ yr }}</option>
+                }
+              </select>
+            </div>
+          }
+
+          @if (selectedDateFilter() === 'year') {
+            <div class="capsule-select-pair">
+              <span class="capsule-sub-label">Año</span>
+              <select
+                class="capsule-inline-select year-select"
+                [ngModel]="selectedYear()"
+                (ngModelChange)="selectedYear.set($event)"
+                title="Seleccionar año"
+              >
+                @for (yr of availableYears(); track yr) {
+                  <option [value]="yr">{{ yr }}</option>
+                }
+              </select>
+            </div>
+          }
+
+          @if (selectedDateFilter() === 'range') {
+            <div class="capsule-range-pair">
+              <input
+                type="date"
+                class="capsule-date-input"
+                [ngModel]="rangeStartDate()"
+                (ngModelChange)="rangeStartDate.set($event)"
+                title="Fecha inicial"
+              />
+              <span class="capsule-range-arrow">→</span>
+              <input
+                type="date"
+                class="capsule-date-input"
+                [ngModel]="rangeEndDate()"
+                (ngModelChange)="rangeEndDate.set($event)"
+                title="Fecha final"
+              />
+            </div>
+          }
+        </div>
+      </div>
+
       <button
         type="button"
         class="btn btn-secondary"
@@ -45,482 +179,553 @@
     </div>
   </div>
 
-  <!-- Report Filter & Tabs Bar -->
-  <div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 14px;">
-    <!-- Main Tabs -->
-    <div class="tab-nav">
-      <button
-        type="button"
-        class="tab-button"
-        [class.active]="activeTab() === 'sales'"
-        (click)="activeTab.set('sales')"
-      >
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <line x1="18" y1="20" x2="18" y2="10"></line>
-          <line x1="12" y1="20" x2="12" y2="4"></line>
-          <line x1="6" y1="20" x2="6" y2="14"></line>
-        </svg>
-        <span>1. Ventas & Metas</span>
-      </button>
+  <!-- REPORTE DE VENTAS & METAS -->
+  <div style="display: flex; flex-direction: column; gap: 20px;">
+    <!-- KPI Row -->
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px;">
+      <div class="card hover-lift">
+        <div class="card-body">
+          <div style="font-size: 0.78rem; text-transform: uppercase; color: var(--text-muted); font-weight: 700;">Total Facturado</div>
+          <div style="font-size: 1.85rem; font-weight: 800; color: #10b981; margin-top: 4px;">
+            {{ formatCOP(totalSalesRevenue()) }}
+          </div>
+          <div style="font-size: 0.75rem; color: var(--text-dim); margin-top: 2px;">
+            {{ filteredOrders().length }} pedidos procesados · {{ activeFilterSummaryLabel() }}
+          </div>
+        </div>
+      </div>
 
-      <button
-        type="button"
-        class="tab-button"
-        [class.active]="activeTab() === 'losses'"
-        (click)="activeTab.set('losses')"
-      >
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline>
-          <polyline points="17 6 23 6 23 12"></polyline>
-        </svg>
-        <span>2. Auditoría Mermas</span>
-      </button>
+      <div class="card hover-lift">
+        <div class="card-body">
+          <div style="font-size: 0.78rem; text-transform: uppercase; color: var(--text-muted); font-weight: 700;">Utilidad Bruta Acumulada</div>
+          <div style="font-size: 1.85rem; font-weight: 800; color: #06b6d4; margin-top: 4px;">
+            {{ formatCOP(filteredGrossProfit()) }}
+          </div>
+          <div style="font-size: 0.75rem; color: var(--text-dim); margin-top: 2px;">
+            Margen bruto: {{ filteredGrossMarginPct().toFixed(1) }}%
+          </div>
+        </div>
+      </div>
 
-      <button
-        type="button"
-        class="tab-button"
-        [class.active]="activeTab() === 'inventory'"
-        (click)="activeTab.set('inventory')"
-      >
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"></path>
-          <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
-          <line x1="12" y1="22.08" x2="12" y2="12"></line>
-        </svg>
-        <span>3. Inventario Cava</span>
-      </button>
+      <div class="card hover-lift">
+        <div class="card-body">
+          <div style="font-size: 0.78rem; text-transform: uppercase; color: var(--text-muted); font-weight: 700;">Cumplimiento Meta Mensual</div>
+          <div style="font-size: 1.85rem; font-weight: 800; color: #f59e0b; margin-top: 4px;">
+            {{ filteredCompliancePct().toFixed(1) }}%
+          </div>
+          <div style="font-size: 0.75rem; color: var(--text-dim); margin-top: 2px;">
+            Meta: {{ formatCOP(stateService.salesPerformance().monthTargetRevenue) }}
+          </div>
+        </div>
+      </div>
 
-      <button
-        type="button"
-        class="tab-button"
-        [class.active]="activeTab() === 'payroll'"
-        (click)="activeTab.set('payroll')"
-      >
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
-          <circle cx="9" cy="7" r="4"></circle>
-          <path d="M22 21v-2a4 4 0 0 0-3-3.87"></path>
-        </svg>
-        <span>4. Nómina Quincenal</span>
-      </button>
-
-      <button
-        type="button"
-        class="tab-button"
-        [class.active]="activeTab() === 'expenses'"
-        (click)="activeTab.set('expenses')"
-      >
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <line x1="12" y1="1" x2="12" y2="23"></line>
-          <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
-        </svg>
-        <span>5. Gastos & Caja</span>
-      </button>
+      <div class="card hover-lift">
+        <div class="card-body">
+          <div style="font-size: 0.78rem; text-transform: uppercase; color: var(--text-muted); font-weight: 700;">Unidades Despachadas</div>
+          <div style="font-size: 1.85rem; font-weight: 800; color: #8b5cf6; margin-top: 4px;">
+            {{ formatNum(totalUnitsSold()) }} unds
+          </div>
+          <div style="font-size: 0.75rem; color: var(--text-dim); margin-top: 2px;">Presentaciones comerciales</div>
+        </div>
+      </div>
     </div>
 
-    <!-- Date Period Filter (Active on Sales & Expenses) -->
-    @if (activeTab() === 'sales' || activeTab() === 'expenses') {
-      <div style="display: flex; align-items: center; gap: 8px;">
-        <span style="font-size: 0.8rem; color: var(--text-muted); font-weight: 600;">Período:</span>
-        <select
-          class="form-control"
-          style="padding: 6px 12px; font-size: 0.85rem; width: auto;"
-          [ngModel]="selectedDateFilter()"
-          (ngModelChange)="selectedDateFilter.set($event)"
-        >
-          <option value="today">Solo Hoy</option>
-          <option value="month">Mes en Curso</option>
-          <option value="all">Todo el Histórico</option>
-        </select>
+    <!-- Sales Orders Table -->
+    <div class="card" style="overflow: visible;">
+      <div class="card-header" style="justify-content: space-between;">
+        <h3 class="card-title">Detalle de Ventas Registradas</h3>
+        <span class="badge badge-success">{{ filteredOrders().length }} pedidos</span>
       </div>
-    }
+      <div class="card-body" style="padding: 0; overflow: visible;">
+        <div class="table-container" style="overflow: visible;">
+          <table>
+            <thead>
+              <tr>
+                <th>Nro Pedido</th>
+                <th>Fecha</th>
+                <th>Cliente</th>
+                <th>Contacto</th>
+                <th>Método Pago</th>
+                <th>Mensajero</th>
+                <th>Ítems</th>
+                <th>Estado</th>
+                <th style="text-align: right;">Total COP</th>
+                <th class="no-print" style="text-align: center;">Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (order of filteredOrders(); track order.orderId) {
+                <tr>
+                  <td style="font-family: monospace; font-weight: 700;">{{ order.orderNumber }}</td>
+                  <td style="font-size: 0.85rem; color: var(--text-muted);">{{ order.createdAt.substring(0, 10) }}</td>
+                  <td style="font-weight: 600;">{{ order.clientName }}</td>
+                  <td style="font-size: 0.85rem;">{{ order.clientPhone || 'N/A' }}</td>
+                  <td>
+                    <span class="badge badge-info" style="font-size: 0.72rem;">{{ order.paymentMethodName || 'General' }}</span>
+                  </td>
+                  <td>
+                    <span class="courier-pill">
+                      🛵 {{ getCourierName(order) }}
+                    </span>
+                  </td>
+                  <td style="font-size: 0.85rem;">{{ order.items.length }} tipos</td>
+                  <td>
+                    <span class="badge" [ngClass]="getStatusBadgeClass(order.status)">
+                      {{ getStatusLabelES(order.status) }}
+                    </span>
+                  </td>
+                  <td style="text-align: right; font-weight: 800; color: #10b981;">
+                    {{ formatCOP(order.totalAmount) }}
+                  </td>
+                  <td class="no-print actions-cell" style="text-align: center;">
+                    <div class="actions-dropdown-wrapper">
+                      <button
+                        type="button"
+                        class="actions-trigger-btn"
+                        (click)="toggleActionsDropdown(order.orderId, $event)"
+                        [class.active]="openActionOrderId() === order.orderId"
+                      >
+                        <span>Acciones</span>
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                          <polyline points="6 9 12 15 18 9"></polyline>
+                        </svg>
+                      </button>
+
+                      @if (openActionOrderId() === order.orderId) {
+                        <div class="actions-dropdown-menu" (click)="$event.stopPropagation()">
+                          <button type="button" class="dropdown-action-item" (click)="onEditOrder(order, $event)">
+                            <span class="action-icon">✏️</span>
+                            <span>Editar</span>
+                          </button>
+
+                          <button type="button" class="dropdown-action-item" (click)="onViewInvoice(order, $event)">
+                            <span class="action-icon">📄</span>
+                            <span>Ver factura</span>
+                          </button>
+
+                          <button type="button" class="dropdown-action-item" (click)="onRemakeOrder(order, $event)">
+                            <span class="action-icon">🔄</span>
+                            <span>Rehacer pedido</span>
+                          </button>
+
+                          <div class="dropdown-divider"></div>
+
+                          <button type="button" class="dropdown-action-item danger" (click)="onDeleteOrder(order, $event)">
+                            <span class="action-icon">🗑️</span>
+                            <span>Eliminar</span>
+                          </button>
+                        </div>
+                      }
+                    </div>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
   </div>
 
-  <!-- TAB 1: REPORTE DE VENTAS & METAS -->
-  @if (activeTab() === 'sales') {
-    <div style="display: flex; flex-direction: column; gap: 20px;">
-      <!-- KPI Row -->
-      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px;">
-        <div class="card hover-lift">
-          <div class="card-body">
-            <div style="font-size: 0.78rem; text-transform: uppercase; color: var(--text-muted); font-weight: 700;">Total Facturado</div>
-            <div style="font-size: 1.85rem; font-weight: 800; color: #10b981; margin-top: 4px;">
-              {{ formatCOP(totalSalesRevenue()) }}
-            </div>
-            <div style="font-size: 0.75rem; color: var(--text-dim); margin-top: 2px;">
-              {{ filteredOrders().length }} pedidos procesados
-            </div>
-          </div>
-        </div>
-
-        <div class="card hover-lift">
-          <div class="card-body">
-            <div style="font-size: 0.78rem; text-transform: uppercase; color: var(--text-muted); font-weight: 700;">Utilidad Bruta Acumulada</div>
-            <div style="font-size: 1.85rem; font-weight: 800; color: #06b6d4; margin-top: 4px;">
-              {{ formatCOP(stateService.salesPerformance().grossProfit) }}
-            </div>
-            <div style="font-size: 0.75rem; color: var(--text-dim); margin-top: 2px;">
-              Margen bruto: {{ stateService.salesPerformance().grossMarginPercentage.toFixed(1) }}%
-            </div>
-          </div>
-        </div>
-
-        <div class="card hover-lift">
-          <div class="card-body">
-            <div style="font-size: 0.78rem; text-transform: uppercase; color: var(--text-muted); font-weight: 700;">Cumplimiento Meta Mensual</div>
-            <div style="font-size: 1.85rem; font-weight: 800; color: #f59e0b; margin-top: 4px;">
-              {{ stateService.salesPerformance().compliancePercentage.toFixed(1) }}%
-            </div>
-            <div style="font-size: 0.75rem; color: var(--text-dim); margin-top: 2px;">
-              Meta: {{ formatCOP(stateService.salesPerformance().monthTargetRevenue) }}
-            </div>
-          </div>
-        </div>
-
-        <div class="card hover-lift">
-          <div class="card-body">
-            <div style="font-size: 0.78rem; text-transform: uppercase; color: var(--text-muted); font-weight: 700;">Unidades Despachadas</div>
-            <div style="font-size: 1.85rem; font-weight: 800; color: #8b5cf6; margin-top: 4px;">
-              {{ formatNum(totalUnitsSold()) }} unds
-            </div>
-            <div style="font-size: 0.75rem; color: var(--text-dim); margin-top: 2px;">Presentaciones comerciales</div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Sales Orders Table -->
-      <div class="card">
-        <div class="card-header" style="justify-content: space-between;">
-          <h3 class="card-title">Detalle de Ventas Registradas</h3>
-          <span class="badge badge-success">{{ filteredOrders().length }} pedidos</span>
-        </div>
-        <div class="card-body" style="padding: 0;">
-          <div class="table-container">
-            <table>
-              <thead>
-                <tr>
-                  <th>Nro Pedido</th>
-                  <th>Fecha</th>
-                  <th>Cliente</th>
-                  <th>Contacto</th>
-                  <th>Método Pago</th>
-                  <th>Ítems</th>
-                  <th>Estado</th>
-                  <th style="text-align: right;">Total COP</th>
-                </tr>
-              </thead>
-              <tbody>
-                @for (order of filteredOrders(); track order.orderId) {
-                  <tr>
-                    <td style="font-family: monospace; font-weight: 700;">{{ order.orderNumber }}</td>
-                    <td style="font-size: 0.85rem; color: var(--text-muted);">{{ order.createdAt.substring(0, 10) }}</td>
-                    <td style="font-weight: 600;">{{ order.clientName }}</td>
-                    <td style="font-size: 0.85rem;">{{ order.clientPhone || 'N/A' }}</td>
-                    <td>
-                      <span class="badge badge-info" style="font-size: 0.72rem;">{{ order.paymentMethodName || 'General' }}</span>
-                    </td>
-                    <td style="font-size: 0.85rem;">{{ order.items.length }} tipos</td>
-                    <td>
-                      <span class="badge" [ngClass]="order.status === 'DELIVERED' ? 'badge-success' : 'badge-warning'">
-                        {{ order.status }}
-                      </span>
-                    </td>
-                    <td style="text-align: right; font-weight: 800; color: #10b981;">
-                      {{ formatCOP(order.totalAmount) }}
-                    </td>
-                  </tr>
-                }
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </div>
-    </div>
-  }
-
-  <!-- TAB 2: AUDITORÍA DE MERMAS (IDEAL VS REAL) -->
-  @if (activeTab() === 'losses') {
-    <div style="display: flex; flex-direction: column; gap: 20px;">
-      <!-- Loss KPI Summary -->
-      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px;">
-        <div class="card hover-lift" style="border-left: 4px solid #ef4444;">
-          <div class="card-body">
-            <div style="font-size: 0.78rem; text-transform: uppercase; color: var(--text-muted); font-weight: 700;">Pérdida Total en Dinero</div>
-            <div style="font-size: 1.85rem; font-weight: 800; color: #ef4444; margin-top: 4px;">
-              -{{ formatCOP(totalLossMoney()) }}
-            </div>
-            <div style="font-size: 0.75rem; color: var(--text-dim); margin-top: 2px;">Diferencia Venta Ideal vs Real</div>
-          </div>
-        </div>
-
-        <div class="card hover-lift" style="border-left: 4px solid #f59e0b;">
-          <div class="card-body">
-            <div style="font-size: 0.78rem; text-transform: uppercase; color: var(--text-muted); font-weight: 700;">Unidades Faltantes (Merma)</div>
-            <div style="font-size: 1.85rem; font-weight: 800; color: #f59e0b; margin-top: 4px;">
-              -{{ formatNum(totalLossUnits()) }} unidades
-            </div>
-            <div style="font-size: 0.75rem; color: var(--text-dim); margin-top: 2px;">Diferencia en producción empacada</div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Audit Reconciliation Table -->
-      <div class="card">
-        <div class="card-header" style="justify-content: space-between;">
-          <h3 class="card-title">Conciliación por Fruta (Excel Módulo 3)</h3>
-          <span class="badge badge-purple">{{ lossAuditList().length }} frutas auditadas</span>
-        </div>
-        <div class="card-body" style="padding: 0;">
-          <div class="table-container">
-            <table>
-              <thead>
-                <tr>
-                  <th>Fruta</th>
-                  <th>Producción Ideal (Unds)</th>
-                  <th>Venta Facturada (Unds)</th>
-                  <th>Diferencia Unds</th>
-                  <th>Ingreso Ideal COP</th>
-                  <th>Ingreso Real COP</th>
-                  <th style="text-align: right;">Diferencia Dinero COP</th>
-                </tr>
-              </thead>
-              <tbody>
-                @for (row of lossAuditList(); track row.auditId) {
-                  <tr>
-                    <td style="font-weight: 700;">{{ row.fruitName || 'Fruta' }}</td>
-                    <td style="font-family: monospace;">{{ row.unitsProduced }} und</td>
-                    <td style="font-family: monospace;">{{ row.unitsBilled }} und</td>
-                    <td>
-                      <span class="badge" [ngClass]="row.unitsDifference < 0 ? 'badge-danger' : 'badge-success'">
-                        {{ row.unitsDifference > 0 ? '+' : '' }}{{ row.unitsDifference }}
-                      </span>
-                    </td>
-                    <td>{{ formatCOP(row.idealRevenue) }}</td>
-                    <td style="font-weight: 600;">{{ formatCOP(row.realRevenue) }}</td>
-                    <td style="text-align: right; font-weight: 800;" [style.color]="row.moneyDifference < 0 ? '#ef4444' : '#10b981'">
-                      {{ formatCOP(row.moneyDifference) }}
-                    </td>
-                  </tr>
-                }
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </div>
-    </div>
-  }
-
-  <!-- TAB 3: INVENTARIO VALORIZADO (CAVA) -->
-  @if (activeTab() === 'inventory') {
-    <div style="display: flex; flex-direction: column; gap: 20px;">
-      <!-- Inventory Valuation Cards -->
-      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px;">
-        <div class="card hover-lift" style="border-left: 4px solid #10b981;">
-          <div class="card-body">
-            <div style="font-size: 0.78rem; text-transform: uppercase; color: var(--text-muted); font-weight: 700;">Valor Total Estimado en Cava</div>
-            <div style="font-size: 1.85rem; font-weight: 800; color: #10b981; margin-top: 4px;">
-              {{ formatCOP(inventoryValuation().estimatedValue) }}
-            </div>
-            <div style="font-size: 0.75rem; color: var(--text-dim); margin-top: 2px;">Valor comercial del stock congelado</div>
-          </div>
-        </div>
-
-        <div class="card hover-lift" style="border-left: 4px solid #06b6d4;">
-          <div class="card-body">
-            <div style="font-size: 0.78rem; text-transform: uppercase; color: var(--text-muted); font-weight: 700;">Volumen Total en Cava</div>
-            <div style="font-size: 1.85rem; font-weight: 800; color: #06b6d4; margin-top: 4px;">
-              {{ inventoryValuation().totalKg.toFixed(1) }} Kilos
-            </div>
-            <div style="font-size: 0.75rem; color: var(--text-dim); margin-top: 2px;">Distribuido en 4 presentaciones</div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Inventory by Fruit Table -->
-      <div class="card">
-        <div class="card-header" style="justify-content: space-between;">
-          <h3 class="card-title">Existencias por Fruta y Presentación</h3>
-          <span class="badge badge-info">{{ inventoryValuation().items.length }} referencias</span>
-        </div>
-        <div class="card-body" style="padding: 0;">
-          <div class="table-container">
-            <table>
-              <thead>
-                <tr>
-                  <th>Fruta</th>
-                  <th>140g</th>
-                  <th>250g</th>
-                  <th>500g</th>
-                  <th>1000g</th>
-                  <th>Total Kilos</th>
-                  <th style="text-align: right;">Valor Comercial Estimado</th>
-                </tr>
-              </thead>
-              <tbody>
-                @for (item of inventoryValuation().items; track item.fruitName) {
-                  <tr>
-                    <td style="font-weight: 700;">
-                      <span style="margin-right: 6px;">{{ item.emoji }}</span>
-                      {{ item.fruitName }}
-                    </td>
-                    <td style="font-family: monospace;">{{ item.g140 }} und</td>
-                    <td style="font-family: monospace;">{{ item.g250 }} und</td>
-                    <td style="font-family: monospace;">{{ item.g500 }} und</td>
-                    <td style="font-family: monospace;">{{ item.g1000 }} und</td>
-                    <td style="font-weight: 700; color: #06b6d4;">{{ item.totalKg.toFixed(1) }} kg</td>
-                    <td style="text-align: right; font-weight: 800; color: #10b981;">
-                      {{ formatCOP(item.estimatedValueCOP) }}
-                    </td>
-                  </tr>
-                }
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </div>
-    </div>
-  }
-
-  <!-- TAB 4: CONSOLIDADO DE NÓMINA QUINCENAL -->
-  @if (activeTab() === 'payroll') {
-    <div style="display: flex; flex-direction: column; gap: 20px;">
-      <!-- Payroll KPI Row -->
-      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px;">
-        <div class="card hover-lift">
-          <div class="card-body">
-            <div style="font-size: 0.78rem; text-transform: uppercase; color: var(--text-muted); font-weight: 700;">Total Desembolso Neto</div>
-            <div style="font-size: 1.85rem; font-weight: 800; color: #10b981; margin-top: 4px;">
-              {{ formatCOP(totalPayrollDisbursed()) }}
-            </div>
-            <div style="font-size: 0.75rem; color: var(--text-dim); margin-top: 2px;">Pagado a colaboradores</div>
-          </div>
-        </div>
-
-        <div class="card hover-lift">
-          <div class="card-body">
-            <div style="font-size: 0.78rem; text-transform: uppercase; color: var(--text-muted); font-weight: 700;">Bonos de Domicilio</div>
-            <div style="font-size: 1.85rem; font-weight: 800; color: #06b6d4; margin-top: 4px;">
-              {{ formatCOP(totalDeliveryBonuses()) }}
-            </div>
-            <div style="font-size: 0.75rem; color: var(--text-dim); margin-top: 2px;">Incentivo por carrera efectuada</div>
-          </div>
-        </div>
-
-        <div class="card hover-lift">
-          <div class="card-body">
-            <div style="font-size: 0.78rem; text-transform: uppercase; color: var(--text-muted); font-weight: 700;">Aportes Seguridad Social (4% + 4%)</div>
-            <div style="font-size: 1.85rem; font-weight: 800; color: #f59e0b; margin-top: 4px;">
-              {{ formatCOP(totalStatutoryDeductions()) }}
-            </div>
-            <div style="font-size: 0.75rem; color: var(--text-dim); margin-top: 2px;">Retenciones legales salud y pensión</div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Payroll Settlements Table -->
-      <div class="card">
-        <div class="card-header" style="justify-content: space-between;">
-          <h3 class="card-title">Liquidaciones Quincenales Registradas</h3>
-          <span class="badge badge-warning">{{ settlementsList().length }} liquidaciones</span>
-        </div>
-        <div class="card-body" style="padding: 0;">
-          <div class="table-container">
-            <table>
-              <thead>
-                <tr>
-                  <th>Periodo</th>
-                  <th>Colaborador</th>
-                  <th>Área</th>
-                  <th>Días</th>
-                  <th>Básico Ganado</th>
-                  <th>Aux. Transp.</th>
-                  <th>Bonos</th>
-                  <th>Deduc. Salud/Pensión</th>
-                  <th style="text-align: right;">Neto a Pagar</th>
-                </tr>
-              </thead>
-              <tbody>
-                @for (settle of settlementsList(); track settle.settlementId) {
-                  <tr>
-                    <td style="font-family: monospace; font-weight: 700;">#{{ settle.periodId }}</td>
-                    <td style="font-weight: 600;">{{ settle.employeeName }}</td>
-                    <td>
-                      <span class="badge badge-info" style="font-size: 0.72rem;">{{ settle.area }}</span>
-                    </td>
-                    <td>{{ settle.daysWorked }} d</td>
-                    <td>{{ formatCOP(settle.baseSalaryEarned) }}</td>
-                    <td>{{ formatCOP(settle.transportAllowanceEarned) }}</td>
-                    <td style="color: #06b6d4; font-weight: 600;">+{{ formatCOP(settle.deliveryBonuses) }}</td>
-                    <td style="color: #ef4444;">-{{ formatCOP(settle.healthDeduction + settle.pensionDeduction) }}</td>
-                    <td style="text-align: right; font-weight: 800; color: #10b981;">
-                      {{ formatCOP(settle.netPayable) }}
-                    </td>
-                  </tr>
-                }
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </div>
-    </div>
-  }
-
-  <!-- TAB 5: GASTOS & FLUJO DE CAJA -->
-  @if (activeTab() === 'expenses') {
-    <div style="display: flex; flex-direction: column; gap: 20px;">
-      <!-- Expenses KPI -->
-      <div class="card hover-lift" style="border-left: 4px solid #ef4444;">
-        <div class="card-body" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px;">
-          <div>
-            <div style="font-size: 0.8rem; text-transform: uppercase; color: var(--text-muted); font-weight: 700;">Total Egresos Registrados</div>
-            <div style="font-size: 2rem; font-weight: 800; color: #ef4444; margin-top: 4px;">
-              {{ formatCOP(totalExpensesAmount()) }}
-            </div>
-            <div style="font-size: 0.75rem; color: var(--text-dim); margin-top: 2px;">
-              {{ expensesList().length }} comprobantes de salida de caja
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Expenses Table -->
-      <div class="card">
-        <div class="card-header" style="justify-content: space-between;">
-          <h3 class="card-title">Comprobantes y Salidas de Caja Menor</h3>
-          <span class="badge badge-warning">{{ expensesList().length }} comprobantes</span>
-        </div>
-        <div class="card-body" style="padding: 0;">
-          <div class="table-container">
-            <table>
-              <thead>
-                <tr>
-                  <th>Fecha</th>
-                  <th>Categoría</th>
-                  <th>Descripción</th>
-                  <th>Nro Comprobante</th>
-                  <th style="text-align: right;">Monto COP</th>
-                </tr>
-              </thead>
-              <tbody>
-                @for (exp of expensesList(); track exp.expenseId) {
-                  <tr>
-                    <td style="font-size: 0.85rem; color: var(--text-muted);">{{ exp.createdAt.substring(0, 10) }}</td>
-                    <td>
-                      <span class="badge badge-purple" style="font-size: 0.72rem;">{{ exp.categoryName }}</span>
-                    </td>
-                    <td style="font-weight: 600;">{{ exp.description }}</td>
-                    <td style="font-family: monospace;">{{ exp.receiptNumber || 'N/A' }}</td>
-                    <td style="text-align: right; font-weight: 800; color: #ef4444;">
-                      -{{ formatCOP(exp.amount) }}
-                    </td>
-                  </tr>
-                }
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </div>
-    </div>
-  }
-
 </div>
+
+<!-- MODAL: EDITAR PEDIDO -->
+@if (showEditOrderModal()) {
+  <div class="modal-overlay" (click)="showEditOrderModal.set(false)">
+    <div class="modal-content" style="max-width: 720px;" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <div>
+          <h3 class="modal-title">✏️ Editar Pedido {{ editingOrderNumber() }}</h3>
+          <p style="font-size: 0.78rem; color: var(--text-muted); margin-top: 2px;">
+            Modifica los datos del cliente, mensajero asignado, estado o productos del pedido
+          </p>
+        </div>
+        <button class="modal-close" (click)="showEditOrderModal.set(false)">&times;</button>
+      </div>
+
+      <div class="modal-body" style="display: flex; flex-direction: column; gap: 14px;">
+        <div style="display: grid; grid-template-columns: 1.4fr 1fr; gap: 14px;">
+          <div class="form-group">
+            <label class="form-label">Nombre del Cliente / Negocio</label>
+            <input
+              type="text"
+              class="form-control"
+              [ngModel]="editClientName()"
+              (ngModelChange)="editClientName.set($event)"
+              placeholder="Ej: Restaurante El Portal"
+            />
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Teléfono / Contacto</label>
+            <input
+              type="text"
+              class="form-control"
+              [ngModel]="editPhone()"
+              (ngModelChange)="editPhone.set($event)"
+              placeholder="Ej: 315 456 7890"
+            />
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Dirección de Entrega</label>
+          <input
+            type="text"
+            class="form-control"
+            [ngModel]="editAddress()"
+            (ngModelChange)="editAddress.set($event)"
+            placeholder="Ej: Calle 93A # 13-25, Bogotá"
+          />
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px;">
+          <div class="form-group">
+            <label class="form-label">Método de Pago</label>
+            <select
+              class="form-control"
+              [ngModel]="editPaymentMethod()"
+              (ngModelChange)="editPaymentMethod.set($event)"
+            >
+              <option value="Transferencia Bancolombia">Transferencia Bancolombia</option>
+              <option value="Nequi / Daviplata">Nequi / Daviplata</option>
+              <option value="Contra Entrega Efectivo">Contra Entrega Efectivo</option>
+              <option value="Crédito Corporativo 15 días">Crédito Corporativo 15 días</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Mensajero Que Entregó</label>
+            <select
+              class="form-control"
+              [ngModel]="editCourierName()"
+              (ngModelChange)="editCourierName.set($event)"
+            >
+              @for (courier of availableCouriers; track courier) {
+                <option [value]="courier">{{ courier }}</option>
+              }
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Estado del Pedido</label>
+            <select
+              class="form-control"
+              [ngModel]="editStatus()"
+              (ngModelChange)="editStatus.set($event)"
+            >
+              <option value="PENDING">PENDIENTE</option>
+              <option value="PICKING">EN ALISTAMIENTO</option>
+              <option value="BILLED">FACTURADO</option>
+              <option value="DISPATCHED">DESPACHADO</option>
+              <option value="DELIVERED">ENTREGADO</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Nota / Observación del Pedido</label>
+          <input
+            type="text"
+            class="form-control"
+            [ngModel]="editNotes()"
+            (ngModelChange)="editNotes.set($event)"
+            placeholder="Ej: Entregar en recepción..."
+          />
+        </div>
+
+        <!-- Productos del Pedido -->
+        <div style="margin-top: 4px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+            <label class="form-label" style="margin-bottom: 0; font-weight: 800;">Productos del Pedido</label>
+            <button
+              type="button"
+              class="btn btn-outline"
+              style="padding: 4px 10px; font-size: 0.76rem; font-weight: 700;"
+              (click)="addEditItem()"
+            >
+              + Agregar Pulpa
+            </button>
+          </div>
+
+          <div style="display: grid; grid-template-columns: 2fr 1.1fr 0.8fr 1.1fr 1.2fr auto; gap: 8px; font-size: 0.7rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase; padding: 0 4px 6px;">
+            <span>Fruta</span>
+            <span>Gramaje</span>
+            <span>Cant.</span>
+            <span>Precio Unit.</span>
+            <span style="text-align: right;">Subtotal</span>
+            <span></span>
+          </div>
+
+          @for (item of editItems(); track $index) {
+            <div style="display: grid; grid-template-columns: 2fr 1.1fr 0.8fr 1.1fr 1.2fr auto; gap: 8px; align-items: center; margin-bottom: 8px;">
+              <select
+                class="form-control"
+                [ngModel]="item.fruitName"
+                (ngModelChange)="updateEditItemFruit($index, $event)"
+              >
+                @for (fruit of stateService.fruits(); track fruit.id) {
+                  <option [value]="fruit.name">{{ fruit.name }}</option>
+                }
+              </select>
+
+              <select
+                class="form-control"
+                [ngModel]="item.grammage"
+                (ngModelChange)="updateEditItemGrammage($index, $event)"
+              >
+                <option [ngValue]="140">140g</option>
+                <option [ngValue]="250">250g</option>
+                <option [ngValue]="500">500g</option>
+                <option [ngValue]="1000">1000g (1Kg)</option>
+              </select>
+
+              <input
+                type="number"
+                min="1"
+                class="form-control"
+                [ngModel]="item.quantity"
+                (ngModelChange)="updateEditItemQuantity($index, $event)"
+              />
+
+              <input
+                type="number"
+                min="0"
+                step="100"
+                class="form-control"
+                [ngModel]="item.unitPrice"
+                (ngModelChange)="updateEditItemPrice($index, $event)"
+              />
+
+              <div style="font-weight: 800; font-size: 0.86rem; color: #1e5e3a; text-align: right;">
+                {{ formatCOP(item.quantity * item.unitPrice) }}
+              </div>
+
+              <button
+                type="button"
+                title="Quitar ítem"
+                style="background: #fee2e2; border: none; color: #dc2626; width: 26px; height: 26px; border-radius: 6px; font-weight: 800; cursor: pointer; display: flex; align-items: center; justify-content: center;"
+                (click)="removeEditItem($index)"
+              >
+                &times;
+              </button>
+            </div>
+          }
+
+          <div style="display: flex; justify-content: flex-end; align-items: center; gap: 12px; margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border-subtle);">
+            <span style="font-size: 0.82rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">Total del Pedido:</span>
+            <span style="font-size: 1.25rem; font-weight: 900; color: #1e5e3a;">{{ formatCOP(editOrderTotal()) }}</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer" style="justify-content: flex-end; gap: 10px;">
+        <button type="button" class="btn btn-outline" (click)="showEditOrderModal.set(false)">Cancelar</button>
+        <button type="button" class="btn btn-primary" (click)="saveEditedOrder()">Guardar Cambios</button>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- MODAL: VER FACTURA CORPORATIVA -->
+@if (showInvoiceModal() && selectedOrderForInvoice(); as modalOrder) {
+  <div class="modal-overlay invoice-modal-overlay" (click)="showInvoiceModal.set(false)">
+    <div
+      class="modal-content invoice-modal-container"
+      style="max-width: 880px;"
+      (click)="$event.stopPropagation()"
+    >
+      <div class="modal-header no-print" style="flex-wrap: wrap; gap: 12px;">
+        <div style="display: flex; align-items: center; gap: 12px;">
+          <h3 class="modal-title">
+            Factura Ejecutiva · {{ getInvoiceCode(modalOrder) }}
+          </h3>
+        </div>
+        <button class="modal-close" (click)="showInvoiceModal.set(false)">&times;</button>
+      </div>
+
+      <div class="modal-body" style="padding: 16px 20px;">
+        <div class="pro-invoice-sheet modal-sheet-print">
+          <div class="pro-invoice-top-accent"></div>
+
+          <div class="pro-invoice-header">
+            <div class="pro-brand-block">
+              <img
+                [src]="stateService.companyInfo().logoUrl || '/logo-dgl.png'"
+                alt="DGL Despulpadora"
+                class="pro-brand-logo"
+              />
+              <div class="pro-brand-info">
+                <div class="pro-company-name">{{ stateService.companyInfo().companyName }}</div>
+                <div class="pro-company-legal">{{ stateService.companyInfo().legalName }}</div>
+                <div class="pro-company-tagline">{{ stateService.companyInfo().tagline }}</div>
+              </div>
+            </div>
+
+            <div class="pro-fiscal-block">
+              <div class="pro-nit-pill">NIT: {{ stateService.companyInfo().nit }}</div>
+              <div class="pro-fiscal-country">{{ stateService.companyInfo().country }}</div>
+              <div class="pro-fiscal-regime">{{ stateService.companyInfo().taxRegime }}</div>
+            </div>
+          </div>
+
+          <div class="pro-recipient-row">
+            <div class="pro-sender-meta">
+              <div class="sender-label">PLANTA DE DESPACHO</div>
+              <div class="sender-val">Sede Principal · Cava Frigorífica (-18°C)</div>
+              <div class="sender-sub">{{ stateService.companyInfo().address }}</div>
+              <div class="sender-sub" style="margin-top: 4px; font-weight: 700; color: #1e5e3a;">
+                🛵 Mensajero: {{ getCourierName(modalOrder) }}
+              </div>
+            </div>
+
+            <div class="pro-client-box">
+              <div class="client-box-label">CLIENTE / DESTINATARIO</div>
+              <div class="client-box-name">{{ modalOrder.clientName }}</div>
+              @if (modalOrder.clientAddress) {
+                <div class="client-box-line">{{ modalOrder.clientAddress }}</div>
+              }
+              @if (modalOrder.clientPhone) {
+                <div class="client-box-line">Tel: {{ modalOrder.clientPhone }}</div>
+              }
+              <div class="client-box-country">{{ stateService.companyInfo().country }}</div>
+            </div>
+          </div>
+
+          <div class="pro-invoice-title-bar">
+            <h2 class="pro-invoice-title">
+              Factura {{ getInvoiceCode(modalOrder) }}
+            </h2>
+            <span class="pro-invoice-status-stamp">{{ getStatusLabelES(modalOrder.status) }}</span>
+          </div>
+
+          <div class="pro-meta-grid">
+            <div class="pro-meta-cell">
+              <span class="meta-label">Fecha de factura</span>
+              <span class="meta-value">{{ formatInvoiceDate(modalOrder.createdAt) }}</span>
+            </div>
+            <div class="pro-meta-cell">
+              <span class="meta-label">Fecha de vencimiento</span>
+              <span class="meta-value">{{ formatInvoiceDate(modalOrder.createdAt) }}</span>
+            </div>
+            <div class="pro-meta-cell">
+              <span class="meta-label">Origen</span>
+              <span class="meta-value">{{ getOriginCode(modalOrder) }}</span>
+            </div>
+            <div class="pro-meta-cell">
+              <span class="meta-label">Referencia</span>
+              <span class="meta-value">{{ modalOrder.orderNumber }}</span>
+            </div>
+          </div>
+
+          <div class="pro-table-wrapper">
+            <table class="pro-invoice-table">
+              <thead>
+                <tr>
+                  <th class="col-desc">DESCRIPCIÓN</th>
+                  <th class="col-qty">CANTIDAD</th>
+                  <th class="col-price">PRECIO UNITARIO</th>
+                  <th class="col-disc">DESC.%</th>
+                  <th class="col-tax">IMPUESTOS</th>
+                  <th class="col-total">IMPORTE</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (item of modalOrder.items; track (item.fruitName || '') + item.grammage; let idx = $index) {
+                  <tr [class.is-free-row]="getItemDiscount(modalOrder.orderId, idx) >= 100">
+                    <td class="col-desc">
+                      <span class="grammage-tag">[{{ item.grammage }}g]</span>
+                      <span class="product-upper">PULPA DE {{ item.fruitName | uppercase }}</span>
+                    </td>
+                    <td class="col-qty">{{ item.quantity }} Unidades</td>
+                    <td class="col-price">{{ formatNumberES(item.unitPrice) }}</td>
+                    <td class="col-disc">
+                      <div class="disc-input-wrap">
+                        <input
+                          type="number"
+                          min="0"
+                          max="100"
+                          step="5"
+                          class="disc-inline-input no-print"
+                          [ngModel]="getItemDiscount(modalOrder.orderId, idx)"
+                          (ngModelChange)="setItemDiscount(modalOrder.orderId, idx, $event)"
+                        />
+                        <span class="print-only-disc">{{ formatNumberES(getItemDiscount(modalOrder.orderId, idx)) }}</span>
+                      </div>
+                    </td>
+                    <td class="col-tax">
+                      @if (getItemDiscount(modalOrder.orderId, idx) < 100 && invoiceTaxRate() > 0) {
+                        <span class="tax-chip">{{ invoiceTaxRate() }}%</span>
+                      } @else {
+                        <span class="tax-exempt">—</span>
+                      }
+                    </td>
+                    <td class="col-total">$ {{ formatNumberES(getItemImporte(item, modalOrder.orderId, idx)) }}</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+
+          <div class="pro-lower-split">
+            <div class="pro-payment-comm">
+              <div class="comm-main-line">
+                Comunicación de pago: <strong>{{ getInvoiceCode(modalOrder) }}</strong>
+              </div>
+              <div class="comm-sub-box">
+                <div><strong>Método de pago:</strong> {{ modalOrder.paymentMethodName || 'Transferencia Bancolombia / Contado' }}</div>
+                <div><strong>Mensajero:</strong> {{ getCourierName(modalOrder) }}</div>
+                <div><strong>Orden asociada:</strong> {{ modalOrder.orderNumber }} ({{ getOriginCode(modalOrder) }})</div>
+                @if (stateService.companyInfo().dianResolution) {
+                  <div><strong>Resolución:</strong> {{ stateService.companyInfo().dianResolution }}</div>
+                }
+              </div>
+            </div>
+
+            <div class="pro-totals-box">
+              <div class="totals-row">
+                <span class="totals-label">Importe base</span>
+                <span class="totals-val">$ {{ formatNumberES(getInvoiceBaseAmount(modalOrder)) }}</span>
+              </div>
+              @if (getInvoiceDiscountSaved(modalOrder) > 0) {
+                <div class="totals-row totals-discount-row">
+                  <span class="totals-label">Descuento / Bonificación</span>
+                  <span class="totals-val">- $ {{ formatNumberES(getInvoiceDiscountSaved(modalOrder)) }}</span>
+                </div>
+              }
+              <div class="totals-row">
+                <span class="totals-label">IVA {{ invoiceTaxRate() }}%</span>
+                <span class="totals-val">$ {{ formatNumberES(getInvoiceTaxAmount(modalOrder)) }}</span>
+              </div>
+              <div class="totals-grand-row">
+                <span class="grand-label">Total</span>
+                <span class="grand-val">$ {{ formatNumberES(getInvoiceTotalWithTax(modalOrder)) }}</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="pro-invoice-footer">
+            <div class="footer-contact-line">
+              <span>{{ stateService.companyInfo().phone }}</span>
+              <span class="footer-dot">·</span>
+              <span>{{ stateService.companyInfo().email }}</span>
+            </div>
+            <div class="footer-page-num">Página 1 / 1</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer no-print">
+        <button class="btn btn-outline" (click)="showInvoiceModal.set(false)">Cerrar</button>
+        <button class="btn btn-primary" (click)="printInvoice()">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <polyline points="6 9 6 2 18 2 18 9"></polyline>
+            <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path>
+            <rect x="6" y="14" width="12" height="8"></rect>
+          </svg>
+          <span>Imprimir / Guardar PDF Factura</span>
+        </button>
+      </div>
+    </div>
+  </div>
+}
