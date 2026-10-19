@@ -79,6 +79,29 @@
       color: #ffffff;
     }
   }
+
+  &.is-drop-candidate {
+    border: 2px dashed #86efac;
+    background: #f0fdf4;
+
+    &.is-active {
+      background: #1e5e3a;
+      border: 2px dashed rgba(255, 255, 255, 0.7);
+    }
+  }
+
+  &.is-drop-target {
+    border: 2px solid #16a34a;
+    background: #dcfce7;
+    transform: translateY(-3px) scale(1.03);
+    box-shadow: 0 12px 24px rgba(22, 163, 74, 0.22);
+
+    .day-card-name,
+    .day-card-sub {
+      color: #14532d;
+      font-weight: 800;
+    }
+  }
 }
 
 .day-card-top {
@@ -290,11 +313,36 @@
   justify-content: space-between;
   min-height: 450px;
   box-shadow: 0 8px 24px rgba(15, 41, 30, 0.05);
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  cursor: grab;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, opacity 0.2s ease;
 
   &:hover {
     transform: translateY(-2px);
     box-shadow: 0 12px 28px rgba(15, 41, 30, 0.08);
+  }
+
+  &:active {
+    cursor: grabbing;
+  }
+
+  &.is-dragging {
+    opacity: 0.55;
+    min-height: 0;
+    padding: 14px 18px;
+    transform: scale(0.92);
+    box-shadow: 0 10px 24px rgba(124, 58, 237, 0.16);
+    border: 2px dashed #7c3aed;
+
+    .picking-client-details,
+    .picking-checklist-heading,
+    .picking-checklist-items,
+    .picking-card-footer {
+      display: none;
+    }
+
+    .picking-card-header {
+      margin-bottom: 0;
+    }
   }
 }
 
@@ -306,12 +354,39 @@
   margin-bottom: 14px;
 }
 
+.picking-code-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 4px;
+  flex-wrap: wrap;
+}
+
+.drag-grip {
+  color: #94a3b8;
+  font-size: 0.9rem;
+  font-weight: 900;
+  line-height: 1;
+  cursor: grab;
+  user-select: none;
+  letter-spacing: -1px;
+}
+
 .picking-order-code {
   font-size: 0.78rem;
   font-weight: 800;
   color: #7c3aed;
   letter-spacing: 0.02em;
-  margin-bottom: 4px;
+}
+
+.order-day-chip {
+  font-size: 0.68rem;
+  font-weight: 800;
+  color: #1e5e3a;
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  padding: 2px 8px;
+  border-radius: 9999px;
 }
 
 .picking-client-name {

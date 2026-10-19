@@ -36,14 +36,14 @@ import { AuthService } from '../../core/services/auth.service';
         }
       </a>
 
-      <!-- 3. Cava -->
-      <a routerLink="/settings" routerLinkActive="active" class="dgl-mobile-nav-item">
+      <!-- 3. Inventario y Stock -->
+      <a routerLink="/settings" [queryParams]="{ tab: 'inventory' }" routerLinkActive="active" class="dgl-mobile-nav-item">
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
           <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
           <line x1="12" y1="22.08" x2="12" y2="12"></line>
         </svg>
-        <span>Cava</span>
+        <span>Inventario</span>
       </a>
 
       <!-- 4. Más (Menu Drawer Trigger) -->
@@ -94,11 +94,11 @@ import { AuthService } from '../../core/services/auth.service';
               </div>
             </a>
 
-            <a routerLink="/calculator" class="drawer-link-item" (click)="showMoreDrawer.set(false)">
-              <span class="drawer-icon">🥣</span>
+            <a routerLink="/settings" [queryParams]="{ tab: 'inventory' }" class="drawer-link-item" (click)="showMoreDrawer.set(false)">
+              <span class="drawer-icon">🍎</span>
               <div>
-                <div class="drawer-title">Producción & Calculadora</div>
-                <div class="drawer-desc">Formulación por brix y lotes</div>
+                <div class="drawer-title">Inventario y Stock</div>
+                <div class="drawer-desc">Cantidad de fruta disponible y stock de pulpas hechas</div>
               </div>
             </a>
 
@@ -129,7 +129,7 @@ import { AuthService } from '../../core/services/auth.service';
             <a routerLink="/reports" class="drawer-link-item" (click)="showMoreDrawer.set(false)">
               <span class="drawer-icon">📊</span>
               <div>
-                <div class="drawer-title">Reportes</div>
+                <div class="drawer-title">Ventas</div>
                 <div class="drawer-desc">Listado tipo Excel y exportación de todo lo vendido</div>
               </div>
             </a>

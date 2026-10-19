@@ -424,12 +424,25 @@ export class HeaderComponent {
       if (url.includes('tab=despachos')) return 'Despachos & Rutas';
       return 'Alistamiento de Pedidos';
     }
-    if (url.startsWith('/calculator')) return 'Producción & Lotes';
-    if (url.startsWith('/settings')) return 'Inventario en cava';
+    if (url.startsWith('/calculator')) return 'Inventario y Stock';
+    if (url.startsWith('/settings')) {
+      if (
+        url.includes('tab=inventory') ||
+        url.includes('tab=variants') ||
+        url.includes('tab=fruits') ||
+        url.includes('tab=cava')
+      ) {
+        return 'Inventario y Stock';
+      }
+      if (url.includes('tab=users') || url.includes('tab=usuarios') || url.includes('tab=roles')) {
+        return 'Usuarios y roles';
+      }
+      return 'Configuración';
+    }
     if (url.startsWith('/accounting')) return 'Clientes';
     if (url.startsWith('/shifts')) return 'Turnos';
     if (url.startsWith('/hr')) return 'Nómina & Talento Humano';
-    if (url.startsWith('/reports')) return 'Reportes';
+    if (url.startsWith('/reports')) return 'Ventas';
     if (url.startsWith('/admin')) return 'Administración';
     return 'Panel general';
   });

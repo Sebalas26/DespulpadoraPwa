@@ -147,6 +147,7 @@ export interface OrderDto {
   status: OrderStatus;
   orderDate: string;
   deliveryDate?: string;
+  scheduledDay?: string;
   totalAmount: number;
   items: OrderItemDto[];
   paymentMethodId?: number;

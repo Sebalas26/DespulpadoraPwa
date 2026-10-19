@@ -92,32 +92,13 @@ import { StateService } from '../../core/services/state.service';
           <span class="dgl-nav-text">Despachos & Rutas</span>
         </a>
 
-        <!-- Producción -->
-        <a routerLink="/calculator" routerLinkActive="active" [queryParams]="{ tab: 'formulation' }" class="dgl-nav-item">
-          <span class="dgl-nav-icon">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M6 2v14a4 4 0 0 0 8 0V2"></path>
-              <line x1="6" y1="6" x2="14" y2="6"></line>
-              <line x1="4" y1="2" x2="16" y2="2"></line>
-            </svg>
-          </span>
-          <span class="dgl-nav-text">Producción</span>
-        </a>
-
-        <!-- Lotes -->
-        <a routerLink="/calculator" routerLinkActive="active" [queryParams]="{ tab: 'loss-audit' }" class="dgl-nav-item">
-          <span class="dgl-nav-icon">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <polygon points="12 2 2 7 12 12 22 7 12 2"></polygon>
-              <polyline points="2 17 12 22 22 17"></polyline>
-              <polyline points="2 12 12 17 22 12"></polyline>
-            </svg>
-          </span>
-          <span class="dgl-nav-text">Lotes</span>
-        </a>
-
-        <!-- Inventario en cava -->
-        <a routerLink="/settings" routerLinkActive="active" [queryParams]="{ tab: 'variants' }" class="dgl-nav-item">
+        <!-- Inventario y Stock (Unifica Fruta Disponible + Pulpas Hechas) -->
+        <a
+          routerLink="/settings"
+          [queryParams]="{ tab: 'inventory' }"
+          [class.active]="isSettingsTabActive('inventory')"
+          class="dgl-nav-item"
+        >
           <span class="dgl-nav-icon">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
@@ -125,21 +106,10 @@ import { StateService } from '../../core/services/state.service';
               <line x1="12" y1="22.08" x2="12" y2="12"></line>
             </svg>
           </span>
-          <span class="dgl-nav-text">Inventario en cava</span>
+          <span class="dgl-nav-text">Inventario y Stock</span>
         </a>
 
-        <!-- Ventas -->
-        <a routerLink="/reports" routerLinkActive="active" [queryParams]="{ view: 'sales' }" class="dgl-nav-item">
-          <span class="dgl-nav-icon">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <line x1="12" y1="1" x2="12" y2="23"></line>
-              <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
-            </svg>
-          </span>
-          <span class="dgl-nav-text">Ventas</span>
-        </a>
-
-        <!-- Reportes -->
+        <!-- Ventas (antes Reportes) -->
         <a routerLink="/reports" routerLinkActive="active" class="dgl-nav-item">
           <span class="dgl-nav-icon">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -148,7 +118,7 @@ import { StateService } from '../../core/services/state.service';
               <line x1="6" y1="20" x2="6" y2="14"></line>
             </svg>
           </span>
-          <span class="dgl-nav-text">Reportes</span>
+          <span class="dgl-nav-text">Ventas</span>
         </a>
 
         <!-- Clientes -->
@@ -168,7 +138,12 @@ import { StateService } from '../../core/services/state.service';
         <div class="nav-section-title" style="margin-top: 14px;">SISTEMA & CONFIGURACIÓN</div>
 
         <!-- Configuración General -->
-        <a routerLink="/settings" [queryParams]="{ tab: 'general' }" routerLinkActive="active" class="dgl-nav-item">
+        <a
+          routerLink="/settings"
+          [queryParams]="{ tab: 'general' }"
+          [class.active]="isSettingsTabActive('general')"
+          class="dgl-nav-item"
+        >
           <span class="dgl-nav-icon">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <circle cx="12" cy="12" r="3"></circle>
@@ -179,7 +154,12 @@ import { StateService } from '../../core/services/state.service';
         </a>
 
         <!-- Usuarios y roles -->
-        <a routerLink="/settings" [queryParams]="{ tab: 'users' }" routerLinkActive="active" class="dgl-nav-item">
+        <a
+          routerLink="/settings"
+          [queryParams]="{ tab: 'users' }"
+          [class.active]="isSettingsTabActive('users')"
+          class="dgl-nav-item"
+        >
           <span class="dgl-nav-icon">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
@@ -546,5 +526,32 @@ export class SidebarComponent {
     if (tab === 'facturacion') return url.includes('tab=facturacion');
     if (tab === 'despachos') return url.includes('tab=despachos');
     return !url.includes('tab=facturacion') && !url.includes('tab=despachos');
+  }
+
+  isSettingsTabActive(tab: 'inventory' | 'general' | 'users'): boolean {
+    const url = this.urlSignal();
+    if (!url.startsWith('/settings')) return false;
+    if (tab === 'inventory') {
+      return (
+        url.includes('tab=inventory') ||
+        url.includes('tab=variants') ||
+        url.includes('tab=fruits') ||
+        url.includes('tab=cava')
+      );
+    }
+    if (tab === 'users') {
+      return url.includes('tab=users') || url.includes('tab=usuarios') || url.includes('tab=roles');
+    }
+    return (
+      url.includes('tab=general') ||
+      url.includes('tab=empresa') ||
+      (!url.includes('tab=inventory') &&
+        !url.includes('tab=variants') &&
+        !url.includes('tab=fruits') &&
+        !url.includes('tab=cava') &&
+        !url.includes('tab=users') &&
+        !url.includes('tab=usuarios') &&
+        !url.includes('tab=roles'))
+    );
   }
 }

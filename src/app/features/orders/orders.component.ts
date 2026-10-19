@@ -66,27 +66,159 @@ export class OrdersComponent {
   // Active Sub-tab
   readonly activeSubTab = signal<'picking' | 'facturacion' | 'despachos'>('picking');
 
-  // Weekly Picking Day Cards (Figma design)
-  readonly weekDays = signal<{
+  // Weekly Picking Day Cards (Drag & Drop enabled)
+  readonly weekDayConfigs: {
     name: string;
-    count: number;
     color: 'purple' | 'green' | 'blue' | 'cyan' | 'red';
-    active: boolean;
-    hasIndicator?: boolean;
-  }[]>([
-    { name: 'Lunes', count: 2, color: 'purple', active: false, hasIndicator: true },
-    { name: 'Martes', count: 4, color: 'green', active: false },
-    { name: 'Miércoles', count: 3, color: 'blue', active: false },
-    { name: 'Jueves', count: 12, color: 'green', active: true },
-    { name: 'Viernes', count: 5, color: 'cyan', active: false },
-    { name: 'Sábado', count: 1, color: 'red', active: false },
-    { name: 'Domingo', count: 8, color: 'green', active: true }
-  ]);
+  }[] = [
+    { name: 'Lunes', color: 'purple' },
+    { name: 'Martes', color: 'green' },
+    { name: 'Miércoles', color: 'blue' },
+    { name: 'Jueves', color: 'green' },
+    { name: 'Viernes', color: 'cyan' },
+    { name: 'Sábado', color: 'red' },
+    { name: 'Domingo', color: 'green' }
+  ];
+
+  readonly selectedDay = signal<string>('Jueves');
+  readonly draggingOrderId = signal<number | null>(null);
+  readonly dragOverDay = signal<string | null>(null);
+
+  getOrderDay(order: OrderDto): string {
+    return order.scheduledDay || 'Jueves';
+  }
+
+  readonly weekDays = computed(() => {
+    const pickingOrders = this.stateService
+      .orders()
+      .filter(o => o.status === 'PENDING' || o.status === 'PICKING');
+    const activeDay = this.selectedDay();
+
+    return this.weekDayConfigs.map(cfg => {
+      const count = pickingOrders.filter(o => this.getOrderDay(o) === cfg.name).length;
+      const active = activeDay === cfg.name;
+      return {
+        name: cfg.name,
+        count,
+        color: cfg.color,
+        active,
+        hasIndicator: count > 0
+      };
+    });
+  });
 
   toggleDayCard(index: number) {
-    this.weekDays.update(days =>
-      days.map((d, i) => (i === index ? { ...d, active: !d.active } : d))
-    );
+    const target = this.weekDayConfigs[index];
+    if (target) {
+      this.selectedDay.set(target.name);
+    }
+  }
+
+  onOrderDragStart(event: DragEvent, order: OrderDto) {
+    if (event.dataTransfer) {
+      event.dataTransfer.effectAllowed = 'move';
+      event.dataTransfer.setData('text/plain', String(order.orderId));
+
+      if (typeof document !== 'undefined') {
+        const ghost = document.createElement('div');
+        ghost.style.cssText = [
+          'position: fixed',
+          'top: -1000px',
+          'left: -1000px',
+          'width: 220px',
+          'padding: 10px 14px',
+          'background: #ffffff',
+          'border: 2px solid #7c3aed',
+          'border-left: 6px solid #7c3aed',
+          'border-radius: 12px',
+          'box-shadow: 0 12px 28px rgba(15, 23, 42, 0.22)',
+          'font-family: Inter, system-ui, sans-serif',
+          'pointer-events: none',
+          'z-index: 99999'
+        ].join(';');
+
+        const topRow = document.createElement('div');
+        topRow.style.cssText = 'display:flex;align-items:center;justify-content:space-between;gap:6px;margin-bottom:3px;';
+
+        const codeEl = document.createElement('span');
+        codeEl.style.cssText = 'font-size:11px;font-weight:800;color:#7c3aed;';
+        codeEl.textContent = `📦 ${order.orderNumber}`;
+
+        const totalEl = document.createElement('span');
+        totalEl.style.cssText = 'font-size:11px;font-weight:800;color:#1e5e3a;';
+        totalEl.textContent = this.formatCOP(order.totalAmount);
+
+        topRow.appendChild(codeEl);
+        topRow.appendChild(totalEl);
+
+        const clientEl = document.createElement('div');
+        clientEl.style.cssText = 'font-size:12.5px;font-weight:800;color:#0f172a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;';
+        clientEl.textContent = order.clientName;
+
+        ghost.appendChild(topRow);
+        ghost.appendChild(clientEl);
+        document.body.appendChild(ghost);
+
+        event.dataTransfer.setDragImage(ghost, 110, 26);
+        setTimeout(() => ghost.remove(), 0);
+      }
+    }
+
+    setTimeout(() => {
+      this.draggingOrderId.set(order.orderId);
+    }, 0);
+  }
+
+  onOrderDragEnd() {
+    this.draggingOrderId.set(null);
+    this.dragOverDay.set(null);
+  }
+
+  onDayDragEnter(event: DragEvent, dayName: string) {
+    event.preventDefault();
+    if (this.draggingOrderId() !== null) {
+      this.dragOverDay.set(dayName);
+    }
+  }
+
+  onDayDragOver(event: DragEvent, dayName: string) {
+    event.preventDefault();
+    if (event.dataTransfer) {
+      event.dataTransfer.dropEffect = 'move';
+    }
+    if (this.dragOverDay() !== dayName) {
+      this.dragOverDay.set(dayName);
+    }
+  }
+
+  onDayDragLeave(event: DragEvent, dayName: string) {
+    const current = event.currentTarget as HTMLElement | null;
+    const related = event.relatedTarget as Node | null;
+    if (current && related && current.contains(related)) {
+      return;
+    }
+    if (this.dragOverDay() === dayName) {
+      this.dragOverDay.set(null);
+    }
+  }
+
+  onDayDrop(event: DragEvent, dayName: string) {
+    event.preventDefault();
+    event.stopPropagation();
+    const rawId = event.dataTransfer?.getData('text/plain');
+    const orderId = this.draggingOrderId() || (rawId ? Number(rawId) : null);
+    this.draggingOrderId.set(null);
+    this.dragOverDay.set(null);
+
+    if (!orderId) return;
+    const order = this.stateService.orders().find(o => o.orderId === orderId);
+    if (!order) return;
+
+    if (this.getOrderDay(order) === dayName) {
+      return;
+    }
+
+    this.stateService.updateOrderScheduledDay(orderId, dayName);
   }
 
   // Search & Filter
@@ -105,9 +237,14 @@ export class OrdersComponent {
 
   // Aggregated Pulp Summary for Picking Toolbar
   readonly pulpSummaryText = computed(() => {
+    const activeDay = this.selectedDay();
     const pickingOrders = this.stateService
       .orders()
-      .filter(o => o.status === 'PENDING' || o.status === 'PICKING');
+      .filter(
+        o =>
+          (o.status === 'PENDING' || o.status === 'PICKING') &&
+          this.getOrderDay(o) === activeDay
+      );
 
     const totalsMap = new Map<string, number>();
     pickingOrders.forEach(order => {
@@ -118,7 +255,7 @@ export class OrdersComponent {
     });
 
     if (totalsMap.size === 0) {
-      return '0 unidades pendientes en cava';
+      return `0 unidades pendientes para ${activeDay}`;
     }
 
     const parts: string[] = [];
@@ -175,10 +312,15 @@ Pago por Transferencia Bancolombia`);
   readonly tabOrders = computed(() => {
     const tab = this.activeSubTab();
     const search = this.searchTerm().toLowerCase();
+    const activeDay = this.selectedDay();
     let list = this.stateService.orders();
 
     if (tab === 'picking') {
-      list = list.filter(o => o.status === 'PENDING' || o.status === 'PICKING');
+      list = list.filter(
+        o =>
+          (o.status === 'PENDING' || o.status === 'PICKING') &&
+          this.getOrderDay(o) === activeDay
+      );
     } else if (tab === 'facturacion') {
       const billedOrPicking = list.filter(o => o.status === 'BILLED' || o.status === 'PICKING');
       list = billedOrPicking.length > 0 ? billedOrPicking : list.filter(o => o.status !== 'CANCELLED');
@@ -367,7 +509,8 @@ Pago por Transferencia Bancolombia`);
       clientAddress: address,
       items: parsedItems,
       notes: 'Pedido procesado automáticamente desde WhatsApp',
-      paymentMethodName: 'Transferencia Bancolombia'
+      paymentMethodName: 'Transferencia Bancolombia',
+      scheduledDay: this.selectedDay()
     });
 
     this.showWhatsAppModal.set(false);
@@ -526,7 +669,8 @@ Pago por Transferencia Bancolombia`);
         clientAddress: finalAddress,
         items: this.manualItems(),
         paymentMethodName: this.manualPaymentMethod(),
-        notes: this.manualNotes()
+        notes: this.manualNotes(),
+        scheduledDay: this.selectedDay()
       });
     }
 

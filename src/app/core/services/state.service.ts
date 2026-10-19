@@ -518,6 +518,25 @@ export class StateService {
     this.notification.info('Stock Actualizado', `${fruitName} (${grammage}): ${delta > 0 ? '+' : ''}${delta} uds`);
   }
 
+  adjustFreshFruitStock(fruitIdOrName: string, deltaKg: number) {
+    let targetFruitName = fruitIdOrName;
+    this.fruits.update(list =>
+      list.map(f => {
+        if (f.id === fruitIdOrName || f.name.toLowerCase() === fruitIdOrName.toLowerCase()) {
+          targetFruitName = f.name;
+          const nextKg = Math.max(0, Number(((f.freshStockKg || 0) + deltaKg).toFixed(1)));
+          return { ...f, freshStockKg: nextKg };
+        }
+        return f;
+      })
+    );
+    this.saveAllToStorage();
+    this.notification.info(
+      'Inventario de Fruta Actualizado',
+      `${targetFruitName}: ${deltaKg > 0 ? '+' : ''}${deltaKg} Kg de fruta fresca`
+    );
+  }
+
   // ==========================================
   // ORDER MANAGEMENT & WORKFLOW
   // ==========================================
@@ -534,6 +553,7 @@ export class StateService {
     notes?: string;
     paymentMethodName?: string;
     courierName?: string;
+    scheduledDay?: string;
   }): OrderDto {
     const totalAmount = orderData.items.reduce((sum, item) => sum + (item.quantity * item.unitPrice), 0);
 
@@ -548,6 +568,7 @@ export class StateService {
       clientAddress: orderData.clientAddress || 'Sede Principal',
       status: 'PENDING',
       orderDate: new Date().toISOString().substring(0, 10),
+      scheduledDay: orderData.scheduledDay,
       totalAmount,
       isPaid: false,
       paymentMethodName: orderData.paymentMethodName || 'Contra Entrega Efectivo',
@@ -633,6 +654,20 @@ export class StateService {
 
     this.saveAllToStorage();
     this.notification.success('Pedido Modificado', `Los cambios del pedido fueron guardados ($${totalAmount.toLocaleString('es-CO')}).`);
+  }
+
+  updateOrderScheduledDay(orderId: number, dayName: string) {
+    const target = this.orders().find(o => o.orderId === orderId);
+    if (!target) return;
+
+    this.orders.update(list =>
+      list.map(o => (o.orderId === orderId ? { ...o, scheduledDay: dayName } : o))
+    );
+    this.saveAllToStorage();
+    this.notification.success(
+      'Día de Alistamiento Actualizado',
+      `El pedido #${target.orderNumber} fue movido al día ${dayName}.`
+    );
   }
 
   deleteOrder(orderId: number) {

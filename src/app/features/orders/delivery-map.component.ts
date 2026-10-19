@@ -523,18 +523,20 @@ export const MAP_STYLES: MapStyleOption[] = [
             </div>
 
             <!-- High-Contrast Legend Overlay -->
-            <div class="map-legend-overlay">
-              <div class="legend-chip legend-chip-planta">
-                <span class="legend-color-dot" style="background: #10b981;"></span>
-                <span>🏭 Cava Matriz (Cota/Calle 80)</span>
-              </div>
-              @for (c of couriers(); track c.id) {
-                <div class="legend-chip" (click)="flyToCourier(c)">
-                  <span class="legend-color-dot" [style.background]="c.color"></span>
-                  <span>{{ c.name.split(' ')[0] }} ({{ c.orderIds.length }} paradas)</span>
+            @if (mapViewMode() !== 'stops') {
+              <div class="map-legend-overlay">
+                <div class="legend-chip legend-chip-planta">
+                  <span class="legend-color-dot" style="background: #10b981;"></span>
+                  <span>🏭 Cava Matriz (Cota/Calle 80)</span>
                 </div>
-              }
-            </div>
+                @for (c of couriers(); track c.id) {
+                  <div class="legend-chip" (click)="flyToCourier(c)">
+                    <span class="legend-color-dot" [style.background]="c.color"></span>
+                    <span>{{ c.name.split(' ')[0] }} ({{ c.orderIds.length }} paradas)</span>
+                  </div>
+                }
+              </div>
+            }
           </div>
 
           <!-- OVERLAY SCREEN WITH 2 GREEN BUTTONS WHEN MAP IS LOCKED -->
@@ -574,19 +576,11 @@ export const MAP_STYLES: MapStyleOption[] = [
               <button
                 type="button"
                 class="unlocked-mode-pill"
-                [class.active]="mapViewMode() === 'stops'"
-                (click)="enterAllDeliveriesMode()"
+                [class.active]="mapViewMode() === 'stops' || showDeliveriesDrawer()"
+                (click)="openAllDeliveriesAndDrawer()"
+                title="Ver todas las entregas en el mapa y abrir/cerrar el listado"
               >
-                <span>📍 Ver Todas las Entregas</span>
-              </button>
-              <button
-                type="button"
-                class="unlocked-mode-pill"
-                [class.active]="showDeliveriesDrawer()"
-                (click)="toggleDeliveriesDrawer()"
-                title="Abrir o cerrar lista de entregas cargadas en el mapa"
-              >
-                <span>📦 Entregas ({{ deliveryStops().length }})</span>
+                <span>📍 Ver Todas las Entregas ({{ deliveryStops().length }})</span>
               </button>
               <button
                 type="button"
@@ -597,6 +591,90 @@ export const MAP_STYLES: MapStyleOption[] = [
                 🔒 Bloquear
               </button>
             </div>
+
+            <!-- Zone Polygon Grouping Controls (Active in 'Ver Todas las Entregas') -->
+            @if (mapViewMode() === 'stops') {
+              <div class="zone-grouping-bar" (click)="$event.stopPropagation()">
+                <span class="zone-bar-label">⬡ Agrupar entregas:</span>
+                <button
+                  type="button"
+                  class="zone-shape-pill"
+                  [class.active]="zoneTargetPoints() === 4"
+                  (click)="setZoneTargetPoints(4)"
+                >
+                  ▢ Cuadro (4 pts)
+                </button>
+                <button
+                  type="button"
+                  class="zone-shape-pill"
+                  [class.active]="zoneTargetPoints() === 6"
+                  (click)="setZoneTargetPoints(6)"
+                >
+                  ⬡ Hexágono (6 pts)
+                </button>
+                <span class="zone-points-counter">
+                  {{ zonePolygonPoints().length }} / {{ zoneTargetPoints() }} pts
+                </span>
+                @if (zonePolygonPoints().length > 0) {
+                  <button
+                    type="button"
+                    class="zone-clear-btn"
+                    (click)="clearZonePolygon()"
+                  >
+                    ✕ Limpiar
+                  </button>
+                }
+              </div>
+
+              @if (showZoneAssignCard()) {
+                <div class="zone-assign-card" (click)="$event.stopPropagation()">
+                  <div class="zone-assign-head">
+                    <div>
+                      <div class="zone-assign-title">
+                        🎯 Zona Seleccionada ({{ zoneCapturedStops().length }} entregas)
+                      </div>
+                      <div class="zone-assign-sub">
+                        Elige el domiciliario para asignarle todas las entregas dentro del polígono
+                      </div>
+                    </div>
+                    <button type="button" class="zone-assign-close" (click)="clearZonePolygon()">✕</button>
+                  </div>
+
+                  @if (zoneCapturedStops().length > 0) {
+                    <div class="zone-stops-chips">
+                      @for (st of zoneCapturedStops(); track st.id) {
+                        <span class="zone-stop-chip">{{ st.orderNumber }} · {{ st.clientName }}</span>
+                      }
+                    </div>
+
+                    <div class="zone-courier-buttons">
+                      @for (c of couriers(); track c.id) {
+                        <button
+                          type="button"
+                          class="zone-courier-btn"
+                          [style.borderColor]="c.color"
+                          (click)="assignZoneStopsToCourier(c.id)"
+                        >
+                          <span class="c-dot" [style.background]="c.color"></span>
+                          <span>{{ c.vehicleType === 'moto' ? '🛵' : '🚚' }} {{ c.name }}</span>
+                        </button>
+                      }
+                      <button
+                        type="button"
+                        class="zone-courier-btn zone-unassign-btn"
+                        (click)="assignZoneStopsToCourier('')"
+                      >
+                        ⚪ Dejar sin mensajero
+                      </button>
+                    </div>
+                  } @else {
+                    <div class="zone-empty-msg">
+                      No hay entregas dentro de los puntos marcados. Haz clic en el mapa para trazar otra zona.
+                    </div>
+                  }
+                </div>
+              }
+            }
           }
 
           <!-- ======================================================================= -->
@@ -609,17 +687,23 @@ export const MAP_STYLES: MapStyleOption[] = [
                   <span class="drawer-badge-icon">📦</span>
                   <div>
                     <div class="drawer-title">Entregas en el Mapa ({{ filteredDrawerStops().length }})</div>
-                    <div class="drawer-subtitle">Agrega nuevas paradas o elimina entregas activas</div>
+                    <div class="drawer-subtitle">Se actualiza automáticamente al crear pedidos</div>
                   </div>
                 </div>
                 <div class="drawer-head-actions">
                   <button
                     type="button"
-                    class="drawer-add-toggle-btn"
-                    [class.active]="showDrawerQuickAdd()"
-                    (click)="toggleDrawerQuickAdd()"
+                    class="drawer-refresh-btn"
+                    [class.is-spinning]="isRefreshingDrawer()"
+                    (click)="refreshDeliveriesFromOrders()"
+                    title="Actualizar y sincronizar lista de pedidos"
                   >
-                    {{ showDrawerQuickAdd() ? '✕ Cerrar' : '+ Agregar' }}
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path>
+                      <path d="M3 3v5h5"></path>
+                      <path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"></path>
+                      <path d="M16 16h5v5"></path>
+                    </svg>
                   </button>
                   <button
                     type="button"
@@ -634,36 +718,6 @@ export const MAP_STYLES: MapStyleOption[] = [
                   </button>
                 </div>
               </div>
-
-              <!-- Registered Orders to Upload to Map -->
-              @if (showDrawerQuickAdd()) {
-                <div class="drawer-quick-add-box">
-                  <div class="unmapped-orders-block">
-                    <div class="unmapped-header">Pedidos registrados sin subir al mapa ({{ unmappedOrders().length }})</div>
-                    @if (unmappedOrders().length > 0) {
-                      <div class="unmapped-list">
-                        @for (ord of unmappedOrders(); track ord.orderId) {
-                          <div class="unmapped-item">
-                            <div class="unmapped-info">
-                              <strong>{{ ord.clientName }}</strong>
-                              <span>{{ ord.orderNumber }} · {{ ord.clientAddress || 'Bogotá' }}</span>
-                            </div>
-                            <button
-                              type="button"
-                              class="btn-load-unmapped"
-                              (click)="addExistingOrderToMap(ord)"
-                            >
-                              + Subir
-                            </button>
-                          </div>
-                        }
-                      </div>
-                    } @else {
-                      <div class="unmapped-empty">Todos los pedidos registrados ya están en el mapa.</div>
-                    }
-                  </div>
-                </div>
-              }
 
               <!-- Filter by Courier & Search -->
               <div class="drawer-filters">
@@ -681,7 +735,11 @@ export const MAP_STYLES: MapStyleOption[] = [
                       type="button"
                       class="drawer-c-pill"
                       [class.active]="drawerCourierFilter() === c.id"
+                      [class.is-pill-drop-target]="dragOverCourierPillId() === c.id"
                       (click)="drawerCourierFilter.set(c.id)"
+                      (dragover)="onCourierPillDragOver($event, c.id)"
+                      (dragleave)="onCourierPillDragLeave(c.id)"
+                      (drop)="onDropStopOnCourierPill($event, c.id)"
                     >
                       <span class="dot" [style.background]="c.color"></span>
                       {{ c.name.split(' ')[0] }} ({{ c.orderIds.length }})
@@ -699,12 +757,31 @@ export const MAP_STYLES: MapStyleOption[] = [
               </div>
 
               <!-- Deliveries List -->
-              <div class="drawer-stops-list">
+              <div
+                class="drawer-stops-list"
+                (dragover)="$event.preventDefault()"
+                (drop)="onRouteStopContainerDrop($event)"
+              >
                 @for (stop of filteredDrawerStops(); track stop.id) {
-                  <div class="drawer-stop-item" (click)="focusStopOnMap(stop)">
+                  <div
+                    class="drawer-stop-item"
+                    draggable="true"
+                    [class.is-dragging]="draggedRouteStopId() === stop.id"
+                    [class.is-drag-over]="dragOverRouteStopId() === stop.id && draggedRouteStopId() !== stop.id"
+                    (dragstart)="onRouteStopDragStart($event, stop)"
+                    (dragover)="onRouteStopDragOver($event, stop)"
+                    (dragleave)="onRouteStopDragLeave(stop.id)"
+                    (drop)="onRouteStopDrop($event, stop)"
+                    (dragend)="onRouteStopDragEnd()"
+                    (click)="focusStopOnMap(stop)"
+                    title="Mantén presionado y arrastra para cambiar el orden de entrega en la ruta"
+                  >
+                    <span class="stop-drag-grip" title="Arrastrar para reordenar ruta">⋮⋮</span>
+
                     <div
                       class="drawer-stop-num"
-                      [style.background]="getStopCourierColor(stop)"
+                      [class.is-unassigned]="!stop.assignedCourierId && !stop.isDelivered"
+                      [style.background]="stop.assignedCourierId || stop.isDelivered ? getStopCourierColor(stop) : '#ffffff'"
                     >
                       {{ stop.isDelivered ? '✓' : getStopOrderIndex(stop) }}
                     </div>
@@ -782,7 +859,7 @@ export const MAP_STYLES: MapStyleOption[] = [
         <!-- Couriers Real-Time Status Deck -->
         <div class="couriers-deck-card">
           <div class="deck-header">
-            <h3 class="deck-title">Flota de Despacho</h3>
+            <h3 class="deck-title">Domiciliarios disponibles</h3>
             <span class="badge-pill badge-info">Tiempo Real</span>
           </div>
 
@@ -801,33 +878,18 @@ export const MAP_STYLES: MapStyleOption[] = [
                   <div class="courier-meta">
                     <div class="courier-name-row">
                       <span class="courier-name">{{ c.name }}</span>
-                      <span class="courier-status-badge" [class.en-ruta]="c.status === 'en_ruta'">
-                        {{ c.status === 'en_ruta' ? 'En Ruta' : (c.status === 'entregando' ? 'En Sitio' : 'En Planta') }}
-                      </span>
+                      <div class="courier-badges-inline">
+                        <span class="courier-stops-pill" title="Paradas completadas / asignadas">
+                          Paradas: <strong>{{ getCourierCompletedStops(c) }}/{{ c.orderIds.length }}</strong>
+                        </span>
+                        <span class="courier-status-badge" [class.en-ruta]="c.status === 'en_ruta'">
+                          {{ c.status === 'en_ruta' ? 'En Ruta' : (c.status === 'entregando' ? 'En Sitio' : 'En Planta') }}
+                        </span>
+                      </div>
                     </div>
                     <div class="courier-vehicle-info">
                       {{ c.vehicleModel }} · <strong>{{ c.vehiclePlate }}</strong>
                     </div>
-                  </div>
-                </div>
-
-                <!-- Courier Route Progress & Specs -->
-                <div class="courier-route-stats">
-                  <div class="stat-mini">
-                    <span class="stat-mini-label">Paradas</span>
-                    <span class="stat-mini-val">
-                      {{ getCourierCompletedStops(c) }} / {{ c.orderIds.length }}
-                    </span>
-                  </div>
-                  <div class="stat-mini">
-                    <span class="stat-mini-label">Velocidad</span>
-                    <span class="stat-mini-val" [style.color]="c.color">
-                      {{ isSimulating() ? c.currentSpeedKmH : 0 }} km/h
-                    </span>
-                  </div>
-                  <div class="stat-mini">
-                    <span class="stat-mini-label">Batería GPS</span>
-                    <span class="stat-mini-val">{{ c.batteryPct }}%</span>
                   </div>
                 </div>
 
@@ -847,12 +909,12 @@ export const MAP_STYLES: MapStyleOption[] = [
                     class="btn-seq-link"
                     (click)="$event.stopPropagation(); openRoutePlannerFor(c.id)"
                   >
-                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
                       <circle cx="6" cy="19" r="3"></circle>
                       <path d="M9 19h8.5a3.5 3.5 0 0 0 0-7h-11a3.5 3.5 0 0 1 0-7H15"></path>
                       <circle cx="18" cy="5" r="3"></circle>
                     </svg>
-                    <span>Editar Secuencia de Ruta</span>
+                    <span>Editar Ruta</span>
                   </button>
 
                   <button
@@ -1082,9 +1144,26 @@ export const MAP_STYLES: MapStyleOption[] = [
                   </div>
                 </div>
 
-                <div class="stops-flow">
+                <div
+                  class="stops-flow"
+                  (dragover)="$event.preventDefault()"
+                  (drop)="onRouteStopContainerDrop($event, activePlannerCourierId())"
+                >
                   @for (stop of activePlannerStops(); track stop.id; let i = $index) {
-                    <div class="stop-card hover-lift">
+                    <div
+                      class="stop-card hover-lift"
+                      draggable="true"
+                      [class.is-dragging]="draggedRouteStopId() === stop.id"
+                      [class.is-drag-over]="dragOverRouteStopId() === stop.id && draggedRouteStopId() !== stop.id"
+                      (dragstart)="onRouteStopDragStart($event, stop)"
+                      (dragover)="onRouteStopDragOver($event, stop)"
+                      (dragleave)="onRouteStopDragLeave(stop.id)"
+                      (drop)="onRouteStopDrop($event, stop, activePlannerCourierId())"
+                      (dragend)="onRouteStopDragEnd()"
+                      title="Mantén presionado y arrastra para cambiar el orden de la parada"
+                    >
+                      <span class="stop-drag-grip" title="Arrastrar para reordenar ruta">⋮⋮</span>
+
                       <div class="stop-badge" [style.background]="getActiveCourier()?.color">
                         #{{ i + 1 }}
                       </div>
@@ -1544,18 +1623,19 @@ export const MAP_STYLES: MapStyleOption[] = [
       display: flex;
       align-items: center;
       gap: 6px;
-      background: rgba(15, 23, 42, 0.92);
-      backdrop-filter: blur(12px);
-      padding: 5px;
+      background: rgba(255, 255, 255, 0.96);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      padding: 5px 6px;
       border-radius: 9999px;
-      border: 1px solid rgba(255, 255, 255, 0.15);
-      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+      border: 1.5px solid #dbe4de;
+      box-shadow: 0 10px 28px rgba(15, 41, 30, 0.14);
     }
 
     .unlocked-mode-pill {
       background: transparent;
       border: none;
-      color: #cbd5e1;
+      color: #334155;
       font-size: 0.76rem;
       font-weight: 700;
       padding: 6px 13px;
@@ -1568,22 +1648,22 @@ export const MAP_STYLES: MapStyleOption[] = [
       transition: all 0.2s ease;
 
       &:hover {
-        color: #ffffff;
-        background: rgba(255, 255, 255, 0.1);
+        color: #1e5e3a;
+        background: #f0fdf4;
       }
 
       &.active {
-        background: var(--color-primary);
+        background: var(--color-primary, #1e5e3a);
         color: #ffffff;
         font-weight: 800;
-        box-shadow: 0 2px 10px rgba(30, 94, 58, 0.45);
+        box-shadow: 0 2px 10px rgba(30, 94, 58, 0.35);
       }
     }
 
     .unlocked-mode-close {
-      background: rgba(255, 255, 255, 0.1);
-      border: 1px solid rgba(255, 255, 255, 0.16);
-      color: #f8fafc;
+      background: #f8fafc;
+      border: 1px solid #cbd5e1;
+      color: #475569;
       font-size: 0.73rem;
       font-weight: 700;
       padding: 5px 11px;
@@ -1593,8 +1673,9 @@ export const MAP_STYLES: MapStyleOption[] = [
       transition: all 0.2s ease;
 
       &:hover {
-        background: rgba(239, 68, 68, 0.85);
-        border-color: transparent;
+        background: #fee2e2;
+        color: #dc2626;
+        border-color: #fecaca;
       }
     }
 
@@ -1622,18 +1703,19 @@ export const MAP_STYLES: MapStyleOption[] = [
       .search-input-shell {
         display: flex;
         align-items: center;
-        background: rgba(15, 23, 42, 0.94);
+        background: rgba(255, 255, 255, 0.96);
         backdrop-filter: blur(14px);
-        border: 1px solid rgba(255, 255, 255, 0.16);
+        -webkit-backdrop-filter: blur(14px);
+        border: 1.5px solid #dbe4de;
         border-radius: 9999px;
         padding: 4px 6px 4px 14px;
         gap: 8px;
-        box-shadow: 0 8px 30px rgba(0, 0, 0, 0.4);
+        box-shadow: 0 10px 28px rgba(15, 41, 30, 0.14);
         transition: all 0.2s ease;
 
         &:focus-within {
-          border-color: #0ea5e9;
-          box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.25), 0 8px 30px rgba(0, 0, 0, 0.45);
+          border-color: #1e5e3a;
+          box-shadow: 0 0 0 3px rgba(30, 94, 58, 0.16), 0 10px 28px rgba(15, 41, 30, 0.18);
         }
       }
 
@@ -1643,7 +1725,7 @@ export const MAP_STYLES: MapStyleOption[] = [
       }
 
       .search-prefix-icon {
-        color: #94a3b8;
+        color: #1e5e3a;
         display: flex;
         align-items: center;
         justify-content: center;
@@ -1652,8 +1734,8 @@ export const MAP_STYLES: MapStyleOption[] = [
       .search-mini-spinner {
         width: 14px;
         height: 14px;
-        border: 2px solid rgba(14, 165, 233, 0.3);
-        border-top-color: #0ea5e9;
+        border: 2px solid rgba(30, 94, 58, 0.25);
+        border-top-color: #1e5e3a;
         border-radius: 50%;
         animation: spinSearch 0.8s linear infinite;
       }
@@ -1664,21 +1746,22 @@ export const MAP_STYLES: MapStyleOption[] = [
         background: transparent;
         border: none;
         outline: none;
-        color: #ffffff;
+        color: #0f172a;
         font-size: 0.82rem;
-        font-weight: 500;
+        font-weight: 600;
         font-family: inherit;
 
         &::placeholder {
-          color: #94a3b8;
+          color: #64748b;
           font-size: 0.78rem;
+          font-weight: 500;
         }
       }
 
       .search-clear-action {
-        background: rgba(255, 255, 255, 0.1);
+        background: #f1f5f9;
         border: none;
-        color: #cbd5e1;
+        color: #475569;
         width: 20px;
         height: 20px;
         border-radius: 50%;
@@ -1690,38 +1773,38 @@ export const MAP_STYLES: MapStyleOption[] = [
         transition: background 0.2s;
 
         &:hover {
-          background: rgba(255, 255, 255, 0.25);
-          color: #ffffff;
+          background: #fee2e2;
+          color: #dc2626;
         }
       }
 
       .search-submit-btn {
-        background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%);
+        background: var(--color-primary, #1e5e3a);
         border: none;
         color: #ffffff;
         font-size: 0.75rem;
-        font-weight: 700;
-        padding: 6px 13px;
+        font-weight: 800;
+        padding: 6px 14px;
         border-radius: 9999px;
         cursor: pointer;
         transition: all 0.2s;
-        box-shadow: 0 2px 8px rgba(14, 165, 233, 0.35);
+        box-shadow: 0 2px 8px rgba(30, 94, 58, 0.3);
         white-space: nowrap;
 
         &:hover {
-          filter: brightness(1.1);
+          background: #16482c;
           transform: translateY(-1px);
         }
       }
 
       .search-autocomplete-dropdown {
         margin-top: 6px;
-        background: rgba(15, 23, 42, 0.96);
+        background: rgba(255, 255, 255, 0.98);
         backdrop-filter: blur(16px);
-        border: 1px solid rgba(255, 255, 255, 0.16);
+        border: 1.5px solid #dbe4de;
         border-radius: 14px;
         overflow: hidden;
-        box-shadow: 0 12px 36px rgba(0, 0, 0, 0.5);
+        box-shadow: 0 14px 36px rgba(15, 41, 30, 0.18);
         animation: fadeInDown 0.2s ease;
 
         .dropdown-header {
@@ -1729,20 +1812,21 @@ export const MAP_STYLES: MapStyleOption[] = [
           justify-content: space-between;
           align-items: center;
           padding: 8px 14px;
-          border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+          border-bottom: 1px solid #e2e8f0;
+          background: #f8fafc;
           font-size: 0.68rem;
           font-weight: 800;
-          color: #94a3b8;
+          color: #475569;
           letter-spacing: 0.5px;
         }
 
         .btn-dismiss-dropdown {
           background: transparent;
           border: none;
-          color: #94a3b8;
+          color: #64748b;
           font-size: 0.75rem;
           cursor: pointer;
-          &:hover { color: #fff; }
+          &:hover { color: #0f172a; }
         }
 
         .dropdown-scroll-list {
@@ -1755,12 +1839,12 @@ export const MAP_STYLES: MapStyleOption[] = [
           align-items: center;
           gap: 10px;
           padding: 10px 14px;
-          border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+          border-bottom: 1px solid #f1f5f9;
           cursor: pointer;
           transition: background 0.15s;
 
           &:hover {
-            background: rgba(255, 255, 255, 0.08);
+            background: #f0fdf4;
           }
 
           &:last-child {
@@ -1779,7 +1863,7 @@ export const MAP_STYLES: MapStyleOption[] = [
             .item-title {
               font-size: 0.8rem;
               font-weight: 700;
-              color: #f8fafc;
+              color: #0f172a;
               white-space: nowrap;
               overflow: hidden;
               text-overflow: ellipsis;
@@ -1787,7 +1871,7 @@ export const MAP_STYLES: MapStyleOption[] = [
 
             .item-subtitle {
               font-size: 0.7rem;
-              color: #94a3b8;
+              color: #64748b;
               white-space: nowrap;
               overflow: hidden;
               text-overflow: ellipsis;
@@ -1798,8 +1882,9 @@ export const MAP_STYLES: MapStyleOption[] = [
               display: inline-block;
               font-size: 0.62rem;
               font-weight: 700;
-              background: rgba(14, 165, 233, 0.15);
-              color: #38bdf8;
+              background: #f0fdf4;
+              color: #1e5e3a;
+              border: 1px solid #bbf7d0;
               padding: 1px 6px;
               border-radius: 4px;
               margin-top: 3px;
@@ -1807,9 +1892,9 @@ export const MAP_STYLES: MapStyleOption[] = [
           }
 
           .item-order-shortcut {
-            background: rgba(16, 185, 129, 0.15);
-            border: 1px solid rgba(16, 185, 129, 0.35);
-            color: #10b981;
+            background: #f0fdf4;
+            border: 1px solid #86efac;
+            color: #1e5e3a;
             font-size: 0.72rem;
             font-weight: 800;
             padding: 4px 8px;
@@ -1819,7 +1904,7 @@ export const MAP_STYLES: MapStyleOption[] = [
             flex-shrink: 0;
 
             &:hover {
-              background: #10b981;
+              background: #1e5e3a;
               color: #ffffff;
             }
           }
@@ -1837,9 +1922,9 @@ export const MAP_STYLES: MapStyleOption[] = [
     }
 
     @keyframes pulseSearchPin {
-      0% { transform: scale(0.95); box-shadow: 0 0 16px rgba(14, 165, 233, 0.8); }
-      50% { transform: scale(1.1); box-shadow: 0 0 28px rgba(14, 165, 233, 1); }
-      100% { transform: scale(0.95); box-shadow: 0 0 16px rgba(14, 165, 233, 0.8); }
+      0% { transform: scale(0.95); box-shadow: 0 0 16px rgba(30, 94, 58, 0.8); }
+      50% { transform: scale(1.1); box-shadow: 0 0 28px rgba(30, 94, 58, 1); }
+      100% { transform: scale(0.95); box-shadow: 0 0 16px rgba(30, 94, 58, 0.8); }
     }
 
     .map-floating-layer-switcher {
@@ -1850,17 +1935,17 @@ export const MAP_STYLES: MapStyleOption[] = [
       display: flex;
       align-items: center;
       gap: 4px;
-      background: rgba(15, 23, 42, 0.88);
+      background: rgba(255, 255, 255, 0.96);
       backdrop-filter: blur(12px);
       padding: 4px;
       border-radius: 9999px;
-      border: 1px solid rgba(255, 255, 255, 0.14);
-      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+      border: 1.5px solid #dbe4de;
+      box-shadow: 0 8px 24px rgba(15, 41, 30, 0.14);
 
       .layer-switch-btn {
         background: transparent;
         border: none;
-        color: #94a3b8;
+        color: #475569;
         padding: 5px 12px;
         font-size: 0.76rem;
         font-weight: 700;
@@ -1872,14 +1957,14 @@ export const MAP_STYLES: MapStyleOption[] = [
         transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 
         &:hover {
-          color: #ffffff;
-          background: rgba(255, 255, 255, 0.08);
+          color: #1e5e3a;
+          background: #f0fdf4;
         }
 
         &.active {
-          background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
-          color: #0f172a;
-          box-shadow: 0 2px 10px rgba(245, 158, 11, 0.4);
+          background: #1e5e3a;
+          color: #ffffff;
+          box-shadow: 0 2px 10px rgba(30, 94, 58, 0.35);
         }
       }
     }
@@ -1890,24 +1975,24 @@ export const MAP_STYLES: MapStyleOption[] = [
       left: 50%;
       transform: translateX(-50%);
       z-index: 1000;
-      background: rgba(15, 23, 42, 0.94);
-      border: 1px solid #f59e0b;
-      color: #fef08a;
+      background: rgba(255, 255, 255, 0.96);
+      border: 1.5px solid #1e5e3a;
+      color: #1e5e3a;
       padding: 8px 18px;
       border-radius: 9999px;
       display: flex;
       align-items: center;
       gap: 10px;
       font-size: 0.82rem;
-      font-weight: 700;
-      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+      font-weight: 800;
+      box-shadow: 0 8px 24px rgba(15, 41, 30, 0.16);
       backdrop-filter: blur(8px);
     }
 
     .banner-pulse {
       width: 8px;
       height: 8px;
-      background: #f59e0b;
+      background: #1e5e3a;
       border-radius: 50%;
       animation: pulseAnim 1s infinite;
     }
@@ -1915,7 +2000,7 @@ export const MAP_STYLES: MapStyleOption[] = [
     .banner-close {
       background: transparent;
       border: none;
-      color: #fff;
+      color: #475569;
       cursor: pointer;
       font-size: 0.78rem;
       margin-left: 6px;
@@ -1985,12 +2070,12 @@ export const MAP_STYLES: MapStyleOption[] = [
     .couriers-deck-card {
       background: var(--bg-card);
       border: 1px solid var(--border-subtle);
-      border-radius: var(--radius-lg, 16px);
-      padding: 16px;
+      border-radius: var(--radius-lg, 14px);
+      padding: 12px 14px;
       display: flex;
       flex-direction: column;
-      gap: 12px;
-      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+      gap: 10px;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
     }
 
     .deck-header {
@@ -1998,19 +2083,19 @@ export const MAP_STYLES: MapStyleOption[] = [
       justify-content: space-between;
       align-items: center;
       border-bottom: 1px solid var(--border-subtle);
-      padding-bottom: 10px;
+      padding-bottom: 8px;
     }
 
     .deck-title {
-      font-size: 1.05rem;
+      font-size: 0.96rem;
       font-weight: 800;
       color: var(--text-main);
     }
 
     .couriers-list {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-      gap: 14px;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 10px;
     }
 
     .courier-card {
@@ -2018,54 +2103,81 @@ export const MAP_STYLES: MapStyleOption[] = [
       border: 1px solid var(--border-subtle);
       border-left-width: 4px;
       border-radius: var(--radius-md, 10px);
-      padding: 12px;
+      padding: 9px 11px;
       display: flex;
       flex-direction: column;
-      gap: 8px;
+      gap: 6px;
       cursor: pointer;
       transition: all 0.2s;
     }
 
     .courier-card:hover, .courier-card.selected {
       background: var(--bg-hover);
-      transform: translateY(-2px);
-      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.15);
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
     }
 
     .courier-card-head {
       display: flex;
       align-items: center;
-      gap: 10px;
+      gap: 9px;
     }
 
     .courier-avatar {
-      width: 38px;
-      height: 38px;
-      border-radius: 10px;
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 1.2rem;
+      font-size: 1.05rem;
+      flex-shrink: 0;
     }
 
     .courier-meta {
       flex: 1;
+      min-width: 0;
     }
 
     .courier-name-row {
       display: flex;
       justify-content: space-between;
       align-items: center;
+      gap: 6px;
     }
 
     .courier-name {
-      font-size: 0.88rem;
+      font-size: 0.82rem;
       font-weight: 800;
       color: var(--text-main);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .courier-badges-inline {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      flex-shrink: 0;
+    }
+
+    .courier-stops-pill {
+      font-size: 0.68rem;
+      color: var(--text-muted);
+      background: var(--bg-card, #ffffff);
+      border: 1px solid var(--border-subtle);
+      padding: 1px 6px;
+      border-radius: 999px;
+
+      strong {
+        color: var(--text-main);
+        font-weight: 800;
+      }
     }
 
     .courier-status-badge {
-      font-size: 0.68rem;
+      font-size: 0.65rem;
       font-weight: 700;
       padding: 2px 6px;
       border-radius: 4px;
@@ -2079,40 +2191,18 @@ export const MAP_STYLES: MapStyleOption[] = [
     }
 
     .courier-vehicle-info {
-      font-size: 0.74rem;
+      font-size: 0.7rem;
       color: var(--text-muted);
-    }
-
-    .courier-route-stats {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 6px;
-      padding: 6px 0;
-      border-top: 1px solid var(--border-subtle);
-      border-bottom: 1px solid var(--border-subtle);
-    }
-
-    .stat-mini {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-    }
-
-    .stat-mini-label {
-      font-size: 0.65rem;
-      color: var(--text-muted);
-    }
-
-    .stat-mini-val {
-      font-size: 0.78rem;
-      font-weight: 800;
-      color: var(--text-main);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      margin-top: 1px;
     }
 
     .progress-track {
       width: 100%;
-      height: 4px;
-      background: rgba(255, 255, 255, 0.08);
+      height: 3px;
+      background: rgba(148, 163, 184, 0.18);
       border-radius: 999px;
       overflow: hidden;
     }
@@ -2128,20 +2218,19 @@ export const MAP_STYLES: MapStyleOption[] = [
       justify-content: space-between;
       align-items: center;
       gap: 6px;
-      padding-top: 4px;
     }
 
     .btn-seq-link {
       background: transparent;
       border: none;
       color: var(--color-primary-text);
-      font-size: 0.72rem;
+      font-size: 0.7rem;
       font-weight: 700;
       display: flex;
       align-items: center;
-      gap: 5px;
+      gap: 4px;
       cursor: pointer;
-      padding: 4px 6px;
+      padding: 2px 5px;
       border-radius: 4px;
     }
 
@@ -2150,12 +2239,12 @@ export const MAP_STYLES: MapStyleOption[] = [
     }
 
     .btn-locate {
-      background: var(--bg-subtle);
+      background: var(--bg-card, #ffffff);
       border: 1px solid var(--border-subtle);
       color: var(--text-muted);
-      font-size: 0.7rem;
+      font-size: 0.68rem;
       font-weight: 700;
-      padding: 3px 8px;
+      padding: 2px 7px;
       border-radius: 6px;
       cursor: pointer;
     }
@@ -2767,24 +2856,28 @@ export const MAP_STYLES: MapStyleOption[] = [
       flex-shrink: 0;
     }
 
-    .drawer-add-toggle-btn {
-      border: none;
-      background: #1e5e3a;
-      color: #ffffff;
-      font-size: 0.75rem;
-      font-weight: 800;
-      padding: 6px 11px;
-      border-radius: 9999px;
+    .drawer-refresh-btn {
+      width: 28px;
+      height: 28px;
+      border-radius: 8px;
+      border: 1px solid #bbf7d0;
+      background: #f0fdf4;
+      color: #1e5e3a;
       cursor: pointer;
-      transition: background 0.16s ease;
-    }
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.16s ease;
 
-    .drawer-add-toggle-btn:hover {
-      background: #16482c;
-    }
+      &:hover {
+        background: #1e5e3a;
+        color: #ffffff;
+        border-color: #1e5e3a;
+      }
 
-    .drawer-add-toggle-btn.active {
-      background: #64748b;
+      &.is-spinning svg {
+        animation: spinSearch 0.65s linear infinite;
+      }
     }
 
     .drawer-close-btn {
@@ -2926,6 +3019,14 @@ export const MAP_STYLES: MapStyleOption[] = [
         color: #ffffff;
         border-color: #1e5e3a;
       }
+
+      &.is-pill-drop-target {
+        background: #dcfce7;
+        border-color: #16a34a;
+        color: #15803d;
+        transform: scale(1.06);
+        box-shadow: 0 4px 12px rgba(22, 163, 74, 0.22);
+      }
     }
 
     .drawer-search-input {
@@ -2954,16 +3055,71 @@ export const MAP_STYLES: MapStyleOption[] = [
       gap: 7px;
     }
 
+    .stop-drag-grip {
+      font-size: 0.9rem;
+      font-weight: 900;
+      color: #94a3b8;
+      cursor: grab;
+      user-select: none;
+      letter-spacing: -1px;
+      line-height: 1;
+      padding: 2px 1px;
+      flex-shrink: 0;
+      transition: color 0.15s ease;
+    }
+
+    .drawer-stop-item:hover .stop-drag-grip,
+    .stop-card:hover .stop-drag-grip {
+      color: #1e5e3a;
+    }
+
     .drawer-stop-item {
       display: flex;
       align-items: center;
-      gap: 10px;
+      gap: 8px;
       padding: 9px 10px;
       border-radius: 11px;
       border: 1px solid #e2e8f0;
       background: #ffffff;
-      cursor: pointer;
-      transition: border-color 0.15s ease, box-shadow 0.15s ease;
+      cursor: grab;
+      transition: border-color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease, background 0.15s ease;
+
+      &:active {
+        cursor: grabbing;
+      }
+
+      &.is-dragging {
+        opacity: 0.45;
+        border: 1.5px dashed #1e5e3a;
+        background: #f0fdf4;
+      }
+
+      &.is-drag-over {
+        border: 2px solid #16a34a;
+        background: #f0fdf4;
+        transform: translateY(-2px);
+        box-shadow: 0 8px 18px rgba(22, 163, 74, 0.18);
+      }
+    }
+
+    .stop-card {
+      cursor: grab;
+
+      &:active {
+        cursor: grabbing;
+      }
+
+      &.is-dragging {
+        opacity: 0.45;
+        border: 1.5px dashed #1e5e3a;
+      }
+
+      &.is-drag-over {
+        border: 2px solid #16a34a !important;
+        background: rgba(22, 163, 74, 0.08) !important;
+        transform: translateY(-2px);
+        box-shadow: 0 8px 18px rgba(22, 163, 74, 0.18);
+      }
     }
 
     .drawer-stop-item:hover {
@@ -2982,6 +3138,13 @@ export const MAP_STYLES: MapStyleOption[] = [
       align-items: center;
       justify-content: center;
       flex-shrink: 0;
+
+      &.is-unassigned {
+        background: #ffffff !important;
+        color: #0f172a;
+        border: 2px solid #64748b;
+        box-shadow: 0 2px 6px rgba(15, 23, 42, 0.12);
+      }
     }
 
     .drawer-stop-body {
@@ -3086,6 +3249,178 @@ export const MAP_STYLES: MapStyleOption[] = [
         margin-bottom: 6px;
       }
     }
+
+    /* Zone Polygon Grouping Controls */
+    .zone-grouping-bar {
+      position: absolute;
+      top: 62px;
+      left: 14px;
+      z-index: 990;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-wrap: wrap;
+      background: rgba(255, 255, 255, 0.96);
+      backdrop-filter: blur(12px);
+      padding: 5px 10px;
+      border-radius: 9999px;
+      border: 1.5px solid #dbe4de;
+      box-shadow: 0 8px 22px rgba(15, 41, 30, 0.12);
+    }
+
+    .zone-bar-label {
+      font-size: 0.72rem;
+      font-weight: 800;
+      color: #1e5e3a;
+    }
+
+    .zone-shape-pill {
+      border: 1px solid #cbd5e1;
+      background: #f8fafc;
+      color: #334155;
+      font-size: 0.7rem;
+      font-weight: 700;
+      padding: 3px 9px;
+      border-radius: 9999px;
+      cursor: pointer;
+
+      &.active {
+        background: #1e5e3a;
+        color: #ffffff;
+        border-color: #1e5e3a;
+      }
+    }
+
+    .zone-points-counter {
+      font-size: 0.7rem;
+      font-weight: 800;
+      color: #475569;
+      padding: 0 4px;
+    }
+
+    .zone-clear-btn {
+      border: 1px solid #fecaca;
+      background: #fef2f2;
+      color: #dc2626;
+      font-size: 0.68rem;
+      font-weight: 800;
+      padding: 3px 8px;
+      border-radius: 9999px;
+      cursor: pointer;
+    }
+
+    .zone-assign-card {
+      position: absolute;
+      top: 106px;
+      left: 14px;
+      z-index: 1010;
+      width: 330px;
+      max-width: calc(100% - 28px);
+      background: rgba(255, 255, 255, 0.98);
+      backdrop-filter: blur(14px);
+      border: 1.5px solid #1e5e3a;
+      border-radius: 16px;
+      padding: 12px 14px;
+      box-shadow: 0 18px 38px rgba(15, 41, 30, 0.22);
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .zone-assign-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 8px;
+    }
+
+    .zone-assign-title {
+      font-size: 0.84rem;
+      font-weight: 800;
+      color: #0f172a;
+    }
+
+    .zone-assign-sub {
+      font-size: 0.68rem;
+      color: #64748b;
+      margin-top: 2px;
+    }
+
+    .zone-assign-close {
+      border: none;
+      background: #f1f5f9;
+      color: #475569;
+      width: 24px;
+      height: 24px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 0.75rem;
+      font-weight: 800;
+    }
+
+    .zone-stops-chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px;
+      max-height: 76px;
+      overflow-y: auto;
+    }
+
+    .zone-stop-chip {
+      font-size: 0.66rem;
+      font-weight: 700;
+      background: #f0fdf4;
+      color: #166534;
+      border: 1px solid #bbf7d0;
+      padding: 2px 7px;
+      border-radius: 9999px;
+    }
+
+    .zone-courier-buttons {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px;
+    }
+
+    .zone-courier-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 7px 9px;
+      border-radius: 9px;
+      border: 1.5px solid #cbd5e1;
+      background: #ffffff;
+      color: #0f172a;
+      font-size: 0.72rem;
+      font-weight: 800;
+      cursor: pointer;
+      transition: all 0.15s ease;
+
+      .c-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        flex-shrink: 0;
+      }
+
+      &:hover {
+        background: #f0fdf4;
+        transform: translateY(-1px);
+      }
+    }
+
+    .zone-unassign-btn {
+      color: #475569;
+      border-style: dashed;
+    }
+
+    .zone-empty-msg {
+      font-size: 0.74rem;
+      color: #64748b;
+      background: #f8fafc;
+      padding: 8px 10px;
+      border-radius: 8px;
+    }
   `]
 })
 export class DeliveryMapComponent implements OnInit, AfterViewInit, OnDestroy {
@@ -3104,6 +3439,13 @@ export class DeliveryMapComponent implements OnInit, AfterViewInit, OnDestroy {
   readonly drawerNewAddress = signal<string>('');
   readonly drawerNewCourierId = signal<string>('');
   readonly drawerNewAmount = signal<number>(125000);
+
+  // Zone Polygon Grouping State (4-point Quad or 6-point Hexagon)
+  readonly zoneTargetPoints = signal<4 | 6>(4);
+  readonly zonePolygonPoints = signal<[number, number][]>([]);
+  readonly showZoneAssignCard = signal<boolean>(false);
+  private zoneVertexMarkers: L.Marker[] = [];
+  private zonePolygonLayer?: L.Polygon | L.Polyline;
 
   // Active Map Tile Style Signal (Defaults to Stadia Maps Alidade Smooth)
   readonly selectedMapStyleId = signal<string>(
@@ -3483,18 +3825,36 @@ export class DeliveryMapComponent implements OnInit, AfterViewInit, OnDestroy {
     this.stopMarkers.clear();
 
     const stops = this.deliveryStops();
+    const coordCountMap = new Map<string, number>();
 
     stops.forEach(stop => {
       const courier = stop.assignedCourierId ? this.couriers().find(c => c.id === stop.assignedCourierId) : undefined;
-      const color = courier ? courier.color : '#64748b';
+      const isUnassigned = !courier && !stop.isDelivered;
+      const bgColor = stop.isDelivered ? '#10b981' : (courier ? courier.color : '#ffffff');
+      const textColor = isUnassigned ? '#0f172a' : '#ffffff';
+      const borderColor = isUnassigned ? '#475569' : '#ffffff';
+      const borderWidth = isUnassigned ? '2.5px' : '2px';
+      const headerColor = courier ? courier.color : '#475569';
       const stopIndexInCourier = courier ? (courier.orderIds.indexOf(stop.id) + 1) : '📍';
+
+      const coordKey = `${stop.lat.toFixed(4)}_${stop.lng.toFixed(4)}`;
+      const seenCount = coordCountMap.get(coordKey) || 0;
+      coordCountMap.set(coordKey, seenCount + 1);
+
+      let markerLat = stop.lat;
+      let markerLng = stop.lng;
+      if (seenCount > 0) {
+        const angle = (seenCount * 135 * Math.PI) / 180;
+        markerLat += 0.0012 * Math.cos(angle);
+        markerLng += 0.0012 * Math.sin(angle);
+      }
 
       const iconHtml = `
         <div style="
-          background: ${stop.isDelivered ? '#10b981' : color};
-          color: #ffffff;
-          border: 2px solid #ffffff;
-          box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+          background: ${bgColor};
+          color: ${textColor};
+          border: ${borderWidth} solid ${borderColor};
+          box-shadow: 0 4px 12px rgba(15, 23, 42, 0.32);
           width: 30px;
           height: 30px;
           border-radius: 50%;
@@ -3517,17 +3877,68 @@ export class DeliveryMapComponent implements OnInit, AfterViewInit, OnDestroy {
         iconAnchor: [15, 15]
       });
 
-      const marker = L.marker([stop.lat, stop.lng], { icon: stopIcon }).addTo(this.map!);
+      const marker = L.marker([markerLat, markerLng], {
+        icon: stopIcon,
+        zIndexOffset: isUnassigned ? 800 : 0
+      }).addTo(this.map!);
+
+      const courierAssignButtonsHtml = this.couriers()
+        .map(c => {
+          const isSelected = stop.assignedCourierId === c.id;
+          return `
+            <button
+              type="button"
+              id="btn-popup-assign-${stop.id}-${c.id}"
+              style="
+                padding: 5px 8px;
+                border-radius: 7px;
+                border: 1.5px solid ${isSelected ? c.color : '#cbd5e1'};
+                background: ${isSelected ? c.color : '#ffffff'};
+                color: ${isSelected ? '#ffffff' : '#0f172a'};
+                font-size: 0.72rem;
+                font-weight: 800;
+                cursor: pointer;
+                display: inline-flex;
+                align-items: center;
+                gap: 4px;
+              "
+            >
+              ${c.vehicleType === 'moto' ? '🛵' : '🚚'} ${c.name.split(' ')[0]}
+            </button>
+          `;
+        })
+        .join('');
 
       marker.bindPopup(`
-        <div style="font-family: var(--font-body); min-width: 210px;">
-          <div style="font-size: 0.72rem; color: ${color}; font-weight: 800;">${stop.orderNumber} · PARADA #${stopIndexInCourier}</div>
+        <div style="font-family: var(--font-body); min-width: 235px;">
+          <div style="font-size: 0.72rem; color: ${headerColor}; font-weight: 800;">${stop.orderNumber} · ${courier ? 'PARADA #' + stopIndexInCourier : 'SIN MENSAJERO'}</div>
           <strong style="font-size: 0.95rem; color: #0f172a; display: block; margin-top: 2px;">${stop.clientName}</strong>
           <div style="font-size: 0.78rem; color: #64748b; margin-top: 4px;">📍 ${stop.address} (${stop.zone})</div>
           <div style="font-size: 0.78rem; color: #f59e0b; margin-top: 2px;">📦 ${stop.itemsSummary}</div>
           <div style="font-size: 0.85rem; font-weight: 800; color: #10b981; margin-top: 6px;">Total: ${this.formatCOP(stop.totalAmount)}</div>
-          <div style="margin-top: 6px; font-size: 0.72rem; color: #64748b;">
-            Mensajero: <strong>${courier?.name || 'Sin Asignar'}</strong>
+          <div style="margin-top: 8px; padding-top: 8px; border-top: 1px solid #e2e8f0;">
+            <div style="font-size: 0.7rem; font-weight: 800; color: #1e5e3a; text-transform: uppercase; letter-spacing: 0.03em; margin-bottom: 6px;">
+              🛵 Asignar mensajero:
+            </div>
+            <div style="display: flex; flex-wrap: wrap; gap: 5px;">
+              ${courierAssignButtonsHtml}
+              <button
+                type="button"
+                id="btn-popup-unassign-${stop.id}"
+                style="
+                  padding: 5px 8px;
+                  border-radius: 7px;
+                  border: 1.5px solid ${!stop.assignedCourierId ? '#0f172a' : '#cbd5e1'};
+                  background: ${!stop.assignedCourierId ? '#f1f5f9' : '#ffffff'};
+                  color: #475569;
+                  font-size: 0.7rem;
+                  font-weight: 800;
+                  cursor: pointer;
+                "
+              >
+                ⚪ Sin asignar
+              </button>
+            </div>
           </div>
           <button
             type="button"
@@ -3555,6 +3966,34 @@ export class DeliveryMapComponent implements OnInit, AfterViewInit, OnDestroy {
       `);
 
       marker.on('popupopen', () => {
+        this.couriers().forEach(c => {
+          const assignBtn = document.getElementById(`btn-popup-assign-${stop.id}-${c.id}`);
+          if (assignBtn) {
+            assignBtn.onclick = (e) => {
+              e.stopPropagation();
+              marker.closePopup();
+              this.assignCourierToStop(stop.id, c.id);
+              this.notification.success(
+                'Mensajero Asignado',
+                `${stop.orderNumber} (${stop.clientName}) asignado a ${c.name}.`
+              );
+            };
+          }
+        });
+
+        const unassignBtn = document.getElementById(`btn-popup-unassign-${stop.id}`);
+        if (unassignBtn) {
+          unassignBtn.onclick = (e) => {
+            e.stopPropagation();
+            marker.closePopup();
+            this.assignCourierToStop(stop.id, '');
+            this.notification.info(
+              'Entrega Sin Asignar',
+              `${stop.orderNumber} (${stop.clientName}) quedó pendiente de mensajero.`
+            );
+          };
+        }
+
         const delBtn = document.getElementById(`btn-delete-stop-${stop.id}`);
         if (delBtn) {
           delBtn.onclick = (e) => {
@@ -3809,55 +4248,179 @@ export class DeliveryMapComponent implements OnInit, AfterViewInit, OnDestroy {
     }
   }
 
+  readonly zoneCapturedStops = computed(() => {
+    const pts = this.zonePolygonPoints();
+    const target = this.zoneTargetPoints();
+    if (pts.length < target) return [];
+    return this.deliveryStops().filter(stop => this.isPointInPolygon(stop.lat, stop.lng, pts));
+  });
+
+  setZoneTargetPoints(pts: 4 | 6) {
+    if (this.zoneTargetPoints() !== pts) {
+      this.zoneTargetPoints.set(pts);
+      this.clearZonePolygon();
+    }
+  }
+
+  clearZonePolygon() {
+    this.zonePolygonPoints.set([]);
+    this.showZoneAssignCard.set(false);
+    this.zoneVertexMarkers.forEach(m => m.remove());
+    this.zoneVertexMarkers = [];
+    if (this.zonePolygonLayer) {
+      this.zonePolygonLayer.remove();
+      this.zonePolygonLayer = undefined;
+    }
+  }
+
   private handleMapClick(latlng: L.LatLng) {
-    this.newOrderLat.set(latlng.lat);
-    this.newOrderLng.set(latlng.lng);
+    // Bloquear clics en el mapa a menos que esté activo el modo 'Ver Todas las Entregas' ('stops')
+    if (this.mapViewMode() !== 'stops') {
+      return;
+    }
 
-    const zone = this.detectBogotaZone(latlng.lat, latlng.lng);
-    this.newOrderZone.set(zone);
-    this.newOrderClient = `Cliente ${zone.split(' ')[0]} #${Math.floor(10 + Math.random() * 90)}`;
-    this.newOrderAddress = `Dirección en ${zone}`;
+    const target = this.zoneTargetPoints();
+    let currentPts = [...this.zonePolygonPoints()];
 
-    // Obtener automáticamente la dirección vial real del punto clicado
-    this.geocodingService.reverseGeocodeLabel(latlng.lat, latlng.lng).then(revAddr => {
-      if (revAddr) {
-        this.newOrderAddress = revAddr;
+    // Si ya se había completado la figura anterior, reiniciar para armar una nueva zona
+    if (currentPts.length >= target) {
+      this.clearZonePolygon();
+      currentPts = [];
+    }
+
+    currentPts.push([latlng.lat, latlng.lng]);
+    this.zonePolygonPoints.set(currentPts);
+
+    this.renderZonePolygonOnMap();
+
+    if (currentPts.length === target) {
+      this.showZoneAssignCard.set(true);
+      const captured = this.zoneCapturedStops();
+      if (captured.length > 0) {
+        this.notification.success(
+          `Zona ${target === 4 ? 'Cuadrada' : 'Hexagonal'} Creada`,
+          `${captured.length} entrega(s) agrupadas dentro del polígono. Selecciona el mensajero para asignarlas.`
+        );
+      } else {
+        this.notification.warning(
+          'Zona sin entregas',
+          'No se encontraron entregas dentro del área marcada. Puedes limpiar y trazar de nuevo.'
+        );
       }
-    });
+    }
+  }
 
-    if (this.map) {
-      if (this.tempPointMarker) this.tempPointMarker.remove();
+  private renderZonePolygonOnMap() {
+    if (!this.map) return;
 
-      const tempHtml = `
+    this.zoneVertexMarkers.forEach(m => m.remove());
+    this.zoneVertexMarkers = [];
+    if (this.zonePolygonLayer) {
+      this.zonePolygonLayer.remove();
+      this.zonePolygonLayer = undefined;
+    }
+
+    const pts = this.zonePolygonPoints();
+    const target = this.zoneTargetPoints();
+
+    pts.forEach((pt, idx) => {
+      const vertexHtml = `
         <div style="
-          background: #f59e0b;
-          color: #000;
-          border: 3px solid #fff;
-          box-shadow: 0 0 20px rgba(245, 158, 11, 0.9);
-          width: 36px;
-          height: 36px;
+          width: 24px;
+          height: 24px;
           border-radius: 50%;
+          background: #1e5e3a;
+          color: #ffffff;
+          border: 2.5px solid #ffffff;
+          box-shadow: 0 3px 10px rgba(15, 23, 42, 0.35);
           display: flex;
           align-items: center;
           justify-content: center;
-          font-size: 1.2rem;
-          animation: markButtonPulse 1s infinite;
-        ">
-          📍
-        </div>
+          font-size: 0.72rem;
+          font-weight: 900;
+          font-family: var(--font-heading);
+        ">${idx + 1}</div>
       `;
-
-      const tempIcon = L.divIcon({
-        html: tempHtml,
+      const icon = L.divIcon({
+        html: vertexHtml,
         className: '',
-        iconSize: [36, 36],
-        iconAnchor: [18, 18]
+        iconSize: [24, 24],
+        iconAnchor: [12, 12]
       });
+      const vMarker = L.marker(pt, { icon, zIndexOffset: 1000 }).addTo(this.map!);
+      this.zoneVertexMarkers.push(vMarker);
+    });
 
-      this.tempPointMarker = L.marker([latlng.lat, latlng.lng], { icon: tempIcon }).addTo(this.map);
+    if (pts.length >= 2 && pts.length < target) {
+      this.zonePolygonLayer = L.polyline(pts, {
+        color: '#1e5e3a',
+        weight: 3,
+        dashArray: '6, 6',
+        opacity: 0.9
+      }).addTo(this.map);
+    } else if (pts.length === target) {
+      this.zonePolygonLayer = L.polygon(pts, {
+        color: '#1e5e3a',
+        weight: 3,
+        fillColor: '#10b981',
+        fillOpacity: 0.22
+      }).addTo(this.map);
+    }
+  }
+
+  assignZoneStopsToCourier(courierId: string) {
+    const captured = this.zoneCapturedStops();
+    if (captured.length === 0) return;
+
+    const capturedIds = new Set(captured.map(s => s.id));
+
+    this.deliveryStops.update(stops =>
+      stops.map(s => (capturedIds.has(s.id) ? { ...s, assignedCourierId: courierId } : s))
+    );
+
+    this.couriers.update(list =>
+      list.map(c => {
+        const withoutCaptured = c.orderIds.filter(id => !capturedIds.has(id));
+        if (c.id === courierId) {
+          return { ...c, orderIds: [...withoutCaptured, ...Array.from(capturedIds)] };
+        }
+        return { ...c, orderIds: withoutCaptured };
+      })
+    );
+
+    this.renderStopMarkers();
+    this.buildAndRenderRealRoadRoutes();
+
+    const courier = this.couriers().find(c => c.id === courierId);
+    if (courier) {
+      this.notification.success(
+        'Agrupación Asignada',
+        `Se asignaron ${captured.length} entrega(s) de la zona a ${courier.name}.`
+      );
+    } else {
+      this.notification.info(
+        'Entregas Desasignadas',
+        `${captured.length} entrega(s) de la zona quedaron sin mensajero asignado.`
+      );
     }
 
-    this.showPointOrderModal.set(true);
+    this.clearZonePolygon();
+  }
+
+  private isPointInPolygon(lat: number, lng: number, polygon: [number, number][]): boolean {
+    let inside = false;
+    for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
+      const yi = polygon[i][0];
+      const xi = polygon[i][1];
+      const yj = polygon[j][0];
+      const xj = polygon[j][1];
+
+      const intersect =
+        yi > lat !== yj > lat &&
+        lng < ((xj - xi) * (lat - yi)) / (yj - yi + 1e-12) + xi;
+      if (intersect) inside = !inside;
+    }
+    return inside;
   }
 
   async geocodeModalAddress() {
@@ -4299,6 +4862,202 @@ export class DeliveryMapComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   // =========================================================================
+  // DRAG & DROP ROUTE REORDERING FOR COURIER DELIVERIES
+  // =========================================================================
+  readonly draggedRouteStopId = signal<number | null>(null);
+  readonly dragOverRouteStopId = signal<number | null>(null);
+  readonly dragOverCourierPillId = signal<string | null>(null);
+
+  onRouteStopDragStart(event: DragEvent, stop: DeliveryWaypoint) {
+    this.draggedRouteStopId.set(stop.id);
+    if (event.dataTransfer) {
+      event.dataTransfer.effectAllowed = 'move';
+      event.dataTransfer.setData('text/plain', String(stop.id));
+
+      const idxLabel = this.getStopOrderIndex(stop);
+      const ghost = document.createElement('div');
+      ghost.style.cssText = `
+        position: fixed;
+        top: -9999px;
+        left: -9999px;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 7px 13px;
+        border-radius: 10px;
+        background: #1e5e3a;
+        color: #ffffff;
+        font-family: system-ui, -apple-system, sans-serif;
+        font-size: 12px;
+        font-weight: 800;
+        box-shadow: 0 10px 24px rgba(15, 23, 42, 0.28);
+        border: 1.5px solid #86efac;
+        white-space: nowrap;
+        z-index: 99999;
+        pointer-events: none;
+      `;
+      ghost.innerHTML = `<span>#${idxLabel}</span> <span>·</span> <span>${stop.clientName}</span> <span style="opacity:0.8">(${stop.orderNumber})</span>`;
+      document.body.appendChild(ghost);
+      event.dataTransfer.setDragImage(ghost, 20, 18);
+      setTimeout(() => {
+        if (ghost.parentNode) ghost.parentNode.removeChild(ghost);
+      }, 0);
+    }
+  }
+
+  onRouteStopDragOver(event: DragEvent, targetStop: DeliveryWaypoint) {
+    event.preventDefault();
+    if (event.dataTransfer) {
+      event.dataTransfer.dropEffect = 'move';
+    }
+    if (this.draggedRouteStopId() !== targetStop.id) {
+      this.dragOverRouteStopId.set(targetStop.id);
+    }
+  }
+
+  onRouteStopDragLeave(stopId: number) {
+    if (this.dragOverRouteStopId() === stopId) {
+      this.dragOverRouteStopId.set(null);
+    }
+  }
+
+  onRouteStopDrop(event: DragEvent, targetStop: DeliveryWaypoint, explicitCourierId?: string) {
+    event.preventDefault();
+    event.stopPropagation();
+
+    const rawId = event.dataTransfer?.getData('text/plain');
+    const draggedId = this.draggedRouteStopId() ?? (rawId ? Number(rawId) : null);
+
+    this.draggedRouteStopId.set(null);
+    this.dragOverRouteStopId.set(null);
+    this.dragOverCourierPillId.set(null);
+
+    if (draggedId === null || draggedId === targetStop.id) return;
+
+    this.reorderStopToTarget(draggedId, targetStop.id, explicitCourierId);
+  }
+
+  onRouteStopContainerDrop(event: DragEvent, explicitCourierId?: string) {
+    event.preventDefault();
+    const draggedId = this.draggedRouteStopId();
+    const targetId = this.dragOverRouteStopId();
+
+    this.draggedRouteStopId.set(null);
+    this.dragOverRouteStopId.set(null);
+    this.dragOverCourierPillId.set(null);
+
+    if (draggedId !== null && targetId !== null && draggedId !== targetId) {
+      this.reorderStopToTarget(draggedId, targetId, explicitCourierId);
+    }
+  }
+
+  onRouteStopDragEnd() {
+    this.draggedRouteStopId.set(null);
+    this.dragOverRouteStopId.set(null);
+    this.dragOverCourierPillId.set(null);
+  }
+
+  onCourierPillDragOver(event: DragEvent, courierId: string) {
+    event.preventDefault();
+    if (event.dataTransfer) {
+      event.dataTransfer.dropEffect = 'move';
+    }
+    this.dragOverCourierPillId.set(courierId);
+  }
+
+  onCourierPillDragLeave(courierId: string) {
+    if (this.dragOverCourierPillId() === courierId) {
+      this.dragOverCourierPillId.set(null);
+    }
+  }
+
+  onDropStopOnCourierPill(event: DragEvent, courierId: string) {
+    event.preventDefault();
+    event.stopPropagation();
+    const rawId = event.dataTransfer?.getData('text/plain');
+    const draggedId = this.draggedRouteStopId() ?? (rawId ? Number(rawId) : null);
+
+    this.draggedRouteStopId.set(null);
+    this.dragOverRouteStopId.set(null);
+    this.dragOverCourierPillId.set(null);
+
+    if (draggedId === null) return;
+    const stop = this.deliveryStops().find(s => s.id === draggedId);
+    const courier = this.couriers().find(c => c.id === courierId);
+    this.assignCourierToStop(draggedId, courierId);
+    if (stop && courier) {
+      this.notification.success(
+        'Entrega Asignada',
+        `${stop.clientName} (${stop.orderNumber}) se asignó a ${courier.name}.`
+      );
+    }
+  }
+
+  private reorderStopToTarget(draggedId: number, targetId: number, explicitCourierId?: string) {
+    const stops = this.deliveryStops();
+    const draggedStop = stops.find(s => s.id === draggedId);
+    const targetStop = stops.find(s => s.id === targetId);
+    if (!draggedStop || !targetStop) return;
+
+    const activeFilter = this.drawerCourierFilter();
+    const courierId =
+      explicitCourierId ||
+      (activeFilter !== 'all' ? activeFilter : (targetStop.assignedCourierId || draggedStop.assignedCourierId));
+
+    // If dropped onto a stop belonging to a courier, ensure draggedStop is assigned to that courier
+    if (courierId && draggedStop.assignedCourierId !== courierId) {
+      this.deliveryStops.update(list =>
+        list.map(s => (s.id === draggedId ? { ...s, assignedCourierId: courierId } : s))
+      );
+    }
+
+    // Reorder inside courier.orderIds
+    if (courierId) {
+      this.couriers.update(list =>
+        list.map(c => {
+          if (c.id === courierId) {
+            const orderIds = c.orderIds.filter(id => id !== draggedId);
+            const targetIdx = orderIds.indexOf(targetId);
+            const oldIdx = c.orderIds.indexOf(draggedId);
+            if (targetIdx !== -1) {
+              const insertAt = oldIdx !== -1 && oldIdx < c.orderIds.indexOf(targetId) ? targetIdx + 1 : targetIdx;
+              orderIds.splice(insertAt, 0, draggedId);
+            } else {
+              orderIds.push(draggedId);
+            }
+            return { ...c, orderIds };
+          }
+          // Remove from other couriers if it switched courier
+          return { ...c, orderIds: c.orderIds.filter(id => id !== draggedId) };
+        })
+      );
+    }
+
+    // Also reorder deliveryStops array so 'Todas' view reflects the new order
+    this.deliveryStops.update(list => {
+      const copy = [...list];
+      const fromIdx = copy.findIndex(s => s.id === draggedId);
+      const toIdx = copy.findIndex(s => s.id === targetId);
+      if (fromIdx === -1 || toIdx === -1) return list;
+      const [moved] = copy.splice(fromIdx, 1);
+      copy.splice(toIdx, 0, moved);
+      return copy;
+    });
+
+    this.renderStopMarkers();
+    this.buildAndRenderRealRoadRoutes();
+
+    const courier = courierId ? this.couriers().find(c => c.id === courierId) : undefined;
+    const newPos = courier ? courier.orderIds.indexOf(draggedId) + 1 : null;
+    this.notification.info(
+      'Orden de Ruta Actualizado',
+      courier && newPos
+        ? `${draggedStop.clientName} ahora es la parada #${newPos} de ${courier.name}.`
+        : `Se actualizó la posición de ${draggedStop.clientName}.`
+    );
+  }
+
+  // =========================================================================
   // SLIDE-OVER DELIVERIES DRAWER & PIN DELETION METHODS
   // =========================================================================
   readonly filteredDrawerStops = computed(() => {
@@ -4307,7 +5066,20 @@ export class DeliveryMapComponent implements OnInit, AfterViewInit, OnDestroy {
     let list = this.deliveryStops();
 
     if (cFilter !== 'all') {
-      list = list.filter(s => s.assignedCourierId === cFilter);
+      const courier = this.couriers().find(c => c.id === cFilter);
+      if (courier) {
+        const stopMap = new Map(this.deliveryStops().map(s => [s.id, s]));
+        const ordered = courier.orderIds
+          .map(id => stopMap.get(id))
+          .filter((s): s is DeliveryWaypoint => !!s);
+        const orderedIds = new Set(courier.orderIds);
+        const extras = this.deliveryStops().filter(
+          s => s.assignedCourierId === cFilter && !orderedIds.has(s.id)
+        );
+        list = [...ordered, ...extras];
+      } else {
+        list = list.filter(s => s.assignedCourierId === cFilter);
+      }
     }
 
     if (query) {
@@ -4330,20 +5102,42 @@ export class DeliveryMapComponent implements OnInit, AfterViewInit, OnDestroy {
       .filter(o => o.status !== 'CANCELLED' && o.status !== 'DELIVERED' && !mappedIds.has(o.orderId));
   });
 
+  readonly isRefreshingDrawer = signal<boolean>(false);
+
+  openAllDeliveriesAndDrawer() {
+    if (this.mapViewMode() !== 'stops') {
+      this.enterAllDeliveriesMode();
+      this.showDeliveriesDrawer.set(true);
+    } else {
+      this.showDeliveriesDrawer.update(v => !v);
+    }
+  }
+
+  refreshDeliveriesFromOrders() {
+    this.isRefreshingDrawer.set(true);
+    const beforeCount = this.deliveryStops().length;
+    this.syncWithStateServiceOrders();
+    this.renderStopMarkers();
+    this.buildAndRenderRealRoadRoutes();
+    const addedCount = this.deliveryStops().length - beforeCount;
+
+    setTimeout(() => {
+      this.isRefreshingDrawer.set(false);
+      this.notification.success(
+        'Lista de Entregas Actualizada',
+        addedCount > 0
+          ? `Se sincronizaron ${addedCount} nuevo(s) pedido(s) en el mapa.`
+          : `Todas las entregas (${this.deliveryStops().length}) están sincronizadas.`
+      );
+    }, 450);
+  }
+
   toggleDeliveriesDrawer() {
     const next = !this.showDeliveriesDrawer();
     if (next && this.mapViewMode() === 'locked') {
       this.enterAllDeliveriesMode();
     }
     this.showDeliveriesDrawer.set(next);
-  }
-
-  toggleDrawerQuickAdd() {
-    const next = !this.showDrawerQuickAdd();
-    if (next) {
-      this.drawerNewCourierId.set('');
-    }
-    this.showDrawerQuickAdd.set(next);
   }
 
   assignCourierToStop(stopId: number, newCourierId: string) {
@@ -4390,8 +5184,9 @@ export class DeliveryMapComponent implements OnInit, AfterViewInit, OnDestroy {
       this.enterAllDeliveriesMode();
     }
     if (this.map) {
-      this.map.flyTo([stop.lat, stop.lng], 15, { duration: 0.9 });
       const marker = this.stopMarkers.get(stop.id);
+      const targetLatLng = marker ? marker.getLatLng() : L.latLng(stop.lat, stop.lng);
+      this.map.flyTo(targetLatLng, 15, { duration: 0.9 });
       if (marker) {
         setTimeout(() => marker.openPopup(), 450);
       }
@@ -4722,6 +5517,7 @@ export class DeliveryMapComponent implements OnInit, AfterViewInit, OnDestroy {
 
   enterLiveMapMode() {
     this.mapViewMode.set('live');
+    this.showDeliveriesDrawer.set(false);
     this.isSimulating.set(true);
     this.syncMapLayersForMode();
     if (this.map) {
@@ -4733,9 +5529,12 @@ export class DeliveryMapComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   enterAllDeliveriesMode() {
+    this.syncWithStateServiceOrders();
     this.mapViewMode.set('stops');
+    this.showDeliveriesDrawer.set(true);
     this.isSimulating.set(false);
     this.syncMapLayersForMode();
+    this.renderStopMarkers();
     if (this.map) {
       setTimeout(() => {
         this.map?.invalidateSize();
@@ -4746,6 +5545,7 @@ export class DeliveryMapComponent implements OnInit, AfterViewInit, OnDestroy {
 
   lockMapOverlay() {
     this.mapViewMode.set('locked');
+    this.showDeliveriesDrawer.set(false);
     this.isSimulating.set(false);
   }
 
@@ -4779,17 +5579,20 @@ export class DeliveryMapComponent implements OnInit, AfterViewInit, OnDestroy {
       this.routeCasingPolylines.forEach(p => p.remove());
       this.routePolylines.forEach(p => p.remove());
       this.courierMarkers.forEach(m => m.remove());
-    } else if (mode === 'live') {
-      // Restore route polylines and live courier markers onto the map
-      this.routeCasingPolylines.forEach(p => {
-        if (!this.map!.hasLayer(p)) p.addTo(this.map!);
-      });
-      this.routePolylines.forEach(p => {
-        if (!this.map!.hasLayer(p)) p.addTo(this.map!);
-      });
-      this.courierMarkers.forEach(m => {
-        if (!this.map!.hasLayer(m)) m.addTo(this.map!);
-      });
+    } else {
+      this.clearZonePolygon();
+      if (mode === 'live') {
+        // Restore route polylines and live courier markers onto the map
+        this.routeCasingPolylines.forEach(p => {
+          if (!this.map!.hasLayer(p)) p.addTo(this.map!);
+        });
+        this.routePolylines.forEach(p => {
+          if (!this.map!.hasLayer(p)) p.addTo(this.map!);
+        });
+        this.courierMarkers.forEach(m => {
+          if (!this.map!.hasLayer(m)) m.addTo(this.map!);
+        });
+      }
     }
   }
 
@@ -4869,7 +5672,9 @@ export class DeliveryMapComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   private syncWithStateServiceOrders() {
-    const stateOrders = this.stateService.orders().filter(o => o.status === 'DISPATCHED');
+    const stateOrders = this.stateService
+      .orders()
+      .filter(o => o.status !== 'CANCELLED' && o.status !== 'DELIVERED');
     const existingIds = new Set(this.deliveryStops().map(s => s.id));
 
     stateOrders.forEach((order, i) => {
@@ -4878,8 +5683,10 @@ export class DeliveryMapComponent implements OnInit, AfterViewInit, OnDestroy {
         const seedLngs = [-74.0550, -74.0950, -74.0450, -74.1400, -74.0650];
         const lat = seedLats[i % seedLats.length];
         const lng = seedLngs[i % seedLngs.length];
-        const courierIds = ['c1', 'c2', 'c3'];
-        const assignedCourierId = courierIds[i % courierIds.length];
+        const matchedCourier = order.courierName
+          ? this.couriers().find(c => c.name.toLowerCase().includes(order.courierName!.toLowerCase()))
+          : undefined;
+        const assignedCourierId = matchedCourier ? matchedCourier.id : '';
 
         const stop: DeliveryWaypoint = {
           id: order.orderId,
@@ -4899,12 +5706,14 @@ export class DeliveryMapComponent implements OnInit, AfterViewInit, OnDestroy {
         };
 
         this.deliveryStops.update(stops => [stop, ...stops]);
-        this.couriers.update(list => list.map(c => {
-          if (c.id === assignedCourierId) {
-            return { ...c, orderIds: [...c.orderIds, stop.id] };
-          }
-          return c;
-        }));
+        if (assignedCourierId) {
+          this.couriers.update(list => list.map(c => {
+            if (c.id === assignedCourierId) {
+              return { ...c, orderIds: [...c.orderIds, stop.id] };
+            }
+            return c;
+          }));
+        }
 
         // Georreferenciar automáticamente la dirección real del pedido
         if (order.clientAddress && order.clientAddress.trim().length >= 4) {

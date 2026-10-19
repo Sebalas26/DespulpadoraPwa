@@ -176,12 +176,12 @@ export class SettingsComponent {
         this.activeTab.set('users');
       } else if (tab === 'roles') {
         this.activeTab.set('roles');
-      } else if (tab === 'inventory' || tab === 'cava' || tab === 'variants' || tab === 'fruits') {
+      } else if (tab === 'inventory' || tab === 'cava' || tab === 'variants' || tab === 'fruits' || tab === 'stock') {
         this.activeTab.set('inventory');
-        if (tab === 'fruits') {
-          this.inventorySubTab.set('fruits');
-        } else {
+        if (tab === 'variants' || tab === 'cava' || tab === 'stock') {
           this.inventorySubTab.set('variants');
+        } else {
+          this.inventorySubTab.set('fruits');
         }
       }
     });
@@ -190,6 +190,14 @@ export class SettingsComponent {
   // ==========================================
   // COMPUTED PROPERTIES
   // ==========================================
+  readonly totalPulpUnitsStock = computed(() => {
+    return this.stateService.productVariants().reduce((sum, v) => sum + (v.currentStock || 0), 0);
+  });
+
+  adjustFreshFruit(fruitIdOrName: string, deltaKg: number) {
+    this.stateService.adjustFreshFruitStock(fruitIdOrName, deltaKg);
+  }
+
   readonly activeCategories = computed(() => {
     return this.categoriesConfig().filter(c => c.isActive);
   });

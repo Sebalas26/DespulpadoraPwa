@@ -20,7 +20,13 @@
         <div
           class="picking-day-card"
           [class.is-active]="day.active"
+          [class.is-drop-target]="dragOverDay() === day.name"
+          [class.is-drop-candidate]="draggingOrderId() !== null && dragOverDay() !== day.name"
           (click)="toggleDayCard(i)"
+          (dragenter)="onDayDragEnter($event, day.name)"
+          (dragover)="onDayDragOver($event, day.name)"
+          (dragleave)="onDayDragLeave($event, day.name)"
+          (drop)="onDayDrop($event, day.name)"
         >
           <div class="day-card-top">
             <span class="day-card-name">{{ day.name }}</span>
@@ -30,7 +36,7 @@
           </div>
           <div class="day-card-bottom">
             <span class="day-card-sub">
-              {{ day.active ? 'Grouped / Activo' : day.count + ' pedidos' }}
+              {{ dragOverDay() === day.name ? '📥 Soltar aquí' : (day.active ? 'Grouped / Activo' : day.count + ' pedidos') }}
             </span>
             @if (day.hasIndicator && !day.active) {
               <span class="day-mini-indicator">
@@ -71,12 +77,22 @@
     <!-- Picking Order Cards Grid -->
     <div class="picking-cards-grid">
       @for (order of tabOrders(); track order.orderId) {
-        <div class="picking-order-card">
+        <div
+          class="picking-order-card"
+          draggable="true"
+          [class.is-dragging]="draggingOrderId() === order.orderId"
+          (dragstart)="onOrderDragStart($event, order)"
+          (dragend)="onOrderDragEnd()"
+        >
           <div class="picking-card-top">
             <!-- Header: Order Code + Client Name + Edit Button & Status Pill -->
             <div class="picking-card-header">
               <div class="picking-header-left">
-                <div class="picking-order-code">{{ order.orderNumber }}</div>
+                <div class="picking-code-row">
+                  <span class="drag-grip" title="Arrastra esta tarjeta hacia un día de la semana">⋮⋮</span>
+                  <span class="picking-order-code">{{ order.orderNumber }}</span>
+                  <span class="order-day-chip">📅 {{ getOrderDay(order) }}</span>
+                </div>
                 <h4 class="picking-client-name">{{ order.clientName }}</h4>
               </div>
               <div class="picking-header-actions">
