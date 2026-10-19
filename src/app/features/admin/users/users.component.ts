@@ -4,6 +4,90 @@ import { FormsModule } from '@angular/forms';
 import { ApiService } from '../../../core/services/api.service';
 import { NotificationService } from '../../../core/services/notification.service';
 import { UserAdminDto, UserRoleDto } from '../../../core/models/business.models';
+import { SYSTEM_ROLES } from '../roles/roles.component';
+
+const STORAGE_USERS_KEY = 'dgl_users_v2';
+const STORAGE_ROLES_KEY = 'dgl_roles_v2';
+
+const DEFAULT_USERS: UserAdminDto[] = [
+  {
+    userId: 1,
+    username: 'admin',
+    email: 'admin@despulpadora.com',
+    fullName: 'Super Administrador Global',
+    roleId: 1,
+    roleName: 'Super Administrador',
+    companyId: 1,
+    isActive: true,
+    branches: [{ branchId: 1, name: 'Sede Principal - Planta Cava' }]
+  },
+  {
+    userId: 2,
+    username: 'carlos.planta',
+    email: 'produccion@despulpadora.com',
+    fullName: 'Carlos Mendoza',
+    roleId: 2,
+    roleName: 'Jefe de Producción & Planta',
+    companyId: 1,
+    isActive: true,
+    branches: [{ branchId: 1, name: 'Sede Principal - Planta Cava' }]
+  },
+  {
+    userId: 3,
+    username: 'andres.rutas',
+    email: 'logistica@despulpadora.com',
+    fullName: 'Andrés Restrepo',
+    roleId: 3,
+    roleName: 'Jefe de Logística & Despachos',
+    companyId: 1,
+    isActive: true,
+    branches: [{ branchId: 1, name: 'Sede Principal - Planta Cava' }]
+  },
+  {
+    userId: 4,
+    username: 'diana.caja',
+    email: 'facturacion@despulpadora.com',
+    fullName: 'Diana Salazar',
+    roleId: 4,
+    roleName: 'Auxiliar de Facturación & POS',
+    companyId: 1,
+    isActive: true,
+    branches: [{ branchId: 1, name: 'Sede Principal - Planta Cava' }]
+  },
+  {
+    userId: 5,
+    username: 'jorge.cava',
+    email: 'picking@despulpadora.com',
+    fullName: 'Jorge Beltrán',
+    roleId: 5,
+    roleName: 'Operario de Cava / Picking KDS',
+    companyId: 1,
+    isActive: true,
+    branches: [{ branchId: 1, name: 'Sede Principal - Planta Cava' }]
+  },
+  {
+    userId: 6,
+    username: 'pedro.moto',
+    email: 'domicilios@despulpadora.com',
+    fullName: 'Pedro Rivas (Moto #01)',
+    roleId: 6,
+    roleName: 'Domiciliario / Mensajero Repartidor (App Móvil)',
+    companyId: 1,
+    isActive: true,
+    branches: [{ branchId: 1, name: 'Sede Principal - Planta Cava' }]
+  },
+  {
+    userId: 7,
+    username: 'laura.rrhh',
+    email: 'nomina@despulpadora.com',
+    fullName: 'Laura Cardona',
+    roleId: 7,
+    roleName: 'Talento Humano & Nómina',
+    companyId: 1,
+    isActive: true,
+    branches: [{ branchId: 1, name: 'Sede Principal - Planta Cava' }]
+  }
+];
 
 @Component({
   selector: 'app-admin-users',
@@ -35,56 +119,62 @@ export class AdminUsersComponent implements OnInit {
   loadUsersAndRoles() {
     this.isLoading.set(true);
 
-    this.api.getRoles().subscribe({
-      next: (roles) => this.roles.set(roles),
-      error: () => {
-        this.roles.set([
-          { roleId: 1, name: 'Super Administrador', isSystemRole: true },
-          { roleId: 2, name: 'Operario de Planta', isSystemRole: false },
-          { roleId: 3, name: 'Jefe de Logística y Reparto', isSystemRole: false },
-          { roleId: 4, name: 'Auxiliar Contable', isSystemRole: false }
-        ]);
+    // 1. Roles
+    const storedRoles = localStorage.getItem(STORAGE_ROLES_KEY);
+    if (storedRoles) {
+      try {
+        const parsed = JSON.parse(storedRoles);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          this.roles.set(parsed);
+        } else {
+          this.roles.set(SYSTEM_ROLES);
+        }
+      } catch {
+        this.roles.set(SYSTEM_ROLES);
       }
-    });
+    } else {
+      this.roles.set(SYSTEM_ROLES);
+    }
+
+    // 2. Users
+    const storedUsers = localStorage.getItem(STORAGE_USERS_KEY);
+    if (storedUsers) {
+      try {
+        const parsed = JSON.parse(storedUsers);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          this.users.set(parsed);
+          this.isLoading.set(false);
+          return;
+        }
+      } catch {
+        // Fallback
+      }
+    }
 
     this.api.getUsers().subscribe({
       next: (res) => {
         this.isLoading.set(false);
-        this.users.set(res);
+        if (res && res.length > 0) {
+          this.users.set(res);
+        } else {
+          this.users.set(DEFAULT_USERS);
+          this.saveUsersToStorage(DEFAULT_USERS);
+        }
       },
       error: () => {
         this.isLoading.set(false);
-        // Resilient fallback
-        this.users.set([
-          {
-            userId: 1,
-            username: 'admin',
-            email: 'admin@despulpadora.com',
-            fullName: 'Super Administrador Global',
-            roleId: 1,
-            roleName: 'Super Administrador',
-            companyId: 1,
-            isActive: true,
-            branches: [{ branchId: 1, name: 'Planta Principal Cali' }]
-          },
-          {
-            userId: 2,
-            username: 'operario',
-            email: 'operario@despulpadora.com',
-            fullName: 'Operario Principal de Planta',
-            roleId: 2,
-            roleName: 'Operario de Planta',
-            companyId: 1,
-            isActive: true,
-            branches: [{ branchId: 1, name: 'Planta Principal Cali' }]
-          }
-        ]);
+        this.users.set(DEFAULT_USERS);
+        this.saveUsersToStorage(DEFAULT_USERS);
       }
     });
   }
 
   submitNewUser() {
-    if (!this.newUsername() || !this.newFullName() || !this.newEmail()) {
+    const username = this.newUsername().trim();
+    const fullName = this.newFullName().trim();
+    const email = this.newEmail().trim();
+
+    if (!username || !fullName || !email) {
       this.notification.warning('Campos incompletos', 'Complete nombre de usuario, nombre completo y correo');
       return;
     }
@@ -93,18 +183,21 @@ export class AdminUsersComponent implements OnInit {
 
     const newUser: UserAdminDto = {
       userId: Date.now(),
-      username: this.newUsername(),
-      fullName: this.newFullName(),
-      email: this.newEmail(),
+      username,
+      fullName,
+      email,
       roleId: Number(this.newRoleId()),
       roleName: selectedRole?.name || 'Operario',
       companyId: 1,
       isActive: true,
-      branches: [{ branchId: 1, name: 'Planta Principal' }]
+      branches: [{ branchId: 1, name: 'Sede Principal - Planta Cava' }]
     };
 
-    this.users.update(list => [...list, newUser]);
-    this.notification.success('Usuario Creado', `${newUser.username} ha sido registrado`);
+    const updated = [...this.users(), newUser];
+    this.users.set(updated);
+    this.saveUsersToStorage(updated);
+
+    this.notification.success('Usuario Creado', `Cuenta "${newUser.username}" registrada con perfil ${newUser.roleName}`);
     this.showCreateModal.set(false);
 
     // API sync
@@ -120,24 +213,51 @@ export class AdminUsersComponent implements OnInit {
       error: () => {}
     });
 
-    // Reset
     this.newUsername.set('');
     this.newFullName.set('');
     this.newEmail.set('');
   }
 
   toggleUserStatus(user: UserAdminDto) {
-    const nextStatus = !user.isActive;
-    this.users.update(list => list.map(u => u.userId === user.userId ? { ...u, isActive: nextStatus } : u));
-    this.notification.info('Estado Actualizado', `Usuario ${user.username} ${nextStatus ? 'Activado' : 'Desactivado'}`);
+    if (user.userId === 1) {
+      this.notification.warning('Usuario Protegido', 'No se puede desactivar la cuenta Super Administrador');
+      return;
+    }
 
-    this.api.updateUser(user.userId, {
-      userId: user.userId,
-      fullName: user.fullName,
-      email: user.email,
-      roleId: user.roleId,
-      isActive: nextStatus,
-      branchIds: user.branches.map(b => b.branchId)
-    }).subscribe({ error: () => {} });
+    const updated = this.users().map(u => {
+      if (u.userId === user.userId) {
+        return { ...u, isActive: !u.isActive };
+      }
+      return u;
+    });
+
+    this.users.set(updated);
+    this.saveUsersToStorage(updated);
+
+    const newStatus = !user.isActive;
+    this.notification.info(
+      newStatus ? 'Usuario Activado' : 'Usuario Desactivado',
+      `El usuario "${user.username}" ahora está ${newStatus ? 'activo' : 'inactivo'}`
+    );
+  }
+
+  deleteUser(user: UserAdminDto) {
+    if (user.userId === 1) {
+      this.notification.warning('Usuario Protegido', 'No se puede eliminar la cuenta Super Administrador');
+      return;
+    }
+
+    if (!confirm(`¿Eliminar al usuario "${user.fullName}" (@${user.username})?`)) {
+      return;
+    }
+
+    const updated = this.users().filter(u => u.userId !== user.userId);
+    this.users.set(updated);
+    this.saveUsersToStorage(updated);
+    this.notification.info('Usuario Eliminado', `La cuenta @${user.username} ha sido eliminada del sistema.`);
+  }
+
+  private saveUsersToStorage(users: UserAdminDto[]) {
+    localStorage.setItem(STORAGE_USERS_KEY, JSON.stringify(users));
   }
 }

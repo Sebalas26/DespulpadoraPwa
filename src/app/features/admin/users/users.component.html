@@ -4,7 +4,7 @@
   <div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 16px;">
     <div>
       <h1 style="font-size: 1.85rem; font-weight: 800; margin-bottom: 4px;">
-        Gestión de Usuarios del Sistema 🛡️
+        Gestión de Usuarios del Sistema
       </h1>
       <p style="color: var(--text-muted); font-size: 0.92rem;">
         Administración de cuentas, roles asignados y sedes autorizadas para operadores y administradores.
@@ -71,15 +71,31 @@
                   </span>
                 </td>
                 <td>
-                  <button
-                    type="button"
-                    class="btn btn-outline"
-                    style="padding: 4px 8px; font-size: 0.75rem;"
-                    [style.color]="user.isActive ? '#ef4444' : '#10b981'"
-                    (click)="toggleUserStatus(user)"
-                  >
-                    {{ user.isActive ? 'Desactivar' : 'Activar' }}
-                  </button>
+                  <div style="display: flex; gap: 6px; align-items: center;">
+                    <button
+                      type="button"
+                      class="btn btn-outline"
+                      style="padding: 4px 8px; font-size: 0.75rem;"
+                      [style.color]="user.isActive ? '#ef4444' : '#10b981'"
+                      (click)="toggleUserStatus(user)"
+                    >
+                      {{ user.isActive ? 'Desactivar' : 'Activar' }}
+                    </button>
+                    @if (user.userId !== 1) {
+                      <button
+                        type="button"
+                        class="btn btn-outline"
+                        style="padding: 4px 6px; font-size: 0.75rem; color: #ef4444;"
+                        (click)="deleteUser(user)"
+                        title="Eliminar usuario"
+                      >
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                          <polyline points="3 6 5 6 21 6"></polyline>
+                          <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                        </svg>
+                      </button>
+                    }
+                  </div>
                 </td>
               </tr>
             }

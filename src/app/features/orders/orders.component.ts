@@ -9,6 +9,7 @@ import { GeocodingService, GeocodedLocation } from '../../core/services/geocodin
 import { OrderDto, OrderStatus } from '../../core/models/business.models';
 import { DeliveryMapComponent } from './delivery-map.component';
 import confetti from 'canvas-confetti';
+import * as L from 'leaflet';
 
 @Component({
   selector: 'app-orders',
@@ -142,7 +143,7 @@ export class OrdersComponent {
 
         const codeEl = document.createElement('span');
         codeEl.style.cssText = 'font-size:11px;font-weight:800;color:#7c3aed;';
-        codeEl.textContent = `📦 ${order.orderNumber}`;
+        codeEl.textContent = `${order.orderNumber}`;
 
         const totalEl = document.createElement('span');
         totalEl.style.cssText = 'font-size:11px;font-weight:800;color:#1e5e3a;';
@@ -302,11 +303,276 @@ Pago por Transferencia Bancolombia`);
   readonly selectedManualGeo = signal<GeocodedLocation | null>(null);
   readonly isSearchingManualAddress = signal<boolean>(false);
   private manualAddressDebounce?: any;
+  readonly isManualOrderPaid = signal<boolean>(false);
   readonly manualPaymentMethod = signal<string>('Transferencia Bancolombia');
   readonly manualNotes = signal<string>('');
   readonly manualItems = signal<{ fruitName: string; grammage: 140 | 250 | 500 | 1000; quantity: number; unitPrice: number }[]>([
     { fruitName: 'Maracuyá', grammage: 1000, quantity: 5, unitPrice: 11000 }
   ]);
+
+  // Client Autocomplete Suggestions
+  readonly showClientSuggestions = signal<boolean>(false);
+
+  readonly allKnownClients = computed(() => {
+    const map = new Map<string, { fullName: string; phone: string; address: string }>();
+    this.stateService.clients().forEach(c => {
+      if (c.fullName) {
+        map.set(c.fullName.toLowerCase().trim(), {
+          fullName: c.fullName,
+          phone: c.phone || '',
+          address: c.address || ''
+        });
+      }
+    });
+    this.stateService.orders().forEach(o => {
+      if (o.clientName) {
+        const key = o.clientName.toLowerCase().trim();
+        if (!map.has(key)) {
+          map.set(key, {
+            fullName: o.clientName,
+            phone: o.clientPhone || '',
+            address: o.clientAddress || ''
+          });
+        }
+      }
+    });
+    return Array.from(map.values());
+  });
+
+  readonly filteredClientSuggestions = computed(() => {
+    const query = this.manualClientName().trim().toLowerCase();
+    if (!query) return [];
+    return this.allKnownClients().filter(c =>
+      c.fullName.toLowerCase().includes(query) ||
+      c.phone.toLowerCase().includes(query) ||
+      c.address.toLowerCase().includes(query)
+    );
+  });
+
+  onClientNameInput(val: string) {
+    this.manualClientName.set(val);
+    this.showClientSuggestions.set(true);
+  }
+
+  onClientNameFocus() {
+    if (this.manualClientName().trim().length >= 1) {
+      this.showClientSuggestions.set(true);
+    }
+  }
+
+  selectClientSuggestion(client: { fullName: string; phone: string; address: string }) {
+    this.manualClientName.set(client.fullName);
+    if (client.phone) {
+      this.manualPhone.set(client.phone);
+    }
+    if (client.address) {
+      this.manualAddress.set(client.address);
+      this.geocodingService.geocodeBestMatch(client.address).then(geo => {
+        if (geo) {
+          this.selectedManualGeo.set(geo);
+        }
+      });
+    }
+    this.showClientSuggestions.set(false);
+  }
+
+  clearClientNameInput() {
+    this.manualClientName.set('');
+    this.showClientSuggestions.set(false);
+  }
+
+  // Validación de formulario para habilitar el botón "Guardar Pedido"
+  readonly isManualOrderValid = computed(() => {
+    const nameOk = this.manualClientName().trim().length >= 2;
+    const phoneOk = this.manualPhone().trim().length >= 7;
+    const addrOk = this.manualAddress().trim().length >= 3;
+    const items = this.manualItems();
+    const itemsOk = items.length > 0 && items.every(it => Number(it.quantity) > 0 && Number(it.unitPrice) > 0);
+    const paidOk = !this.isManualOrderPaid() || (this.manualPaymentMethod().trim().length > 0);
+    return nameOk && phoneOk && addrOk && itemsOk && paidOk;
+  });
+
+  // Map Address Picker Modal State
+  readonly showAddressMapPickerModal = signal<boolean>(false);
+  readonly pickerSearchText = signal<string>('');
+  readonly pickerCurrentAddress = signal<string>('');
+  readonly pickerCurrentZone = signal<string>('Bogotá D.C.');
+  readonly pickerCurrentLat = signal<number>(4.6750);
+  readonly pickerCurrentLng = signal<number>(-74.0550);
+  private pickerMap?: L.Map;
+  private pickerMarker?: L.Marker;
+  private pickerSearchDebounce?: any;
+  readonly isReverseGeocoding = signal<boolean>(false);
+
+  hideClientSuggestionsWithDelay() {
+    setTimeout(() => {
+      this.showClientSuggestions.set(false);
+    }, 250);
+  }
+
+  openMapAddressPicker() {
+    const currentGeo = this.selectedManualGeo();
+    if (currentGeo) {
+      this.pickerCurrentLat.set(currentGeo.lat);
+      this.pickerCurrentLng.set(currentGeo.lng);
+      this.pickerCurrentAddress.set(currentGeo.label || currentGeo.name);
+      this.pickerCurrentZone.set(currentGeo.zone);
+      this.pickerSearchText.set(currentGeo.label || currentGeo.name);
+    } else {
+      this.pickerCurrentLat.set(4.6750);
+      this.pickerCurrentLng.set(-74.0550);
+      this.pickerCurrentAddress.set(this.manualAddress() || 'Bogotá D.C.');
+      this.pickerCurrentZone.set('Chicó / Parque 93');
+      this.pickerSearchText.set(this.manualAddress());
+    }
+
+    this.showAddressMapPickerModal.set(true);
+
+    setTimeout(() => {
+      this.initPickerMap();
+    }, 120);
+  }
+
+  closeMapAddressPicker() {
+    this.showAddressMapPickerModal.set(false);
+    if (this.pickerMap) {
+      this.pickerMap.remove();
+      this.pickerMap = undefined;
+      this.pickerMarker = undefined;
+    }
+  }
+
+  private initPickerMap() {
+    const container = document.getElementById('picker-leaflet-map');
+    if (!container) return;
+
+    if (this.pickerMap) {
+      this.pickerMap.remove();
+      this.pickerMap = undefined;
+    }
+
+    const lat = this.pickerCurrentLat();
+    const lng = this.pickerCurrentLng();
+
+    this.pickerMap = L.map(container, {
+      center: [lat, lng],
+      zoom: 16,
+      zoomControl: true
+    });
+
+    const stadiaKey = '28312715-2030-4d54-ad98-458156a468d2';
+    L.tileLayer(`https://tiles.stadiamaps.com/tiles/alidade_smooth/{z}/{x}/{y}{r}.png?api_key=${stadiaKey}`, {
+      maxZoom: 20,
+      attribution: '&copy; <a href="https://stadiamaps.com/">Stadia Maps</a> &copy; <a href="https://openmaptiles.org/">OpenMapTiles</a>'
+    }).addTo(this.pickerMap);
+
+    const customIcon = L.divIcon({
+      className: 'picker-pin-wrapper',
+      html: `
+        <div class="picker-pin-bubble" style="display:flex;align-items:center;justify-content:center;">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="#dc2626" stroke="#ffffff" stroke-width="1.5" style="filter: drop-shadow(0 4px 6px rgba(0,0,0,0.35));">
+            <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+            <circle cx="12" cy="10" r="3" fill="#ffffff"></circle>
+          </svg>
+        </div>
+      `,
+      iconSize: [36, 36],
+      iconAnchor: [18, 36],
+      popupAnchor: [0, -36]
+    });
+
+    this.pickerMarker = L.marker([lat, lng], {
+      icon: customIcon,
+      draggable: true
+    }).addTo(this.pickerMap);
+
+    this.pickerMarker.on('dragend', (e: any) => {
+      const pos = e.target.getLatLng();
+      this.updatePickerCoords(pos.lat, pos.lng, true);
+    });
+
+    this.pickerMap.on('click', (e: L.LeafletMouseEvent) => {
+      this.pickerMarker?.setLatLng(e.latlng);
+      this.updatePickerCoords(e.latlng.lat, e.latlng.lng, true);
+    });
+
+    setTimeout(() => {
+      this.pickerMap?.invalidateSize();
+    }, 250);
+  }
+
+  async updatePickerCoords(lat: number, lng: number, doReverseGeocode = true) {
+    this.pickerCurrentLat.set(lat);
+    this.pickerCurrentLng.set(lng);
+    const zone = this.geocodingService.detectBogotaZone(lat, lng);
+    this.pickerCurrentZone.set(zone);
+
+    if (doReverseGeocode) {
+      this.isReverseGeocoding.set(true);
+      try {
+        const label = await this.geocodingService.reverseGeocodeLabel(lat, lng);
+        if (label) {
+          this.pickerCurrentAddress.set(label);
+          this.pickerSearchText.set(label);
+        } else {
+          this.pickerCurrentAddress.set(`Coordenadas: ${lat.toFixed(5)}, ${lng.toFixed(5)}`);
+        }
+      } catch {
+        this.pickerCurrentAddress.set(`Coordenadas: ${lat.toFixed(5)}, ${lng.toFixed(5)}`);
+      } finally {
+        this.isReverseGeocoding.set(false);
+      }
+    }
+  }
+
+  async searchPickerAddress() {
+    const text = this.pickerSearchText().trim();
+    if (text.length < 3) return;
+
+    this.isReverseGeocoding.set(true);
+    try {
+      const results = await this.geocodingService.searchAddress(text);
+      if (results && results.length > 0) {
+        const top = results[0];
+        this.pickerCurrentLat.set(top.lat);
+        this.pickerCurrentLng.set(top.lng);
+        this.pickerCurrentAddress.set(top.label);
+        this.pickerCurrentZone.set(top.zone);
+
+        if (this.pickerMap) {
+          this.pickerMap.flyTo([top.lat, top.lng], 16, { animate: true, duration: 0.8 });
+          this.pickerMarker?.setLatLng([top.lat, top.lng]);
+        }
+      } else {
+        this.notification.warning('No se encontró la dirección', 'Intenta con una dirección más detallada o toca en el mapa.');
+      }
+    } finally {
+      this.isReverseGeocoding.set(false);
+    }
+  }
+
+  confirmPickerSelection() {
+    const lat = this.pickerCurrentLat();
+    const lng = this.pickerCurrentLng();
+    const address = this.pickerCurrentAddress() || `Punto GPS (${lat.toFixed(5)}, ${lng.toFixed(5)})`;
+    const zone = this.pickerCurrentZone();
+
+    this.manualAddress.set(address);
+    this.selectedManualGeo.set({
+      id: `picked_${lat.toFixed(5)}_${lng.toFixed(5)}`,
+      name: address,
+      label: address,
+      lat,
+      lng,
+      zone,
+      locality: zone.includes('Cundinamarca') ? zone : 'Bogotá D.C.',
+      source: 'coords',
+      confidence: 1.0
+    });
+
+    this.closeMapAddressPicker();
+    this.notification.success('Ubicación Georreferenciada', `${address} · ${zone}`);
+  }
 
   // Orders Filtered by Tab & Search
   readonly tabOrders = computed(() => {
@@ -357,7 +623,210 @@ Pago por Transferencia Bancolombia`);
       try {
         confetti({ particleCount: 100, spread: 70, origin: { y: 0.5 } });
       } catch { }
+      if (this.deliveryMapRef) {
+        this.deliveryMapRef.markOrderDeliveredByOrderNumber(order.orderNumber);
+      }
     }
+  }
+
+  // =========================================================================
+  // HISTÓRICO DE ENTREGAS Y DESPACHOS DEL DÍA (LEDGER MANIFIESTO)
+  // =========================================================================
+  readonly COURIER_CATALOG = [
+    {
+      id: 'c1',
+      name: 'Carlos Rodríguez',
+      vehicleType: 'moto' as const,
+      vehiclePlate: 'HND-45F',
+      vehicleModel: 'Honda CB190R Térmica',
+      phone: '311 889 0012',
+      color: '#10b981',
+      colorLight: '#ecfdf5',
+      routeCode: 'RUTA-2026-CR1'
+    },
+    {
+      id: 'c2',
+      name: 'Andrés Morales',
+      vehicleType: 'moto' as const,
+      vehiclePlate: 'YMH-88B',
+      vehicleModel: 'Yamaha Crypton 115 Frigorífica',
+      phone: '320 445 6677',
+      color: '#3b82f6',
+      colorLight: '#eff6ff',
+      routeCode: 'RUTA-2026-AM2'
+    },
+    {
+      id: 'c3',
+      name: 'Felipe Caicedo',
+      vehicleType: 'furgon' as const,
+      vehiclePlate: 'CHE-912',
+      vehicleModel: 'Furgón N300 ThermoKing Cundinamarca',
+      phone: '314 556 7788',
+      color: '#f59e0b',
+      colorLight: '#fffbeb',
+      routeCode: 'RUTA-2026-FC3'
+    }
+  ];
+
+  readonly historyFilter = signal<'ALL' | 'DELIVERED' | 'DISPATCHED' | 'UNASSIGNED'>('ALL');
+  readonly historySearchQuery = signal<string>('');
+
+  // Todas las entregas del día (no canceladas)
+  readonly allHistoryOrders = computed(() => {
+    return this.stateService.orders().filter(o => o.status !== 'CANCELLED');
+  });
+
+  readonly totalHistoryOrdersCount = computed(() => this.allHistoryOrders().length);
+
+  readonly deliveredHistoryOrdersCount = computed(() =>
+    this.allHistoryOrders().filter(o => o.status === 'DELIVERED').length
+  );
+
+  readonly inTransitHistoryOrdersCount = computed(() =>
+    this.allHistoryOrders().filter(o => o.status === 'DISPATCHED').length
+  );
+
+  readonly unassignedHistoryOrdersCount = computed(() =>
+    this.allHistoryOrders().filter(o => o.status !== 'DELIVERED' && o.status !== 'DISPATCHED').length
+  );
+
+  readonly totalDeliveredCash = computed(() =>
+    this.allHistoryOrders()
+      .filter(o => o.status === 'DELIVERED')
+      .reduce((sum, o) => sum + (o.totalAmount || 0), 0)
+  );
+
+  readonly totalDayExpectedCash = computed(() =>
+    this.allHistoryOrders().reduce((sum, o) => sum + (o.totalAmount || 0), 0)
+  );
+
+  readonly filteredHistoryOrders = computed(() => {
+    const filter = this.historyFilter();
+    const query = this.historySearchQuery().trim().toLowerCase();
+    let list = this.allHistoryOrders();
+
+    if (filter === 'DELIVERED') {
+      list = list.filter(o => o.status === 'DELIVERED');
+    } else if (filter === 'DISPATCHED') {
+      list = list.filter(o => o.status === 'DISPATCHED');
+    } else if (filter === 'UNASSIGNED') {
+      list = list.filter(o => o.status !== 'DELIVERED' && o.status !== 'DISPATCHED');
+    }
+
+    if (query) {
+      list = list.filter(o => {
+        const courier = this.getCourierForOrder(o);
+        const orderNum = o.orderNumber ? o.orderNumber.toLowerCase() : '';
+        const client = o.clientName ? o.clientName.toLowerCase() : '';
+        const addr = o.clientAddress ? o.clientAddress.toLowerCase() : '';
+        const phone = o.clientPhone ? o.clientPhone.toLowerCase() : '';
+        const courierName = courier?.name?.toLowerCase() || '';
+        const routeCode = courier?.routeCode?.toLowerCase() || '';
+        const plate = courier?.vehiclePlate?.toLowerCase() || '';
+        return (
+          orderNum.includes(query) ||
+          client.includes(query) ||
+          addr.includes(query) ||
+          phone.includes(query) ||
+          courierName.includes(query) ||
+          routeCode.includes(query) ||
+          plate.includes(query)
+        );
+      });
+    }
+
+    return list;
+  });
+
+  getCourierForOrder(order: OrderDto) {
+    if (order.courierName) {
+      const match = this.COURIER_CATALOG.find(c =>
+        c.name.toLowerCase().includes(order.courierName!.toLowerCase()) ||
+        order.courierName!.toLowerCase().includes(c.name.toLowerCase())
+      );
+      if (match) return match;
+    }
+
+    // Lookup en DeliveryMapComponent si está montado
+    if (this.deliveryMapRef) {
+      const couriers = this.deliveryMapRef.couriers();
+      const c = couriers.find(courier => courier.orderIds.includes(order.orderId));
+      if (c) {
+        return {
+          id: c.id,
+          name: c.name,
+          vehicleType: c.vehicleType,
+          vehiclePlate: c.vehiclePlate,
+          vehicleModel: c.vehicleModel,
+          phone: c.phone || '310 123 4567',
+          color: c.color,
+          colorLight: c.colorLight,
+          routeCode: c.routeCode || 'RUTA-2026'
+        };
+      }
+    }
+
+    // Fallbacks directos para las órdenes del semillero
+    if (order.orderId === 1001 || order.orderId === 1002 || order.orderId === 1003 ||
+        order.orderNumber === 'PED-2026-001' || order.orderNumber === 'PED-2026-002' || order.orderNumber === 'PED-2026-003') {
+      return this.COURIER_CATALOG[0]; // Carlos Rodríguez
+    }
+    if (order.orderId === 1004 || order.orderId === 1005 || order.orderId === 1006 ||
+        order.orderNumber === 'PED-2026-004' || order.orderNumber === 'PED-2026-005' || order.orderNumber === 'PED-2026-006') {
+      return this.COURIER_CATALOG[1]; // Andrés Morales
+    }
+    if (order.orderId === 1007 || order.orderId === 1008 ||
+        order.orderNumber === 'PED-2026-007' || order.orderNumber === 'PED-2026-008') {
+      return this.COURIER_CATALOG[2]; // Felipe Caicedo
+    }
+
+    return null;
+  }
+
+  assignCourierToOrder(order: OrderDto, courierId: string) {
+    const courier = this.COURIER_CATALOG.find(c => c.id === courierId);
+    if (!courier) return;
+
+    this.stateService.orders.update(orders =>
+      orders.map(o => (o.orderId === order.orderId ? {
+        ...o,
+        courierName: courier.name,
+        status: o.status === 'DELIVERED' ? 'DELIVERED' : 'DISPATCHED'
+      } : o))
+    );
+
+    if (this.deliveryMapRef) {
+      this.deliveryMapRef.assignOrderToCourierByOrderNumber(order.orderNumber, courierId);
+    }
+
+    this.notification.success(
+      'Domiciliario Asignado',
+      `Guía ${order.orderNumber} asignada a ${courier.name} (${courier.routeCode} · ${courier.vehiclePlate})`
+    );
+  }
+
+  locateOrderInMap(order: OrderDto) {
+    if (this.deliveryMapRef) {
+      this.deliveryMapRef.locateOrderOnMap(order.orderNumber);
+      const mapEl = document.getElementById('bogota-cundinamarca-map');
+      if (mapEl) {
+        mapEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    }
+  }
+
+  // Order Details Modal (Lupa shortcut)
+  readonly showOrderViewModal = signal<boolean>(false);
+  readonly selectedOrderForView = signal<OrderDto | null>(null);
+
+  viewOrderDetails(order: OrderDto) {
+    this.selectedOrderForView.set(order);
+    this.showOrderViewModal.set(true);
+  }
+
+  getOrderItemsSummary(order: OrderDto): string {
+    if (!order.items || order.items.length === 0) return 'Pulpas variadas';
+    return order.items.map(it => `${it.quantity}x ${it.fruitName || 'Pulpa'} ${it.grammage}g`).join(', ');
   }
 
   // Invoice Selection & Modal Opener
@@ -537,8 +1006,10 @@ Pago por Transferencia Bancolombia`);
     this.manualAddress.set('');
     this.manualAddressSuggestions.set([]);
     this.selectedManualGeo.set(null);
+    this.isManualOrderPaid.set(false);
     this.manualPaymentMethod.set('Transferencia Bancolombia');
     this.manualNotes.set('');
+    this.showClientSuggestions.set(false);
     this.manualItems.set([
       { fruitName: 'Maracuyá', grammage: 1000, quantity: 5, unitPrice: 11000 }
     ]);
@@ -553,8 +1024,10 @@ Pago por Transferencia Bancolombia`);
     this.manualAddress.set(order.clientAddress || '');
     this.manualAddressSuggestions.set([]);
     this.selectedManualGeo.set(null);
+    this.isManualOrderPaid.set(order.isPaid || false);
     this.manualPaymentMethod.set(order.paymentMethodName || 'Transferencia Bancolombia');
     this.manualNotes.set(order.notes || '');
+    this.showClientSuggestions.set(false);
     this.manualItems.set(
       order.items.map(i => ({
         fruitName: i.fruitName || 'Maracuyá',
@@ -644,14 +1117,16 @@ Pago por Transferencia Bancolombia`);
   }
 
   submitManualOrder() {
-    if (!this.manualClientName() || this.manualItems().length === 0) {
-      this.notification.warning('Campos incompletos', 'Indique el nombre del cliente y al menos 1 producto');
+    if (!this.isManualOrderValid()) {
+      this.notification.warning('Campos incompletos', 'Completa el nombre del cliente, teléfono, dirección y al menos 1 producto.');
       return;
     }
 
     const geo = this.selectedManualGeo();
     const finalAddress = geo ? geo.label : this.manualAddress();
     const editId = this.editingOrderId();
+    const isPaid = this.isManualOrderPaid();
+    const paymentMethodName = isPaid ? this.manualPaymentMethod() : 'Contra Entrega (Por Cobrar)';
 
     if (editId !== null) {
       this.stateService.updateOrder(editId, {
@@ -659,19 +1134,27 @@ Pago por Transferencia Bancolombia`);
         clientPhone: this.manualPhone(),
         clientAddress: finalAddress,
         items: this.manualItems(),
-        paymentMethodName: this.manualPaymentMethod(),
+        paymentMethodName,
+        isPaid,
         notes: this.manualNotes()
       });
+      this.notification.success('Pedido Actualizado', `Guía ${this.editingOrderNumber()} modificada con éxito.`);
     } else {
-      this.stateService.createOrder({
+      const newOrder = this.stateService.createOrder({
         clientName: this.manualClientName(),
         clientPhone: this.manualPhone(),
         clientAddress: finalAddress,
         items: this.manualItems(),
-        paymentMethodName: this.manualPaymentMethod(),
+        paymentMethodName,
         notes: this.manualNotes(),
         scheduledDay: this.selectedDay()
       });
+      if (isPaid) {
+        this.stateService.orders.update(all =>
+          all.map(o => (o.orderId === newOrder.orderId ? { ...o, isPaid: true } : o))
+        );
+      }
+      this.notification.success('Pedido Creado', `Nueva orden ${newOrder.orderNumber} registrada.`);
     }
 
     this.showNewOrderModal.set(false);
@@ -682,6 +1165,7 @@ Pago por Transferencia Bancolombia`);
     this.manualAddress.set('');
     this.manualAddressSuggestions.set([]);
     this.selectedManualGeo.set(null);
+    this.isManualOrderPaid.set(false);
   }
 
   deleteCurrentEditingOrder() {

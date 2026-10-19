@@ -204,7 +204,10 @@ export const INITIAL_EMPLOYEES_SAMPLE = [
     transportAllowance: 162000,
     deliveryBonusRate: 0,
     hireDate: '2022-03-15',
-    isActive: true
+    isActive: true,
+    bankName: 'Bancolombia',
+    bankAccountType: 'Cuenta de Ahorros',
+    bankAccountNumber: '458-921478-12'
   },
   {
     employeeId: 2,
@@ -222,7 +225,10 @@ export const INITIAL_EMPLOYEES_SAMPLE = [
     transportAllowance: 162000,
     deliveryBonusRate: 0,
     hireDate: '2023-05-10',
-    isActive: true
+    isActive: true,
+    bankName: 'Davivienda',
+    bankAccountType: 'Cuenta de Ahorros',
+    bankAccountNumber: '0089-7412-5563'
   },
   {
     employeeId: 3,
@@ -240,7 +246,10 @@ export const INITIAL_EMPLOYEES_SAMPLE = [
     transportAllowance: 162000,
     deliveryBonusRate: 0,
     hireDate: '2023-01-20',
-    isActive: true
+    isActive: true,
+    bankName: 'Bancolombia',
+    bankAccountType: 'Cuenta de Ahorros',
+    bankAccountNumber: '312-901234-55'
   },
   {
     employeeId: 4,
@@ -258,7 +267,10 @@ export const INITIAL_EMPLOYEES_SAMPLE = [
     transportAllowance: 162000,
     deliveryBonusRate: 3500,
     hireDate: '2023-08-15',
-    isActive: true
+    isActive: true,
+    bankName: 'Nequi / Bancolombia',
+    bankAccountType: 'Cuenta de Ahorros',
+    bankAccountNumber: '311-8890012'
   },
   {
     employeeId: 5,
@@ -276,7 +288,46 @@ export const INITIAL_EMPLOYEES_SAMPLE = [
     transportAllowance: 162000,
     deliveryBonusRate: 0,
     hireDate: '2022-08-01',
-    isActive: true
+    isActive: true,
+    bankName: 'Banco de Bogotá',
+    bankAccountType: 'Cuenta de Ahorros',
+    bankAccountNumber: '145-889230-01'
+  }
+];
+
+export const INITIAL_SHIFTS_SAMPLE = [
+  {
+    shiftId: 201,
+    employeeId: 1,
+    employeeName: 'Hernando Ruiz Gómez',
+    branchId: 1,
+    branchName: 'Planta Principal',
+    startTime: '06:00 AM',
+    shiftType: 'MORNING' as const,
+    status: 'ACTIVE' as const,
+    notes: 'Supervisión de despulpado de maracuyá y mora'
+  },
+  {
+    shiftId: 202,
+    employeeId: 2,
+    employeeName: 'María Fernanda Castillo',
+    branchId: 1,
+    branchName: 'Planta Principal',
+    startTime: '06:30 AM',
+    shiftType: 'MORNING' as const,
+    status: 'ACTIVE' as const,
+    notes: 'Línea de dosificación y sellado 140g'
+  },
+  {
+    shiftId: 203,
+    employeeId: 3,
+    employeeName: 'Carlos Andrés Montoya',
+    branchId: 1,
+    branchName: 'Planta Principal',
+    startTime: '07:00 AM',
+    shiftType: 'MORNING' as const,
+    status: 'ACTIVE' as const,
+    notes: 'Control de cava y despacho de pedidos'
   }
 ];
 

@@ -249,6 +249,9 @@ export interface EmployeeDto {
   hireDate: string;
   isActive: boolean;
   activeShift?: WorkShiftDto;
+  bankName?: string;
+  bankAccountType?: string;
+  bankAccountNumber?: string;
 }
 
 // ==========================================

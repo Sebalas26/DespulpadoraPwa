@@ -1,235 +1,846 @@
-<div style="display: flex; flex-direction: column; gap: 24px;">
+<div class="hr-module-container" style="display: flex; flex-direction: column; gap: 20px;">
 
-  <!-- Header & Actions -->
-  <div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 16px;">
+  <!-- Header del Módulo de Personal -->
+  <div class="no-print" style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 16px; background: #ffffff; padding: 20px 24px; border-radius: 14px; border: 1px solid var(--border-subtle); box-shadow: 0 1px 3px rgba(0,0,0,0.03);">
     <div>
-      <h1 style="font-size: 1.85rem; font-weight: 800; margin-bottom: 4px;">
-        Personal & Gestión de Nómina 👥
-      </h1>
-      <p style="color: var(--text-muted); font-size: 0.92rem;">
-        Administración del equipo de planta, liquidación quincenal automática y generación de desprendibles oficiales.
+      <div style="display: flex; align-items: center; gap: 10px;">
+        <h1 style="font-size: 1.6rem; font-weight: 800; margin: 0; color: #0f172a; letter-spacing: -0.02em;">
+          Gestión de Personal & Talento Humano
+        </h1>
+      </div>
+      <p style="color: var(--text-muted); font-size: 0.86rem; margin: 4px 0 0 0;">
+        Directorio de colaboradores, control horario de turnos, certificaciones bancarias oficiales y liquidación de nómina.
       </p>
     </div>
 
     <div style="display: flex; flex-wrap: wrap; gap: 8px;">
-      <button type="button" class="btn btn-outline" style="gap: 8px;" (click)="quickSettleAllActive()">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <polyline points="20 6 9 17 4 12"></polyline>
+      <button type="button" class="btn btn-outline" style="gap: 6px; font-weight: 700;" (click)="showNewEmployeeModal.set(true)">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <line x1="12" y1="5" x2="12" y2="19"></line>
+          <line x1="5" y1="12" x2="19" y2="12"></line>
         </svg>
-        <span>Liquidar Todos (15 días)</span>
+        <span>Agregar Personal</span>
       </button>
 
-      <button type="button" class="btn btn-secondary" style="gap: 8px;" (click)="openSettlementDialog()">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <button type="button" class="btn btn-primary" style="gap: 6px; font-weight: 700;" (click)="openSettlementDialog()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
           <circle cx="12" cy="12" r="10"></circle>
           <polyline points="12 6 12 12 16 14"></polyline>
         </svg>
-        <span>Liquidar Quincena</span>
-      </button>
-
-      <button type="button" class="btn btn-primary" style="gap: 8px;" (click)="showNewEmployeeModal.set(true)">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-          <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
-          <circle cx="9" cy="7" r="4"></circle>
-          <line x1="19" y1="8" x2="19" y2="14"></line>
-          <line x1="22" y1="11" x2="16" y2="11"></line>
-        </svg>
-        <span>Vincular Colaborador</span>
+        <span>Liquidar Nómina</span>
       </button>
     </div>
   </div>
 
-  <!-- Navigation Tabs -->
-  <div style="display: flex; gap: 8px; border-bottom: 1px solid var(--border-subtle); padding-bottom: 8px;">
+  <!-- Barra de Opciones Subdivididas del Módulo (4 Opciones) -->
+  <div class="hr-subnav-bar no-print">
     <button
       type="button"
-      class="btn"
-      [ngClass]="activeTab() === 'employees' ? 'btn-primary' : 'btn-outline'"
-      (click)="activeTab.set('employees')"
-      style="gap: 8px; font-size: 0.85rem;"
+      class="hr-tab-btn"
+      [class.active]="activeTab() === 'employees'"
+      (click)="setTab('employees')"
     >
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
-        <circle cx="9" cy="7" r="4"></circle>
-        <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
-        <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
-      </svg>
-      <span>Plantilla de Personal ({{ stateService.employees().length }})</span>
+      <span class="tab-text">Personal</span>
+      <span class="tab-badge">{{ stateService.employees().length }}</span>
     </button>
 
     <button
       type="button"
-      class="btn"
-      [ngClass]="activeTab() === 'payroll' ? 'btn-primary' : 'btn-outline'"
-      (click)="activeTab.set('payroll')"
-      style="gap: 8px; font-size: 0.85rem;"
+      class="hr-tab-btn"
+      [class.active]="activeTab() === 'shifts'"
+      (click)="setTab('shifts')"
     >
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <rect x="2" y="4" width="20" height="16" rx="2"></rect>
-        <line x1="12" y1="8" x2="12" y2="16"></line>
-        <line x1="8" y1="12" x2="16" y2="12"></line>
-      </svg>
-      <span>Liquidaciones Quincenales Realizadas</span>
-      <span class="badge badge-success" style="font-size: 0.7rem; padding: 2px 6px;">{{ stateService.payrollSettlements().length }}</span>
+      <span class="tab-text">Ingreso y Salida de Turnos</span>
+      @if (activeShifts().length > 0) {
+        <span class="tab-badge badge-pulse-green">{{ activeShifts().length }} activos</span>
+      }
+    </button>
+
+    <button
+      type="button"
+      class="hr-tab-btn"
+      [class.active]="activeTab() === 'certificates'"
+      (click)="setTab('certificates')"
+    >
+      <span class="tab-text">Certificación Bancaria & Laboral</span>
+    </button>
+
+    <button
+      type="button"
+      class="hr-tab-btn"
+      [class.active]="activeTab() === 'payroll'"
+      (click)="setTab('payroll')"
+    >
+      <span class="tab-text">Registro de Pagos de Nómina</span>
+      <span class="tab-badge">{{ stateService.payrollSettlements().length }}</span>
     </button>
   </div>
 
+  <!-- ========================================================================= -->
+  <!-- OPCIÓN 1: PERSONAL (DIRECTORIO DE COLABORADORES)                           -->
+  <!-- ========================================================================= -->
   @if (activeTab() === 'employees') {
-
-    <!-- Employees Table Card -->
-    <div class="card">
-      <div class="card-header" style="justify-content: space-between;">
-        <div>
-          <h3 class="card-title">Plantilla de Colaboradores Activos</h3>
-          <p class="card-subtitle">Atributos base: Nombre, Género, Área operativa, Salario y liquidación quincenal base</p>
+    <div class="hr-tab-content animate-fade-in no-print">
+      <!-- Toolbar de Búsqueda y Filtros -->
+      <div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 14px;">
+        <div style="display: flex; align-items: center; gap: 10px; flex: 1; min-width: 280px; max-width: 460px;">
+          <div style="position: relative; width: 100%;">
+            <input
+              type="text"
+              class="form-control"
+              placeholder="Buscar por nombre, cédula, cargo o teléfono..."
+              [ngModel]="employeeSearch()"
+              (ngModelChange)="employeeSearch.set($event)"
+              style="padding-left: 36px; border-radius: 9999px; background: #ffffff;"
+            />
+            <span style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--text-muted); display: flex; align-items: center;">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="11" cy="11" r="8"></circle>
+                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+              </svg>
+            </span>
+          </div>
         </div>
-        <span class="badge badge-success">{{ stateService.employees().length }} vinculados</span>
+
+        <!-- Filtro por Área -->
+        <div class="pill-filter-group">
+          <button
+            type="button"
+            class="pill-btn"
+            [class.active]="employeeAreaFilter() === 'ALL'"
+            (click)="employeeAreaFilter.set('ALL')"
+          >
+            Todos ({{ stateService.employees().length }})
+          </button>
+          <button
+            type="button"
+            class="pill-btn"
+            [class.active]="employeeAreaFilter() === 'PRODUCCION'"
+            (click)="employeeAreaFilter.set('PRODUCCION')"
+          >
+            Planta & Producción
+          </button>
+          <button
+            type="button"
+            class="pill-btn"
+            [class.active]="employeeAreaFilter() === 'DOMICILIOS'"
+            (click)="employeeAreaFilter.set('DOMICILIOS')"
+          >
+            Domiciliarios / Flota
+          </button>
+          <button
+            type="button"
+            class="pill-btn"
+            [class.active]="employeeAreaFilter() === 'ADMINISTRACION'"
+            (click)="employeeAreaFilter.set('ADMINISTRACION')"
+          >
+            Administración
+          </button>
+        </div>
       </div>
-      <div class="card-body" style="padding: 0;">
+
+      <!-- Tabla de Personal -->
+      <div class="card" style="border-radius: 14px; overflow: hidden; box-shadow: var(--shadow-sm);">
         <div class="table-container">
-          <table>
+          <table class="dgl-table">
             <thead>
               <tr>
-                <th>Colaborador</th>
-                <th>Género</th>
-                <th>Área / Cargo</th>
-                <th>Salario Básico Mes</th>
-                <th>Quincena Base (15d)</th>
-                <th>Aux. Transporte</th>
-                <th>Acciones</th>
+                <th>Personal / Colaborador</th>
+                <th>Área & Cargo</th>
+                <th>Salario Mensual</th>
+                <th>Cuenta Bancaria de Nómina</th>
+                <th>Estado Turno</th>
+                <th style="text-align: right;">Acciones</th>
               </tr>
             </thead>
             <tbody>
-              @for (emp of stateService.employees(); track emp.employeeId) {
-              <tr>
-                <td>
-                  <div style="font-weight: 700; color: var(--text-main);">{{ emp.fullName }}</div>
-                  <div style="font-size: 0.75rem; color: var(--text-dim); font-family: monospace;">CC: {{ emp.identificationNumber }}</div>
-                </td>
-                <td>
-                  <span class="badge" [ngClass]="emp.gender === 'FEMENINO' ? 'badge-purple' : 'badge-info'">
-                    {{ emp.gender === 'FEMENINO' ? '👩 Femenino' : '👨 Masculino' }}
-                  </span>
-                </td>
-                <td>
-                  <div style="display: flex; flex-direction: column; gap: 2px;">
-                    <span class="badge" [ngClass]="emp.area === 'PRODUCCION' ? 'badge-warning' : (emp.area === 'DOMICILIOS' ? 'badge-info' : 'badge-emerald')">
-                      {{ emp.area || emp.department }}
-                    </span>
-                    <span style="font-size: 0.75rem; color: var(--text-muted);">{{ emp.position }}</span>
-                  </div>
-                </td>
-                <td style="font-weight: 600;">{{ formatCOP(emp.baseSalary) }}</td>
-                <td style="font-weight: 700; color: #10b981;">
-                  {{ formatCOP(Math.round(emp.baseSalary / 2)) }}
-                </td>
-                <td>
-                  <span style="font-size: 0.8rem; color: var(--text-muted);">
-                    {{ emp.transportAllowance ? formatCOP(emp.transportAllowance) : 'No aplica' }}
-                  </span>
-                </td>
-                <td>
-                  <div style="display: flex; gap: 6px;">
-                    <button type="button" class="btn btn-secondary" style="padding: 4px 8px; font-size: 0.75rem; gap: 4px;"
-                      (click)="openSettlementDialog(emp)" title="Liquidar Quincena">
-                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <circle cx="12" cy="12" r="10"></circle>
-                        <polyline points="12 6 12 12 16 14"></polyline>
-                      </svg>
-                      <span>Liquidar</span>
-                    </button>
-                    <button type="button" class="btn btn-outline" style="padding: 4px 8px; font-size: 0.75rem; gap: 4px;"
-                      (click)="openPayslip(emp)" title="Generar Desprendible de Nómina">
-                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-                        <polyline points="14 2 14 8 20 8"></polyline>
-                        <line x1="16" y1="13" x2="8" y2="13"></line>
-                        <line x1="16" y1="17" x2="8" y2="17"></line>
-                      </svg>
-                      <span>Desprendible</span>
-                    </button>
-                    <button type="button" class="btn btn-outline" style="padding: 4px 8px; font-size: 0.75rem; gap: 4px;"
-                      (click)="openCertificate(emp)" title="Generar Certificado Laboral">
-                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <circle cx="12" cy="8" r="7"></circle>
-                        <polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"></polyline>
-                      </svg>
-                      <span>Certificado</span>
-                    </button>
-                  </div>
-                </td>
-              </tr>
+              @for (emp of filteredEmployees(); track emp.employeeId) {
+                <tr>
+                  <td>
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                      <div class="user-avatar-badge" [class.avatar-female]="emp.gender === 'FEMENINO'">
+                        {{ emp.firstName.charAt(0) }}{{ emp.lastName.charAt(0) }}
+                      </div>
+                      <div>
+                        <div style="font-weight: 800; color: #0f172a; font-size: 0.92rem;">
+                          {{ emp.fullName }}
+                        </div>
+                        <div style="font-size: 0.76rem; color: var(--text-muted); font-family: monospace;">
+                          C.C. {{ emp.identificationNumber }} · Ingreso: {{ emp.hireDate }}
+                        </div>
+                      </div>
+                    </div>
+                  </td>
+
+                  <td>
+                    <div style="display: flex; flex-direction: column; gap: 3px;">
+                      <span class="badge" [ngClass]="emp.area === 'PRODUCCION' ? 'badge-warning' : (emp.area === 'DOMICILIOS' ? 'badge-info' : 'badge-emerald')">
+                        {{ emp.area || emp.department }}
+                      </span>
+                      <span style="font-size: 0.77rem; color: var(--text-muted);">{{ emp.position }}</span>
+                    </div>
+                  </td>
+
+                  <td>
+                    <div style="font-weight: 800; color: #1e5e3a; font-size: 0.92rem;">
+                      {{ formatCOP(emp.baseSalary) }}
+                    </div>
+                    <div style="font-size: 0.72rem; color: var(--text-muted);">
+                      Quincena: {{ formatCOP(emp.baseSalary / 2) }}
+                    </div>
+                  </td>
+
+                  <td>
+                    <div style="display: flex; flex-direction: column; gap: 2px;">
+                      <div style="font-weight: 700; font-size: 0.83rem; color: #0f172a;">
+                        {{ emp.bankName || 'Bancolombia' }}
+                      </div>
+                      <div style="font-size: 0.74rem; color: var(--text-muted); font-family: monospace;">
+                        {{ emp.bankAccountType || 'Ahorros' }}: {{ emp.bankAccountNumber || '458-921478-12' }}
+                      </div>
+                    </div>
+                  </td>
+
+                  <td>
+                    @if (isEmployeeInActiveShift(emp.employeeId)) {
+                      <span class="badge badge-emerald" style="display: inline-flex; align-items: center; gap: 5px;">
+                        <span class="pulse-dot-green"></span>
+                        <span>En Turno Activo</span>
+                      </span>
+                    } @else {
+                      <span class="badge badge-outline-gray" style="color: #64748b;">
+                        Fuera de Turno
+                      </span>
+                    }
+                  </td>
+
+                  <td style="text-align: right;">
+                    <div style="display: flex; justify-content: flex-end; gap: 6px;">
+                      <button
+                        type="button"
+                        class="btn-action-icon"
+                        title="Registrar turno de entrada/salida para este colaborador"
+                        (click)="jumpToShiftForEmployee(emp)"
+                      >
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                          <circle cx="12" cy="12" r="10"></circle>
+                          <polyline points="12 6 12 12 16 14"></polyline>
+                        </svg>
+                      </button>
+                      <button
+                        type="button"
+                        class="btn-action-icon"
+                        title="Generar Certificación Bancaria o Laboral"
+                        (click)="jumpToCertificateForEmployee(emp)"
+                      >
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                          <rect x="3" y="21" width="18" height="2"></rect>
+                          <path d="M6 18h12V7H6z"></path>
+                          <path d="M12 2l8 5H4z"></path>
+                        </svg>
+                      </button>
+                      <button
+                        type="button"
+                        class="btn-action-icon"
+                        title="Ver comprobante de nómina / liquidación"
+                        (click)="openPayslip(emp)"
+                      >
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                          <polyline points="14 2 14 8 20 8"></polyline>
+                          <line x1="16" y1="13" x2="8" y2="13"></line>
+                          <line x1="16" y1="17" x2="8" y2="17"></line>
+                        </svg>
+                      </button>
+                      <button
+                        type="button"
+                        class="btn-action-icon btn-action-delete"
+                        title="Eliminar este colaborador del personal"
+                        (click)="deleteEmployee(emp)"
+                      >
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                          <polyline points="3 6 5 6 21 6"></polyline>
+                          <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                        </svg>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              } @empty {
+                <tr>
+                  <td colspan="6" style="text-align: center; padding: 36px; color: var(--text-muted);">
+                    No se encontraron colaboradores que coincidan con la búsqueda.
+                  </td>
+                </tr>
               }
             </tbody>
           </table>
         </div>
       </div>
     </div>
+  }
 
-  } @else if (activeTab() === 'payroll') {
-
-    <!-- TABLA DE LIQUIDACIONES QUINCENALES REALIZADAS -->
-    <div class="card">
-      <div class="card-header" style="justify-content: space-between; flex-wrap: wrap; gap: 12px;">
-        <div>
-          <h3 class="card-title">Historial de Liquidaciones Quincenales</h3>
-          <p class="card-subtitle">Cálculo automatizado: Salario proporcional + Auxilio de transporte + Domicilios menos aportes ley (Salud/Pensión 4%)</p>
+  <!-- ========================================================================= -->
+  <!-- OPCIÓN 2: INGRESO Y SALIDA DE TURNOS                                      -->
+  <!-- ========================================================================= -->
+  @if (activeTab() === 'shifts') {
+    <div class="hr-tab-content animate-fade-in no-print" style="display: flex; flex-direction: column; gap: 20px;">
+      <!-- Hero Banner Reloj en Vivo -->
+      <div class="shifts-hero-banner">
+        <div class="shifts-hero-left">
+          <span class="shifts-live-pill">● SISTEMA DE MARCACIÓN EN VIVO</span>
+          <div class="shifts-clock-display">{{ liveClock() }}</div>
+          <div class="shifts-date-display">Bogotá D.C. · {{ liveDate() }}</div>
         </div>
-        <button type="button" class="btn btn-primary" style="font-size: 0.8rem; gap: 6px;" (click)="openSettlementDialog()">
-          <span>+ Nueva Liquidación</span>
-        </button>
+        <div class="shifts-hero-right">
+          <div class="shifts-metric-box">
+            <span class="metric-big">{{ activeShifts().length }}</span>
+            <span class="metric-label">Operarios en Turno</span>
+          </div>
+          <div class="shifts-metric-box">
+            <span class="metric-big">{{ stateService.employees().length }}</span>
+            <span class="metric-label">Total Nómina</span>
+          </div>
+        </div>
       </div>
-      <div class="card-body" style="padding: 0;">
+
+      <!-- Grid: Registro de Entrada (Izquierda) + Turnos Activos (Derecha) -->
+      <div class="shifts-split-grid">
+        <!-- Columna Izquierda: Formulario de Entrada -->
+        <div class="card shift-form-card">
+          <div class="card-header" style="border-bottom: 1px solid var(--border-subtle); padding-bottom: 12px;">
+            <h3 class="card-title" style="display: flex; align-items: center; gap: 8px;">
+              <span>▶ Registrar Ingreso de Turno</span>
+            </h3>
+            <p class="card-subtitle">Marcación biométrica / manual de entrada para operarios y colaboradores</p>
+          </div>
+
+          <div class="card-body" style="padding: 20px; display: flex; flex-direction: column; gap: 16px;">
+            <div class="form-group">
+              <label class="form-label">Seleccionar Colaborador *</label>
+              <select
+                class="form-control"
+                [ngModel]="selectedShiftEmployeeId()"
+                (ngModelChange)="selectedShiftEmployeeId.set($event)"
+              >
+                @for (emp of stateService.employees(); track emp.employeeId) {
+                  <option [value]="emp.employeeId">
+                    {{ emp.fullName }} · {{ emp.position }} ({{ emp.area }})
+                  </option>
+                }
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Jornada / Horario Asignado</label>
+              <div class="shift-type-selector">
+                <button
+                  type="button"
+                  class="shift-type-btn"
+                  [class.active]="selectedShiftType() === 'MORNING'"
+                  (click)="selectedShiftType.set('MORNING')"
+                >
+                  <span class="shift-icon" style="display: flex; align-items: center; justify-content: center;">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M17 18a5 5 0 0 0-10 0"></path>
+                      <line x1="12" y1="9" x2="12" y2="2"></line>
+                      <line x1="4.22" y1="10.22" x2="5.64" y2="11.64"></line>
+                      <line x1="1" y1="18" x2="3" y2="18"></line>
+                      <line x1="21" y1="18" x2="23" y2="18"></line>
+                      <line x1="18.36" y1="11.64" x2="19.78" y2="10.22"></line>
+                      <line x1="23" y1="22" x2="1" y2="22"></line>
+                      <polyline points="16 5 12 9 8 5"></polyline>
+                    </svg>
+                  </span>
+                  <span class="shift-name">Mañana</span>
+                  <span class="shift-hours">06:00 - 14:00</span>
+                </button>
+                <button
+                  type="button"
+                  class="shift-type-btn"
+                  [class.active]="selectedShiftType() === 'AFTERNOON'"
+                  (click)="selectedShiftType.set('AFTERNOON')"
+                >
+                  <span class="shift-icon" style="display: flex; align-items: center; justify-content: center;">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <circle cx="12" cy="12" r="5"></circle>
+                      <line x1="12" y1="1" x2="12" y2="3"></line>
+                      <line x1="12" y1="21" x2="12" y2="23"></line>
+                      <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+                      <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+                      <line x1="1" y1="12" x2="3" y2="12"></line>
+                      <line x1="21" y1="12" x2="23" y2="12"></line>
+                      <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+                      <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+                    </svg>
+                  </span>
+                  <span class="shift-name">Tarde</span>
+                  <span class="shift-hours">14:00 - 22:00</span>
+                </button>
+                <button
+                  type="button"
+                  class="shift-type-btn"
+                  [class.active]="selectedShiftType() === 'NIGHT'"
+                  (click)="selectedShiftType.set('NIGHT')"
+                >
+                  <span class="shift-icon" style="display: flex; align-items: center; justify-content: center;">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+                    </svg>
+                  </span>
+                  <span class="shift-name">Noche</span>
+                  <span class="shift-hours">22:00 - 06:00</span>
+                </button>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Observaciones o Tarea Asignada</label>
+              <input
+                type="text"
+                class="form-control"
+                [ngModel]="shiftNotes()"
+                (ngModelChange)="shiftNotes.set($event)"
+                placeholder="Ej: Despulpado de maracuyá, sellado 140g, despacho..."
+              />
+            </div>
+
+            <button
+              type="button"
+              class="btn btn-primary btn-punch-in"
+              (click)="punchClockIn()"
+            >
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <polygon points="5 3 19 12 5 21 5 3"></polygon>
+              </svg>
+              <span>REGISTRAR INGRESO (ENTRADA)</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Columna Derecha: Turnos Activos con Salida Rápida -->
+        <div class="card active-shifts-card">
+          <div class="card-header" style="justify-content: space-between; border-bottom: 1px solid var(--border-subtle); padding-bottom: 12px;">
+            <div>
+              <h3 class="card-title">Colaboradores en Turno Activo</h3>
+              <p class="card-subtitle">Personal laborando en este momento en planta y despachos</p>
+            </div>
+            <span class="badge badge-emerald" style="font-weight: 800;">
+              {{ activeShifts().length }} en planta
+            </span>
+          </div>
+
+          <div class="card-body" style="padding: 16px;">
+            @if (activeShifts().length > 0) {
+              <div style="display: flex; flex-direction: column; gap: 12px;">
+                @for (shift of activeShifts(); track shift.shiftId) {
+                  <div class="active-shift-ticket">
+                    <div class="shift-ticket-left">
+                      <div class="shift-ticket-avatar">
+                        {{ shift.employeeName.charAt(0) }}
+                      </div>
+                      <div>
+                        <div class="shift-ticket-name">{{ shift.employeeName }}</div>
+                        <div class="shift-ticket-meta">
+                          <span>Entrada: <strong>{{ shift.startTime }}</strong></span>
+                          <span>·</span>
+                          <span class="badge badge-purple" style="font-size: 0.68rem;">{{ shift.shiftType }}</span>
+                        </div>
+                        @if (shift.notes) {
+                          <div class="shift-ticket-notes">{{ shift.notes }}</div>
+                        }
+                      </div>
+                    </div>
+
+                    <button
+                      type="button"
+                      class="btn-punch-out"
+                      (click)="punchClockOut(shift)"
+                      title="Registrar salida y finalizar turno"
+                    >
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                        <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                      </svg>
+                      <span>Registrar Salida</span>
+                    </button>
+                  </div>
+                }
+              </div>
+            } @else {
+                <div class="empty-shifts-state">
+                  <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom: 4px;">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <polyline points="12 6 12 12 16 14"></polyline>
+                  </svg>
+                  <div style="font-weight: 700; color: #0f172a; margin-top: 6px;">No hay turnos activos en este instante</div>
+                  <div style="font-size: 0.8rem; color: var(--text-muted);">
+                    Utiliza el panel de la izquierda para registrar el ingreso de colaboradores.
+                  </div>
+                </div>
+            }
+          </div>
+        </div>
+      </div>
+
+      <!-- Historial de Turnos Cerrados del Día -->
+      @if (closedShifts().length > 0) {
+        <div class="card" style="border-radius: 14px; overflow: hidden;">
+          <div class="card-header">
+            <h3 class="card-title">Historial de Turnos Finalizados Hoy</h3>
+          </div>
+          <div class="table-container">
+            <table class="dgl-table">
+              <thead>
+                <tr>
+                  <th>Colaborador</th>
+                  <th>Horario</th>
+                  <th>Entrada</th>
+                  <th>Salida</th>
+                  <th>Horas Laboradas</th>
+                  <th>Estado</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (shift of closedShifts(); track shift.shiftId) {
+                  <tr>
+                    <td><strong>{{ shift.employeeName }}</strong></td>
+                    <td><span class="badge badge-outline-gray">{{ shift.shiftType }}</span></td>
+                    <td>{{ shift.startTime }}</td>
+                    <td>{{ shift.endTime || '18:00' }}</td>
+                    <td><strong style="color: #1e5e3a;">{{ shift.hoursWorked || 8 }} horas</strong></td>
+                    <td><span class="badge badge-success">Cerrado</span></td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        </div>
+      }
+    </div>
+  }
+
+  <!-- ========================================================================= -->
+  <!-- OPCIÓN 3: CERTIFICACIÓN BANCARIA & LABORAL                                 -->
+  <!-- ========================================================================= -->
+  @if (activeTab() === 'certificates') {
+    <div class="hr-tab-content animate-fade-in" style="display: flex; flex-direction: column; gap: 20px;">
+      <!-- Panel de Control y Configuración del Certificado -->
+      <div class="card no-print" style="padding: 20px; border-radius: 14px;">
+        <div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 16px;">
+          <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 14px; flex: 1;">
+            <!-- Selector de Colaborador -->
+            <div style="min-width: 240px; flex: 1;">
+              <label class="form-label" style="font-size: 0.78rem;">Seleccionar Colaborador de la Empresa *</label>
+              <select
+                class="form-control"
+                [ngModel]="selectedCertEmployee()?.employeeId"
+                (ngModelChange)="onCertEmployeeChange($event)"
+              >
+                @for (emp of stateService.employees(); track emp.employeeId) {
+                  <option [value]="emp.employeeId">
+                    {{ emp.fullName }} · C.C. {{ emp.identificationNumber }} ({{ emp.position }})
+                  </option>
+                }
+              </select>
+            </div>
+
+            <!-- Tipo de Certificado -->
+            <div style="min-width: 220px;">
+              <label class="form-label" style="font-size: 0.78rem;">Tipo de Documento Oficial</label>
+              <div class="cert-type-toggle">
+                <button
+                  type="button"
+                  class="cert-pill-btn"
+                  [class.active]="certificateType() === 'banking'"
+                  (click)="certificateType.set('banking')"
+                >
+                  Certificación Bancaria
+                </button>
+                <button
+                  type="button"
+                  class="cert-pill-btn"
+                  [class.active]="certificateType() === 'labor'"
+                  (click)="certificateType.set('labor')"
+                >
+                  Certificado Laboral
+                </button>
+              </div>
+            </div>
+
+            <!-- Dirigido a -->
+            <div style="min-width: 180px;">
+              <label class="form-label" style="font-size: 0.78rem;">Dirigido a:</label>
+              <input
+                type="text"
+                class="form-control"
+                [ngModel]="certAddressedTo()"
+                (ngModelChange)="certAddressedTo.set($event)"
+                placeholder="Ej: A QUIEN INTERESE, Banco Davivienda..."
+              />
+            </div>
+          </div>
+
+          <!-- Botón de Impresión -->
+          <button
+            type="button"
+            class="btn btn-primary"
+            style="gap: 8px; font-weight: 800; padding: 10px 20px; align-self: flex-end;"
+            (click)="printCurrentDocument()"
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <polyline points="6 9 6 2 18 2 18 9"></polyline>
+              <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path>
+              <rect x="6" y="14" width="12" height="8"></rect>
+            </svg>
+            <span>Imprimir Certificado / PDF</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Hoja Oficial en Papel Membretado (Imprimible) -->
+      @if (selectedCertEmployee(); as emp) {
+        <div class="certificate-paper-sheet printable-sheet">
+          <!-- Cabecera Oficial Corporativa -->
+          <div class="cert-header">
+            <div class="cert-logo-brand">
+              <img src="/logo-dgl.png" alt="DGL Despulpadora" class="cert-logo-img" />
+              <div>
+                <h2 class="cert-company-name">DG DISTRIBUIDORES LOGÍSTICOS S.A.S.</h2>
+                <div class="cert-company-sub">DGL Despulpadora · NIT 901.801.042-5 · Matrícula Mercantil No. 03458921</div>
+                <div class="cert-company-sub">Sede Operativa: Calle 93A # 13-25, Bogotá D.C. · Tel: (+57) 312 445 0389</div>
+              </div>
+            </div>
+            <div class="cert-code-stamp">
+              <div class="cert-stamp-badge">DOCUMENTO AUTÉNTICO</div>
+              <div class="cert-ref-num">REF: DGL-GH-{{ emp.employeeId }}-2026</div>
+            </div>
+          </div>
+
+          <div class="cert-divider-line"></div>
+
+          <!-- Título y Destinatario -->
+          <div class="cert-addressee-block">
+            <div class="cert-city-date">{{ certCustomCity() }}, {{ certExpeditionDate() }}</div>
+            <div class="cert-addressee-title">Señores:</div>
+            <div class="cert-addressee-name">{{ certAddressedTo() }}</div>
+            <div class="cert-addressee-city">Ciudad</div>
+          </div>
+
+          <!-- Contenido Certificación Bancaria de Nómina -->
+          @if (certificateType() === 'banking') {
+            <div class="cert-title-centered">
+              CERTIFICACIÓN BANCARIA DE DISPERSIÓN DE NÓMINA
+            </div>
+
+            <p class="cert-paragraph">
+              La suscrita Dirección de Gestión Humana y Nómina de <strong>DG DISTRIBUIDORES LOGÍSTICOS S.A.S. (DGL)</strong>, sociedad comercial legalmente constituida identificada con NIT <strong>901.801.042-5</strong>, por medio del presente documento hace constar y:
+            </p>
+
+            <div class="cert-certifies-heading">CERTIFICA QUE:</div>
+
+            <p class="cert-paragraph">
+              El(La) señor(a) <strong>{{ emp.fullName | uppercase }}</strong>, identificado(a) con Cédula de Ciudadanía No. <strong>{{ emp.identificationNumber }}</strong>, labora actualmente para nuestra compañía desempeñando el cargo de <strong>{{ emp.position }}</strong> en el área de <strong>{{ emp.department }}</strong>, vinculado(a) mediante Contrato de Trabajo a Término Indefinido desde el día <strong>{{ emp.hireDate }}</strong>.
+            </p>
+
+            <p class="cert-paragraph">
+              Asimismo, se certifica que la empresa realiza la dispersión, pago y transferencia periódica de sus haberes laborales, salario básico mensual por valor de <strong>{{ formatCOP(emp.baseSalary) }} M/CTE</strong> y demás emolumentos de ley, a la siguiente cuenta bancaria activa registrada a su nombre en nuestro sistema de nómina:
+            </p>
+
+            <!-- Cuadro Destacado con Datos Bancarios -->
+            <div class="banking-details-box">
+              <div class="banking-box-title">DATOS BANCARIOS REGISTRADOS PARA PAGO DE NÓMINA</div>
+              <div class="banking-grid">
+                <div class="banking-item">
+                  <span class="banking-label">Titular de la Cuenta:</span>
+                  <span class="banking-value">{{ emp.fullName }}</span>
+                </div>
+                <div class="banking-item">
+                  <span class="banking-label">Documento de Identidad:</span>
+                  <span class="banking-value">C.C. {{ emp.identificationNumber }}</span>
+                </div>
+                <div class="banking-item">
+                  <span class="banking-label">Entidad Bancaria:</span>
+                  <span class="banking-value highlight-bank">{{ emp.bankName || 'Bancolombia S.A.' }}</span>
+                </div>
+                <div class="banking-item">
+                  <span class="banking-label">Tipo de Cuenta:</span>
+                  <span class="banking-value">{{ emp.bankAccountType || 'Cuenta de Ahorros' }}</span>
+                </div>
+                <div class="banking-item">
+                  <span class="banking-label">Número de Cuenta Bancaria:</span>
+                  <span class="banking-value highlight-account">{{ emp.bankAccountNumber || '458-921478-12' }}</span>
+                </div>
+                <div class="banking-item">
+                  <span class="banking-label">Periodicidad de Dispersión:</span>
+                  <span class="banking-value">Quincenal (Días 15 y 30 de cada mes)</span>
+                </div>
+              </div>
+            </div>
+
+            <p class="cert-paragraph">
+              La presente certificación se expide a solicitud de la parte interesada con destino a <strong>{{ certAddressedTo() }}</strong>, en la ciudad de {{ certCustomCity() }}, a los {{ certExpeditionDate() }}.
+            </p>
+          } @else {
+            <!-- Contenido Certificado Laboral Oficial -->
+            <div class="cert-title-centered">
+              CERTIFICADO LABORAL OFICIAL
+            </div>
+
+            <p class="cert-paragraph">
+              La Dirección de Gestión Humana y Relaciones Laborales de <strong>DG DISTRIBUIDORES LOGÍSTICOS S.A.S.</strong>, con NIT <strong>901.801.042-5</strong>:
+            </p>
+
+            <div class="cert-certifies-heading">CERTIFICA QUE:</div>
+
+            <p class="cert-paragraph">
+              El(La) señor(a) <strong>{{ emp.fullName | uppercase }}</strong>, identificado(a) con Cédula de Ciudadanía No. <strong>{{ emp.identificationNumber }}</strong>, labora en nuestra organización mediante contrato de trabajo a término indefinido desde el <strong>{{ emp.hireDate }}</strong>, desempeñando a satisfacción el cargo de <strong>{{ emp.position }}</strong> en el área de <strong>{{ emp.department }}</strong>.
+            </p>
+
+            <p class="cert-paragraph">
+              Devenga una asignación salarial básica mensual de <strong>{{ formatCOP(emp.baseSalary) }} M/CTE</strong>, más auxilio legal de transporte y prestaciones sociales conforme a la legislación laboral colombiana vigente.
+            </p>
+
+            <p class="cert-paragraph">
+              Para constancia se firma a solicitud de la parte interesada a los {{ certExpeditionDate() }}.
+            </p>
+          }
+
+          <!-- Firmas y Sellos Oficiales -->
+          <div class="cert-signature-section">
+            <div class="cert-signature-block">
+              <div class="cert-signature-line"></div>
+              <div class="cert-signer-name">DIRECCIÓN DE GESTIÓN HUMANA</div>
+              <div class="cert-signer-role">DG Distribuidores Logísticos S.A.S. (DGL)</div>
+              <div class="cert-signer-contact">PBX: (+57) 312 445 0389 · talento&#64;pulpaspro.com</div>
+            </div>
+            <div class="cert-seal-box">
+              <div class="cert-seal-circle">
+                <span>DGL S.A.S.</span>
+                <span style="font-size: 0.62rem;">GESTIÓN HUMANA</span>
+                <span style="font-size: 0.58rem;">NIT 901.801.042-5</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      }
+    </div>
+  }
+
+  <!-- ========================================================================= -->
+  <!-- OPCIÓN 4: REGISTRO DE PAGOS DE NÓMINA (LIQUIDACIÓN QUINCENAL)              -->
+  <!-- ========================================================================= -->
+  @if (activeTab() === 'payroll') {
+    <div class="hr-tab-content animate-fade-in no-print" style="display: flex; flex-direction: column; gap: 20px;">
+      <!-- Tarjetas Métricas de Nómina -->
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px;">
+        <div class="card" style="padding: 16px; border-radius: 12px; background: #ffffff;">
+          <div style="font-size: 0.74rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">
+            Total Pagos Liquidados
+          </div>
+          <div style="font-size: 1.6rem; font-weight: 900; color: #1e5e3a; margin-top: 4px;">
+            {{ stateService.payrollSettlements().length }}
+          </div>
+          <div style="font-size: 0.75rem; color: #64748b;">Comprobantes generados</div>
+        </div>
+
+        <div class="card" style="padding: 16px; border-radius: 12px; background: #ffffff;">
+          <div style="font-size: 0.74rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">
+            Colaboradores Vinculados
+          </div>
+          <div style="font-size: 1.6rem; font-weight: 900; color: #0284c7; margin-top: 4px;">
+            {{ stateService.employees().length }}
+          </div>
+          <div style="font-size: 0.75rem; color: #64748b;">Nómina activa total</div>
+        </div>
+
+        <div class="card" style="padding: 16px; border-radius: 12px; background: #ffffff;">
+          <div style="font-size: 0.74rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">
+            Auxilio Transporte Legal
+          </div>
+          <div style="font-size: 1.6rem; font-weight: 900; color: #d97706; margin-top: 4px;">
+            $ 162.000
+          </div>
+          <div style="font-size: 0.75rem; color: #64748b;">Tarifa mensual prorrateada</div>
+        </div>
+      </div>
+
+      <!-- Barra de Acciones de Nómina -->
+      <div style="display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap;">
+        <div>
+          <h3 style="margin: 0; font-size: 1.15rem; font-weight: 800; color: #0f172a;">Historial de Pagos y Liquidaciones</h3>
+          <p style="margin: 2px 0 0; font-size: 0.78rem; color: var(--text-muted);">
+            Registro de devengos, deducciones de salud/pensión (4%) y netos transferidos por colaborador
+          </p>
+        </div>
+
+        <div style="display: flex; gap: 8px;">
+          <button type="button" class="btn btn-outline" style="gap: 6px; font-weight: 700;" (click)="quickSettleAllActive()">
+            <span>Liquidación Rápida Masiva (15d)</span>
+          </button>
+          <button type="button" class="btn btn-primary" style="gap: 6px; font-weight: 700;" (click)="openSettlementDialog()">
+            <span>+ Liquidar Individual</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Tabla de Liquidaciones Realizadas -->
+      <div class="card" style="border-radius: 14px; overflow: hidden; box-shadow: var(--shadow-sm);">
         <div class="table-container">
-          <table>
+          <table class="dgl-table">
             <thead>
               <tr>
+                <th>Periodo</th>
                 <th>Colaborador</th>
-                <th>Área</th>
-                <th style="text-align: center;">Días</th>
-                <th style="text-align: right;">Básico Ganado</th>
-                <th style="text-align: right;">Aux. Transporte</th>
-                <th style="text-align: right;">Bonos/Domicilios</th>
-                <th style="text-align: right;">Deducciones (8%)</th>
-                <th style="text-align: right;">Total a Pagar</th>
-                <th style="text-align: center;">Acción</th>
+                <th>Días</th>
+                <th>Sueldo Devengado</th>
+                <th>Aux. Transporte</th>
+                <th>Deducciones Salud/Pensión</th>
+                <th>Total Neto Transferido</th>
+                <th style="text-align: right;">Desprendible</th>
               </tr>
             </thead>
             <tbody>
               @for (st of stateService.payrollSettlements(); track st.settlementId) {
                 <tr>
                   <td>
-                    <div style="font-weight: 700;">{{ st.employeeName }}</div>
-                    <div style="font-size: 0.72rem; color: var(--text-dim);">Liquidado: {{ st.settledAt | date:'shortDate' }}</div>
-                  </td>
-                  <td>
-                    <span class="badge" [ngClass]="st.area === 'PRODUCCION' ? 'badge-warning' : (st.area === 'DOMICILIOS' ? 'badge-info' : 'badge-emerald')">
-                      {{ st.area }}
+                    <span class="badge" [ngClass]="st.periodId === 1 ? 'badge-info' : 'badge-purple'">
+                      {{ st.periodId === 1 ? '1ra Quincena (01-15)' : '2da Quincena (16-30)' }}
                     </span>
                   </td>
-                  <td style="text-align: center; font-weight: 600;">{{ st.daysWorked }} d</td>
-                  <td style="text-align: right;">{{ formatCOP(st.baseSalaryEarned) }}</td>
-                  <td style="text-align: right;">{{ formatCOP(st.transportAllowanceEarned) }}</td>
-                  <td style="text-align: right; color: #38bdf8;">
-                    {{ st.deliveryBonuses > 0 ? formatCOP(st.deliveryBonuses) : '-' }}
+                  <td>
+                    <div style="font-weight: 800; color: #0f172a;">{{ st.employeeName }}</div>
+                    <div style="font-size: 0.74rem; color: var(--text-muted);">{{ st.area }}</div>
                   </td>
-                  <td style="text-align: right; color: #ef4444;">
-                    -{{ formatCOP(st.totalDeductions) }}
+                  <td><strong>{{ st.daysWorked }} d</strong></td>
+                  <td>{{ formatCOP(st.baseSalaryEarned) }}</td>
+                  <td>{{ formatCOP(st.transportAllowanceEarned) }}</td>
+                  <td style="color: #dc2626;">-{{ formatCOP(st.healthDeduction + st.pensionDeduction) }}</td>
+                  <td>
+                    <span style="font-weight: 900; color: #1e5e3a; font-size: 0.94rem;">
+                      {{ formatCOP(st.netPayable) }}
+                    </span>
                   </td>
-                  <td style="text-align: right; font-weight: 800; color: #10b981; font-size: 0.95rem;">
-                    {{ formatCOP(st.netPayable) }}
-                  </td>
-                  <td style="text-align: center;">
-                    <button type="button" class="btn btn-outline" style="padding: 4px 8px; font-size: 0.75rem;" (click)="openSettlementPayslip(st)">
-                      Ver Desprendible
+                  <td style="text-align: right;">
+                    <button
+                      type="button"
+                      class="btn btn-outline"
+                      style="padding: 4px 10px; font-size: 0.76rem; font-weight: 700; gap: 4px;"
+                      (click)="openSettlementPayslip(st)"
+                    >
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                        <polyline points="14 2 14 8 20 8"></polyline>
+                        <line x1="16" y1="13" x2="8" y2="13"></line>
+                        <line x1="16" y1="17" x2="8" y2="17"></line>
+                      </svg>
+                      <span>Ver Desprendible</span>
                     </button>
                   </td>
                 </tr>
-              }
-              @if (stateService.payrollSettlements().length === 0) {
+              } @empty {
                 <tr>
-                  <td colspan="9" style="text-align: center; padding: 36px; color: var(--text-muted);">
-                    No hay liquidaciones registradas para este período. Haz clic en "Liquidar Quincena" o "Liquidar Todos" para procesar automáticamente.
+                  <td colspan="8" style="text-align: center; padding: 40px; color: var(--text-muted);">
+                    Aún no se han generado liquidaciones en este periodo. Usa los botones superiores para liquidar.
                   </td>
                 </tr>
               }
@@ -238,132 +849,277 @@
         </div>
       </div>
     </div>
-
   }
 
 </div>
 
+<!-- ========================================================================= -->
+<!-- MODALES: NUEVO COLABORADOR, LIQUIDACIÓN Y DESPRENDIBLE                      -->
+<!-- ========================================================================= -->
 
-<!-- PAYSLIP MODAL -->
+<!-- MODAL VINCULAR NUEVO COLABORADOR (CON DATOS BANCARIOS) -->
+@if (showNewEmployeeModal()) {
+<div class="modal-overlay" (click)="showNewEmployeeModal.set(false)">
+  <div class="modal-content" style="max-width: 600px;" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h3 class="modal-title">Registrar Nuevo Integrante del Personal</h3>
+      <button class="modal-close" (click)="showNewEmployeeModal.set(false)">&times;</button>
+    </div>
+
+    <div class="modal-body" style="display: flex; flex-direction: column; gap: 14px;">
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+        <div class="form-group">
+          <label class="form-label">Nombres *</label>
+          <input type="text" class="form-control" [ngModel]="newFirstName()" (ngModelChange)="newFirstName.set($event)" placeholder="Ej: Camilo Andrés" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Apellidos *</label>
+          <input type="text" class="form-control" [ngModel]="newLastName()" (ngModelChange)="newLastName.set($event)" placeholder="Ej: Rodríguez Páez" />
+        </div>
+      </div>
+
+      <div style="display: grid; grid-template-columns: 1.2fr 1fr; gap: 12px;">
+        <div class="form-group">
+          <label class="form-label">Cédula de Ciudadanía *</label>
+          <input type="text" class="form-control" [ngModel]="newDoc()" (ngModelChange)="newDoc.set($event)" placeholder="Ej: 1.018.455.990" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Género</label>
+          <select class="form-control" [ngModel]="newGender()" (ngModelChange)="newGender.set($event)">
+            <option value="MASCULINO">Masculino</option>
+            <option value="FEMENINO">Femenino</option>
+          </select>
+        </div>
+      </div>
+
+      <div style="display: grid; grid-template-columns: 1fr 1.2fr; gap: 12px;">
+        <div class="form-group">
+          <label class="form-label">Área Operativa</label>
+          <select class="form-control" [ngModel]="newArea()" (ngModelChange)="newArea.set($event)">
+            <option value="PRODUCCION">Planta & Producción</option>
+            <option value="DOMICILIOS">Domiciliarios / Logística</option>
+            <option value="ADMINISTRACION">Administración & Ventas</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Cargo Asignado</label>
+          <input type="text" class="form-control" [ngModel]="newPosition()" (ngModelChange)="newPosition.set($event)" placeholder="Ej: Operario de Sellado" />
+        </div>
+      </div>
+
+      <div style="display: grid; grid-template-columns: 1.2fr 1fr; gap: 12px;">
+        <div class="form-group">
+          <label class="form-label">Salario Básico Mensual (COP) *</label>
+          <input type="number" step="50000" class="form-control" [ngModel]="newSalary()" (ngModelChange)="newSalary.set($event)" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Teléfono Móvil</label>
+          <input type="text" class="form-control" [ngModel]="newPhone()" (ngModelChange)="newPhone.set($event)" placeholder="310 123 4567" />
+        </div>
+      </div>
+
+      <!-- Sección Datos Bancarios de Nómina -->
+      <div style="background: #f8fafc; padding: 14px; border-radius: 8px; border: 1px solid #e2e8f0;">
+        <div style="font-weight: 700; font-size: 0.8rem; color: #1e5e3a; margin-bottom: 8px;">
+          Datos Bancarios para Dispersión de Nómina
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr 1.2fr; gap: 10px;">
+          <div class="form-group">
+            <label class="form-label" style="font-size: 0.74rem;">Entidad Bancaria</label>
+            <select class="form-control" [ngModel]="newBankName()" (ngModelChange)="newBankName.set($event)">
+              <option value="Bancolombia">Bancolombia</option>
+              <option value="Davivienda">Davivienda</option>
+              <option value="Nequi">Nequi</option>
+              <option value="Banco de Bogotá">Banco de Bogotá</option>
+              <option value="Daviplata">Daviplata</option>
+              <option value="BBVA">BBVA</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label" style="font-size: 0.74rem;">Tipo de Cuenta</label>
+            <select class="form-control" [ngModel]="newBankAccountType()" (ngModelChange)="newBankAccountType.set($event)">
+              <option value="Cuenta de Ahorros">Cuenta de Ahorros</option>
+              <option value="Cuenta Corriente">Cuenta Corriente</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label" style="font-size: 0.74rem;">Número de Cuenta</label>
+            <input type="text" class="form-control" [ngModel]="newBankAccountNumber()" (ngModelChange)="newBankAccountNumber.set($event)" placeholder="458-000000-00" />
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-footer">
+      <button type="button" class="btn btn-outline" (click)="showNewEmployeeModal.set(false)">Cancelar</button>
+      <button type="button" class="btn btn-primary" (click)="submitNewEmployee()">Registrar Personal</button>
+    </div>
+  </div>
+</div>
+}
+
+<!-- MODAL LIQUIDACIÓN QUINCENAL -->
+@if (showSettlementModal()) {
+<div class="modal-overlay" (click)="showSettlementModal.set(false)">
+  <div class="modal-content" style="max-width: 540px;" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h3 class="modal-title">Liquidación de Nómina Quincenal</h3>
+      <button class="modal-close" (click)="showSettlementModal.set(false)">&times;</button>
+    </div>
+
+    <div class="modal-body" style="display: flex; flex-direction: column; gap: 14px;">
+      <div class="form-group">
+        <label class="form-label">Periodo de Liquidación</label>
+        <select class="form-control" [ngModel]="selectedPeriodId()" (ngModelChange)="selectedPeriodId.set($event)">
+          <option [ngValue]="1">1ra Quincena (01 al 15 del mes)</option>
+          <option [ngValue]="2">2da Quincena (16 al 30 del mes)</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Colaborador a Liquidar *</label>
+        <select class="form-control" [ngModel]="settleEmpId()" (ngModelChange)="onSettleEmployeeSelect($event)">
+          @for (emp of stateService.employees(); track emp.employeeId) {
+            <option [value]="emp.employeeId">
+              {{ emp.fullName }} · {{ emp.position }} (Salario: {{ formatCOP(emp.baseSalary) }})
+            </option>
+          }
+        </select>
+      </div>
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+        <div class="form-group">
+          <label class="form-label">Días Trabajados (máx 15)</label>
+          <input type="number" min="1" max="15" class="form-control" [ngModel]="settleDays()" (ngModelChange)="settleDays.set($event)" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Horas Extras / Recargos ($)</label>
+          <input type="number" step="10000" class="form-control" [ngModel]="settleOvertime()" (ngModelChange)="settleOvertime.set($event)" />
+        </div>
+      </div>
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+        <div class="form-group">
+          <label class="form-label">Otras Bonificaciones ($)</label>
+          <input type="number" step="10000" class="form-control" [ngModel]="settleBonuses()" (ngModelChange)="settleBonuses.set($event)" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Deducciones / Anticipos ($)</label>
+          <input type="number" step="10000" class="form-control" [ngModel]="settleDeductions()" (ngModelChange)="settleDeductions.set($event)" />
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-footer">
+      <button type="button" class="btn btn-outline" (click)="showSettlementModal.set(false)">Cancelar</button>
+      <button type="button" class="btn btn-primary" (click)="submitSettlement()">Generar Liquidación</button>
+    </div>
+  </div>
+</div>
+}
+
+<!-- MODAL DESPRENDIBLE DE PAGO (IMPRIMIBLE) -->
 @if (showPayslipModal() && selectedEmployee()) {
 <div class="modal-overlay" (click)="showPayslipModal.set(false)">
-  <div class="modal-content" style="max-width: 520px;" (click)="$event.stopPropagation()">
+  <div class="modal-content" style="max-width: 540px;" (click)="$event.stopPropagation()">
     <div class="modal-header no-print">
-      <h3 class="modal-title">Desprendible de Nómina</h3>
+      <h3 class="modal-title">Comprobante de Pago de Nómina</h3>
       <button class="modal-close" (click)="showPayslipModal.set(false)">&times;</button>
     </div>
 
-    <div class="modal-body"
-      style="background: #ffffff; color: #000000; font-family: sans-serif; font-size: 0.88rem; padding: 28px; border-radius: 8px;">
-      <div style="text-align: center; border-bottom: 2px solid #000; padding-bottom: 12px; margin-bottom: 16px;">
-        <h2 style="font-size: 1.3rem; font-weight: 800; margin: 0; color: #000;">DGL S.A.S.</h2>
-        <div style="font-size: 0.8rem; color: #444;">NIT: 901.458.789-2 · Comprobante de Pago de Nómina Quincenal</div>
-        <div style="font-size: 0.78rem; color: #666;">
+    <div class="modal-body" style="background: #ffffff; color: #000; font-family: sans-serif; font-size: 0.86rem; padding: 24px; border-radius: 8px;">
+      <div style="text-align: center; border-bottom: 2px solid #000; padding-bottom: 10px; margin-bottom: 14px;">
+        <h2 style="font-size: 1.25rem; font-weight: 800; margin: 0; color: #000;">DGL S.A.S.</h2>
+        <div style="font-size: 0.78rem; color: #444;">NIT: 901.801.042-5 · Comprobante Quincenal de Nómina</div>
+        <div style="font-size: 0.75rem; color: #666; margin-top: 2px;">
           {{ activeSettlement() ? (activeSettlement()!.periodId === 1 ? 'Periodo: 1ra Quincena (01 al 15)' : 'Periodo: 2da Quincena (16 al 30)') : 'Periodo: Quincena en Curso' }}
         </div>
       </div>
 
-      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 18px; font-size: 0.85rem;">
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 14px; font-size: 0.82rem;">
         <div><strong>Colaborador:</strong> {{ activeSettlement() ? activeSettlement()!.employeeName : selectedEmployee()?.fullName }}</div>
-        <div><strong>Documento:</strong> {{ selectedEmployee()?.identificationNumber }}</div>
+        <div><strong>C.C.:</strong> {{ selectedEmployee()?.identificationNumber }}</div>
         <div><strong>Cargo:</strong> {{ selectedEmployee()?.position }}</div>
         <div><strong>Área:</strong> {{ activeSettlement() ? activeSettlement()!.area : selectedEmployee()?.department }}</div>
-        @if (activeSettlement()) {
-          <div><strong>Días Laborados:</strong> {{ activeSettlement()!.daysWorked }} días</div>
-          <div><strong>Fecha Liquidación:</strong> {{ activeSettlement()!.settledAt | date:'short' }}</div>
-        }
+        <div><strong>Banco:</strong> {{ selectedEmployee()?.bankName || 'Bancolombia' }}</div>
+        <div><strong>Cuenta:</strong> {{ selectedEmployee()?.bankAccountNumber || 'Ahorros' }}</div>
       </div>
 
-      <div style="border: 1px solid #ccc; border-radius: 4px; overflow: hidden; margin-bottom: 16px;">
-        <table style="width: 100%; border-collapse: collapse; color: #000;">
+      <div style="border: 1px solid #ccc; border-radius: 4px; overflow: hidden; margin-bottom: 14px;">
+        <table style="width: 100%; border-collapse: collapse; font-size: 0.8rem; color: #000;">
           <thead>
-            <tr style="background: #f1f5f9; border-bottom: 1px solid #ccc; font-size: 0.8rem;">
-              <th style="padding: 8px; text-align: left;">Concepto</th>
-              <th style="padding: 8px; text-align: right;">Devengos (+)</th>
-              <th style="padding: 8px; text-align: right;">Deducciones (-)</th>
+            <tr style="background: #f1f5f9; border-bottom: 1px solid #ccc;">
+              <th style="padding: 6px 8px; text-align: left;">Concepto</th>
+              <th style="padding: 6px 8px; text-align: right;">Devengos (+)</th>
+              <th style="padding: 6px 8px; text-align: right;">Deducciones (-)</th>
             </tr>
           </thead>
           <tbody>
             @if (activeSettlement(); as st) {
               <tr style="border-bottom: 1px solid #eee;">
-                <td style="padding: 8px;">Sueldo Básico Quincenal ({{ st.daysWorked }} días)</td>
-                <td style="padding: 8px; text-align: right;">{{ formatCOP(st.baseSalaryEarned) }}</td>
-                <td style="padding: 8px; text-align: right;">-</td>
+                <td style="padding: 6px 8px;">Sueldo Quincenal Base ({{ st.daysWorked }} días)</td>
+                <td style="padding: 6px 8px; text-align: right;">{{ formatCOP(st.baseSalaryEarned) }}</td>
+                <td style="padding: 6px 8px; text-align: right;">-</td>
               </tr>
               <tr style="border-bottom: 1px solid #eee;">
-                <td style="padding: 8px;">Auxilio Legal de Transporte (Prorrateado)</td>
-                <td style="padding: 8px; text-align: right;">{{ formatCOP(st.transportAllowanceEarned) }}</td>
-                <td style="padding: 8px; text-align: right;">-</td>
+                <td style="padding: 6px 8px;">Auxilio Legal de Transporte</td>
+                <td style="padding: 6px 8px; text-align: right;">{{ formatCOP(st.transportAllowanceEarned) }}</td>
+                <td style="padding: 6px 8px; text-align: right;">-</td>
               </tr>
-              @if (st.deliveryBonuses > 0) {
-                <tr style="border-bottom: 1px solid #eee;">
-                  <td style="padding: 8px;">Bonificación por Domicilios Entregados</td>
-                  <td style="padding: 8px; text-align: right; color: #0d652d; font-weight: 600;">+{{ formatCOP(st.deliveryBonuses) }}</td>
-                  <td style="padding: 8px; text-align: right;">-</td>
-                </tr>
-              }
               @if (st.overtimeAmount > 0) {
                 <tr style="border-bottom: 1px solid #eee;">
-                  <td style="padding: 8px;">Horas Extras & Recargos</td>
-                  <td style="padding: 8px; text-align: right;">+{{ formatCOP(st.overtimeAmount) }}</td>
-                  <td style="padding: 8px; text-align: right;">-</td>
+                  <td style="padding: 6px 8px;">Horas Extras / Recargos</td>
+                  <td style="padding: 6px 8px; text-align: right; color: #0d652d;">+{{ formatCOP(st.overtimeAmount) }}</td>
+                  <td style="padding: 6px 8px; text-align: right;">-</td>
                 </tr>
               }
               <tr style="border-bottom: 1px solid #eee;">
-                <td style="padding: 8px;">Aporte Salud EPS (4% Salarial)</td>
-                <td style="padding: 8px; text-align: right;">-</td>
-                <td style="padding: 8px; text-align: right; color: #c00;">{{ formatCOP(st.healthDeduction) }}</td>
-              </tr>
-              <tr style="border-bottom: 1px solid #eee;">
-                <td style="padding: 8px;">Aporte Pensión Fondo (4% Salarial)</td>
-                <td style="padding: 8px; text-align: right;">-</td>
-                <td style="padding: 8px; text-align: right; color: #c00;">{{ formatCOP(st.pensionDeduction) }}</td>
-              </tr>
-              @if (st.otherDeductions > 0) {
-                <tr>
-                  <td style="padding: 8px;">Otras Deducciones / Anticipos</td>
-                  <td style="padding: 8px; text-align: right;">-</td>
-                  <td style="padding: 8px; text-align: right; color: #c00;">{{ formatCOP(st.otherDeductions) }}</td>
-                </tr>
-              }
-            } @else {
-              <tr style="border-bottom: 1px solid #eee;">
-                <td style="padding: 8px;">Sueldo Básico Proyectado (30 días)</td>
-                <td style="padding: 8px; text-align: right;">{{ formatCOP(selectedEmployee()!.baseSalary) }}</td>
-                <td style="padding: 8px; text-align: right;">-</td>
-              </tr>
-              <tr style="border-bottom: 1px solid #eee;">
-                <td style="padding: 8px;">Auxilio Legal de Transporte</td>
-                <td style="padding: 8px; text-align: right;">{{ formatCOP(calculateTransportAllowance(selectedEmployee()!.baseSalary)) }}</td>
-                <td style="padding: 8px; text-align: right;">-</td>
-              </tr>
-              <tr style="border-bottom: 1px solid #eee;">
-                <td style="padding: 8px;">Aporte Salud (EPS 4%)</td>
-                <td style="padding: 8px; text-align: right;">-</td>
-                <td style="padding: 8px; text-align: right; color: #c00;">{{ formatCOP(calculateHealthDeduction(selectedEmployee()!.baseSalary)) }}</td>
+                <td style="padding: 6px 8px;">Aporte Salud EPS (4%)</td>
+                <td style="padding: 6px 8px; text-align: right;">-</td>
+                <td style="padding: 6px 8px; text-align: right; color: #c00;">{{ formatCOP(st.healthDeduction) }}</td>
               </tr>
               <tr>
-                <td style="padding: 8px;">Aporte Pensión (Fondo 4%)</td>
-                <td style="padding: 8px; text-align: right;">-</td>
-                <td style="padding: 8px; text-align: right; color: #c00;">{{ formatCOP(calculatePensionDeduction(selectedEmployee()!.baseSalary)) }}</td>
+                <td style="padding: 6px 8px;">Aporte Pensión Fondo (4%)</td>
+                <td style="padding: 6px 8px; text-align: right;">-</td>
+                <td style="padding: 6px 8px; text-align: right; color: #c00;">{{ formatCOP(st.pensionDeduction) }}</td>
+              </tr>
+            } @else {
+              <tr style="border-bottom: 1px solid #eee;">
+                <td style="padding: 6px 8px;">Sueldo Básico Quincenal</td>
+                <td style="padding: 6px 8px; text-align: right;">{{ formatCOP(selectedEmployee()!.baseSalary / 2) }}</td>
+                <td style="padding: 6px 8px; text-align: right;">-</td>
+              </tr>
+              <tr style="border-bottom: 1px solid #eee;">
+                <td style="padding: 6px 8px;">Auxilio de Transporte</td>
+                <td style="padding: 6px 8px; text-align: right;">{{ formatCOP(81000) }}</td>
+                <td style="padding: 6px 8px; text-align: right;">-</td>
+              </tr>
+              <tr style="border-bottom: 1px solid #eee;">
+                <td style="padding: 6px 8px;">Aporte Salud EPS (4%)</td>
+                <td style="padding: 6px 8px; text-align: right;">-</td>
+                <td style="padding: 6px 8px; text-align: right; color: #c00;">{{ formatCOP((selectedEmployee()!.baseSalary / 2) * 0.04) }}</td>
+              </tr>
+              <tr>
+                <td style="padding: 6px 8px;">Aporte Pensión Fondo (4%)</td>
+                <td style="padding: 6px 8px; text-align: right;">-</td>
+                <td style="padding: 6px 8px; text-align: right; color: #c00;">{{ formatCOP((selectedEmployee()!.baseSalary / 2) * 0.04) }}</td>
               </tr>
             }
           </tbody>
         </table>
       </div>
 
-      <div
-        style="display: flex; justify-content: space-between; align-items: center; padding: 12px; background: #e6f4ea; border-radius: 6px; font-weight: 800; font-size: 1.05rem;">
-        <span>NETO TOTAL TRANSFERIDO:</span>
-        <span style="color: #0d652d;">
-          {{ activeSettlement() ? formatCOP(activeSettlement()!.netPayable) : formatCOP(calculateNetPay(selectedEmployee()!.baseSalary)) }}
+      <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 14px; background: #e6f4ea; border-radius: 6px; font-weight: 800;">
+        <span>TOTAL TRANSFERIDO A BANCO:</span>
+        <span style="color: #0d652d; font-size: 1.05rem;">
+          {{ activeSettlement() ? formatCOP(activeSettlement()!.netPayable) : formatCOP(calculateNetPay(selectedEmployee()!.baseSalary) / 2) }}
         </span>
       </div>
     </div>
 
     <div class="modal-footer no-print">
-      <button class="btn btn-outline" (click)="showPayslipModal.set(false)">Cerrar</button>
-      <button class="btn btn-primary" (click)="printCurrentDocument()">
+      <button type="button" class="btn btn-outline" (click)="showPayslipModal.set(false)">Cerrar</button>
+      <button type="button" class="btn btn-primary" (click)="printCurrentDocument()">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
           <polyline points="6 9 6 2 18 2 18 9"></polyline>
           <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path>
@@ -371,245 +1127,6 @@
         </svg>
         <span>Imprimir Desprendible</span>
       </button>
-    </div>
-  </div>
-</div>
-}
-
-<!-- CERTIFICATE MODAL -->
-@if (showCertificateModal() && selectedEmployee()) {
-<div class="modal-overlay" (click)="showCertificateModal.set(false)">
-  <div class="modal-content" style="max-width: 580px;" (click)="$event.stopPropagation()">
-    <div class="modal-header no-print">
-      <h3 class="modal-title">Certificado Laboral Oficial</h3>
-      <button class="modal-close" (click)="showCertificateModal.set(false)">&times;</button>
-    </div>
-
-    <div class="modal-body"
-      style="background: #ffffff; color: #000000; font-family: serif; font-size: 0.95rem; line-height: 1.8; padding: 36px; border-radius: 8px;">
-      <div style="text-align: center; margin-bottom: 24px;">
-        <h2 style="font-size: 1.4rem; font-weight: 800; margin: 0; font-family: sans-serif; color: #000;">DGL S.A.S.
-        </h2>
-        <div style="font-size: 0.85rem; color: #555;">NIT: 901.458.789-2 · Departamento de Gestión Humana</div>
-      </div>
-
-      <div
-        style="text-align: center; font-weight: 700; font-size: 1.1rem; margin-bottom: 24px; font-family: sans-serif;">
-        CERTIFICA QUE:
-      </div>
-
-      <p style="text-align: justify; margin-bottom: 16px;">
-        El(La) señor(a) <strong>{{ selectedEmployee()?.fullName }}</strong>, identificado(a) con cédula de ciudadanía
-        No. <strong>{{ selectedEmployee()?.identificationNumber }}</strong>, labora en nuestra organización mediante
-        contrato laboral a término indefinido desde el <strong>{{ selectedEmployee()?.hireDate }}</strong>, desempeñando
-        a satisfacción el cargo de <strong>{{ selectedEmployee()?.position }}</strong> en el área de <strong>{{
-          selectedEmployee()?.department }}</strong>.
-      </p>
-
-      <p style="text-align: justify; margin-bottom: 32px;">
-        Devenga una asignación básica mensual de <strong>{{ formatCOP(selectedEmployee()!.baseSalary) }} M/CTE</strong>,
-        más auxilio legal de transporte y prestaciones de ley. Se expide la presente a solicitud de la parte interesada
-        a la fecha actual.
-      </p>
-
-      <div style="margin-top: 40px; border-top: 1px solid #333; width: 220px; padding-top: 6px;">
-        <div style="font-weight: 700; font-size: 0.9rem;">Dirección de Gestión Humana</div>
-        <div style="font-size: 0.8rem; color: #666;">DGL S.A.S.</div>
-      </div>
-    </div>
-
-    <div class="modal-footer no-print">
-      <button class="btn btn-outline" (click)="showCertificateModal.set(false)">Cerrar</button>
-      <button class="btn btn-primary" (click)="printCurrentDocument()">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-          <polyline points="6 9 6 2 18 2 18 9"></polyline>
-          <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path>
-          <rect x="6" y="14" width="12" height="8"></rect>
-        </svg>
-        <span>Imprimir Certificado</span>
-      </button>
-    </div>
-  </div>
-</div>
-}
-
-<!-- SETTLEMENT MODAL (LIQUIDACIÓN QUINCENAL) -->
-@if (showSettlementModal()) {
-<div class="modal-overlay" (click)="showSettlementModal.set(false)">
-  <div class="modal-content" style="max-width: 540px;" (click)="$event.stopPropagation()">
-    <div class="modal-header">
-      <h3 class="modal-title">Liquidación Quincenal Automática 💰</h3>
-      <button class="modal-close" (click)="showSettlementModal.set(false)">&times;</button>
-    </div>
-
-    <div class="modal-body">
-      <p style="font-size: 0.84rem; color: var(--text-muted); margin-bottom: 16px;">
-        Algoritmo legal de nómina: Salario base por días trabajados + auxilio de transporte prorrateado + bonificación por entregas menos aportes a salud (4%) y pensión (4%).
-      </p>
-
-      <div class="form-group" style="margin-bottom: 14px;">
-        <label class="form-label">Seleccionar Colaborador *</label>
-        <select class="form-control" [ngModel]="settleEmpId()" (ngModelChange)="onSettleEmployeeSelect($event)">
-          @for (emp of stateService.employees(); track emp.employeeId) {
-            <option [value]="emp.employeeId">
-              {{ emp.fullName }} — {{ emp.area || emp.department }} ({{ formatCOP(emp.baseSalary) }}/mes)
-            </option>
-          }
-        </select>
-      </div>
-
-      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px;">
-        <div class="form-group">
-          <label class="form-label">Período Quincenal *</label>
-          <select class="form-control" [ngModel]="selectedPeriodId()" (ngModelChange)="selectedPeriodId.set($event)">
-            @for (p of stateService.payrollPeriods(); track p.periodId) {
-              <option [value]="p.periodId">
-                {{ p.fortnight === 1 ? '1ra Quincena (01-15)' : '2da Quincena (16-30)' }} - Mes {{ p.month }}/{{ p.year }}
-              </option>
-            }
-          </select>
-        </div>
-
-        <div class="form-group">
-          <label class="form-label">Días Laborados (Máx. 15) *</label>
-          <input
-            type="number"
-            class="form-control"
-            min="1"
-            max="15"
-            [ngModel]="settleDays()"
-            (ngModelChange)="settleDays.set($event)"
-          />
-        </div>
-      </div>
-
-      <!-- Campo condicional para domiciliarios -->
-      <div class="form-group" style="margin-bottom: 14px;">
-        <label class="form-label">Domicilios Entregados en la Quincena (Tarifa $3.500 c/u)</label>
-        <input
-          type="number"
-          class="form-control"
-          min="0"
-          [ngModel]="settleDeliveries()"
-          (ngModelChange)="settleDeliveries.set($event)"
-          placeholder="0"
-        />
-        <div style="font-size: 0.74rem; color: var(--text-dim); margin-top: 4px;">
-          Bono calculado: {{ formatCOP(settleDeliveries() * 3500) }}
-        </div>
-      </div>
-
-      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px;">
-        <div class="form-group">
-          <label class="form-label">Horas Extras / Otros Bonos ($)</label>
-          <input
-            type="number"
-            class="form-control"
-            min="0"
-            step="10000"
-            [ngModel]="settleOvertime()"
-            (ngModelChange)="settleOvertime.set($event)"
-            placeholder="0"
-          />
-        </div>
-
-        <div class="form-group">
-          <label class="form-label">Otras Deducciones / Préstamos ($)</label>
-          <input
-            type="number"
-            class="form-control"
-            min="0"
-            step="10000"
-            [ngModel]="settleDeductions()"
-            (ngModelChange)="settleDeductions.set($event)"
-            placeholder="0"
-          />
-        </div>
-      </div>
-    </div>
-
-    <div class="modal-footer">
-      <button type="button" class="btn btn-outline" (click)="showSettlementModal.set(false)">Cancelar</button>
-      <button type="button" class="btn btn-primary" (click)="submitSettlement()">
-        <span>Liquidar & Ver Desprendible</span>
-      </button>
-    </div>
-  </div>
-</div>
-}
-
-<!-- NEW EMPLOYEE MODAL -->
-@if (showNewEmployeeModal()) {
-<div class="modal-overlay" (click)="showNewEmployeeModal.set(false)">
-  <div class="modal-content" style="max-width: 540px;" (click)="$event.stopPropagation()">
-    <div class="modal-header">
-      <h3 class="modal-title">Vincular Nuevo Colaborador</h3>
-      <button class="modal-close" (click)="showNewEmployeeModal.set(false)">&times;</button>
-    </div>
-
-    <div class="modal-body">
-      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px;">
-        <div class="form-group">
-          <label class="form-label">Nombres *</label>
-          <input type="text" class="form-control" [ngModel]="newFirstName()" (ngModelChange)="newFirstName.set($event)"
-            placeholder="ej: Juan Carlos" />
-        </div>
-        <div class="form-group">
-          <label class="form-label">Apellidos *</label>
-          <input type="text" class="form-control" [ngModel]="newLastName()" (ngModelChange)="newLastName.set($event)"
-            placeholder="ej: Rodríguez" />
-        </div>
-      </div>
-
-      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px;">
-        <div class="form-group">
-          <label class="form-label">Documento C.C. *</label>
-          <input type="text" class="form-control" [ngModel]="newDoc()" (ngModelChange)="newDoc.set($event)"
-            placeholder="1.018.445.123" />
-        </div>
-        <div class="form-group">
-          <label class="form-label">Teléfono</label>
-          <input type="text" class="form-control" [ngModel]="newPhone()" (ngModelChange)="newPhone.set($event)"
-            placeholder="310 123 4567" />
-        </div>
-      </div>
-
-      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px;">
-        <div class="form-group">
-          <label class="form-label">Género *</label>
-          <select class="form-control" [ngModel]="newGender()" (ngModelChange)="newGender.set($event)">
-            <option value="MASCULINO">👨 Masculino</option>
-            <option value="FEMENINO">👩 Femenino</option>
-            <option value="OTRO">Otro</option>
-          </select>
-        </div>
-
-        <div class="form-group">
-          <label class="form-label">Área Operativa *</label>
-          <select class="form-control" [ngModel]="newArea()" (ngModelChange)="newArea.set($event)">
-            <option value="PRODUCCION">🏭 Producción & Despulpado</option>
-            <option value="DOMICILIOS">🛵 Domicilios & Flota</option>
-            <option value="VENTAS">💼 Ventas & Mostrador</option>
-            <option value="ADMINISTRACION">📑 Administración & Finanzas</option>
-          </select>
-        </div>
-      </div>
-
-      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px;">
-        <div class="form-group">
-          <label class="form-label">Cargo</label>
-          <input type="text" class="form-control" [ngModel]="newPosition()" (ngModelChange)="newPosition.set($event)" />
-        </div>
-        <div class="form-group">
-          <label class="form-label">Salario Básico Mensual (COP)</label>
-          <input type="number" class="form-control" [ngModel]="newSalary()" (ngModelChange)="newSalary.set($event)" />
-        </div>
-      </div>
-    </div>
-
-    <div class="modal-footer">
-      <button class="btn btn-outline" (click)="showNewEmployeeModal.set(false)">Cancelar</button>
-      <button class="btn btn-primary" (click)="submitNewEmployee()">Guardar Colaborador</button>
     </div>
   </div>
 </div>

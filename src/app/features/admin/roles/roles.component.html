@@ -4,19 +4,14 @@
   <div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 16px;">
     <div>
       <h1 style="font-size: 1.85rem; font-weight: 800; margin-bottom: 4px;">
-        Roles & Matriz de Privilegios RBAC 🔐
+        Roles & Matriz de Privilegios RBAC
       </h1>
       <p style="color: var(--text-muted); font-size: 0.92rem;">
-        Asignación dinámica de permisos sobre módulos, operaciones y acciones de planta.
+        Control de acceso granular sobre la totalidad de módulos de la plataforma web PWA y la App Móvil de domiciliarios.
       </p>
     </div>
 
-    <button
-      type="button"
-      class="btn btn-primary"
-      style="gap: 8px;"
-      (click)="showCreateRoleModal.set(true)"
-    >
+    <button type="button" class="btn btn-primary" style="gap: 8px;" (click)="showCreateRoleModal.set(true)">
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
         <line x1="12" y1="5" x2="12" y2="19"></line>
         <line x1="5" y1="12" x2="19" y2="12"></line>
@@ -26,84 +21,240 @@
   </div>
 
   <!-- Role Selector & Matrix Layout -->
-  <div style="display: grid; grid-template-columns: 280px 1fr; gap: 24px; align-items: start;">
+  <div style="display: grid; grid-template-columns: 310px 1fr; gap: 24px; align-items: start;">
 
-    <!-- Left: Roles List -->
-    <div class="card">
-      <div class="card-header">
-        <h3 class="card-title">Roles del Sistema</h3>
+    <!-- Left: Roles List Card -->
+    <div class="card" style="position: sticky; top: 16px;">
+      <div class="card-header" style="justify-content: space-between;">
+        <h3 class="card-title">Perfiles y Roles ({{ roles().length }})</h3>
       </div>
-      <div class="card-body" style="padding: 12px; display: flex; flex-direction: column; gap: 8px;">
+      <div class="card-body" style="padding: 12px; display: flex; flex-direction: column; gap: 8px; max-height: calc(100vh - 200px); overflow-y: auto;">
         @for (role of roles(); track role.roleId) {
-          <button
-            type="button"
+          <div
             (click)="selectRole(role.roleId)"
-            style="display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; border-radius: var(--radius-sm); border: 1px solid; cursor: pointer; text-align: left; transition: all 0.2s;"
+            style="display: flex; align-items: center; justify-content: space-between; padding: 12px 14px; border-radius: var(--radius-sm); border: 1.5px solid; cursor: pointer; text-align: left; transition: all 0.2s;"
             [style.borderColor]="selectedRoleId() === role.roleId ? 'var(--color-primary)' : 'var(--border-subtle)'"
-            [style.background]="selectedRoleId() === role.roleId ? 'rgba(16, 185, 129, 0.12)' : 'transparent'"
+            [style.background]="selectedRoleId() === role.roleId ? 'rgba(16, 185, 129, 0.1)' : 'transparent'"
           >
-            <div>
-              <div style="font-weight: 700; font-size: 0.9rem; color: var(--text-main);">
-                {{ role.name }}
+            <div style="flex: 1; min-width: 0; padding-right: 8px;">
+              <div style="display: flex; align-items: center; gap: 6px;">
+                <span style="font-weight: 700; font-size: 0.88rem; color: var(--text-main); line-height: 1.3;">
+                  {{ role.name }}
+                </span>
               </div>
-              <div style="font-size: 0.72rem; color: var(--text-dim);">
-                {{ role.isSystemRole ? 'Rol de Sistema (Fijo)' : 'Personalizado' }}
+              <div style="font-size: 0.72rem; color: var(--text-dim); margin-top: 2px;">
+                {{ role.isSystemRole ? 'Rol de Sistema (Fijo)' : 'Rol Personalizado' }}
               </div>
             </div>
-            @if (selectedRoleId() === role.roleId) {
-              <span style="color: var(--color-primary); font-size: 1.1rem;">✔</span>
-            }
-          </button>
+
+            <div style="display: flex; align-items: center; gap: 6px;">
+              @if (selectedRoleId() === role.roleId) {
+                <span style="display: flex; align-items: center; justify-content: center; width: 22px; height: 22px; border-radius: 50%; background: var(--color-primary); color: #ffffff;">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+                    <polyline points="20 6 9 17 4 12"></polyline>
+                  </svg>
+                </span>
+              }
+
+              @if (!role.isSystemRole) {
+                <button
+                  type="button"
+                  (click)="deleteCustomRole(role, $event)"
+                  title="Eliminar este rol personalizado"
+                  style="background: transparent; border: none; color: #ef4444; cursor: pointer; padding: 4px; border-radius: 4px; display: flex; align-items: center;"
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="3 6 5 6 21 6"></polyline>
+                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                  </svg>
+                </button>
+              }
+            </div>
+          </div>
         }
       </div>
     </div>
 
-    <!-- Right: Permissions Matrix -->
+    <!-- Right: Permissions Matrix Card -->
     <div class="card">
-      <div class="card-header" style="justify-content: space-between;">
+      <div class="card-header" style="justify-content: space-between; flex-wrap: wrap; gap: 14px; border-bottom: 1px solid var(--border-subtle); padding-bottom: 16px;">
         <div>
-          <h3 class="card-title">Matriz de Acciones Asignadas</h3>
-          <p class="card-subtitle">
-            Habilite o deshabilite privilegios específicos para el rol seleccionado
+          <div style="display: flex; align-items: center; gap: 10px;">
+            <h3 class="card-title" style="margin: 0; font-size: 1.15rem;">
+              {{ currentRole().name }}
+            </h3>
+            <span
+              class="badge"
+              [class.badge-success]="selectedRoleId() === 1"
+              [class.badge-info]="selectedRoleId() !== 1"
+            >
+              {{ assignedActionIds().size }} / {{ totalActionsCount() }} permisos activos
+            </span>
+            @if (currentRole().isSystemRole) {
+              <span class="badge badge-purple" style="font-size: 0.72rem;">Rol Protegido</span>
+            }
+          </div>
+          <p class="card-subtitle" style="margin-top: 4px; font-size: 0.82rem; color: var(--text-muted);">
+            {{ currentRole().description || 'Habilita o deshabilita privilegios operativos específicos para este perfil de usuario.' }}
           </p>
         </div>
+
         <button
           type="button"
           class="btn btn-primary"
-          style="padding: 8px 16px; font-size: 0.85rem;"
+          style="padding: 10px 20px; font-size: 0.88rem; font-weight: 700; gap: 8px;"
           (click)="savePermissions()"
         >
-          Guardar Permisos
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+            <polyline points="17 21 17 13 7 13 7 21"></polyline>
+            <polyline points="7 3 7 8 15 8"></polyline>
+          </svg>
+          <span>Guardar Permisos</span>
         </button>
       </div>
 
-      <div class="card-body">
-        <div style="display: flex; flex-direction: column; gap: 24px;">
-          @for (mod of modules(); track mod.moduleId) {
-            <div style="border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 18px; background: rgba(255, 255, 255, 0.02);">
-              <div style="font-size: 0.95rem; font-weight: 800; color: var(--text-main); margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
-                <span style="display: inline-block; width: 6px; height: 16px; background: var(--color-primary); border-radius: 3px;"></span>
-                <span>{{ mod.name }}</span>
+      <!-- Search & Scope Filter Toolbar -->
+      <div style="padding: 14px 20px; background: rgba(0, 0, 0, 0.02); border-bottom: 1px solid var(--border-subtle); display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 12px;">
+        <div style="position: relative; flex: 1; min-width: 240px; max-width: 400px;">
+          <input
+            type="text"
+            class="form-control"
+            style="padding-left: 34px; font-size: 0.84rem;"
+            placeholder="Buscar acción, permiso o módulo..."
+            [ngModel]="searchTerm()"
+            (ngModelChange)="searchTerm.set($event)"
+          />
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--text-dim)" stroke-width="2.2" style="position: absolute; left: 11px; top: 50%; transform: translateY(-50%); pointer-events: none;">
+            <circle cx="11" cy="11" r="8"></circle>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+          </svg>
+          @if (searchTerm()) {
+            <button
+              type="button"
+              (click)="searchTerm.set('')"
+              style="position: absolute; right: 8px; top: 50%; transform: translateY(-50%); background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 0.8rem;"
+            >
+              &times;
+            </button>
+          }
+        </div>
+
+        <!-- Scope Pills Filter -->
+        <div style="display: flex; gap: 6px; align-items: center;">
+          <span style="font-size: 0.76rem; font-weight: 700; color: var(--text-muted); margin-right: 4px;">Ámbito:</span>
+          <button
+            type="button"
+            class="btn btn-sm"
+            [class.btn-primary]="scopeFilter() === 'ALL'"
+            [class.btn-outline]="scopeFilter() !== 'ALL'"
+            style="padding: 4px 10px; font-size: 0.76rem; font-weight: 700;"
+            (click)="scopeFilter.set('ALL')"
+          >
+            Todos ({{ totalActionsCount() }})
+          </button>
+          <button
+            type="button"
+            class="btn btn-sm"
+            [class.btn-primary]="scopeFilter() === 'PWA'"
+            [class.btn-outline]="scopeFilter() !== 'PWA'"
+            style="padding: 4px 10px; font-size: 0.76rem; font-weight: 700;"
+            (click)="scopeFilter.set('PWA')"
+          >
+            PWA (Planta & Oficina)
+          </button>
+          <button
+            type="button"
+            class="btn btn-sm"
+            [class.btn-primary]="scopeFilter() === 'APP'"
+            [class.btn-outline]="scopeFilter() !== 'APP'"
+            style="padding: 4px 10px; font-size: 0.76rem; font-weight: 700;"
+            (click)="scopeFilter.set('APP')"
+          >
+            App Móvil (Repartidores)
+          </button>
+        </div>
+      </div>
+
+      <!-- Modules & Actions Matrix List -->
+      <div class="card-body" style="padding: 20px;">
+        <div style="display: flex; flex-direction: column; gap: 20px;">
+          @for (mod of filteredModules(); track mod.moduleId) {
+            <div style="border: 1px solid var(--border-subtle); border-radius: var(--radius-md); overflow: hidden; background: var(--bg-card);">
+              
+              <!-- Module Header -->
+              <div style="padding: 12px 18px; background: rgba(0,0,0,0.02); border-bottom: 1px solid var(--border-subtle); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+                <div style="display: flex; align-items: center; gap: 10px;">
+                  <span style="display: inline-block; width: 4px; height: 18px; background: var(--color-primary); border-radius: 2px;"></span>
+                  <div>
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                      <span style="font-size: 0.95rem; font-weight: 800; color: var(--text-main);">{{ mod.name }}</span>
+                      <span
+                        class="badge"
+                        [style.background]="mod.scope === 'APP' ? '#e0e7ff' : (mod.scope === 'PWA + APP' ? '#f3e8ff' : '#e0f2fe')"
+                        [style.color]="mod.scope === 'APP' ? '#3730a3' : (mod.scope === 'PWA + APP' ? '#6b21a8' : '#0369a1')"
+                        style="font-size: 0.68rem; font-weight: 800; text-transform: uppercase;"
+                      >
+                        {{ mod.scope }}
+                      </span>
+                    </div>
+                    <div style="font-size: 0.74rem; color: var(--text-muted); margin-top: 1px;">
+                      {{ mod.description }}
+                    </div>
+                  </div>
+                </div>
+
+                <div style="display: flex; align-items: center; gap: 8px;">
+                  <span style="font-size: 0.76rem; font-weight: 700; color: var(--text-dim);">
+                    {{ getModuleAssignedCount(mod) }} / {{ mod.actions.length }} asignados
+                  </span>
+                  @if (selectedRoleId() !== 1) {
+                    <button
+                      type="button"
+                      class="btn btn-outline"
+                      style="padding: 3px 8px; font-size: 0.72rem; font-weight: 700;"
+                      (click)="toggleAllModuleActions(mod)"
+                    >
+                      {{ isModuleFullySelected(mod) ? 'Deseleccionar Módulo' : 'Seleccionar Todo' }}
+                    </button>
+                  }
+                </div>
               </div>
 
-              <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 12px;">
+              <!-- Module Actions Grid -->
+              <div style="padding: 14px 18px; display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 10px;">
                 @for (action of mod.actions; track action.actionId) {
                   <label
-                    style="display: flex; align-items: flex-start; gap: 10px; padding: 10px 14px; border-radius: var(--radius-sm); border: 1px solid var(--border-subtle); background: var(--bg-subtle); cursor: pointer;"
+                    style="display: flex; align-items: flex-start; gap: 10px; padding: 10px 12px; border-radius: var(--radius-sm); border: 1px solid; transition: all 0.15s; cursor: pointer;"
+                    [style.borderColor]="assignedActionIds().has(action.actionId) ? 'var(--color-primary)' : 'var(--border-subtle)'"
+                    [style.background]="assignedActionIds().has(action.actionId) ? 'rgba(16, 185, 129, 0.05)' : 'transparent'"
                   >
                     <input
                       type="checkbox"
                       [checked]="assignedActionIds().has(action.actionId)"
+                      [disabled]="selectedRoleId() === 1"
                       (change)="toggleAction(action.actionId)"
-                      style="accent-color: var(--color-primary); cursor: pointer; margin-top: 3px; width: 16px; height: 16px;"
+                      style="accent-color: var(--color-primary); cursor: pointer; margin-top: 2px; width: 16px; height: 16px; flex-shrink: 0;"
                     />
-                    <div>
-                      <div style="font-weight: 600; font-size: 0.85rem;">{{ action.name }}</div>
-                      <div style="font-size: 0.72rem; font-family: monospace; color: var(--text-dim);">{{ action.slug }}</div>
+                    <div style="flex: 1; min-width: 0;">
+                      <div style="font-weight: 700; font-size: 0.83rem; color: var(--text-main); line-height: 1.25;">
+                        {{ action.name }}
+                      </div>
+                      <div style="font-size: 0.7rem; font-family: monospace; color: var(--color-primary); margin-top: 2px;">
+                        {{ action.slug }}
+                      </div>
+                      <div style="font-size: 0.7rem; color: var(--text-muted); margin-top: 2px; line-height: 1.2;">
+                        {{ action.description }}
+                      </div>
                     </div>
                   </label>
                 }
               </div>
+
+            </div>
+          } @empty {
+            <div style="text-align: center; padding: 40px; color: var(--text-muted);">
+              No se encontraron acciones que coincidan con la búsqueda "{{ searchTerm() }}".
             </div>
           }
         </div>
@@ -116,29 +267,41 @@
 
 <!-- CREATE ROLE MODAL -->
 @if (showCreateRoleModal()) {
-  <div class="modal-overlay" (click)="showCreateRoleModal.set(false)">
-    <div class="modal-content" style="max-width: 440px;" (click)="$event.stopPropagation()">
-      <div class="modal-header">
-        <h3 class="modal-title">Crear Nuevo Rol de Usuario</h3>
-        <button class="modal-close" (click)="showCreateRoleModal.set(false)">&times;</button>
+<div class="modal-overlay" (click)="showCreateRoleModal.set(false)">
+  <div class="modal-content" style="max-width: 440px;" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h3 class="modal-title">Crear Nuevo Rol de Usuario</h3>
+      <button class="modal-close" (click)="showCreateRoleModal.set(false)">&times;</button>
+    </div>
+
+    <div class="modal-body">
+      <div class="form-group">
+        <label class="form-label">Nombre del Rol *</label>
+        <input
+          type="text"
+          class="form-control"
+          [ngModel]="newRoleName()"
+          (ngModelChange)="newRoleName.set($event)"
+          placeholder="ej: Supervisor de Cava"
+        />
       </div>
 
-      <div class="modal-body">
-        <div class="form-group">
-          <label class="form-label">Nombre del Rol *</label>
-          <input type="text" class="form-control" [ngModel]="newRoleName()" (ngModelChange)="newRoleName.set($event)" placeholder="ej: Supervisor de Cava" />
-        </div>
-
-        <div class="form-group">
-          <label class="form-label">Descripción</label>
-          <input type="text" class="form-control" [ngModel]="newRoleDesc()" (ngModelChange)="newRoleDesc.set($event)" placeholder="Permite supervisar pedidos y despachos" />
-        </div>
-      </div>
-
-      <div class="modal-footer">
-        <button class="btn btn-outline" (click)="showCreateRoleModal.set(false)">Cancelar</button>
-        <button class="btn btn-primary" (click)="submitNewRole()">Guardar Rol</button>
+      <div class="form-group">
+        <label class="form-label">Descripción del Perfil</label>
+        <input
+          type="text"
+          class="form-control"
+          [ngModel]="newRoleDesc()"
+          (ngModelChange)="newRoleDesc.set($event)"
+          placeholder="ej: Control de alistamiento y salida de pedidos a ruta"
+        />
       </div>
     </div>
+
+    <div class="modal-footer">
+      <button type="button" class="btn btn-outline" (click)="showCreateRoleModal.set(false)">Cancelar</button>
+      <button type="button" class="btn btn-primary" (click)="submitNewRole()">Guardar y Configurar Permisos</button>
+    </div>
   </div>
+</div>
 }

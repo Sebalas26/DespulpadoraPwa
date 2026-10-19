@@ -334,10 +334,10 @@
    GENERAL COMPANY & BILLING SETTINGS STYLES
    ========================================== */
 .company-settings-grid {
-  display: grid;
-  grid-template-columns: minmax(420px, 1fr) minmax(560px, 1.25fr);
-  gap: 24px;
-  align-items: start;
+  display: block;
+  max-width: 920px;
+  margin: 0 auto;
+  width: 100%;
 }
 
 .settings-section-card {
@@ -473,13 +473,24 @@
   gap: 10px;
 }
 
-/* LIVE CORPORATE INVOICE PREVIEW WRAPPER */
-.ticket-preview-wrapper {
-  position: sticky;
-  top: 80px;
+/* MODAL INVOICE PREVIEW */
+.invoice-preview-modal-dialog {
+  max-width: 900px !important;
+  width: 96vw;
+  border-radius: 20px;
+  overflow: hidden;
+  box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.4);
+}
+
+.invoice-modal-sheet-holder {
   display: flex;
-  flex-direction: column;
-  gap: 14px;
+  justify-content: center;
+  width: 100%;
+
+  .pro-invoice-sheet {
+    max-width: 820px;
+    width: 100%;
+  }
 }
 
 .ticket-info-callout {
@@ -977,11 +988,7 @@
 /* RESPONSIVE */
 @media (max-width: 1180px) {
   .company-settings-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .ticket-preview-wrapper {
-    position: static;
+    max-width: 100%;
   }
 }
 

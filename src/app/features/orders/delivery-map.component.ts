@@ -38,6 +38,9 @@ export interface Courier {
   roadStepIndex: number; // floating index along full road path
   lat: number;
   lng: number;
+  routeCode?: string;
+  routeDay?: string;
+  routeStatus?: 'en_preparacion' | 'en_ruta' | 'completada' | 'liquidada';
 }
 
 export interface DeliveryWaypoint {
@@ -55,6 +58,7 @@ export interface DeliveryWaypoint {
   isDelivered: boolean;
   assignedCourierId: string;
   orderRef?: OrderDto;
+  paymentMethod?: 'EFECTIVO' | 'NEQUI' | 'BANCOLOMBIA' | 'CREDITO';
 }
 
 // Coordinates of Planta Cava Matriz Cundinamarca (Parque Industrial Calle 80 / Cota)
@@ -216,7 +220,7 @@ export const MAP_STYLES: MapStyleOption[] = [
     name: 'Stadia Maps Alidade Smooth',
     shortName: 'Stadia Smooth',
     badge: 'VECTOR RETINA',
-    icon: '⚡',
+    icon: '',
     description: 'Cartografía vectorial de alta definición en escala de grises con soporte Retina @2x.',
     url: `https://tiles.stadiamaps.com/tiles/alidade_smooth/{z}/{x}/{y}{r}.png?api_key=${STADIA_API_KEY}`,
     maxZoom: 20
@@ -226,7 +230,7 @@ export const MAP_STYLES: MapStyleOption[] = [
     name: 'Stadia Maps Alidade Smooth Dark',
     shortName: 'Stadia Dark',
     badge: 'MODO NOCHE',
-    icon: '🌙',
+    icon: '',
     description: 'Modo oscuro elegante de alto contraste para visibilidad nocturna.',
     url: `https://tiles.stadiamaps.com/tiles/alidade_smooth_dark/{z}/{x}/{y}{r}.png?api_key=${STADIA_API_KEY}`,
     maxZoom: 20,
@@ -237,7 +241,7 @@ export const MAP_STYLES: MapStyleOption[] = [
     name: 'Esri World Gray Canvas',
     shortName: 'Esri Canvas',
     badge: 'ARCGIS',
-    icon: '🏛️',
+    icon: '',
     description: 'Cartografía corporativa en escala de grises de Esri ArcGIS.',
     url: 'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}',
     maxZoom: 19,
@@ -248,7 +252,7 @@ export const MAP_STYLES: MapStyleOption[] = [
     name: 'OpenStreetMap Clásico',
     shortName: 'Color Estándar',
     badge: 'ESTÁNDAR',
-    icon: '🌐',
+    icon: '',
     description: 'Mapa tradicional en colores naturales.',
     url: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
     maxZoom: 19
@@ -263,125 +267,17 @@ export const MAP_STYLES: MapStyleOption[] = [
     <div class="delivery-map-container">
       <!-- Map Header & Telemetry Bar -->
       <div class="map-header-card">
-        <div class="map-title-row">
-          <div class="map-badge-group">
-            <div class="live-indicator">
-              <span class="pulse-dot"></span>
-              <span>GPS & TELEMETRÍA EN VIVO · BOGOTÁ & CUNDINAMARCA</span>
-            </div>
-            <span class="badge-pill badge-emerald">Rutas por Calles & Avenidas Reales</span>
-            <span class="badge-pill badge-stadia">⚡ Stadia Maps Alidade Smooth (@2x Retina)</span>
-          </div>
-
-          <!-- Controls Toolbar -->
-          <div class="map-controls">
-            <!-- Mode to mark points on the map -->
-            <button
-              type="button"
-              class="btn btn-sm"
-              [class.btn-mark-active]="isMarkingPointMode()"
-              [class.btn-secondary]="!isMarkingPointMode()"
-              (click)="toggleMarkingPointMode()"
-              title="Haz clic en cualquier punto del mapa para crear un pedido y enrutarlo"
-            >
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
-                <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
-                <circle cx="12" cy="10" r="3"></circle>
-              </svg>
-              <span>{{ isMarkingPointMode() ? '📍 Haz Clic en el Mapa' : '+ Marcar Punto en Mapa' }}</span>
-            </button>
-
-            <!-- Simulation Play/Pause -->
-            <button
-              type="button"
-              class="btn btn-sm btn-action"
-              [class.btn-active]="isSimulating()"
-              (click)="toggleSimulation()"
-              [title]="isSimulating() ? 'Pausar Simulación' : 'Iniciar Simulación en Tiempo Real'"
-            >
-              @if (isSimulating()) {
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
-                  <rect x="6" y="4" width="4" height="16"></rect>
-                  <rect x="14" y="4" width="4" height="16"></rect>
-                </svg>
-                <span>Pausar</span>
-              } @else {
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
-                  <polygon points="5 3 19 12 5 21 5 3"></polygon>
-                </svg>
-                <span>Simular Rutas</span>
-              }
-            </button>
-
-            <!-- Speed Multiplier -->
-            <div class="speed-toggle-group">
-              <button
-                type="button"
-                class="speed-btn"
-                [class.active]="simulationSpeed() === 1"
-                (click)="setSimulationSpeed(1)"
-              >1x</button>
-              <button
-                type="button"
-                class="speed-btn"
-                [class.active]="simulationSpeed() === 2"
-                (click)="setSimulationSpeed(2)"
-              >2x</button>
-              <button
-                type="button"
-                class="speed-btn"
-                [class.active]="simulationSpeed() === 4"
-                (click)="setSimulationSpeed(4)"
-              >4x</button>
-            </div>
-
-            <!-- Reset Simulation -->
-            <button
-              type="button"
-              class="btn-icon btn-sm"
-              (click)="resetSimulation()"
-              title="Reiniciar Recorridos a Planta"
-            >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
-                <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path>
-                <path d="M3 3v5h5"></path>
-              </svg>
-            </button>
-
-            <!-- Launch Route Planner Button -->
-            <button
-              type="button"
-              class="btn btn-sm btn-primary"
-              (click)="openRoutePlanner()"
-              style="gap: 6px; font-weight: 700;"
-            >
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-                <circle cx="6" cy="19" r="3"></circle>
-                <path d="M9 19h8.5a3.5 3.5 0 0 0 0-7h-11a3.5 3.5 0 0 1 0-7H15"></path>
-                <circle cx="18" cy="5" r="3"></circle>
-              </svg>
-              <span>Enrutador Inteligente</span>
-            </button>
-
-            <!-- Toggle Slide-Over Deliveries Drawer Button -->
-            <button
-              type="button"
-              class="btn btn-sm btn-action"
-              [class.btn-active]="showDeliveriesDrawer()"
-              (click)="toggleDeliveriesDrawer()"
-              style="gap: 6px; font-weight: 700;"
-              title="Abrir o cerrar el cajón de entregas cargadas en el mapa"
-            >
-              <span>📦 Entregas ({{ deliveryStops().length }})</span>
-            </button>
-          </div>
-        </div>
 
         <!-- Telemetry Summary Cards -->
         <div class="telemetry-bar">
           <div class="telemetry-item">
-            <div class="telemetry-icon" style="background: rgba(16, 185, 129, 0.12); color: var(--color-primary-text);">
-              🛵
+            <div class="telemetry-icon" style="background: rgba(16, 185, 129, 0.12); color: var(--color-primary-text); display: flex; align-items: center; justify-content: center;">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="1" y="3" width="15" height="13"></rect>
+                <polygon points="16 8 20 8 23 11 23 16 16 16 8"></polygon>
+                <circle cx="5.5" cy="18.5" r="2.5"></circle>
+                <circle cx="18.5" cy="18.5" r="2.5"></circle>
+              </svg>
             </div>
             <div>
               <div class="telemetry-val">{{ couriers().length }} Mensajeros</div>
@@ -394,8 +290,12 @@ export const MAP_STYLES: MapStyleOption[] = [
             (click)="toggleDeliveriesDrawer()"
             title="Haz clic para ver, agregar o eliminar entregas del mapa"
           >
-            <div class="telemetry-icon" style="background: rgba(59, 130, 246, 0.12); color: var(--color-blue-text);">
-              📦
+            <div class="telemetry-icon" style="background: rgba(59, 130, 246, 0.12); color: var(--color-blue-text); display: flex; align-items: center; justify-content: center;">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
+                <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
+                <line x1="12" y1="22.08" x2="12" y2="12"></line>
+              </svg>
             </div>
             <div>
               <div class="telemetry-val">{{ deliveredCount() }} / {{ deliveryStops().length }} Entregas</div>
@@ -404,8 +304,12 @@ export const MAP_STYLES: MapStyleOption[] = [
           </div>
 
           <div class="telemetry-item">
-            <div class="telemetry-icon" style="background: rgba(245, 158, 11, 0.12); color: var(--color-secondary-text);">
-              💵
+            <div class="telemetry-icon" style="background: rgba(245, 158, 11, 0.12); color: var(--color-secondary-text); display: flex; align-items: center; justify-content: center;">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="2" y="6" width="20" height="12" rx="2"></rect>
+                <circle cx="12" cy="12" r="2"></circle>
+                <path d="M6 12h.01M18 12h.01"></path>
+              </svg>
             </div>
             <div>
               <div class="telemetry-val">{{ formatCOP(totalTransitCash()) }}</div>
@@ -414,8 +318,10 @@ export const MAP_STYLES: MapStyleOption[] = [
           </div>
 
           <div class="telemetry-item no-mobile">
-            <div class="telemetry-icon" style="background: rgba(139, 92, 246, 0.12); color: var(--color-purple-text);">
-              ⚡
+            <div class="telemetry-icon" style="background: rgba(139, 92, 246, 0.12); color: var(--color-purple-text); display: flex; align-items: center; justify-content: center;">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+              </svg>
             </div>
             <div>
               <div class="telemetry-val">{{ activeSpeedAvg() }} km/h</div>
@@ -439,8 +345,8 @@ export const MAP_STYLES: MapStyleOption[] = [
             @if (isMarkingPointMode()) {
               <div class="map-marking-banner">
                 <span class="banner-pulse"></span>
-                <span>🎯 MODO MARCADO ACTIVO: Haz clic en cualquier lugar de Bogotá o Cundinamarca para fijar la entrega y crear la orden.</span>
-                <button class="banner-close" (click)="toggleMarkingPointMode()">✕ Cancelar</button>
+                <span>MODO MARCADO ACTIVO: Haz clic en cualquier lugar de Bogotá o Cundinamarca para fijar la entrega y crear la orden.</span>
+                <button class="banner-close" (click)="toggleMarkingPointMode()">Cancelar</button>
               </div>
             }
 
@@ -495,13 +401,18 @@ export const MAP_STYLES: MapStyleOption[] = [
               @if (showSearchResults() && searchResults().length > 0) {
                 <div class="search-autocomplete-dropdown">
                   <div class="dropdown-header">
-                    <span>📍 DIRECCIONES ENCONTRADAS ({{ searchResults().length }})</span>
+                    <span>DIRECCIONES ENCONTRADAS ({{ searchResults().length }})</span>
                     <button type="button" class="btn-dismiss-dropdown" (click)="closeSearchResults()">✕</button>
                   </div>
                   <div class="dropdown-scroll-list">
                     @for (item of searchResults(); track item.id) {
                       <div class="dropdown-item" (click)="selectAddressResult(item)">
-                        <span class="item-pin-icon">📍</span>
+                        <span class="item-pin-icon">
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+                            <circle cx="12" cy="10" r="3"></circle>
+                          </svg>
+                        </span>
                         <div class="item-texts">
                           <div class="item-title">{{ item.name || item.label }}</div>
                           <div class="item-subtitle">{{ item.label }}</div>
@@ -527,7 +438,7 @@ export const MAP_STYLES: MapStyleOption[] = [
               <div class="map-legend-overlay">
                 <div class="legend-chip legend-chip-planta">
                   <span class="legend-color-dot" style="background: #10b981;"></span>
-                  <span>🏭 Cava Matriz (Cota/Calle 80)</span>
+                  <span>Cava Matriz (Cota/Calle 80)</span>
                 </div>
                 @for (c of couriers(); track c.id) {
                   <div class="legend-chip" (click)="flyToCourier(c)">
@@ -545,19 +456,23 @@ export const MAP_STYLES: MapStyleOption[] = [
               <div class="locked-actions-row">
                 <button
                   type="button"
-                  class="locked-mode-btn"
+                  class="locked-mode-btn locked-mode-live"
                   (click)="enterLiveMapMode()"
                 >
-                  <span class="live-dot-indicator"></span>
-                  <span>🛵 En Vivo</span>
+                  <span class="live-beacon">
+                    <span class="beacon-ping"></span>
+                    <span class="beacon-dot"></span>
+                  </span>
+                  <span>En Vivo</span>
                 </button>
 
                 <button
                   type="button"
-                  class="locked-mode-btn"
+                  class="locked-mode-btn locked-mode-deliveries"
                   (click)="enterAllDeliveriesMode()"
                 >
-                  <span>📍 Ver Todas las Entregas</span>
+                  <span>Ver Todas las Entregas</span>
+                  <span class="btn-counter-badge">{{ deliveryStops().length }}</span>
                 </button>
               </div>
             </div>
@@ -580,7 +495,7 @@ export const MAP_STYLES: MapStyleOption[] = [
                 (click)="openAllDeliveriesAndDrawer()"
                 title="Ver todas las entregas en el mapa y abrir/cerrar el listado"
               >
-                <span>📍 Ver Todas las Entregas ({{ deliveryStops().length }})</span>
+                <span>Ver Todas las Entregas ({{ deliveryStops().length }})</span>
               </button>
               <button
                 type="button"
@@ -588,7 +503,7 @@ export const MAP_STYLES: MapStyleOption[] = [
                 title="Bloquear mapa y volver a la pantalla de selección"
                 (click)="lockMapOverlay()"
               >
-                🔒 Bloquear
+                Bloquear
               </button>
             </div>
 
@@ -621,7 +536,7 @@ export const MAP_STYLES: MapStyleOption[] = [
                     class="zone-clear-btn"
                     (click)="clearZonePolygon()"
                   >
-                    ✕ Limpiar
+                    Limpiar
                   </button>
                 }
               </div>
@@ -631,7 +546,7 @@ export const MAP_STYLES: MapStyleOption[] = [
                   <div class="zone-assign-head">
                     <div>
                       <div class="zone-assign-title">
-                        🎯 Zona Seleccionada ({{ zoneCapturedStops().length }} entregas)
+                        Zona Seleccionada ({{ zoneCapturedStops().length }} entregas)
                       </div>
                       <div class="zone-assign-sub">
                         Elige el domiciliario para asignarle todas las entregas dentro del polígono
@@ -656,7 +571,7 @@ export const MAP_STYLES: MapStyleOption[] = [
                           (click)="assignZoneStopsToCourier(c.id)"
                         >
                           <span class="c-dot" [style.background]="c.color"></span>
-                          <span>{{ c.vehicleType === 'moto' ? '🛵' : '🚚' }} {{ c.name }}</span>
+                          <span>{{ c.name }}</span>
                         </button>
                       }
                       <button
@@ -664,7 +579,7 @@ export const MAP_STYLES: MapStyleOption[] = [
                         class="zone-courier-btn zone-unassign-btn"
                         (click)="assignZoneStopsToCourier('')"
                       >
-                        ⚪ Dejar sin mensajero
+                        Dejar sin mensajero
                       </button>
                     </div>
                   } @else {
@@ -684,7 +599,13 @@ export const MAP_STYLES: MapStyleOption[] = [
             <div class="deliveries-drawer" (click)="$event.stopPropagation()">
               <div class="drawer-head">
                 <div class="drawer-head-left">
-                  <span class="drawer-badge-icon">📦</span>
+                  <span class="drawer-badge-icon" style="display: flex; align-items: center; justify-content: center;">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
+                      <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
+                      <line x1="12" y1="22.08" x2="12" y2="12"></line>
+                    </svg>
+                  </span>
                   <div>
                     <div class="drawer-title">Entregas en el Mapa ({{ filteredDrawerStops().length }})</div>
                     <div class="drawer-subtitle">Se actualiza automáticamente al crear pedidos</div>
@@ -752,7 +673,7 @@ export const MAP_STYLES: MapStyleOption[] = [
                   class="drawer-search-input"
                   [ngModel]="drawerSearchQuery()"
                   (ngModelChange)="drawerSearchQuery.set($event)"
-                  placeholder="🔍 Filtrar por cliente, pedido o dirección..."
+                  placeholder="Filtrar por cliente, pedido o dirección..."
                 />
               </div>
 
@@ -791,7 +712,7 @@ export const MAP_STYLES: MapStyleOption[] = [
                         <span class="drawer-stop-client">{{ stop.clientName }}</span>
                         <span class="drawer-stop-amount">{{ formatCOP(stop.totalAmount) }}</span>
                       </div>
-                      <div class="drawer-stop-addr">📍 {{ stop.address }}</div>
+                      <div class="drawer-stop-addr">{{ stop.address }}</div>
                       <div class="drawer-stop-meta" (click)="$event.stopPropagation()">
                         <span class="drawer-stop-code">{{ stop.orderNumber }}</span>
                         <span>·</span>
@@ -801,9 +722,9 @@ export const MAP_STYLES: MapStyleOption[] = [
                           (ngModelChange)="assignCourierToStop(stop.id, $event)"
                           title="Asignar o cambiar mensajero de esta entrega"
                         >
-                          <option value="">📍 Sin mensajero</option>
+                          <option value="">Sin mensajero</option>
                           @for (c of couriers(); track c.id) {
-                            <option [value]="c.id">🛵 {{ c.name }}</option>
+                            <option [value]="c.id">{{ c.name }}</option>
                           }
                         </select>
                       </div>
@@ -814,13 +735,20 @@ export const MAP_STYLES: MapStyleOption[] = [
                       class="drawer-stop-del-btn"
                       title="Eliminar esta entrega del mapa"
                       (click)="$event.stopPropagation(); deleteDeliveryStop(stop.id)"
+                      style="display: flex; align-items: center; justify-content: center;"
                     >
-                      🗑️
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="3 6 5 6 21 6"></polyline>
+                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                      </svg>
                     </button>
                   </div>
                 } @empty {
                   <div class="drawer-empty">
-                    <span>📭</span>
+                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom: 6px;">
+                      <rect x="2" y="4" width="20" height="16" rx="2"></rect>
+                      <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"></path>
+                    </svg>
                     <p>No hay entregas que coincidan con el filtro.</p>
                   </div>
                 }
@@ -872,18 +800,34 @@ export const MAP_STYLES: MapStyleOption[] = [
                 (click)="selectCourier(c.id)"
               >
                 <div class="courier-card-head">
-                  <div class="courier-avatar" [style.background]="c.colorLight" [style.color]="c.color">
-                    {{ c.vehicleType === 'moto' ? '🛵' : '🚚' }}
+                  <div class="courier-avatar" [style.background]="c.colorLight" [style.color]="c.color" style="display: flex; align-items: center; justify-content: center;">
+                    @if (c.vehicleType === 'moto') {
+                      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="5" cy="16" r="3"></circle>
+                        <circle cx="19" cy="16" r="3"></circle>
+                        <path d="M12 16h3l3-6h-5l-2 3H8l2-5h3"></path>
+                      </svg>
+                    } @else {
+                      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="1" y="3" width="15" height="13"></rect>
+                        <polygon points="16 8 20 8 23 11 23 16 16 16 16 8"></polygon>
+                        <circle cx="5.5" cy="18.5" r="2.5"></circle>
+                        <circle cx="18.5" cy="18.5" r="2.5"></circle>
+                      </svg>
+                    }
                   </div>
                   <div class="courier-meta">
                     <div class="courier-name-row">
                       <span class="courier-name">{{ c.name }}</span>
                       <div class="courier-badges-inline">
+                        <span class="courier-route-code-pill" [style.color]="c.color">
+                          {{ c.routeCode || 'RUTA' }}
+                        </span>
                         <span class="courier-stops-pill" title="Paradas completadas / asignadas">
                           Paradas: <strong>{{ getCourierCompletedStops(c) }}/{{ c.orderIds.length }}</strong>
                         </span>
-                        <span class="courier-status-badge" [class.en-ruta]="c.status === 'en_ruta'">
-                          {{ c.status === 'en_ruta' ? 'En Ruta' : (c.status === 'entregando' ? 'En Sitio' : 'En Planta') }}
+                        <span class="courier-status-badge" [class.en-ruta]="c.status === 'en_ruta'" [class.ready-badge]="isCourierReadyToReceive(c)">
+                          {{ isCourierReadyToReceive(c) ? 'Por Recibir' : (c.status === 'en_ruta' ? 'En Ruta' : (c.status === 'entregando' ? 'En Sitio' : 'En Planta')) }}
                         </span>
                       </div>
                     </div>
@@ -892,6 +836,13 @@ export const MAP_STYLES: MapStyleOption[] = [
                     </div>
                   </div>
                 </div>
+
+                @if (isCourierReadyToReceive(c)) {
+                  <div class="courier-ready-banner">
+                    <span class="ready-dot"></span>
+                    <span>Ruta Finalizada · Entregas completas · Recibir caja</span>
+                  </div>
+                }
 
                 <!-- Progress bar -->
                 <div class="progress-track">
@@ -904,18 +855,45 @@ export const MAP_STYLES: MapStyleOption[] = [
 
                 <!-- Quick Action Buttons for Courier -->
                 <div class="courier-card-footer">
-                  <button
-                    type="button"
-                    class="btn-seq-link"
-                    (click)="$event.stopPropagation(); openRoutePlannerFor(c.id)"
-                  >
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-                      <circle cx="6" cy="19" r="3"></circle>
-                      <path d="M9 19h8.5a3.5 3.5 0 0 0 0-7h-11a3.5 3.5 0 0 1 0-7H15"></path>
-                      <circle cx="18" cy="5" r="3"></circle>
-                    </svg>
-                    <span>Editar Ruta</span>
-                  </button>
+                  @if (isCourierReadyToReceive(c)) {
+                    <button
+                      type="button"
+                      class="btn-receive-action"
+                      (click)="$event.stopPropagation(); openReceiveCourierModal(c)"
+                      title="Recibir domiciliario y liquidar el dinero de la ruta"
+                    >
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                        <polyline points="7 10 12 15 17 10"></polyline>
+                        <line x1="12" y1="15" x2="12" y2="3"></line>
+                      </svg>
+                      <span>Recibir Domiciliario</span>
+                    </button>
+                  } @else {
+                    <button
+                      type="button"
+                      class="btn-seq-link"
+                      (click)="$event.stopPropagation(); openRoutePlannerFor(c.id)"
+                    >
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                        <circle cx="6" cy="19" r="3"></circle>
+                        <path d="M9 19h8.5a3.5 3.5 0 0 0 0-7h-11a3.5 3.5 0 0 1 0-7H15"></path>
+                        <circle cx="18" cy="5" r="3"></circle>
+                      </svg>
+                      <span>Editar Ruta</span>
+                    </button>
+
+                    @if (c.orderIds.length > 0) {
+                      <button
+                        type="button"
+                        class="btn-force-receive"
+                        (click)="$event.stopPropagation(); markAllCourierStopsDelivered(c.id)"
+                        title="Simular entrega total y habilitar botón Recibir Domiciliario"
+                      >
+                        Finalizar
+                      </button>
+                    }
+                  }
 
                   <button
                     type="button"
@@ -923,7 +901,7 @@ export const MAP_STYLES: MapStyleOption[] = [
                     (click)="$event.stopPropagation(); flyToCourier(c)"
                     title="Centrar mapa en el mensajero"
                   >
-                    📍 Ubicar
+                    Ubicar
                   </button>
                 </div>
               </div>
@@ -940,8 +918,11 @@ export const MAP_STYLES: MapStyleOption[] = [
           <div class="modal-card" (click)="$event.stopPropagation()" style="max-width: 580px;">
             <div class="modal-header">
               <div class="modal-title-group">
-                <div class="modal-icon-badge" style="background: rgba(16, 185, 129, 0.15); color: #10b981;">
-                  📍
+                <div class="modal-icon-badge" style="background: rgba(16, 185, 129, 0.15); color: #10b981; display: flex; align-items: center; justify-content: center;">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+                    <circle cx="12" cy="10" r="3"></circle>
+                  </svg>
                 </div>
                 <div>
                   <h2 class="modal-title">Nuevo Pedido en Bogotá / Cundinamarca</h2>
@@ -985,11 +966,15 @@ export const MAP_STYLES: MapStyleOption[] = [
                     <button
                       type="button"
                       class="btn btn-sm btn-secondary"
-                      style="padding: 0 10px; font-size: 0.78rem; flex-shrink: 0;"
+                      style="padding: 0 10px; font-size: 0.78rem; flex-shrink: 0; display: inline-flex; align-items: center; gap: 4px;"
                       (click)="geocodeModalAddress()"
                       title="Calcular coordenadas GPS automáticamente a partir de esta dirección"
                     >
-                      📍 Ubicar
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+                        <circle cx="12" cy="10" r="3"></circle>
+                      </svg>
+                      <span>Ubicar</span>
                     </button>
                   </div>
                 </div>
@@ -1017,7 +1002,7 @@ export const MAP_STYLES: MapStyleOption[] = [
                 <div class="form-group half-col">
                   <label class="form-label">Asignar a Mensajero (Opcional)</label>
                   <select class="form-select" [(ngModel)]="newOrderCourierId">
-                    <option value="">📍 Sin mensajero asignado</option>
+                    <option value="">Sin mensajero asignado</option>
                     @for (c of couriers(); track c.id) {
                       <option [value]="c.id">
                         {{ c.name }} ({{ c.vehicleType === 'moto' ? 'Moto' : 'Furgón' }} · {{ c.vehiclePlate }})
@@ -1036,7 +1021,7 @@ export const MAP_STYLES: MapStyleOption[] = [
                         [class.selected]="selectedPulpItem() === p.name"
                         (click)="selectPulpPreset(p)"
                       >
-                        <span>{{ p.emoji }} {{ p.name }}</span>
+                        <span>{{ p.name }}</span>
                         <span class="chip-price">{{ formatCOP(p.price) }}</span>
                       </button>
                     }
@@ -1070,8 +1055,12 @@ export const MAP_STYLES: MapStyleOption[] = [
           <div class="modal-card modal-lg" (click)="$event.stopPropagation()">
             <div class="modal-header">
               <div class="modal-title-group">
-                <div class="modal-icon-badge" style="background: rgba(59, 130, 246, 0.15); color: #3b82f6;">
-                  🗺️
+                <div class="modal-icon-badge" style="background: rgba(59, 130, 246, 0.15); color: #3b82f6; display: flex; align-items: center; justify-content: center;">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"></polygon>
+                    <line x1="8" y1="2" x2="8" y2="18"></line>
+                    <line x1="16" y1="6" x2="16" y2="22"></line>
+                  </svg>
                 </div>
                 <div>
                   <h2 class="modal-title">Enrutador y Secuenciador de Pedidos</h2>
@@ -1129,14 +1118,18 @@ export const MAP_STYLES: MapStyleOption[] = [
                   <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
                     <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"></path>
                   </svg>
-                  <span>✨ Optimizar por Cercanía</span>
+                  <span>Optimizar por Cercanía</span>
                 </button>
               </div>
 
               <div class="sequence-list-container">
                 <div class="sequence-route-origin">
                   <div class="origin-node">
-                    <div class="origin-pin">🏭</div>
+                    <div class="origin-pin" style="display: flex; align-items: center; justify-content: center;">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M2 20h20M5 20V8l5 4V4l10 8v8"></path>
+                      </svg>
+                    </div>
                     <div>
                       <div class="node-title">Punto de Partida: Cava Matriz Cundinamarca</div>
                       <div class="node-desc">Parque Industrial Calle 80 / Cota · Bodega de Pulpa Congelada</div>
@@ -1174,8 +1167,8 @@ export const MAP_STYLES: MapStyleOption[] = [
                           <span class="stop-client-name">{{ stop.clientName }}</span>
                           <span class="stop-zone-pill">{{ stop.zone }}</span>
                         </div>
-                        <div class="stop-address">📍 {{ stop.address }}</div>
-                        <div class="stop-items">📦 {{ stop.itemsSummary }}</div>
+                        <div class="stop-address">{{ stop.address }}</div>
+                        <div class="stop-items">{{ stop.itemsSummary }}</div>
                         <div class="stop-meta-footer">
                           <span>Recaudo: <strong>{{ formatCOP(stop.totalAmount) }}</strong></span>
                           <span>Peso: {{ stop.weightKg }} kg</span>
@@ -1215,7 +1208,11 @@ export const MAP_STYLES: MapStyleOption[] = [
 
                   @if (activePlannerStops().length === 0) {
                     <div class="empty-stops-box">
-                      <span>📦</span>
+                      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom: 6px;">
+                        <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
+                        <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
+                        <line x1="12" y1="22.08" x2="12" y2="12"></line>
+                      </svg>
                       <p>Este mensajero no tiene paradas asignadas actualmente.</p>
                       <small>Marca puntos en el mapa o asígnale pedidos para armar su ruta.</small>
                     </div>
@@ -1234,6 +1231,338 @@ export const MAP_STYLES: MapStyleOption[] = [
                 </svg>
                 <span>Guardar y Aplicar Ruta al Mapa</span>
               </button>
+            </div>
+          </div>
+        </div>
+      }
+
+      <!-- ========================================================================= -->
+      <!-- MODAL: RECIBIR DOMICILIARIO Y LIQUIDACIÓN DE CAJA (ARQUEO DE ENTREGA)     -->
+      <!-- ========================================================================= -->
+      @if (showReceiveModal() && receivingCourier()) {
+        <div class="modal-backdrop" (click)="closeReceiveCourierModal()">
+          <div class="modal-card modal-lg settlement-modal" (click)="$event.stopPropagation()">
+            <!-- Modal Header -->
+            <div class="modal-header" style="background: linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 100%); border-bottom: 1px solid #bbf7d0;">
+              <div class="modal-title-group">
+                <div class="modal-icon-badge" style="background: #10b981; color: #ffffff; box-shadow: 0 4px 12px rgba(16, 185, 129, 0.35); display: flex; align-items: center; justify-content: center;">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                    <polyline points="7 10 12 15 17 10"></polyline>
+                    <line x1="12" y1="15" x2="12" y2="3"></line>
+                  </svg>
+                </div>
+                <div>
+                  <div style="display: flex; align-items: center; gap: 8px;">
+                    <h2 class="modal-title" style="color: #064e3b;">Recibir Domiciliario · Liquidación de Caja</h2>
+                    <span class="badge-route-pill">{{ receivingCourier()?.routeCode || 'RUTA-BOGOTA' }}</span>
+                  </div>
+                  <p class="modal-subtitle" style="color: #047857;">
+                    Arqueo de dinero recaudado, verificación de entregas y paz y salvo de recorrido
+                  </p>
+                </div>
+              </div>
+              <button type="button" class="btn-close" (click)="closeReceiveCourierModal()">✕</button>
+            </div>
+
+            <div class="modal-body" style="padding: 20px 24px;">
+              <!-- Domiciliario Banner Profile -->
+              <div class="courier-settlement-profile">
+                <div class="profile-left">
+                  <div class="courier-avatar-lg" [style.background]="receivingCourier()?.colorLight" [style.color]="receivingCourier()?.color" style="display: flex; align-items: center; justify-content: center;">
+                    @if (receivingCourier()?.vehicleType === 'moto') {
+                      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="5" cy="16" r="3"></circle>
+                        <circle cx="19" cy="16" r="3"></circle>
+                        <path d="M12 16h3l3-6h-5l-2 3H8l2-5h3"></path>
+                      </svg>
+                    } @else {
+                      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="1" y="3" width="15" height="13"></rect>
+                        <polygon points="16 8 20 8 23 11 23 16 16 16 16 8"></polygon>
+                        <circle cx="5.5" cy="18.5" r="2.5"></circle>
+                        <circle cx="18.5" cy="18.5" r="2.5"></circle>
+                      </svg>
+                    }
+                  </div>
+                  <div>
+                    <h3 class="courier-profile-name">{{ receivingCourier()?.name }}</h3>
+                    <div class="courier-profile-sub">
+                      <span>{{ receivingCourier()?.vehicleModel }}</span>
+                      <span>·</span>
+                      <strong class="plate-pill">{{ receivingCourier()?.vehiclePlate }}</strong>
+                      <span>·</span>
+                      <span>Tel: {{ receivingCourier()?.phone }}</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="profile-stats-strip">
+                  <div class="pstat-item">
+                    <span class="pstat-val">{{ receivingCourierStops().length }}</span>
+                    <span class="pstat-lbl">Paradas</span>
+                  </div>
+                  <div class="pstat-item text-emerald">
+                    <span class="pstat-val">{{ getReceivedDeliveredCount() }}</span>
+                    <span class="pstat-lbl">Entregadas</span>
+                  </div>
+                  <div class="pstat-item text-purple">
+                    <span class="pstat-val">{{ formatCOP(receivingTotalCollected()) }}</span>
+                    <span class="pstat-lbl">Total Recaudo</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Lista de Entregas y Métodos de Cobro -->
+              <div class="settlement-section-title">
+                <span>Relación de Entregas y Métodos de Pago</span>
+                <small>Indica cómo pagó cada cliente para cuadrar la caja</small>
+              </div>
+
+              <div class="settlement-orders-table-wrapper">
+                <table class="settlement-orders-table">
+                  <thead>
+                    <tr>
+                      <th style="width: 40px;">#</th>
+                      <th>Guía / Cliente</th>
+                      <th>Destino</th>
+                      <th>Valor Pedido</th>
+                      <th>Estado</th>
+                      <th>Método de Pago</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    @for (stop of receivingCourierStops(); track stop.id; let idx = $index) {
+                      <tr [class.row-not-delivered]="!getEffectiveStopDelivered(stop)">
+                        <td class="col-num">{{ idx + 1 }}</td>
+                        <td>
+                          <div class="order-code-tag">{{ stop.orderNumber }}</div>
+                          <strong class="client-title">{{ stop.clientName }}</strong>
+                        </td>
+                        <td class="col-address">{{ stop.address }}</td>
+                        <td class="col-amount">{{ formatCOP(stop.totalAmount) }}</td>
+                        <td>
+                          <button
+                            type="button"
+                            class="pill-status-toggle"
+                            [class.is-delivered]="getEffectiveStopDelivered(stop)"
+                            (click)="toggleStopDelivered(stop.id)"
+                            title="Cambiar estado entre Entregado y Novedad / No entregado"
+                          >
+                            {{ getEffectiveStopDelivered(stop) ? 'Entregado' : 'No entregado' }}
+                          </button>
+                        </td>
+                        <td>
+                          <select
+                            class="payment-method-select"
+                            [ngModel]="getEffectiveStopPaymentMethod(stop)"
+                            (ngModelChange)="setStopPaymentMethod(stop.id, $event)"
+                            [disabled]="!getEffectiveStopDelivered(stop)"
+                          >
+                            <option value="EFECTIVO">Efectivo</option>
+                            <option value="NEQUI">Nequi / Daviplata</option>
+                            <option value="BANCOLOMBIA">Transferencia Bancolombia</option>
+                            <option value="CREDITO">Factura a Crédito</option>
+                          </select>
+                        </td>
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+              </div>
+
+              <!-- Módulo de Arqueo de Caja / Recaudo -->
+              <div class="cash-settlement-deck">
+                <div class="cash-summary-column">
+                  <div class="cash-summary-card">
+                    <span class="cash-summary-label">Efectivo Esperado a Recibir</span>
+                    <span class="cash-summary-amount text-emerald">{{ formatCOP(receivingExpectedCash()) }}</span>
+                    <span class="cash-summary-hint">Dinero en billetes/monedas que el domi debe entregar</span>
+                  </div>
+
+                  <div class="digital-summary-card">
+                    <div class="digital-row">
+                      <span>Pagos Digitales (Nequi/Banco):</span>
+                      <strong>{{ formatCOP(receivingExpectedDigital()) }}</strong>
+                    </div>
+                    @if (receivingExpectedCredit() > 0) {
+                      <div class="digital-row">
+                        <span>Facturas a Crédito / Cuenta:</span>
+                        <strong>{{ formatCOP(receivingExpectedCredit()) }}</strong>
+                      </div>
+                    }
+                    <div class="digital-row total-row">
+                      <span>Total Liquidado de la Ruta:</span>
+                      <strong>{{ formatCOP(receivingTotalCollected()) }}</strong>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="cash-count-column">
+                  <div class="cash-count-card">
+                    <label class="cash-input-label">
+                      <span>Efectivo Físico Entregado en Mano:</span>
+                      <small>Ingresa la cantidad exacta que te entrega el domiciliario</small>
+                    </label>
+
+                    <div class="cash-input-shell">
+                      <span class="currency-prefix">$</span>
+                      <input
+                        type="number"
+                        class="cash-input-field"
+                        [ngModel]="physicalCashReceived()"
+                        (ngModelChange)="physicalCashReceived.set(+$event)"
+                        step="1000"
+                        min="0"
+                      />
+                      <button
+                        type="button"
+                        class="btn-quick-fill"
+                        (click)="physicalCashReceived.set(receivingExpectedCash())"
+                        title="Cuadrar con el valor exacto esperado"
+                      >
+                        Exacto
+                      </button>
+                    </div>
+
+                    <!-- Indicador de Diferencia de Caja -->
+                    @if (cashDifference() === 0) {
+                      <div class="caja-diff-badge diff-ok">
+                        <span class="diff-icon" style="display: flex; align-items: center; justify-content: center; color: #10b981;">
+                          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="20 6 9 17 4 12"></polyline>
+                          </svg>
+                        </span>
+                        <div>
+                          <strong>Caja Cuadrada ($0 de diferencia)</strong>
+                          <p>El efectivo físico recibido coincide exactamente con los pedidos cobrados.</p>
+                        </div>
+                      </div>
+                    } @else if (cashDifference() < 0) {
+                      <div class="caja-diff-badge diff-short">
+                        <span class="diff-icon" style="display: flex; align-items: center; justify-content: center; color: #ef4444;">
+                          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"></path>
+                            <line x1="12" y1="9" x2="12" y2="13"></line>
+                            <line x1="12" y1="17" x2="12.01" y2="17"></line>
+                          </svg>
+                        </span>
+                        <div>
+                          <strong>Faltante de Caja: {{ formatCOP(Math.abs(cashDifference())) }}</strong>
+                          <p>Hace falta dinero por entregar según las órdenes marcadas en efectivo.</p>
+                        </div>
+                      </div>
+                    } @else {
+                      <div class="caja-diff-badge diff-surplus">
+                        <span class="diff-icon" style="display: flex; align-items: center; justify-content: center; color: #3b82f6;">
+                          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="12" cy="12" r="10"></circle>
+                            <line x1="12" y1="16" x2="12" y2="12"></line>
+                            <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                          </svg>
+                        </span>
+                        <div>
+                          <strong>Sobrante de Caja: +{{ formatCOP(cashDifference()) }}</strong>
+                          <p>Se entregó más efectivo del esperado en el reporte.</p>
+                        </div>
+                      </div>
+                    }
+
+                    <!-- Observaciones de la Entrega -->
+                    <div class="form-group" style="margin-top: 12px; margin-bottom: 0;">
+                      <label class="form-label" style="font-size: 0.74rem;">Observaciones / Novedades de la Liquidación</label>
+                      <input
+                        type="text"
+                        class="form-input"
+                        style="font-size: 0.8rem; padding: 7px 10px;"
+                        [ngModel]="receiveNotes()"
+                        (ngModelChange)="receiveNotes.set($event)"
+                        placeholder="Ej. Recibido sin novedades, comprobante Nequi verificado en celular..."
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Vista previa de Vale / Paz y Salvo Imprimible -->
+              @if (showReceiptPrintView()) {
+                <div class="thermal-receipt-preview">
+                  <div class="thermal-receipt-body" id="thermal-receipt-domi">
+                    <div class="receipt-header">
+                      <h4>DGL DESPULPADORA DE FRUTAS</h4>
+                      <p>PLANTA CUNDINAMARCA · NIT 901.234.567-8</p>
+                      <div class="receipt-divider">================================</div>
+                      <div class="receipt-title">COMPROBANTE DE ENTREGA DE CAJA</div>
+                      <div>RUTA: {{ receivingCourier()?.routeCode || 'RUTA-2026' }}</div>
+                      <div>FECHA: {{ getReceiptFormattedDate() }}</div>
+                      <div>DOMICILIARIO: {{ receivingCourier()?.name }}</div>
+                      <div>PLACA: {{ receivingCourier()?.vehiclePlate }}</div>
+                      <div class="receipt-divider">--------------------------------</div>
+                    </div>
+
+                    <div class="receipt-lines">
+                      @for (s of receivingCourierStops(); track s.id) {
+                        @if (getEffectiveStopDelivered(s)) {
+                          <div class="receipt-line-item">
+                            <span>{{ s.orderNumber }} {{ s.clientName | slice:0:16 }}</span>
+                            <span>{{ formatCOP(s.totalAmount) }} [{{ getEffectiveStopPaymentMethod(s) | slice:0:3 }}]</span>
+                          </div>
+                        }
+                      }
+                    </div>
+
+                    <div class="receipt-divider">================================</div>
+                    <div class="receipt-totals">
+                      <div class="rt-row"><span>TOTAL EFECTIVO ESPERADO:</span> <strong>{{ formatCOP(receivingExpectedCash()) }}</strong></div>
+                      <div class="rt-row"><span>EFECTIVO RECIBIDO EN CAJA:</span> <strong>{{ formatCOP(physicalCashReceived()) }}</strong></div>
+                      <div class="rt-row"><span>DIFERENCIA DE CAJA:</span> <strong>{{ cashDifference() >= 0 ? '+' : '' }}{{ formatCOP(cashDifference()) }}</strong></div>
+                      <div class="rt-row"><span>PAGOS DIGITALES (NEQUI/BANCO):</span> <strong>{{ formatCOP(receivingExpectedDigital()) }}</strong></div>
+                    </div>
+                    <div class="receipt-divider">================================</div>
+                    <div class="receipt-footer">
+                      <p>FIRMA ENTREGA: ______________________</p>
+                      <p>FIRMA RECIBE: _______________________</p>
+                      <small>SISTEMA DE GESTIÓN LOGÍSTICA DGL</small>
+                    </div>
+                  </div>
+                </div>
+              }
+            </div>
+
+            <!-- Modal Footer -->
+            <div class="modal-footer" style="background: #f8fafc; border-top: 1px solid #e2e8f0; justify-content: space-between;">
+              <div style="display: flex; gap: 8px;">
+                <button
+                  type="button"
+                  class="btn btn-secondary"
+                  (click)="toggleReceiptPrintView()"
+                  style="gap: 6px; font-size: 0.82rem; display: inline-flex; align-items: center;"
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="6 9 6 2 18 2 18 9"></polyline>
+                    <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path>
+                    <rect x="6" y="14" width="12" height="8"></rect>
+                  </svg>
+                  <span>{{ showReceiptPrintView() ? 'Ocultar Vale' : 'Ver / Imprimir Vale de Caja' }}</span>
+                </button>
+              </div>
+
+              <div style="display: flex; gap: 10px;">
+                <button type="button" class="btn btn-secondary" (click)="closeReceiveCourierModal()">
+                  Cancelar
+                </button>
+                <button
+                  type="button"
+                  class="btn btn-primary"
+                  (click)="confirmSettlementAndReceive()"
+                  style="gap: 8px; font-weight: 800; background: #059669; border-color: #047857;"
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                    <polyline points="20 6 9 17 4 12"></polyline>
+                  </svg>
+                  <span>Confirmar Recepción y Cerrar Ruta</span>
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -1395,8 +1724,6 @@ export const MAP_STYLES: MapStyleOption[] = [
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
       gap: 12px;
-      border-top: 1px solid var(--border-subtle);
-      padding-top: 12px;
     }
 
     .telemetry-item {
@@ -1536,35 +1863,88 @@ export const MAP_STYLES: MapStyleOption[] = [
       align-items: center;
       justify-content: center;
       gap: 10px;
-      padding: 15px 28px;
+      padding: 13px 26px;
       border-radius: var(--radius-full, 9999px);
-      font-size: 0.98rem;
-      font-weight: 800;
-      font-family: var(--font-body);
+      font-size: 0.94rem;
+      font-weight: 750;
+      font-family: inherit;
       cursor: pointer;
-      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-      background: var(--color-primary);
-      color: #ffffff;
-      border: 1px solid rgba(255, 255, 255, 0.16);
-      box-shadow: 0 10px 24px rgba(30, 94, 58, 0.38);
+      position: relative;
+      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      color: #065f46;
+      border: 2px solid #10b981;
+      box-shadow: 0 8px 24px rgba(16, 185, 129, 0.16),
+                  0 2px 6px rgba(0, 0, 0, 0.06);
+      letter-spacing: 0.2px;
 
       &:hover {
-        background: var(--color-primary-hover);
-        transform: translateY(-2px);
-        box-shadow: 0 14px 30px rgba(30, 94, 58, 0.5);
+        background: #f0fdf4;
+        border-color: #059669;
+        color: #047857;
+        transform: translateY(-2px) scale(1.02);
+        box-shadow: 0 12px 30px rgba(16, 185, 129, 0.28),
+                    0 4px 10px rgba(0, 0, 0, 0.08);
       }
 
       &:active {
-        transform: translateY(0);
+        transform: translateY(0) scale(0.99);
+        background: #dcfce7;
       }
+    }
+
+    .live-beacon {
+      position: relative;
+      width: 12px;
+      height: 12px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .beacon-ping {
+      position: absolute;
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: rgba(16, 185, 129, 0.45);
+      animation: beaconRipple 1.8s cubic-bezier(0, 0.2, 0.8, 1) infinite;
+    }
+
+    .beacon-dot {
+      position: relative;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #10b981;
+      box-shadow: 0 0 6px #10b981;
+    }
+
+    @keyframes beaconRipple {
+      0% { transform: scale(0.4); opacity: 1; }
+      100% { transform: scale(2.2); opacity: 0; }
+    }
+
+    .btn-counter-badge {
+      background: #ecfdf5;
+      color: #047857;
+      font-size: 0.74rem;
+      font-weight: 800;
+      padding: 2px 8px;
+      border-radius: 9999px;
+      border: 1px solid #a7f3d0;
+      margin-left: 2px;
     }
 
     .live-dot-indicator {
       width: 9px;
       height: 9px;
       border-radius: 50%;
-      background: #4ade80;
-      box-shadow: 0 0 8px #4ade80;
+      background: #10b981;
+      box-shadow: 0 0 8px #10b981;
       animation: pulseAnim 1.4s infinite;
       flex-shrink: 0;
     }
@@ -1582,25 +1962,38 @@ export const MAP_STYLES: MapStyleOption[] = [
       gap: 8px;
       padding: 10px 18px;
       border-radius: var(--radius-full, 9999px);
-      background: var(--color-primary);
-      color: #ffffff;
-      border: 1px solid rgba(255, 255, 255, 0.2);
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      color: #065f46;
+      border: 2px solid #10b981;
       font-size: 0.82rem;
-      font-weight: 800;
-      font-family: var(--font-body);
+      font-weight: 750;
+      font-family: inherit;
       cursor: pointer;
-      box-shadow: 0 8px 22px rgba(30, 94, 58, 0.42);
-      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+      position: relative;
+      box-shadow: 0 6px 20px rgba(16, 185, 129, 0.16),
+                  0 2px 6px rgba(0, 0, 0, 0.06);
+      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+      letter-spacing: 0.2px;
 
       &:hover {
-        background: var(--color-primary-hover);
-        transform: translateY(-2px);
-        box-shadow: 0 12px 28px rgba(30, 94, 58, 0.55);
+        background: #f0fdf4;
+        border-color: #059669;
+        color: #047857;
+        transform: translateY(-2px) scale(1.02);
+        box-shadow: 0 10px 24px rgba(16, 185, 129, 0.28);
+      }
+
+      &:active {
+        transform: translateY(0) scale(0.99);
+        background: #dcfce7;
       }
 
       &.is-fullscreen {
-        background: var(--color-primary-hover);
-        border-color: rgba(255, 255, 255, 0.32);
+        background: #f0fdf4;
+        border-color: #047857;
+        color: #047857;
       }
     }
 
@@ -2258,9 +2651,10 @@ export const MAP_STYLES: MapStyleOption[] = [
     .modal-backdrop {
       position: fixed;
       inset: 0;
-      background: rgba(0, 0, 0, 0.65);
-      backdrop-filter: blur(6px);
-      z-index: 1050;
+      background: rgba(15, 23, 42, 0.72);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      z-index: 999999 !important;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -2268,17 +2662,19 @@ export const MAP_STYLES: MapStyleOption[] = [
     }
 
     .modal-card {
-      background: var(--bg-card);
-      border: 1px solid var(--border-subtle);
+      background: #ffffff;
+      border: 1px solid var(--border-subtle, #e2e8f0);
       border-radius: var(--radius-lg, 16px);
       width: 100%;
       max-width: 580px;
       max-height: 90vh;
       display: flex;
       flex-direction: column;
-      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.35);
+      box-shadow: 0 25px 60px rgba(0, 0, 0, 0.45);
       animation: modalFadeIn 0.25s ease-out;
       overflow: hidden;
+      position: relative;
+      z-index: 1000000 !important;
     }
 
     .modal-lg {
@@ -3421,9 +3817,542 @@ export const MAP_STYLES: MapStyleOption[] = [
       padding: 8px 10px;
       border-radius: 8px;
     }
+
+    /* Courier Card Ready for Settlement Banner & Button */
+    .courier-route-code-pill {
+      font-family: monospace;
+      font-size: 0.68rem;
+      font-weight: 800;
+      background: rgba(0, 0, 0, 0.05);
+      padding: 1px 6px;
+      border-radius: 4px;
+      letter-spacing: 0.3px;
+    }
+
+    .courier-status-badge.ready-badge {
+      background: #fef08a !important;
+      color: #854d0e !important;
+      border: 1px solid #fde047 !important;
+      font-weight: 800;
+    }
+
+    .courier-ready-banner {
+      background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%);
+      border: 1px solid #86efac;
+      color: #065f46;
+      border-radius: 6px;
+      padding: 5px 8px;
+      font-size: 0.72rem;
+      font-weight: 800;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-top: 8px;
+      margin-bottom: 6px;
+      animation: readyBannerPulse 2s infinite ease-in-out;
+    }
+
+    .ready-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: #10b981;
+      box-shadow: 0 0 6px #10b981;
+      flex-shrink: 0;
+    }
+
+    @keyframes readyBannerPulse {
+      0%, 100% { opacity: 0.95; transform: scale(1); }
+      50% { opacity: 1; transform: scale(1.01); }
+    }
+
+    .btn-receive-action {
+      flex: 1;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      background: linear-gradient(135deg, #059669 0%, #047857 100%);
+      color: #ffffff;
+      border: 1px solid #10b981;
+      border-radius: 8px;
+      padding: 6px 12px;
+      font-size: 0.78rem;
+      font-weight: 800;
+      cursor: pointer;
+      box-shadow: 0 4px 12px rgba(16, 185, 129, 0.35);
+      transition: all 0.2s ease;
+
+      &:hover {
+        background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+        transform: translateY(-1px);
+        box-shadow: 0 6px 16px rgba(16, 185, 129, 0.45);
+      }
+    }
+
+    .btn-force-receive {
+      background: #f8fafc;
+      border: 1px solid #cbd5e1;
+      color: #475569;
+      border-radius: 8px;
+      padding: 5px 8px;
+      font-size: 0.7rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.15s ease;
+
+      &:hover {
+        background: #fee2e2;
+        color: #dc2626;
+        border-color: #fca5a5;
+      }
+    }
+
+    /* Settlement Modal Styling */
+    .settlement-modal {
+      max-width: 900px;
+    }
+
+    .badge-route-pill {
+      background: #e0e7ff;
+      color: #3730a3;
+      border: 1px solid #c7d2fe;
+      font-size: 0.72rem;
+      font-weight: 800;
+      padding: 2px 8px;
+      border-radius: 6px;
+      font-family: monospace;
+    }
+
+    .courier-settlement-profile {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 14px;
+      padding: 14px 18px;
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      margin-bottom: 18px;
+    }
+
+    .profile-left {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .courier-avatar-lg {
+      width: 44px;
+      height: 44px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.4rem;
+      flex-shrink: 0;
+    }
+
+    .courier-profile-name {
+      font-size: 1.05rem;
+      font-weight: 800;
+      color: #0f172a;
+      margin: 0;
+    }
+
+    .courier-profile-sub {
+      font-size: 0.76rem;
+      color: #64748b;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-top: 2px;
+    }
+
+    .plate-pill {
+      background: #fef08a;
+      color: #854d0e;
+      padding: 1px 6px;
+      border-radius: 4px;
+      font-family: monospace;
+      font-weight: 800;
+    }
+
+    .profile-stats-strip {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .pstat-item {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+    }
+
+    .pstat-val {
+      font-size: 1.15rem;
+      font-weight: 800;
+    }
+
+    .pstat-lbl {
+      font-size: 0.68rem;
+      color: #64748b;
+      text-transform: uppercase;
+      font-weight: 700;
+    }
+
+    .settlement-section-title {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.85rem;
+      font-weight: 800;
+      color: #0f172a;
+      margin-bottom: 8px;
+
+      small {
+        font-size: 0.74rem;
+        font-weight: 500;
+        color: #64748b;
+      }
+    }
+
+    .settlement-orders-table-wrapper {
+      border: 1px solid #e2e8f0;
+      border-radius: 10px;
+      overflow: hidden;
+      margin-bottom: 20px;
+      background: #ffffff;
+      max-height: 220px;
+      overflow-y: auto;
+    }
+
+    .settlement-orders-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.8rem;
+
+      th {
+        background: #f8fafc;
+        padding: 8px 12px;
+        font-size: 0.72rem;
+        font-weight: 800;
+        color: #475569;
+        text-align: left;
+        border-bottom: 1px solid #e2e8f0;
+        position: sticky;
+        top: 0;
+        z-index: 2;
+      }
+
+      td {
+        padding: 8px 12px;
+        border-bottom: 1px solid #f1f5f9;
+        vertical-align: middle;
+      }
+
+      tr:last-child td {
+        border-bottom: none;
+      }
+
+      tr.row-not-delivered {
+        opacity: 0.55;
+        background: #fef2f2;
+      }
+    }
+
+    .col-num {
+      font-weight: 800;
+      color: #94a3b8;
+    }
+
+    .col-address {
+      font-size: 0.74rem;
+      color: #64748b;
+      max-width: 220px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .col-amount {
+      font-weight: 800;
+      color: #064e3b;
+      white-space: nowrap;
+    }
+
+    .pill-status-toggle {
+      border: none;
+      padding: 4px 10px;
+      border-radius: 9999px;
+      font-size: 0.72rem;
+      font-weight: 800;
+      cursor: pointer;
+      transition: all 0.15s;
+
+      &.is-delivered {
+        background: #dcfce7;
+        color: #15803d;
+      }
+      &:not(.is-delivered) {
+        background: #fee2e2;
+        color: #b91c1c;
+      }
+    }
+
+    .payment-method-select {
+      border: 1px solid #cbd5e1;
+      border-radius: 6px;
+      padding: 4px 8px;
+      font-size: 0.74rem;
+      font-weight: 700;
+      color: #0f172a;
+      background: #ffffff;
+      outline: none;
+      cursor: pointer;
+
+      &:focus {
+        border-color: #10b981;
+      }
+    }
+
+    .cash-settlement-deck {
+      display: grid;
+      grid-template-columns: 1fr 1.2fr;
+      gap: 16px;
+      margin-bottom: 18px;
+    }
+
+    @media (max-width: 768px) {
+      .cash-settlement-deck {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .cash-summary-card {
+      background: #f0fdf4;
+      border: 1.5px solid #86efac;
+      border-radius: 12px;
+      padding: 14px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      margin-bottom: 12px;
+    }
+
+    .cash-summary-label {
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: #065f46;
+      text-transform: uppercase;
+    }
+
+    .cash-summary-amount {
+      font-size: 1.6rem;
+      font-weight: 900;
+      color: #047857;
+      line-height: 1.1;
+    }
+
+    .cash-summary-hint {
+      font-size: 0.72rem;
+      color: #059669;
+    }
+
+    .digital-summary-card {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 10px;
+      padding: 12px 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      font-size: 0.78rem;
+    }
+
+    .digital-row {
+      display: flex;
+      justify-content: space-between;
+      color: #475569;
+
+      &.total-row {
+        border-top: 1px dashed #cbd5e1;
+        padding-top: 8px;
+        font-weight: 800;
+        color: #0f172a;
+        font-size: 0.85rem;
+      }
+    }
+
+    .cash-count-card {
+      background: #ffffff;
+      border: 1.5px solid #cbd5e1;
+      border-radius: 12px;
+      padding: 16px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
+    }
+
+    .cash-input-label {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      font-size: 0.82rem;
+      font-weight: 800;
+      color: #0f172a;
+      margin-bottom: 8px;
+
+      small {
+        font-size: 0.72rem;
+        font-weight: 500;
+        color: #64748b;
+      }
+    }
+
+    .cash-input-shell {
+      display: flex;
+      align-items: center;
+      background: #f8fafc;
+      border: 2px solid #059669;
+      border-radius: 10px;
+      padding: 4px 10px;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+
+    .currency-prefix {
+      font-size: 1.2rem;
+      font-weight: 800;
+      color: #059669;
+    }
+
+    .cash-input-field {
+      flex: 1;
+      border: none;
+      background: transparent;
+      outline: none;
+      font-size: 1.35rem;
+      font-weight: 900;
+      color: #0f172a;
+      font-family: inherit;
+    }
+
+    .btn-quick-fill {
+      background: #dcfce7;
+      border: 1px solid #86efac;
+      color: #15803d;
+      font-size: 0.74rem;
+      font-weight: 800;
+      padding: 5px 10px;
+      border-radius: 6px;
+      cursor: pointer;
+
+      &:hover {
+        background: #15803d;
+        color: #fff;
+      }
+    }
+
+    .caja-diff-badge {
+      padding: 10px 14px;
+      border-radius: 10px;
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      font-size: 0.8rem;
+
+      strong {
+        display: block;
+        font-size: 0.85rem;
+      }
+      p {
+        margin: 2px 0 0;
+        font-size: 0.73rem;
+      }
+
+      &.diff-ok {
+        background: #ecfdf5;
+        border: 1px solid #86efac;
+        color: #065f46;
+      }
+      &.diff-short {
+        background: #fef2f2;
+        border: 1px solid #fecaca;
+        color: #991b1b;
+      }
+      &.diff-surplus {
+        background: #fffbeb;
+        border: 1px solid #fde68a;
+        color: #92400e;
+      }
+    }
+
+    .thermal-receipt-preview {
+      margin-top: 16px;
+      background: #f1f5f9;
+      border-radius: 10px;
+      padding: 16px;
+      display: flex;
+      justify-content: center;
+    }
+
+    .thermal-receipt-body {
+      background: #ffffff;
+      border: 1px dashed #94a3b8;
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.06);
+      padding: 18px 20px;
+      width: 100%;
+      max-width: 380px;
+      font-family: 'Courier New', Courier, monospace;
+      font-size: 0.75rem;
+      color: #0f172a;
+      line-height: 1.4;
+
+      .receipt-header {
+        text-align: center;
+        h4 { margin: 0; font-size: 0.9rem; font-weight: 900; }
+        p { margin: 2px 0; font-size: 0.7rem; color: #475569; }
+      }
+      .receipt-divider {
+        color: #94a3b8;
+        overflow: hidden;
+        text-align: center;
+        margin: 4px 0;
+      }
+      .receipt-title {
+        font-weight: 800;
+        text-align: center;
+        margin: 4px 0;
+      }
+      .receipt-lines {
+        margin: 6px 0;
+      }
+      .receipt-line-item {
+        display: flex;
+        justify-content: space-between;
+        font-size: 0.72rem;
+        margin-bottom: 2px;
+      }
+      .receipt-totals {
+        margin: 6px 0;
+        .rt-row {
+          display: flex;
+          justify-content: space-between;
+          margin-bottom: 2px;
+        }
+      }
+      .receipt-footer {
+        margin-top: 12px;
+        text-align: center;
+        font-size: 0.68rem;
+        p { margin: 8px 0; }
+      }
+    }
   `]
 })
 export class DeliveryMapComponent implements OnInit, AfterViewInit, OnDestroy {
+  readonly Math = Math;
   private readonly stateService = inject(StateService);
   private readonly notification = inject(NotificationService);
   private readonly geocodingService = inject(GeocodingService);
@@ -3439,6 +4368,279 @@ export class DeliveryMapComponent implements OnInit, AfterViewInit, OnDestroy {
   readonly drawerNewAddress = signal<string>('');
   readonly drawerNewCourierId = signal<string>('');
   readonly drawerNewAmount = signal<number>(125000);
+
+  // =========================================================================
+  // RECEIVE COURIER & CASH SETTLEMENT STATE (ARQUEO DE CAJA DE REPARTO)
+  // =========================================================================
+  readonly showReceiveModal = signal<boolean>(false);
+  readonly receivingCourier = signal<Courier | null>(null);
+  readonly physicalCashReceived = signal<number>(0);
+  readonly receiveNotes = signal<string>('');
+  readonly showReceiptPrintView = signal<boolean>(false);
+  readonly stopPaymentOverrides = signal<Record<number, 'EFECTIVO' | 'NEQUI' | 'BANCOLOMBIA' | 'CREDITO'>>({});
+  readonly stopDeliveredOverrides = signal<Record<number, boolean>>({});
+
+  isCourierReadyToReceive(c: Courier): boolean {
+    if (c.orderIds.length === 0) return false;
+    return this.getCourierCompletedStops(c) === c.orderIds.length || c.routeStatus === 'completada';
+  }
+
+  readonly receivingCourierStops = computed(() => {
+    const courier = this.receivingCourier();
+    if (!courier) return [];
+    const stopMap = new Map(this.deliveryStops().map(s => [s.id, s]));
+    return courier.orderIds
+      .map(id => stopMap.get(id))
+      .filter((s): s is DeliveryWaypoint => !!s);
+  });
+
+  getEffectiveStopDelivered(stop: DeliveryWaypoint): boolean {
+    const overrides = this.stopDeliveredOverrides();
+    if (stop.id in overrides) {
+      return overrides[stop.id];
+    }
+    return stop.isDelivered;
+  }
+
+  toggleStopDelivered(stopId: number) {
+    const stop = this.deliveryStops().find(s => s.id === stopId);
+    if (!stop) return;
+    const current = this.getEffectiveStopDelivered(stop);
+    this.stopDeliveredOverrides.update(map => ({
+      ...map,
+      [stopId]: !current
+    }));
+  }
+
+  getEffectiveStopPaymentMethod(stop: DeliveryWaypoint): 'EFECTIVO' | 'NEQUI' | 'BANCOLOMBIA' | 'CREDITO' {
+    const overrides = this.stopPaymentOverrides();
+    if (stop.id in overrides) {
+      return overrides[stop.id];
+    }
+    return stop.paymentMethod || 'EFECTIVO';
+  }
+
+  setStopPaymentMethod(stopId: number, method: 'EFECTIVO' | 'NEQUI' | 'BANCOLOMBIA' | 'CREDITO') {
+    this.stopPaymentOverrides.update(map => ({
+      ...map,
+      [stopId]: method
+    }));
+  }
+
+  readonly receivingExpectedCash = computed(() => {
+    const stops = this.receivingCourierStops();
+    return stops
+      .filter(s => this.getEffectiveStopDelivered(s))
+      .filter(s => this.getEffectiveStopPaymentMethod(s) === 'EFECTIVO')
+      .reduce((sum, s) => sum + s.totalAmount, 0);
+  });
+
+  readonly receivingExpectedDigital = computed(() => {
+    const stops = this.receivingCourierStops();
+    return stops
+      .filter(s => this.getEffectiveStopDelivered(s))
+      .filter(s => {
+        const m = this.getEffectiveStopPaymentMethod(s);
+        return m === 'NEQUI' || m === 'BANCOLOMBIA';
+      })
+      .reduce((sum, s) => sum + s.totalAmount, 0);
+  });
+
+  readonly receivingExpectedCredit = computed(() => {
+    const stops = this.receivingCourierStops();
+    return stops
+      .filter(s => this.getEffectiveStopDelivered(s))
+      .filter(s => this.getEffectiveStopPaymentMethod(s) === 'CREDITO')
+      .reduce((sum, s) => sum + s.totalAmount, 0);
+  });
+
+  readonly receivingTotalCollected = computed(() => {
+    return this.receivingExpectedCash() + this.receivingExpectedDigital() + this.receivingExpectedCredit();
+  });
+
+  readonly cashDifference = computed(() => {
+    return this.physicalCashReceived() - this.receivingExpectedCash();
+  });
+
+  getReceivedDeliveredCount(): number {
+    return this.receivingCourierStops().filter(s => this.getEffectiveStopDelivered(s)).length;
+  }
+
+  getReceiptFormattedDate(): string {
+    return new Date().toLocaleString('es-CO', {
+      dateStyle: 'medium',
+      timeStyle: 'short'
+    });
+  }
+
+  toggleReceiptPrintView() {
+    this.showReceiptPrintView.update(v => !v);
+  }
+
+  openReceiveCourierModal(courier: Courier) {
+    this.receivingCourier.set(courier);
+    this.stopPaymentOverrides.set({});
+    this.stopDeliveredOverrides.set({});
+    this.receiveNotes.set('');
+    this.showReceiptPrintView.set(false);
+
+    const stopMap = new Map(this.deliveryStops().map(s => [s.id, s]));
+    const stops = courier.orderIds.map(id => stopMap.get(id)).filter((s): s is DeliveryWaypoint => !!s);
+    const expectedCash = stops.reduce((sum, s) => sum + s.totalAmount, 0);
+    this.physicalCashReceived.set(expectedCash);
+
+    this.showReceiveModal.set(true);
+  }
+
+  closeReceiveCourierModal() {
+    this.showReceiveModal.set(false);
+    this.receivingCourier.set(null);
+  }
+
+  confirmSettlementAndReceive() {
+    const courier = this.receivingCourier();
+    if (!courier) return;
+
+    const stops = this.receivingCourierStops();
+    const deliveredCount = stops.filter(s => this.getEffectiveStopDelivered(s)).length;
+    const physicalCash = this.physicalCashReceived();
+    const diff = this.cashDifference();
+
+    // Sincronizar en StateService
+    stops.forEach(s => {
+      const isDelivered = this.getEffectiveStopDelivered(s);
+      if (isDelivered) {
+        this.stateService.updateOrderStatus(s.id, 'DELIVERED');
+      }
+    });
+
+    // Actualizar deliveryStops
+    const stopIds = new Set(courier.orderIds);
+    this.deliveryStops.update(all => all.map(s => {
+      if (stopIds.has(s.id)) {
+        return {
+          ...s,
+          isDelivered: this.getEffectiveStopDelivered(s),
+          paymentMethod: this.getEffectiveStopPaymentMethod(s)
+        };
+      }
+      return s;
+    }));
+
+    // Liberar domiciliario: ruta cerrada, caja en cero y disponible
+    this.couriers.update(list => list.map(c => {
+      if (c.id === courier.id) {
+        return {
+          ...c,
+          orderIds: [],
+          status: 'en_planta',
+          routeStatus: 'liquidada',
+          currentStopIndex: 0,
+          progress: 1,
+          lat: PLANTA_MATRIZ_LAT,
+          lng: PLANTA_MATRIZ_LNG
+        };
+      }
+      return c;
+    }));
+
+    this.renderStopMarkers();
+    this.buildAndRenderRealRoadRoutes();
+    this.closeReceiveCourierModal();
+
+    confetti({
+      particleCount: 100,
+      spread: 70,
+      origin: { y: 0.6 }
+    });
+
+    const diffText = diff === 0
+      ? 'Caja cuadrada exactamente ($0 diferencia).'
+      : (diff > 0 ? `Sobrante de ${this.formatCOP(diff)}.` : `Faltante de ${this.formatCOP(Math.abs(diff))}.`);
+
+    this.notification.success(
+      '¡Domiciliario Recibido y Ruta Liquidada!',
+      `${courier.name} entregó ${deliveredCount} pedidos. Total recibido en caja: ${this.formatCOP(physicalCash)}. ${diffText}`
+    );
+  }
+
+  markAllCourierStopsDelivered(courierId: string) {
+    const courier = this.couriers().find(c => c.id === courierId);
+    if (!courier) return;
+
+    this.deliveryStops.update(all => all.map(s => {
+      if (courier.orderIds.includes(s.id)) {
+        return { ...s, isDelivered: true };
+      }
+      return s;
+    }));
+
+    this.couriers.update(list => list.map(c => {
+      if (c.id === courierId) {
+        return { ...c, routeStatus: 'completada' };
+      }
+      return c;
+    }));
+
+    this.renderStopMarkers();
+    this.notification.success(
+      'Paradas Completadas',
+      `Todas las paradas de ${courier.name} han sido marcadas como entregadas. El botón "Recibir Domiciliario" ya está activo.`
+    );
+  }
+
+  markOrderDeliveredByOrderNumber(orderNumber: string) {
+    this.deliveryStops.update(stops => stops.map(s => {
+      if (s.orderNumber === orderNumber) {
+        return { ...s, isDelivered: true };
+      }
+      return s;
+    }));
+    this.renderStopMarkers();
+  }
+
+  locateOrderOnMap(orderNumber: string) {
+    const stop = this.deliveryStops().find(s => s.orderNumber === orderNumber);
+    if (stop && this.map) {
+      if (this.mapViewMode() === 'locked') {
+        this.enterAllDeliveriesMode();
+      }
+      this.map.flyTo([stop.lat, stop.lng], 16, { duration: 1.2 });
+      const marker = this.stopMarkers.get(stop.id);
+      if (marker) {
+        setTimeout(() => marker.openPopup(), 1250);
+      }
+      this.notification.info('Pedido Ubicado en Mapa', `${stop.orderNumber} · ${stop.clientName}`);
+    }
+  }
+
+  assignOrderToCourierByOrderNumber(orderNumber: string, courierId: string) {
+    const courier = this.couriers().find(c => c.id === courierId);
+    if (!courier) return;
+
+    this.deliveryStops.update(stops => stops.map(s => {
+      if (s.orderNumber === orderNumber) {
+        return { ...s, assignedCourierId: courierId };
+      }
+      return s;
+    }));
+
+    const stop = this.deliveryStops().find(s => s.orderNumber === orderNumber);
+    if (stop) {
+      this.couriers.update(list => list.map(c => {
+        if (c.id === courierId && !c.orderIds.includes(stop.id)) {
+          return { ...c, orderIds: [...c.orderIds, stop.id] };
+        }
+        if (c.id !== courierId && c.orderIds.includes(stop.id)) {
+          return { ...c, orderIds: c.orderIds.filter(id => id !== stop.id) };
+        }
+        return c;
+      }));
+    }
+
+    this.renderStopMarkers();
+    this.buildAndRenderRealRoadRoutes();
+  }
 
   // Zone Polygon Grouping State (4-point Quad or 6-point Hexagon)
   readonly zoneTargetPoints = signal<4 | 6>(4);
@@ -3530,6 +4732,9 @@ export class DeliveryMapComponent implements OnInit, AfterViewInit, OnDestroy {
       colorLight: 'rgba(16, 185, 129, 0.15)',
       capacityKg: 45,
       status: 'en_ruta',
+      routeCode: 'RUTA-2026-CR1',
+      routeDay: 'Jueves',
+      routeStatus: 'en_ruta',
       currentSpeedKmH: 38,
       batteryPct: 94,
       orderIds: [1001, 1002, 1003],
@@ -3550,6 +4755,9 @@ export class DeliveryMapComponent implements OnInit, AfterViewInit, OnDestroy {
       colorLight: 'rgba(59, 130, 246, 0.15)',
       capacityKg: 40,
       status: 'en_ruta',
+      routeCode: 'RUTA-2026-AM2',
+      routeDay: 'Jueves',
+      routeStatus: 'en_ruta',
       currentSpeedKmH: 34,
       batteryPct: 88,
       orderIds: [1004, 1005, 1006],
@@ -3570,6 +4778,9 @@ export class DeliveryMapComponent implements OnInit, AfterViewInit, OnDestroy {
       colorLight: 'rgba(245, 158, 11, 0.15)',
       capacityKg: 450,
       status: 'en_ruta',
+      routeCode: 'RUTA-2026-FC3',
+      routeDay: 'Jueves',
+      routeStatus: 'en_ruta',
       currentSpeedKmH: 42,
       batteryPct: 99,
       orderIds: [1007, 1008],
@@ -3795,7 +5006,12 @@ export class DeliveryMapComponent implements OnInit, AfterViewInit, OnDestroy {
         font-size: 1.2rem;
         cursor: pointer;
       ">
-        🏭
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M2 20a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V8l-7 5V8l-7 5V4a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z"></path>
+          <path d="M17 18h1"></path>
+          <path d="M12 18h1"></path>
+          <path d="M7 18h1"></path>
+        </svg>
       </div>
     `;
 
@@ -3809,7 +5025,7 @@ export class DeliveryMapComponent implements OnInit, AfterViewInit, OnDestroy {
     const marker = L.marker([PLANTA_MATRIZ_LAT, PLANTA_MATRIZ_LNG], { icon: plantaIcon }).addTo(this.map);
     marker.bindPopup(`
       <div style="font-family: var(--font-body); padding: 4px;">
-        <strong style="color: #10b981; font-size: 0.95rem;">🏭 CAVA MATRIZ CUNDINAMARCA</strong>
+        <strong style="color: #10b981; font-size: 0.95rem;">CAVA MATRIZ CUNDINAMARCA</strong>
         <p style="margin: 4px 0 0 0; font-size: 0.8rem; color: #475569;">
           Parque Industrial Calle 80 / Cota<br/>
           Hub Central de Almacenamiento & Despacho de Pulpa Congelada.
@@ -3835,7 +5051,7 @@ export class DeliveryMapComponent implements OnInit, AfterViewInit, OnDestroy {
       const borderColor = isUnassigned ? '#475569' : '#ffffff';
       const borderWidth = isUnassigned ? '2.5px' : '2px';
       const headerColor = courier ? courier.color : '#475569';
-      const stopIndexInCourier = courier ? (courier.orderIds.indexOf(stop.id) + 1) : '📍';
+      const stopIndexInCourier = courier ? (courier.orderIds.indexOf(stop.id) + 1) : '•';
 
       const coordKey = `${stop.lat.toFixed(4)}_${stop.lng.toFixed(4)}`;
       const seenCount = coordCountMap.get(coordKey) || 0;
@@ -3903,7 +5119,7 @@ export class DeliveryMapComponent implements OnInit, AfterViewInit, OnDestroy {
                 gap: 4px;
               "
             >
-              ${c.vehicleType === 'moto' ? '🛵' : '🚚'} ${c.name.split(' ')[0]}
+              ${c.name.split(' ')[0]}
             </button>
           `;
         })
@@ -3913,12 +5129,12 @@ export class DeliveryMapComponent implements OnInit, AfterViewInit, OnDestroy {
         <div style="font-family: var(--font-body); min-width: 235px;">
           <div style="font-size: 0.72rem; color: ${headerColor}; font-weight: 800;">${stop.orderNumber} · ${courier ? 'PARADA #' + stopIndexInCourier : 'SIN MENSAJERO'}</div>
           <strong style="font-size: 0.95rem; color: #0f172a; display: block; margin-top: 2px;">${stop.clientName}</strong>
-          <div style="font-size: 0.78rem; color: #64748b; margin-top: 4px;">📍 ${stop.address} (${stop.zone})</div>
-          <div style="font-size: 0.78rem; color: #f59e0b; margin-top: 2px;">📦 ${stop.itemsSummary}</div>
+          <div style="font-size: 0.78rem; color: #64748b; margin-top: 4px;">${stop.address} (${stop.zone})</div>
+          <div style="font-size: 0.78rem; color: #f59e0b; margin-top: 2px;">${stop.itemsSummary}</div>
           <div style="font-size: 0.85rem; font-weight: 800; color: #10b981; margin-top: 6px;">Total: ${this.formatCOP(stop.totalAmount)}</div>
           <div style="margin-top: 8px; padding-top: 8px; border-top: 1px solid #e2e8f0;">
             <div style="font-size: 0.7rem; font-weight: 800; color: #1e5e3a; text-transform: uppercase; letter-spacing: 0.03em; margin-bottom: 6px;">
-              🛵 Asignar mensajero:
+              Asignar mensajero:
             </div>
             <div style="display: flex; flex-wrap: wrap; gap: 5px;">
               ${courierAssignButtonsHtml}
@@ -3936,7 +5152,7 @@ export class DeliveryMapComponent implements OnInit, AfterViewInit, OnDestroy {
                   cursor: pointer;
                 "
               >
-                ⚪ Sin asignar
+                Sin asignar
               </button>
             </div>
           </div>
@@ -3960,7 +5176,7 @@ export class DeliveryMapComponent implements OnInit, AfterViewInit, OnDestroy {
               gap: 6px;
             "
           >
-            🗑️ Eliminar entrega del mapa
+            Eliminar entrega del mapa
           </button>
         </div>
       `);
@@ -4183,7 +5399,10 @@ export class DeliveryMapComponent implements OnInit, AfterViewInit, OnDestroy {
           font-size: 1.15rem;
           cursor: pointer;
         ">
-          ${courier.vehicleType === 'moto' ? '🛵' : '🚚'}
+          ${courier.vehicleType === 'moto'
+            ? `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="5" cy="16" r="3"></circle><circle cx="19" cy="16" r="3"></circle><path d="M12 16h3l3-6h-5l-2 3H8l2-5h3"></path></svg>`
+            : `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="15" height="13"></rect><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"></polygon><circle cx="5.5" cy="18.5" r="2.5"></circle><circle cx="18.5" cy="18.5" r="2.5"></circle></svg>`
+          }
           <span style="
             position: absolute;
             bottom: -6px;
@@ -4578,7 +5797,10 @@ export class DeliveryMapComponent implements OnInit, AfterViewInit, OnDestroy {
         animation: pulseSearchPin 1.5s infinite;
         cursor: pointer;
       ">
-        🔍
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="11" cy="11" r="8"></circle>
+          <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+        </svg>
         <span style="
           position: absolute;
           bottom: -6px;
@@ -4605,7 +5827,7 @@ export class DeliveryMapComponent implements OnInit, AfterViewInit, OnDestroy {
     const popupHtml = `
       <div style="min-width: 220px; font-family: inherit; padding: 4px;">
         <div style="font-size: 0.72rem; font-weight: 800; color: #0ea5e9; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px;">
-          📍 Dirección Localizada
+          Dirección Localizada
         </div>
         <div style="font-size: 0.88rem; font-weight: 700; color: #0f172a; line-height: 1.3; margin-bottom: 6px;">
           ${item.label}
@@ -4632,7 +5854,7 @@ export class DeliveryMapComponent implements OnInit, AfterViewInit, OnDestroy {
             box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
           "
         >
-          ➕ Crear Pedido en Esta Dirección
+          Crear Pedido en Esta Dirección
         </button>
       </div>
     `;
@@ -4686,7 +5908,10 @@ export class DeliveryMapComponent implements OnInit, AfterViewInit, OnDestroy {
           font-size: 1.2rem;
           animation: markButtonPulse 1s infinite;
         ">
-          📍
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="#ffffff" stroke="#000000" stroke-width="1.5">
+            <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+            <circle cx="12" cy="10" r="3" fill="#f59e0b"></circle>
+          </svg>
         </div>
       `;
 
@@ -5172,11 +6397,11 @@ export class DeliveryMapComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   getStopOrderIndex(stop: DeliveryWaypoint): string | number {
-    if (!stop.assignedCourierId) return '📍';
+    if (!stop.assignedCourierId) return '•';
     const courier = this.couriers().find(c => c.id === stop.assignedCourierId);
-    if (!courier) return '📍';
+    if (!courier) return '•';
     const idx = courier.orderIds.indexOf(stop.id);
-    return idx >= 0 ? idx + 1 : '📍';
+    return idx >= 0 ? idx + 1 : '•';
   }
 
   focusStopOnMap(stop: DeliveryWaypoint) {

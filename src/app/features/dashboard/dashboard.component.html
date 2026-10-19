@@ -402,7 +402,7 @@
         <!-- Low stock alert item 1: Lulo de Castilla 1/4 kg -->
         <a routerLink="/settings" [queryParams]="{ tab: 'variants' }" class="cava-alert-item">
           <div class="alert-left-group">
-            <span class="alert-fruit-icon">🟢</span>
+            <span class="alert-fruit-icon" style="width: 14px; height: 14px; border-radius: 50%; background: #10b981; display: inline-block;"></span>
             <div>
               <div class="alert-fruit-title">Lulo de Castilla</div>
               <div class="alert-presentation">Presentación de 1/4 kg</div>
@@ -423,7 +423,7 @@
         <!-- Low stock alert item 2: Lulo de Castilla 1/2 kg -->
         <a routerLink="/settings" [queryParams]="{ tab: 'variants' }" class="cava-alert-item">
           <div class="alert-left-group">
-            <span class="alert-fruit-icon">🟢</span>
+            <span class="alert-fruit-icon" style="width: 14px; height: 14px; border-radius: 50%; background: #10b981; display: inline-block;"></span>
             <div>
               <div class="alert-fruit-title">Lulo de Castilla</div>
               <div class="alert-presentation">Presentación de 1/2 kg</div>
@@ -463,7 +463,11 @@
     <div class="modal-content" style="max-width: 440px;" (click)="$event.stopPropagation()">
       <div class="modal-header">
         <div style="display: flex; align-items: center; gap: 8px;">
-          <span style="font-size: 1.25rem;">🎯</span>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"></circle>
+            <circle cx="12" cy="12" r="6"></circle>
+            <circle cx="12" cy="12" r="2"></circle>
+          </svg>
           <h3 class="modal-title" style="margin: 0;">Ajustar Meta Mensual</h3>
         </div>
         <button class="modal-close" (click)="showEditTargetModal.set(false)">&times;</button>

@@ -71,7 +71,13 @@ import { AuthService } from '../../core/services/auth.service';
 
           <div class="mobile-drawer-body">
             <a routerLink="/orders" [queryParams]="{ tab: 'picking' }" class="drawer-link-item" (click)="showMoreDrawer.set(false)">
-              <span class="drawer-icon">📦</span>
+              <span class="drawer-icon">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
+                  <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
+                  <line x1="12" y1="22.08" x2="12" y2="12"></line>
+                </svg>
+              </span>
               <div>
                 <div class="drawer-title">Alistamiento</div>
                 <div class="drawer-desc">Checklist de pulpa en cava</div>
@@ -79,7 +85,14 @@ import { AuthService } from '../../core/services/auth.service';
             </a>
 
             <a routerLink="/orders" [queryParams]="{ tab: 'facturacion' }" class="drawer-link-item" (click)="showMoreDrawer.set(false)">
-              <span class="drawer-icon">🧾</span>
+              <span class="drawer-icon">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                  <polyline points="14 2 14 8 20 8"></polyline>
+                  <line x1="12" y1="18" x2="12" y2="12"></line>
+                  <line x1="9" y1="15" x2="15" y2="15"></line>
+                </svg>
+              </span>
               <div>
                 <div class="drawer-title">Facturación & POS</div>
                 <div class="drawer-desc">Factura ejecutiva corporativa y cobro</div>
@@ -87,7 +100,14 @@ import { AuthService } from '../../core/services/auth.service';
             </a>
 
             <a routerLink="/orders" [queryParams]="{ tab: 'despachos' }" class="drawer-link-item" (click)="showMoreDrawer.set(false)">
-              <span class="drawer-icon">🚚</span>
+              <span class="drawer-icon">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <rect x="1" y="3" width="15" height="13"></rect>
+                  <polygon points="16 8 20 8 23 11 23 16 16 16 8"></polygon>
+                  <circle cx="5.5" cy="18.5" r="2.5"></circle>
+                  <circle cx="18.5" cy="18.5" r="2.5"></circle>
+                </svg>
+              </span>
               <div>
                 <div class="drawer-title">Despachos & Rutas</div>
                 <div class="drawer-desc">Control de domiciliarios y entregas</div>
@@ -95,7 +115,13 @@ import { AuthService } from '../../core/services/auth.service';
             </a>
 
             <a routerLink="/settings" [queryParams]="{ tab: 'inventory' }" class="drawer-link-item" (click)="showMoreDrawer.set(false)">
-              <span class="drawer-icon">🍎</span>
+              <span class="drawer-icon">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
+                  <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
+                  <line x1="12" y1="22.08" x2="12" y2="12"></line>
+                </svg>
+              </span>
               <div>
                 <div class="drawer-title">Inventario y Stock</div>
                 <div class="drawer-desc">Cantidad de fruta disponible y stock de pulpas hechas</div>
@@ -103,31 +129,43 @@ import { AuthService } from '../../core/services/auth.service';
             </a>
 
             <a routerLink="/accounting" class="drawer-link-item" (click)="showMoreDrawer.set(false)">
-              <span class="drawer-icon">👥</span>
+              <span class="drawer-icon">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                  <circle cx="9" cy="7" r="4"></circle>
+                  <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                  <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                </svg>
+              </span>
               <div>
                 <div class="drawer-title">Clientes</div>
                 <div class="drawer-desc">Creación y directorio de clientes</div>
               </div>
             </a>
 
-            <a routerLink="/shifts" class="drawer-link-item" (click)="showMoreDrawer.set(false)">
-              <span class="drawer-icon">⏱️</span>
-              <div>
-                <div class="drawer-title">Control de Turnos</div>
-                <div class="drawer-desc">Entradas y salidas de operarios</div>
-              </div>
-            </a>
-
             <a routerLink="/hr" class="drawer-link-item" (click)="showMoreDrawer.set(false)">
-              <span class="drawer-icon">👥</span>
+              <span class="drawer-icon">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
+                  <circle cx="9" cy="7" r="4"></circle>
+                  <path d="M22 21v-2a4 4 0 0 0-3-3.87"></path>
+                  <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                </svg>
+              </span>
               <div>
-                <div class="drawer-title">Nómina & Talento Humano</div>
-                <div class="drawer-desc">Liquidación quincenal y personal</div>
+                <div class="drawer-title">Gestión de Personal</div>
+                <div class="drawer-desc">Usuarios, turnos, certificaciones y pagos de nómina</div>
               </div>
             </a>
 
             <a routerLink="/reports" class="drawer-link-item" (click)="showMoreDrawer.set(false)">
-              <span class="drawer-icon">📊</span>
+              <span class="drawer-icon">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <line x1="18" y1="20" x2="18" y2="10"></line>
+                  <line x1="12" y1="20" x2="12" y2="4"></line>
+                  <line x1="6" y1="20" x2="6" y2="14"></line>
+                </svg>
+              </span>
               <div>
                 <div class="drawer-title">Ventas</div>
                 <div class="drawer-desc">Listado tipo Excel y exportación de todo lo vendido</div>
@@ -135,7 +173,12 @@ import { AuthService } from '../../core/services/auth.service';
             </a>
 
             <a routerLink="/settings" [queryParams]="{ tab: 'general' }" class="drawer-link-item" (click)="showMoreDrawer.set(false)">
-              <span class="drawer-icon">🏢</span>
+              <span class="drawer-icon">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="12" cy="12" r="3"></circle>
+                  <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+                </svg>
+              </span>
               <div>
                 <div class="drawer-title">Configuración General</div>
                 <div class="drawer-desc">Empresa, logo, horarios y facturación</div>
@@ -143,7 +186,14 @@ import { AuthService } from '../../core/services/auth.service';
             </a>
 
             <a routerLink="/settings" [queryParams]="{ tab: 'users' }" class="drawer-link-item" (click)="showMoreDrawer.set(false)">
-              <span class="drawer-icon">👥</span>
+              <span class="drawer-icon">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
+                  <circle cx="9" cy="7" r="4"></circle>
+                  <path d="M22 21v-2a4 4 0 0 0-3-3.87"></path>
+                  <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                </svg>
+              </span>
               <div>
                 <div class="drawer-title">Usuarios y Roles</div>
                 <div class="drawer-desc">Cuentas, permisos y seguridad RBAC</div>

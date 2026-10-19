@@ -63,6 +63,11 @@ export class SettingsComponent {
   // COMPANY GENERAL & BILLING CONFIGURATION
   // ==========================================
   readonly companyForm = signal<CompanyConfig>({ ...this.stateService.companyInfo() });
+  readonly showInvoicePreviewModal = signal<boolean>(false);
+
+  printInvoicePreview() {
+    window.print();
+  }
 
   updateCompanyField<K extends keyof CompanyConfig>(field: K, value: CompanyConfig[K]) {
     this.companyForm.update(curr => {

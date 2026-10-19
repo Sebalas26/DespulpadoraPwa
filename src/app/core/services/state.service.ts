@@ -38,6 +38,7 @@ import {
   INITIAL_PAYROLL_PERIODS_SAMPLE,
   INITIAL_PRODUCT_VARIANTS,
   INITIAL_SALES_TARGETS_SAMPLE,
+  INITIAL_SHIFTS_SAMPLE,
   DEFAULT_COMPANY_CONFIG
 } from '../data/initial-data';
 import { forkJoin } from 'rxjs';
@@ -57,7 +58,7 @@ export class StateService {
   readonly employees = signal<EmployeeDto[]>(this.loadEmployeesFromStorage());
   readonly expenses = signal<ExpenseDto[]>(this.loadExpensesFromStorage());
   readonly clients = signal<ClientDto[]>(this.loadClientsFromStorage());
-  readonly shifts = signal<WorkShiftDto[]>([]);
+  readonly shifts = signal<WorkShiftDto[]>(this.loadShiftsFromStorage());
 
   // Modules from Excel: Variants, Targets, Payroll
   readonly productVariants = signal<ProductVariantDto[]>(this.loadVariantsFromStorage());
@@ -304,6 +305,11 @@ export class StateService {
     return data ? JSON.parse(data) : [];
   }
 
+  private loadShiftsFromStorage(): WorkShiftDto[] {
+    const data = localStorage.getItem('despulpadora_shifts');
+    return data ? JSON.parse(data) : INITIAL_SHIFTS_SAMPLE;
+  }
+
   private loadCompanyInfoFromStorage(): CompanyConfig {
     const data = localStorage.getItem('despulpadora_company_info');
     if (!data) return DEFAULT_COMPANY_CONFIG;
@@ -336,6 +342,7 @@ export class StateService {
     localStorage.setItem('despulpadora_targets', JSON.stringify(this.salesTargets()));
     localStorage.setItem('despulpadora_payroll_periods', JSON.stringify(this.payrollPeriods()));
     localStorage.setItem('despulpadora_payroll_settlements', JSON.stringify(this.payrollSettlements()));
+    localStorage.setItem('despulpadora_shifts', JSON.stringify(this.shifts()));
     localStorage.setItem('despulpadora_company_info', JSON.stringify(this.companyInfo()));
   }
 
@@ -613,6 +620,7 @@ export class StateService {
       paymentMethodName?: string;
       courierName?: string;
       status?: OrderStatus;
+      isPaid?: boolean;
     }
   ) {
     const totalAmount = orderData.items.reduce((sum, item) => sum + (item.quantity * item.unitPrice), 0);
@@ -628,6 +636,7 @@ export class StateService {
             paymentMethodName: orderData.paymentMethodName || o.paymentMethodName,
             courierName: orderData.courierName !== undefined ? orderData.courierName : o.courierName,
             status: orderData.status || o.status,
+            isPaid: orderData.isPaid !== undefined ? orderData.isPaid : o.isPaid,
             notes: orderData.notes,
             totalAmount,
             items: orderData.items.map(i => {
@@ -969,5 +978,52 @@ export class StateService {
       this.notification.info('Cliente Eliminado', `${target.fullName} fue retirado del directorio.`);
     }
   }
+
+  // ==========================================
+  // WORK SHIFTS MANAGEMENT
+  // ==========================================
+  startWorkShift(employeeId: number, shiftType: 'MORNING' | 'AFTERNOON' | 'NIGHT', notes?: string): WorkShiftDto {
+    const emp = this.employees().find(e => e.employeeId === employeeId);
+    const newShift: WorkShiftDto = {
+      shiftId: Date.now(),
+      employeeId,
+      employeeName: emp ? emp.fullName : 'Colaborador',
+      branchId: 1,
+      branchName: 'Planta Principal',
+      startTime: new Date().toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit', hour12: true }),
+      shiftType,
+      status: 'ACTIVE',
+      notes: notes || 'Ingreso registrado en terminal de planta'
+    };
+    this.shifts.update(list => [newShift, ...list]);
+    this.saveAllToStorage();
+    return newShift;
+  }
+
+  closeWorkShift(shiftId: number, notes?: string) {
+    this.shifts.update(list => list.map(s => {
+      if (s.shiftId === shiftId) {
+        return {
+          ...s,
+          status: 'CLOSED',
+          endTime: new Date().toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit', hour12: true }),
+          hoursWorked: 8,
+          notes: notes ? `${s.notes || ''} | Cierre: ${notes}` : s.notes
+        };
+      }
+      return s;
+    }));
+    this.saveAllToStorage();
+  }
+
+  deleteEmployee(employeeId: number) {
+    const target = this.employees().find(e => e.employeeId === employeeId);
+    this.employees.update(list => list.filter(e => e.employeeId !== employeeId));
+    this.saveAllToStorage();
+    if (target) {
+      this.notification.info('Personal Eliminado', `${target.fullName} fue retirado del personal de la empresa.`);
+    }
+  }
 }
+
 

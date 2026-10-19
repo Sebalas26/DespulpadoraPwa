@@ -13,7 +13,10 @@
 
     <!-- Live Digital Clock Pill -->
     <div style="display: flex; align-items: center; gap: 14px; padding: 12px 20px; border-radius: var(--radius-md); background: var(--bg-card); border: 1px solid var(--border-subtle); box-shadow: var(--shadow-sm);">
-      <span style="font-size: 1.5rem;">🕒</span>
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--color-primary-text)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="10"></circle>
+        <polyline points="12 6 12 12 16 14"></polyline>
+      </svg>
       <div>
         <div style="font-size: 1.5rem; font-weight: 800; font-family: monospace; color: var(--color-primary-text); line-height: 1;">
           {{ currentTime() }}
@@ -80,8 +83,13 @@
     <div style="display: flex; flex-direction: column; gap: 14px;">
       <div class="card hover-lift" style="flex: 1;">
         <div class="card-body" style="display: flex; align-items: center; gap: 18px;">
-          <div style="width: 52px; height: 52px; border-radius: 14px; background: rgba(16, 185, 129, 0.15); display: flex; align-items: center; justify-content: center; font-size: 1.6rem; color: #10b981;">
-            👨‍🏭
+          <div style="width: 52px; height: 52px; border-radius: 14px; background: rgba(16, 185, 129, 0.15); display: flex; align-items: center; justify-content: center; color: #10b981;">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+              <circle cx="9" cy="7" r="4"></circle>
+              <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+              <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+            </svg>
           </div>
           <div>
             <div style="font-size: 0.8rem; color: var(--text-muted); text-transform: uppercase; font-weight: 700;">Operarios en Línea</div>
@@ -95,8 +103,12 @@
 
       <div class="card hover-lift" style="flex: 1;">
         <div class="card-body" style="display: flex; align-items: center; gap: 18px;">
-          <div style="width: 52px; height: 52px; border-radius: 14px; background: rgba(245, 158, 11, 0.15); display: flex; align-items: center; justify-content: center; font-size: 1.6rem; color: #f59e0b;">
-            🥪
+          <div style="width: 52px; height: 52px; border-radius: 14px; background: rgba(245, 158, 11, 0.15); display: flex; align-items: center; justify-content: center; color: #f59e0b;">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"></circle>
+              <line x1="10" y1="15" x2="10" y2="9"></line>
+              <line x1="14" y1="15" x2="14" y2="9"></line>
+            </svg>
           </div>
           <div>
             <div style="font-size: 0.8rem; color: var(--text-muted); text-transform: uppercase; font-weight: 700;">Recesos Programados</div>

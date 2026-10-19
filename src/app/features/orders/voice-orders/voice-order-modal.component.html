@@ -413,7 +413,7 @@
                           >
                             @for (fruit of stateService.fruits(); track fruit.id) {
                               <option [value]="fruit.name">
-                                {{ fruit.emoji || '🟢' }} {{ fruit.name }}
+                                {{ fruit.name }}
                               </option>
                             }
                           </select>

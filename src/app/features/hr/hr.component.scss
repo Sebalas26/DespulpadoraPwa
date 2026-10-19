@@ -1,3 +1,686 @@
 :host {
   display: block;
 }
+
+/* ==========================================================================
+   SUB-NAVIGATION TABS (4 OPTIONS)
+   ========================================================================== */
+.hr-subnav-bar {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 10px;
+  background: var(--bg-card-solid, #ffffff);
+  padding: 8px;
+  border-radius: 14px;
+  border: 1px solid var(--border-subtle, #e2e8f0);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+.hr-tab-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  border: 1.5px solid transparent;
+  background: transparent;
+  color: #64748b;
+  font-size: 0.82rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  white-space: nowrap;
+
+  .tab-icon {
+    font-size: 1.05rem;
+  }
+
+  .tab-badge {
+    background: #f1f5f9;
+    color: #475569;
+    font-size: 0.7rem;
+    font-weight: 800;
+    padding: 2px 7px;
+    border-radius: 9999px;
+  }
+
+  &:hover {
+    background: #f8fafc;
+    color: #0f172a;
+  }
+
+  &.active {
+    background: #1e5e3a;
+    border-color: #1e5e3a;
+    color: #ffffff;
+    box-shadow: 0 3px 10px rgba(30, 94, 58, 0.25);
+
+    .tab-badge {
+      background: rgba(255, 255, 255, 0.25);
+      color: #ffffff;
+    }
+  }
+}
+
+.badge-pulse-green {
+  background: #dcfce7 !important;
+  color: #166534 !important;
+  animation: pulseGreen 1.6s infinite;
+}
+
+@keyframes pulseGreen {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.06); }
+  100% { transform: scale(1); }
+}
+
+/* ==========================================================================
+   TAB 1: USERS & EMPLOYEES DIRECTORY
+   ========================================================================== */
+.pill-filter-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+
+  .pill-btn {
+    border: 1px solid #cbd5e1;
+    background: #ffffff;
+    color: #64748b;
+    padding: 6px 12px;
+    border-radius: 9999px;
+    font-size: 0.76rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.15s ease;
+
+    &:hover {
+      border-color: #94a3b8;
+      color: #0f172a;
+    }
+
+    &.active {
+      background: #0f172a;
+      border-color: #0f172a;
+      color: #ffffff;
+    }
+  }
+}
+
+.user-avatar-badge {
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  background: #e0f2fe;
+  color: #0284c7;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.85rem;
+  font-weight: 800;
+  flex-shrink: 0;
+
+  &.avatar-female {
+    background: #fae8ff;
+    color: #a855f7;
+  }
+}
+
+.pulse-dot-green {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #10b981;
+  display: inline-block;
+  box-shadow: 0 0 6px #10b981;
+}
+
+.btn-action-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+  background: #ffffff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: all 0.15s ease;
+
+  &:hover {
+    background: #f1f5f9;
+    border-color: #cbd5e1;
+    transform: translateY(-1px);
+  }
+
+  &.btn-action-delete {
+    &:hover {
+      background: #fef2f2;
+      border-color: #fca5a5;
+      color: #ef4444;
+    }
+  }
+}
+
+/* ==========================================================================
+   TAB 2: SHIFTS (INGRESO Y SALIDA)
+   ========================================================================== */
+.shifts-hero-banner {
+  background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+  border-radius: 16px;
+  padding: 24px 28px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  color: #ffffff;
+  box-shadow: 0 10px 25px -5px rgba(15, 23, 42, 0.3);
+  flex-wrap: wrap;
+
+  .shifts-live-pill {
+    font-size: 0.68rem;
+    font-weight: 900;
+    letter-spacing: 0.08em;
+    color: #4ade80;
+    background: rgba(74, 222, 128, 0.12);
+    border: 1px solid rgba(74, 222, 128, 0.3);
+    padding: 3px 10px;
+    border-radius: 9999px;
+    display: inline-block;
+    margin-bottom: 6px;
+  }
+
+  .shifts-clock-display {
+    font-size: 2.5rem;
+    font-weight: 900;
+    font-family: monospace;
+    letter-spacing: 0.04em;
+    line-height: 1.1;
+    color: #f8fafc;
+    text-shadow: 0 2px 10px rgba(0, 0, 0, 0.4);
+  }
+
+  .shifts-date-display {
+    font-size: 0.85rem;
+    color: #94a3b8;
+    margin-top: 4px;
+    text-transform: capitalize;
+  }
+
+  .shifts-hero-right {
+    display: flex;
+    gap: 16px;
+  }
+
+  .shifts-metric-box {
+    background: rgba(255, 255, 255, 0.07);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 12px;
+    padding: 12px 18px;
+    text-align: center;
+    min-width: 110px;
+
+    .metric-big {
+      font-size: 1.8rem;
+      font-weight: 900;
+      color: #38bdf8;
+      display: block;
+    }
+
+    .metric-label {
+      font-size: 0.72rem;
+      color: #cbd5e1;
+      text-transform: uppercase;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+    }
+  }
+}
+
+.shifts-split-grid {
+  display: grid;
+  grid-template-columns: 1fr 1.1fr;
+  gap: 18px;
+
+  @media (max-width: 900px) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.shift-type-selector {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 8px;
+
+  .shift-type-btn {
+    border: 1.5px solid #cbd5e1;
+    background: #f8fafc;
+    border-radius: 10px;
+    padding: 10px 8px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+
+    .shift-icon { font-size: 1.25rem; }
+    .shift-name { font-size: 0.78rem; font-weight: 800; color: #0f172a; }
+    .shift-hours { font-size: 0.66rem; color: #64748b; font-family: monospace; }
+
+    &:hover {
+      background: #f1f5f9;
+      border-color: #94a3b8;
+    }
+
+    &.active {
+      background: #eff6ff;
+      border-color: #3b82f6;
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+
+      .shift-name { color: #1d4ed8; }
+    }
+  }
+}
+
+.btn-punch-in {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: #16a34a !important;
+  border-color: #16a34a !important;
+  font-size: 0.95rem;
+  font-weight: 900;
+  padding: 12px 20px;
+  border-radius: 10px;
+  letter-spacing: 0.02em;
+  box-shadow: 0 4px 14px rgba(22, 163, 74, 0.3);
+
+  &:hover {
+    background: #15803d !important;
+    transform: translateY(-1px);
+  }
+}
+
+.active-shift-ticket {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-left: 4px solid #10b981;
+  border-radius: 10px;
+  padding: 12px 14px;
+  transition: all 0.2s ease;
+
+  &:hover {
+    background: #ffffff;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  }
+
+  .shift-ticket-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .shift-ticket-avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: #dcfce7;
+    color: #166534;
+    font-weight: 800;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .shift-ticket-name {
+    font-weight: 800;
+    font-size: 0.88rem;
+    color: #0f172a;
+  }
+
+  .shift-ticket-meta {
+    font-size: 0.74rem;
+    color: #64748b;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 2px;
+  }
+
+  .shift-ticket-notes {
+    font-size: 0.72rem;
+    color: #94a3b8;
+    font-style: italic;
+    margin-top: 2px;
+  }
+
+  .btn-punch-out {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    background: #fee2e2;
+    border: 1px solid #fca5a5;
+    color: #dc2626;
+    font-size: 0.76rem;
+    font-weight: 800;
+    padding: 7px 12px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    flex-shrink: 0;
+
+    &:hover {
+      background: #dc2626;
+      color: #ffffff;
+      border-color: #dc2626;
+      box-shadow: 0 2px 8px rgba(220, 38, 38, 0.25);
+    }
+  }
+}
+
+.empty-shifts-state {
+  text-align: center;
+  padding: 40px 20px;
+  border: 2px dashed #e2e8f0;
+  border-radius: 12px;
+}
+
+/* ==========================================================================
+   TAB 3: CERTIFICATES (BANCARIA & LABORAL)
+   ========================================================================== */
+.cert-type-toggle {
+  display: flex;
+  background: #f1f5f9;
+  padding: 3px;
+  border-radius: 8px;
+  gap: 4px;
+
+  .cert-pill-btn {
+    border: none;
+    background: transparent;
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-size: 0.76rem;
+    font-weight: 700;
+    color: #64748b;
+    cursor: pointer;
+    transition: all 0.15s ease;
+
+    &.active {
+      background: #ffffff;
+      color: #0f172a;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    }
+  }
+}
+
+.certificate-paper-sheet {
+  background: #ffffff;
+  color: #111827;
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 48px 56px;
+  border-radius: 16px;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 15px 35px -5px rgba(0, 0, 0, 0.08);
+  font-family: 'Times New Roman', Times, serif;
+  line-height: 1.85;
+
+  .cert-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 20px;
+  }
+
+  .cert-logo-brand {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+
+  .cert-logo-img {
+    width: 60px;
+    height: 60px;
+    object-fit: contain;
+  }
+
+  .cert-company-name {
+    font-size: 1.15rem;
+    font-weight: 900;
+    margin: 0;
+    font-family: sans-serif;
+    color: #0f172a;
+    letter-spacing: -0.01em;
+  }
+
+  .cert-company-sub {
+    font-size: 0.75rem;
+    color: #64748b;
+    font-family: sans-serif;
+    line-height: 1.4;
+  }
+
+  .cert-code-stamp {
+    text-align: right;
+    font-family: sans-serif;
+
+    .cert-stamp-badge {
+      display: inline-block;
+      font-size: 0.65rem;
+      font-weight: 900;
+      color: #16a34a;
+      background: #dcfce7;
+      padding: 3px 8px;
+      border-radius: 4px;
+      letter-spacing: 0.04em;
+    }
+
+    .cert-ref-num {
+      font-size: 0.7rem;
+      color: #94a3b8;
+      font-family: monospace;
+      margin-top: 3px;
+    }
+  }
+
+  .cert-divider-line {
+    height: 2px;
+    background: #0f172a;
+    margin: 20px 0 28px;
+  }
+
+  .cert-addressee-block {
+    font-family: sans-serif;
+    font-size: 0.88rem;
+    margin-bottom: 24px;
+
+    .cert-city-date {
+      color: #64748b;
+      margin-bottom: 14px;
+    }
+
+    .cert-addressee-title {
+      font-weight: 700;
+      color: #0f172a;
+    }
+
+    .cert-addressee-name {
+      font-weight: 800;
+      font-size: 1rem;
+      color: #0f172a;
+      text-transform: uppercase;
+    }
+
+    .cert-addressee-city {
+      color: #475569;
+    }
+  }
+
+  .cert-title-centered {
+    font-family: sans-serif;
+    text-align: center;
+    font-size: 1.2rem;
+    font-weight: 900;
+    color: #0f172a;
+    letter-spacing: 0.05em;
+    margin: 30px 0 24px;
+    text-transform: uppercase;
+    text-decoration: underline;
+  }
+
+  .cert-certifies-heading {
+    font-family: sans-serif;
+    text-align: center;
+    font-size: 1.05rem;
+    font-weight: 900;
+    margin: 18px 0;
+    color: #0f172a;
+    letter-spacing: 0.1em;
+  }
+
+  .cert-paragraph {
+    text-align: justify;
+    font-size: 1rem;
+    color: #1f2937;
+    margin-bottom: 18px;
+    text-indent: 28px;
+
+    strong {
+      color: #0f172a;
+      font-weight: 700;
+    }
+  }
+
+  .banking-details-box {
+    background: #f8fafc;
+    border: 1.5px solid #cbd5e1;
+    border-radius: 8px;
+    padding: 16px 20px;
+    margin: 24px 0;
+    font-family: sans-serif;
+
+    .banking-box-title {
+      font-size: 0.78rem;
+      font-weight: 900;
+      color: #0f172a;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      border-bottom: 1px solid #e2e8f0;
+      padding-bottom: 8px;
+      margin-bottom: 12px;
+    }
+
+    .banking-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px 20px;
+    }
+
+    .banking-item {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .banking-label {
+      font-size: 0.74rem;
+      color: #64748b;
+      font-weight: 600;
+      text-transform: uppercase;
+    }
+
+    .banking-value {
+      font-size: 0.92rem;
+      font-weight: 800;
+      color: #0f172a;
+
+      &.highlight-bank {
+        color: #1e40af;
+      }
+
+      &.highlight-account {
+        font-family: monospace;
+        color: #15803d;
+        font-size: 1rem;
+      }
+    }
+  }
+
+  .cert-signature-section {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    margin-top: 50px;
+    font-family: sans-serif;
+
+    .cert-signature-line {
+      width: 240px;
+      height: 1.5px;
+      background: #0f172a;
+      margin-bottom: 8px;
+    }
+
+    .cert-signer-name {
+      font-size: 0.88rem;
+      font-weight: 900;
+      color: #0f172a;
+    }
+
+    .cert-signer-role {
+      font-size: 0.78rem;
+      color: #475569;
+    }
+
+    .cert-signer-contact {
+      font-size: 0.72rem;
+      color: #94a3b8;
+    }
+
+    .cert-seal-circle {
+      width: 90px;
+      height: 90px;
+      border: 2px dashed #94a3b8;
+      border-radius: 50%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      color: #64748b;
+      font-weight: 800;
+      font-size: 0.75rem;
+      transform: rotate(-12deg);
+      line-height: 1.2;
+    }
+  }
+}
+
+/* ==========================================================================
+   PRINT STYLES (A4 / CARTA CLEAN OUTPUT)
+   ========================================================================== */
+@media print {
+  body {
+    background: #ffffff !important;
+  }
+
+  .no-print,
+  .topbar,
+  .sidebar,
+  .dgl-mobile-nav {
+    display: none !important;
+  }
+
+  .printable-sheet {
+    box-shadow: none !important;
+    border: none !important;
+    padding: 0 !important;
+    max-width: 100% !important;
+  }
+}

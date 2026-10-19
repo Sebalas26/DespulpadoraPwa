@@ -72,7 +72,10 @@ interface TicketTimer {
         <div class="kds-actions-group">
           <!-- Live Clock -->
           <div class="kds-clock">
-            <span class="clock-icon">🕒</span>
+            <svg class="clock-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="10"></circle>
+              <polyline points="12 6 12 12 16 14"></polyline>
+            </svg>
             <span class="clock-time">{{ currentTime() }}</span>
           </div>
 
@@ -95,7 +98,20 @@ interface TicketTimer {
             (click)="toggleSound()"
             [title]="soundEnabled() ? 'Silenciar campanilla' : 'Activar campanilla sonora'"
           >
-            {{ soundEnabled() ? '🔔' : '🔕' }}
+            @if (soundEnabled()) {
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+                <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+              </svg>
+            } @else {
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+                <path d="M18.63 13A17.89 17.89 0 0 1 18 8"></path>
+                <path d="M6.26 6.26A5.86 5.86 0 0 0 6 8c0 7-3 9-3 9h14"></path>
+                <path d="M18 8a6 6 0 0 0-9.33-5"></path>
+                <line x1="1" y1="1" x2="23" y2="23"></line>
+              </svg>
+            }
           </button>
 
           <!-- View Mode Toggle: Columns vs Grid -->
@@ -144,7 +160,23 @@ interface TicketTimer {
             (click)="toggleTheme()"
             title="Cambiar tema Claro / Oscuro"
           >
-            {{ isDarkTheme() ? '☀️' : '🌙' }}
+            @if (isDarkTheme()) {
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="5"></circle>
+                <line x1="12" y1="1" x2="12" y2="3"></line>
+                <line x1="12" y1="21" x2="12" y2="23"></line>
+                <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+                <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+                <line x1="1" y1="12" x2="3" y2="12"></line>
+                <line x1="21" y1="12" x2="23" y2="12"></line>
+                <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+                <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+              </svg>
+            } @else {
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+              </svg>
+            }
           </button>
         </div>
       </header>
@@ -173,12 +205,12 @@ interface TicketTimer {
                       <h3 class="ticket-client">{{ order.clientName }}</h3>
                     </div>
                     <div class="ticket-timer timer-new">
-                      <span>⏱️ {{ getOrderElapsedTime(order) }}</span>
+                      <span>{{ getOrderElapsedTime(order) }}</span>
                     </div>
                   </header>
 
                   <div class="ticket-location">
-                    📍 {{ order.clientAddress || 'Sede Bogotá / Cundinamarca' }}
+                    {{ order.clientAddress || 'Sede Bogotá / Cundinamarca' }}
                   </div>
 
                   <!-- Items Checklist -->
@@ -197,7 +229,7 @@ interface TicketTimer {
 
                   @if (order.notes) {
                     <div class="ticket-note">
-                      📝 {{ order.notes }}
+                      {{ order.notes }}
                     </div>
                   }
 
@@ -218,7 +250,13 @@ interface TicketTimer {
 
               @if (pendingOrders().length === 0) {
                 <div class="kds-empty-column">
-                  <span class="empty-icon">☕</span>
+                  <svg class="empty-icon" width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom: 6px;">
+                    <path d="M18 8h1a4 4 0 0 1 0 8h-1"></path>
+                    <path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"></path>
+                    <line x1="6" y1="1" x2="6" y2="4"></line>
+                    <line x1="10" y1="1" x2="10" y2="4"></line>
+                    <line x1="14" y1="1" x2="14" y2="4"></line>
+                  </svg>
                   <p>Sin pedidos por iniciar</p>
                   <small>Utiliza el botón "+ Simular Pedido" para probar la llegada de órdenes.</small>
                 </div>
@@ -245,12 +283,12 @@ interface TicketTimer {
                       <h3 class="ticket-client">{{ order.clientName }}</h3>
                     </div>
                     <div class="ticket-timer timer-active" [class.timer-alert]="isTimerOverdue(order)">
-                      <span>⏱️ {{ getOrderElapsedTime(order) }}</span>
+                      <span>{{ getOrderElapsedTime(order) }}</span>
                     </div>
                   </header>
 
                   <div class="ticket-location">
-                    📍 {{ order.clientAddress }}
+                    {{ order.clientAddress }}
                   </div>
 
                   <!-- Items Checklist with Interactive Touch / Click -->
@@ -295,7 +333,7 @@ interface TicketTimer {
                       class="btn-ticket-primary btn-complete-picking"
                       (click)="completeOrderPicking(order)"
                     >
-                      <span>✓ Marcar Alistado</span>
+                      <span>Marcar Alistado</span>
                     </button>
                   </footer>
                 </article>
@@ -303,7 +341,11 @@ interface TicketTimer {
 
               @if (pickingOrders().length === 0) {
                 <div class="kds-empty-column">
-                  <span class="empty-icon">❄️</span>
+                  <svg class="empty-icon" width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom: 6px;">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <line x1="12" y1="8" x2="12" y2="12"></line>
+                    <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                  </svg>
                   <p>Cava sin picking activo</p>
                   <small>Haz clic en "Iniciar Alistamiento" en un pedido pendiente para comenzarlo.</small>
                 </div>
@@ -335,16 +377,16 @@ interface TicketTimer {
                   </header>
 
                   <div class="ticket-location">
-                    📍 {{ order.clientAddress }}
+                    {{ order.clientAddress }}
                   </div>
 
                   <div class="ticket-items-summary">
-                    📦 {{ order.items.length }} productos alistados en cava ({{ calculateOrderKg(order) }} kg)
+                    {{ order.items.length }} productos alistados en cava ({{ calculateOrderKg(order) }} kg)
                   </div>
 
                   <footer class="ticket-footer">
                     <div class="ready-stamp">
-                      <span>✓ EMPACADO EN HIELERA</span>
+                      <span>EMPACADO EN HIELERA</span>
                     </div>
                     <button
                       type="button"
@@ -360,7 +402,11 @@ interface TicketTimer {
 
               @if (readyOrders().length === 0) {
                 <div class="kds-empty-column">
-                  <span class="empty-icon">📦</span>
+                  <svg class="empty-icon" width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom: 6px;">
+                    <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
+                    <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
+                    <line x1="12" y1="22.08" x2="12" y2="12"></line>
+                  </svg>
                   <p>Aún no hay pedidos alistados</p>
                   <small>Los pedidos completados en la columna central aparecerán aquí.</small>
                 </div>
@@ -393,7 +439,7 @@ interface TicketTimer {
               </header>
 
               <div class="ticket-location">
-                📍 {{ order.clientAddress }}
+                {{ order.clientAddress }}
               </div>
 
               <!-- Items Checklist -->
@@ -416,7 +462,7 @@ interface TicketTimer {
 
               <footer class="ticket-footer">
                 <div class="ticket-timer">
-                  <span>⏱️ {{ getOrderElapsedTime(order) }}</span>
+                  <span>{{ getOrderElapsedTime(order) }}</span>
                 </div>
                 @if (order.status === 'PENDING') {
                   <button type="button" class="btn-ticket-primary btn-start-picking" (click)="advanceStatus(order, 'PICKING')">
@@ -424,10 +470,10 @@ interface TicketTimer {
                   </button>
                 } @else if (order.status === 'PICKING') {
                   <button type="button" class="btn-ticket-primary btn-complete-picking" (click)="completeOrderPicking(order)">
-                    ✓ Alistado
+                    Alistado
                   </button>
                 } @else {
-                  <span class="text-emerald font-bold">✓ Listo</span>
+                  <span class="text-emerald font-bold">Listo</span>
                 }
               </footer>
             </article>

@@ -1,4 +1,4 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, RouterLink, RouterLinkActive, NavigationEnd } from '@angular/router';
 import { toSignal } from '@angular/core/rxjs-interop';
@@ -134,6 +134,24 @@ import { StateService } from '../../core/services/state.service';
           <span class="dgl-nav-text">Clientes</span>
         </a>
 
+        <!-- Gestión de Personal -->
+        <a
+          routerLink="/hr"
+          routerLinkActive="active"
+          class="dgl-nav-item"
+          title="Gestión de Personal"
+        >
+          <span class="dgl-nav-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+              <circle cx="9" cy="7" r="4"></circle>
+              <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+              <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+            </svg>
+          </span>
+          <span class="dgl-nav-text">Gestión de Personal</span>
+        </a>
+
         <!-- Section: SISTEMA & CONFIGURACIÓN -->
         <div class="nav-section-title" style="margin-top: 14px;">SISTEMA & CONFIGURACIÓN</div>
 
@@ -153,28 +171,14 @@ import { StateService } from '../../core/services/state.service';
           <span class="dgl-nav-text">Configuración</span>
         </a>
 
-        <!-- Usuarios y roles -->
-        <a
-          routerLink="/settings"
-          [queryParams]="{ tab: 'users' }"
-          [class.active]="isSettingsTabActive('users')"
-          class="dgl-nav-item"
-        >
-          <span class="dgl-nav-icon">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
-              <circle cx="9" cy="7" r="4"></circle>
-              <path d="M22 21v-2a4 4 0 0 0-3-3.87"></path>
-              <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
-            </svg>
-          </span>
-          <span class="dgl-nav-text">Usuarios y roles</span>
-        </a>
-
         <!-- 4. Promotional / Informational Box (Figma style) -->
         <div class="dgl-callout-card">
           <div class="callout-header">
-            <span class="callout-icon">✨</span>
+            <span class="callout-icon" style="display: inline-flex; align-items: center; justify-content: center; color: #10b981;">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M12 2l2.4 7.4h7.6l-6.1 4.5 2.3 7.1-6.2-4.6-6.2 4.6 2.3-7.1-6.1-4.5h7.6z"/>
+              </svg>
+            </span>
             <span class="callout-title">Todo en su punto.</span>
           </div>
           <p class="callout-text">De la fruta al despacho, tu planta en un solo lugar.</p>
@@ -378,6 +382,7 @@ import { StateService } from '../../core/services/state.service';
       }
     }
 
+
     .dgl-nav-icon {
       display: flex;
       align-items: center;
@@ -443,24 +448,33 @@ import { StateService } from '../../core/services/state.service';
       display: flex;
       align-items: center;
       gap: 10px;
-      padding: 6px 8px;
-      border-radius: 10px;
-      background: #fafbf9;
-      border: 1px solid #eef2ef;
+      padding: 8px 10px;
+      border-radius: 12px;
+      background: #fefce8;
+      border: 1px solid #fde047;
+      box-shadow: 0 2px 8px rgba(234, 179, 8, 0.12);
+      transition: all 0.2s ease;
+
+      &:hover {
+        background: #fef9c3;
+        border-color: #facc15;
+        box-shadow: 0 4px 12px rgba(234, 179, 8, 0.18);
+      }
     }
 
     .user-avatar-circle {
       width: 32px;
       height: 32px;
       border-radius: 50%;
-      background: #fef3c7;
-      color: #92400e;
+      background: #ffffff;
+      color: #854d0e;
       display: flex;
       align-items: center;
       justify-content: center;
       font-size: 0.78rem;
       font-weight: 800;
-      border: 1px solid #fde68a;
+      border: 1.5px solid #facc15;
+      box-shadow: 0 1px 4px rgba(202, 138, 4, 0.15);
       flex-shrink: 0;
     }
 
@@ -473,20 +487,21 @@ import { StateService } from '../../core/services/state.service';
 
     .user-display-name {
       font-size: 0.82rem;
-      font-weight: 700;
-      color: #111827;
+      font-weight: 750;
+      color: #451a03;
       line-height: 1.2;
     }
 
     .user-display-role {
       font-size: 0.7rem;
-      color: #6b7280;
+      color: #854d0e;
+      font-weight: 600;
     }
 
     .user-logout-btn {
       background: transparent;
       border: none;
-      color: #9ca3af;
+      color: #a16207;
       cursor: pointer;
       padding: 4px;
       display: flex;
@@ -554,4 +569,5 @@ export class SidebarComponent {
         !url.includes('tab=roles'))
     );
   }
+
 }

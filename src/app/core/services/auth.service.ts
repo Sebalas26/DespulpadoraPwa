@@ -75,21 +75,42 @@ export class AuthService {
         { branchId: 2, name: 'Sede Distribución Norte', code: 'SUC-02', isMatrix: false, companyId: 1 }
       ],
       permissions: [
-        { actionId: 1, actionName: 'Ver Lotes', actionSlug: 'batches.view', operationId: 1, operationName: 'Lotes', moduleId: 1, moduleName: 'Producción' },
-        { actionId: 2, actionName: 'Crear Lotes', actionSlug: 'batches.create', operationId: 1, operationName: 'Lotes', moduleId: 1, moduleName: 'Producción' },
-        { actionId: 3, actionName: 'Completar Lotes', actionSlug: 'batches.complete', operationId: 1, operationName: 'Lotes', moduleId: 1, moduleName: 'Producción' },
-        { actionId: 4, actionName: 'Ver Stock', actionSlug: 'stock.view', operationId: 2, operationName: 'Existencias', moduleId: 2, moduleName: 'Cava' },
-        { actionId: 5, actionName: 'Ajustar Stock', actionSlug: 'stock.adjust', operationId: 2, operationName: 'Existencias', moduleId: 2, moduleName: 'Cava' },
-        { actionId: 6, actionName: 'Ver Pedidos', actionSlug: 'orders.view', operationId: 3, operationName: 'Pedidos', moduleId: 3, moduleName: 'Comercial' },
-        { actionId: 7, actionName: 'Crear Pedidos', actionSlug: 'orders.create', operationId: 3, operationName: 'Pedidos', moduleId: 3, moduleName: 'Comercial' },
-        { actionId: 8, actionName: 'Alistar Picking', actionSlug: 'orders.picking', operationId: 3, operationName: 'Picking', moduleId: 3, moduleName: 'Comercial' },
-        { actionId: 9, actionName: 'Facturar POS', actionSlug: 'orders.bill', operationId: 3, operationName: 'POS', moduleId: 3, moduleName: 'Comercial' },
-        { actionId: 10, actionName: 'Despachar Rutas', actionSlug: 'orders.dispatch', operationId: 3, operationName: 'Despacho', moduleId: 3, moduleName: 'Comercial' },
-        { actionId: 11, actionName: 'Marcación Turnos', actionSlug: 'shifts.punch', operationId: 4, operationName: 'Marcación', moduleId: 4, moduleName: 'Turnos' },
-        { actionId: 12, actionName: 'Gestión Nómina', actionSlug: 'hr.view', operationId: 4, operationName: 'Nómina', moduleId: 4, moduleName: 'Turnos' },
-        { actionId: 13, actionName: 'Libro Contable', actionSlug: 'accounting.view', operationId: 5, operationName: 'Libro', moduleId: 5, moduleName: 'Contabilidad' },
-        { actionId: 14, actionName: 'Gestión Usuarios', actionSlug: 'users.manage', operationId: 6, operationName: 'Usuarios', moduleId: 6, moduleName: 'Seguridad' },
-        { actionId: 15, actionName: 'Gestión Roles', actionSlug: 'roles.manage', operationId: 6, operationName: 'Roles', moduleId: 6, moduleName: 'Seguridad' }
+        { actionId: 101, actionName: 'Ver Lotes', actionSlug: 'batches.view', operationId: 1, operationName: 'Lotes', moduleId: 1, moduleName: 'Producción' },
+        { actionId: 102, actionName: 'Crear Lotes', actionSlug: 'batches.create', operationId: 1, operationName: 'Lotes', moduleId: 1, moduleName: 'Producción' },
+        { actionId: 103, actionName: 'Completar Lotes', actionSlug: 'batches.complete', operationId: 1, operationName: 'Lotes', moduleId: 1, moduleName: 'Producción' },
+        { actionId: 104, actionName: 'Calculadora Mermas', actionSlug: 'calculator.view', operationId: 1, operationName: 'Mermas', moduleId: 1, moduleName: 'Producción' },
+        { actionId: 105, actionName: 'Auditoría Mermas', actionSlug: 'calculator.audit', operationId: 1, operationName: 'Mermas', moduleId: 1, moduleName: 'Producción' },
+        { actionId: 201, actionName: 'Ver Stock Cava', actionSlug: 'stock.view', operationId: 2, operationName: 'Existencias', moduleId: 2, moduleName: 'Cava' },
+        { actionId: 202, actionName: 'Ajustar Stock', actionSlug: 'stock.adjust', operationId: 2, operationName: 'Existencias', moduleId: 2, moduleName: 'Cava' },
+        { actionId: 203, actionName: 'Fruta Disponible', actionSlug: 'inventory.fruit_view', operationId: 2, operationName: 'Existencias', moduleId: 2, moduleName: 'Cava' },
+        { actionId: 205, actionName: 'Catálogo Frutas', actionSlug: 'fruit.manage', operationId: 2, operationName: 'Existencias', moduleId: 2, moduleName: 'Cava' },
+        { actionId: 301, actionName: 'Ver Pedidos', actionSlug: 'orders.view', operationId: 3, operationName: 'Pedidos', moduleId: 3, moduleName: 'Comercial' },
+        { actionId: 302, actionName: 'Crear Pedidos', actionSlug: 'orders.create', operationId: 3, operationName: 'Pedidos', moduleId: 3, moduleName: 'Comercial' },
+        { actionId: 304, actionName: 'KDS Alistamiento', actionSlug: 'kds.view', operationId: 3, operationName: 'KDS', moduleId: 3, moduleName: 'Comercial' },
+        { actionId: 305, actionName: 'Picking Cava', actionSlug: 'kds.picking', operationId: 3, operationName: 'KDS', moduleId: 3, moduleName: 'Comercial' },
+        { actionId: 401, actionName: 'Facturar POS', actionSlug: 'orders.bill', operationId: 4, operationName: 'POS', moduleId: 4, moduleName: 'Facturación' },
+        { actionId: 402, actionName: 'Flujo Facturación', actionSlug: 'billing.view', operationId: 4, operationName: 'POS', moduleId: 4, moduleName: 'Facturación' },
+        { actionId: 403, actionName: 'Registrar Pagos', actionSlug: 'billing.payment_collect', operationId: 4, operationName: 'POS', moduleId: 4, moduleName: 'Facturación' },
+        { actionId: 501, actionName: 'Despachar Rutas', actionSlug: 'orders.dispatch', operationId: 5, operationName: 'Despacho', moduleId: 5, moduleName: 'Logística' },
+        { actionId: 502, actionName: 'Mapa & Telemetría', actionSlug: 'map.view', operationId: 5, operationName: 'Mapa', moduleId: 5, moduleName: 'Logística' },
+        { actionId: 504, actionName: 'Enrutador Rutas', actionSlug: 'map.route_planner', operationId: 5, operationName: 'Mapa', moduleId: 5, moduleName: 'Logística' },
+        { actionId: 505, actionName: 'Arqueo Domiciliario', actionSlug: 'map.courier_receive', operationId: 5, operationName: 'Mapa', moduleId: 5, moduleName: 'Logística' },
+        { actionId: 601, actionName: 'Login App Móvil', actionSlug: 'mobile.app_login', operationId: 6, operationName: 'App', moduleId: 6, moduleName: 'App Móvil' },
+        { actionId: 602, actionName: 'Rutas App Móvil', actionSlug: 'mobile.route_view', operationId: 6, operationName: 'App', moduleId: 6, moduleName: 'App Móvil' },
+        { actionId: 604, actionName: 'Recaudo Calle', actionSlug: 'mobile.cash_collection', operationId: 6, operationName: 'App', moduleId: 6, moduleName: 'App Móvil' },
+        { actionId: 701, actionName: 'Directorio Clientes', actionSlug: 'clients.view', operationId: 7, operationName: 'Clientes', moduleId: 7, moduleName: 'Cartera' },
+        { actionId: 702, actionName: 'Gestionar Clientes', actionSlug: 'clients.manage', operationId: 7, operationName: 'Clientes', moduleId: 7, moduleName: 'Cartera' },
+        { actionId: 704, actionName: 'Libro Contable', actionSlug: 'accounting.view', operationId: 7, operationName: 'Libro', moduleId: 7, moduleName: 'Contabilidad' },
+        { actionId: 801, actionName: 'Directorio Personal', actionSlug: 'hr.view', operationId: 8, operationName: 'Personal', moduleId: 8, moduleName: 'Gestión Humana' },
+        { actionId: 803, actionName: 'Certificaciones', actionSlug: 'hr.certificates', operationId: 8, operationName: 'Personal', moduleId: 8, moduleName: 'Gestión Humana' },
+        { actionId: 804, actionName: 'Liquidar Nómina', actionSlug: 'hr.payroll_settle', operationId: 8, operationName: 'Nómina', moduleId: 8, moduleName: 'Gestión Humana' },
+        { actionId: 805, actionName: 'Ver Turnos', actionSlug: 'shifts.view', operationId: 8, operationName: 'Turnos', moduleId: 8, moduleName: 'Gestión Humana' },
+        { actionId: 806, actionName: 'Marcación Turnos', actionSlug: 'shifts.punch', operationId: 8, operationName: 'Turnos', moduleId: 8, moduleName: 'Gestión Humana' },
+        { actionId: 901, actionName: 'Reportes Ventas', actionSlug: 'reports.view', operationId: 9, operationName: 'Reportes', moduleId: 9, moduleName: 'Informes' },
+        { actionId: 903, actionName: 'Metas Comerciales', actionSlug: 'dashboard.targets', operationId: 9, operationName: 'Metas', moduleId: 9, moduleName: 'Informes' },
+        { actionId: 1001, actionName: 'Configuración Catálogo', actionSlug: 'settings.catalog', operationId: 10, operationName: 'Ajustes', moduleId: 10, moduleName: 'Configuración' },
+        { actionId: 1003, actionName: 'Gestión Usuarios', actionSlug: 'users.manage', operationId: 10, operationName: 'Usuarios', moduleId: 10, moduleName: 'Seguridad' },
+        { actionId: 1004, actionName: 'Gestión Roles', actionSlug: 'roles.manage', operationId: 10, operationName: 'Roles', moduleId: 10, moduleName: 'Seguridad' }
       ]
     };
 
@@ -114,7 +135,20 @@ export class AuthService {
     localStorage.setItem(this.BRANCH_KEY, JSON.stringify(branch));
   }
 
-  hasPermission(_actionSlug: string): boolean {
+  hasPermission(actionSlug: string): boolean {
+    const user = this.currentUser();
+    if (!user) return false;
+
+    // Super Admin o Administrador de Sistema siempre tiene acceso completo
+    if (user.isSuperAdmin || user.isAdmin || user.roleId === 1) {
+      return true;
+    }
+
+    // Comprobar array de permisos directos
+    if (user.permissions && user.permissions.some(p => p.actionSlug === actionSlug)) {
+      return true;
+    }
+
     return true;
   }
 

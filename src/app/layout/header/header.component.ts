@@ -54,6 +54,22 @@ import { VoiceOrdersService } from '../../core/services/voice-orders.service';
 
       <!-- Right side: Status, Search, Notifications, + Nuevo pedido button -->
       <div class="topbar-actions">
+        <!-- Pantalla de Alistamiento de Pedidos (KDS) -->
+        <button
+          type="button"
+          class="btn-kds-access"
+          (click)="navigateToKds()"
+          title="Abrir pantalla dedicada de alistamiento de pedidos (KDS en Cava)"
+        >
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
+            <line x1="8" y1="21" x2="16" y2="21"></line>
+            <line x1="12" y1="17" x2="12" y2="21"></line>
+          </svg>
+          <span class="kds-access-label">Pantalla de Alistamiento</span>
+          <span class="kds-access-badge">KDS</span>
+        </button>
+
         <!-- Status Indicator • En línea (Figma style) -->
         <div class="online-pill" [title]="stateService.isOnline() ? 'Sistema conectado a la red' : 'Sin conexión'">
           <span class="online-dot" [style.background]="stateService.isOnline() ? '#1e5e3a' : '#dc2626'"></span>
@@ -230,6 +246,56 @@ import { VoiceOrdersService } from '../../core/services/voice-orders.service';
       display: flex;
       align-items: center;
       gap: 12px;
+    }
+
+    .btn-kds-access {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      padding: 5px 12px;
+      background: #f0fdf4;
+      border: 1.5px solid #86efac;
+      border-radius: 9999px;
+      color: #15803d;
+      font-size: 0.78rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+      box-shadow: 0 1px 3px rgba(22, 163, 74, 0.1);
+
+      &:hover {
+        background: #16a34a;
+        border-color: #16a34a;
+        color: #ffffff;
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(22, 163, 74, 0.28);
+
+        .kds-access-badge {
+          background: rgba(255, 255, 255, 0.25);
+          color: #ffffff;
+        }
+      }
+
+      &:active {
+        transform: translateY(0);
+      }
+
+      .kds-access-badge {
+        font-size: 0.65rem;
+        font-weight: 900;
+        background: #dcfce7;
+        color: #166534;
+        padding: 1px 6px;
+        border-radius: 4px;
+        letter-spacing: 0.03em;
+        transition: all 0.2s ease;
+      }
+    }
+
+    @media (max-width: 900px) {
+      .kds-access-label {
+        display: none;
+      }
     }
 
     .online-pill {
@@ -440,8 +506,7 @@ export class HeaderComponent {
       return 'Configuración';
     }
     if (url.startsWith('/accounting')) return 'Clientes';
-    if (url.startsWith('/shifts')) return 'Turnos';
-    if (url.startsWith('/hr')) return 'Nómina & Talento Humano';
+    if (url.startsWith('/shifts') || url.startsWith('/hr')) return 'Gestión de Personal';
     if (url.startsWith('/reports')) return 'Ventas';
     if (url.startsWith('/admin')) return 'Administración';
     return 'Panel general';
@@ -464,5 +529,9 @@ export class HeaderComponent {
     } else {
       window.dispatchEvent(new CustomEvent('open-new-order-modal'));
     }
+  }
+
+  navigateToKds() {
+    this.router.navigate(['/kds']);
   }
 }
