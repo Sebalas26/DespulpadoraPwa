@@ -184,3 +184,377 @@
     background: #fee2e2;
   }
 }
+
+.btn-create-client {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 18px;
+  border-radius: 9999px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  background: #1e5e3a;
+  color: #ffffff;
+  border: none;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(30, 94, 58, 0.25);
+  transition: all 0.18s ease;
+
+  &:hover {
+    background: #164a2d;
+    transform: translateY(-1px);
+  }
+}
+
+.client-purchases-summary {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 3px;
+}
+
+.purchases-count-pill {
+  background: #f0fdf4;
+  color: #166534;
+  border: 1px solid #bbf7d0;
+  font-size: 0.72rem;
+  font-weight: 800;
+  padding: 2px 9px;
+  border-radius: 9999px;
+}
+
+.purchases-amount-sub {
+  font-size: 0.74rem;
+  font-weight: 700;
+  color: var(--text-muted);
+}
+
+.btn-sales-detail {
+  background: #f0fdf4;
+  color: #1e5e3a;
+  border: 1px solid #bbf7d0;
+  border-radius: 8px;
+  padding: 6px 11px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+
+  &:hover {
+    background: #dcfce7;
+    border-color: #86efac;
+    transform: translateY(-1px);
+  }
+}
+
+/* ==========================================
+   MODALS: NUEVO CLIENTE & DETALLE DE VENTAS
+   ========================================== */
+.client-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.45);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 18px;
+  z-index: 1100;
+}
+
+.client-modal-card {
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 18px;
+  width: 100%;
+  max-width: 520px;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 20px 50px rgba(15, 23, 42, 0.22);
+  overflow: hidden;
+
+  &.sales-history-modal {
+    max-width: 720px;
+  }
+}
+
+.client-modal-header {
+  padding: 18px 22px;
+  border-bottom: 1px solid #eef2ef;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.client-modal-title {
+  font-size: 1.15rem;
+  font-weight: 900;
+  color: #111827;
+  margin: 0;
+}
+
+.client-modal-subtitle {
+  font-size: 0.8rem;
+  color: #6b7280;
+  margin: 3px 0 0 0;
+}
+
+.btn-modal-close {
+  background: #f3f4f6;
+  border: none;
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  font-size: 1.2rem;
+  line-height: 1;
+  color: #4b5563;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  &:hover {
+    background: #e5e7eb;
+    color: #111827;
+  }
+}
+
+.client-modal-body {
+  padding: 20px 22px;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.client-modal-footer {
+  padding: 14px 22px;
+  border-top: 1px solid #eef2ef;
+  background: #f9fafb;
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+/* Sales History KPIs & Cards */
+.history-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+  margin-bottom: 18px;
+}
+
+@media (max-width: 640px) {
+  .history-kpi-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.history-kpi-box {
+  background: #f8faf9;
+  border: 1px solid #eef2ef;
+  border-radius: 12px;
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+
+  &.highlight-green {
+    background: #f0fdf4;
+    border-color: #bbf7d0;
+
+    .hkpi-value {
+      color: #166534;
+    }
+  }
+}
+
+.hkpi-label {
+  font-size: 0.7rem;
+  color: #6b7280;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.hkpi-value {
+  font-size: 1.15rem;
+  font-weight: 900;
+  color: #111827;
+  line-height: 1.2;
+
+  &.hkpi-date {
+    font-size: 0.92rem;
+  }
+}
+
+.hkpi-sub {
+  font-size: 0.68rem;
+  color: #9ca3af;
+}
+
+.history-section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.history-section-title {
+  font-size: 0.85rem;
+  font-weight: 800;
+  color: #111827;
+}
+
+.history-section-hint {
+  font-size: 0.72rem;
+  color: #6b7280;
+  font-weight: 600;
+}
+
+.history-compact-list {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid #e5ece8;
+  border-radius: 12px;
+  overflow: hidden;
+  background: #ffffff;
+}
+
+.history-compact-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 12px;
+  border-bottom: 1px solid #f1f5f3;
+  transition: background 0.14s ease;
+
+  &:last-child {
+    border-bottom: none;
+  }
+
+  &:hover {
+    background: #f8faf9;
+  }
+}
+
+.hrow-left {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+  flex: 1;
+}
+
+.hrow-top-line {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  flex-wrap: wrap;
+}
+
+.hrow-payment-tag {
+  font-size: 0.68rem;
+  color: #6b7280;
+  background: #f3f4f6;
+  padding: 1px 6px;
+  border-radius: 6px;
+  font-weight: 600;
+}
+
+.hrow-items-line {
+  font-size: 0.75rem;
+  color: #374151;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.hrow-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.history-order-number {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 0.76rem;
+  font-weight: 800;
+  color: #111827;
+}
+
+.history-order-date {
+  font-size: 0.71rem;
+  color: #6b7280;
+  font-weight: 600;
+}
+
+.history-status-pill {
+  font-size: 0.66rem;
+  font-weight: 700;
+  padding: 1px 7px;
+  border-radius: 9999px;
+  background: #f3f4f6;
+  color: #374151;
+
+  &[data-status='DELIVERED'],
+  &[data-status='BILLED'] {
+    background: #dcfce7;
+    color: #166534;
+  }
+
+  &[data-status='DISPATCHED'] {
+    background: #f3e8ff;
+    color: #6b21a8;
+  }
+
+  &[data-status='PICKING'] {
+    background: #fef3c7;
+    color: #92400e;
+  }
+}
+
+.history-order-total {
+  font-size: 0.88rem;
+  font-weight: 900;
+  color: #1e5e3a;
+  white-space: nowrap;
+}
+
+.btn-reorder-order {
+  background: #f0fdf4;
+  color: #166534;
+  border: 1px solid #bbf7d0;
+  border-radius: 8px;
+  padding: 5px 10px;
+  font-size: 0.73rem;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.15s ease;
+
+  &:hover {
+    background: #1e5e3a;
+    color: #ffffff;
+    border-color: #1e5e3a;
+  }
+}
+
+.history-empty-box {
+  background: #f9fafb;
+  border: 1px dashed #d1d5db;
+  border-radius: 12px;
+  padding: 28px 16px;
+  text-align: center;
+  color: #6b7280;
+  font-size: 0.85rem;
+}

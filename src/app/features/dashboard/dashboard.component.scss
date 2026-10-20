@@ -328,11 +328,27 @@
   border-radius: 9999px;
 }
 
+.fin-badge-green {
+  background: #dcfce7;
+  color: #166534;
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 3px 10px;
+  border-radius: 9999px;
+}
+
 .fin-box-value {
   font-size: 1.75rem;
   font-weight: 900;
   letter-spacing: -0.02em;
   line-height: 1.2;
+
+  &.fin-box-client-name {
+    font-size: 1.32rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
 }
 
 .fin-box-desc {
@@ -415,7 +431,313 @@
 }
 
 /* ==========================================
-   ROW 3: 2-COLUMN SECTION (FLUJO DE PEDIDOS & ATENCIÓN EN CAVA)
+   ROW 3: INFORMES DE INVENTARIO DE FRUTA Y PULPAS PREPARADAS
+   ========================================== */
+.inventory-reports-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+
+.report-card {
+  gap: 14px;
+}
+
+.report-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.icon-box-soft-green,
+.icon-box-soft-emerald {
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  background: #eaf5ee;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.05rem;
+  flex-shrink: 0;
+}
+
+.report-action-pill {
+  background: #f0fdf4;
+  color: #166534;
+  border: 1px solid #bbf7d0;
+  padding: 5px 12px;
+  border-radius: 9999px;
+  font-size: 0.76rem;
+  font-weight: 700;
+  text-decoration: none;
+  transition: all 0.16s ease;
+
+  &:hover {
+    background: #dcfce7;
+    transform: translateY(-1px);
+  }
+}
+
+.report-summary-strip {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  background: #f8faf9;
+  border: 1px solid #eef2ef;
+  border-radius: 12px;
+  padding: 10px 14px;
+}
+
+.summary-mini-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+
+  .mini-stat-label {
+    font-size: 0.7rem;
+    color: #6b7280;
+    font-weight: 600;
+  }
+
+  .mini-stat-value {
+    font-size: 1rem;
+    font-weight: 900;
+    color: #111827;
+
+    &.text-green {
+      color: #1e5e3a;
+    }
+  }
+}
+
+/* Fruit Inventory Report List */
+.fruit-report-list {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  max-height: 350px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.fruit-report-row {
+  background: #ffffff;
+  border: 1px solid #eef2ef;
+  border-radius: 11px;
+  padding: 9px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.fruit-report-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+
+.fruit-report-identity {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.fruit-emoji-badge {
+  font-size: 1.1rem;
+  line-height: 1;
+}
+
+.fruit-report-name {
+  display: block;
+  font-size: 0.83rem;
+  font-weight: 800;
+  color: #111827;
+  line-height: 1.2;
+}
+
+.fruit-report-meta {
+  display: block;
+  font-size: 0.7rem;
+  color: #6b7280;
+}
+
+.fruit-report-numbers {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.fruit-kg-strong {
+  font-size: 0.9rem;
+  font-weight: 900;
+  color: #111827;
+}
+
+.fruit-status-pill {
+  font-size: 0.66rem;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 9999px;
+
+  &.status-optimo {
+    background: #dcfce7;
+    color: #166534;
+  }
+
+  &.status-medio {
+    background: #fef3c7;
+    color: #92400e;
+  }
+
+  &.status-bajo {
+    background: #fee2e2;
+    color: #991b1b;
+  }
+}
+
+.fruit-progress-track {
+  width: 100%;
+  height: 5px;
+  background: #f1f5f3;
+  border-radius: 9999px;
+  overflow: hidden;
+}
+
+.fruit-progress-fill {
+  height: 100%;
+  border-radius: 9999px;
+  transition: width 0.3s ease;
+}
+
+/* Prepared Pulps Grammage Pills & Table */
+.grammage-pills-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+}
+
+.gram-pill {
+  background: #ffffff;
+  border: 1px solid #e5ece8;
+  border-radius: 10px;
+  padding: 6px 10px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.76rem;
+
+  .gram-pill-tag {
+    color: #6b7280;
+    font-weight: 600;
+  }
+
+  strong {
+    color: #1e5e3a;
+    font-weight: 800;
+  }
+}
+
+.prepared-pulps-table-wrap {
+  overflow-x: auto;
+  border: 1px solid #eef2ef;
+  border-radius: 12px;
+}
+
+.prepared-pulps-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.78rem;
+
+  th {
+    background: #f8faf9;
+    color: #6b7280;
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+    padding: 8px 10px;
+    border-bottom: 1px solid #eef2ef;
+    text-align: left;
+  }
+
+  td {
+    padding: 8px 10px;
+    border-bottom: 1px solid #f3f6f4;
+    color: #111827;
+    vertical-align: middle;
+  }
+
+  tbody tr:last-child td {
+    border-bottom: none;
+  }
+
+  .text-center {
+    text-align: center;
+  }
+
+  .text-right {
+    text-align: right;
+  }
+}
+
+.pulp-fruit-cell {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.pulp-fruit-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.pulp-fruit-name {
+  font-weight: 700;
+  color: #111827;
+}
+
+.gram-qty-badge {
+  display: inline-block;
+  min-width: 28px;
+  padding: 2px 6px;
+  border-radius: 6px;
+  background: #f3f6f4;
+  color: #1f2937;
+  font-weight: 700;
+  font-size: 0.75rem;
+
+  &.low-stock-cell {
+    background: #fee2e2;
+    color: #dc2626;
+    font-weight: 800;
+  }
+}
+
+.pulp-total-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  line-height: 1.15;
+
+  strong {
+    font-size: 0.8rem;
+    color: #111827;
+  }
+
+  span {
+    font-size: 0.68rem;
+    color: #6b7280;
+  }
+}
+
+/* ==========================================
+   ROW 4: 2-COLUMN SECTION (FLUJO DE PEDIDOS & ATENCIÓN EN BODEGA)
    ========================================== */
 .bottom-two-cards-grid {
   display: grid;
@@ -756,9 +1078,19 @@
     gap: 10px;
   }
 
+  .inventory-reports-grid,
   .bottom-two-cards-grid {
     grid-template-columns: 1fr;
     gap: 16px;
+  }
+
+  .report-summary-strip {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  .grammage-pills-row {
+    grid-template-columns: repeat(2, 1fr);
   }
 
   .financial-card,

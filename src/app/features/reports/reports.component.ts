@@ -1,10 +1,18 @@
 import { Component, computed, HostListener, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { ActivatedRoute } from '@angular/router';
 import { StateService } from '../../core/services/state.service';
 import { NotificationService } from '../../core/services/notification.service';
-import { OrderDto, OrderStatus } from '../../core/models/business.models';
+import {
+  OrderDto,
+  OrderStatus,
+  IdealVsRealAuditDto,
+  ExpenseDto,
+  PayrollSettlementDto
+} from '../../core/models/business.models';
 
+export type ReportTab = 'sales' | 'loss' | 'stock' | 'expenses' | 'payroll';
 export type ReportDateFilter = 'today' | 'yesterday' | 'month' | 'year' | 'range';
 
 export interface MonthOption {
@@ -23,6 +31,10 @@ export interface MonthOption {
 export class ReportsComponent {
   readonly stateService = inject(StateService);
   readonly notification = inject(NotificationService);
+  private readonly route = inject(ActivatedRoute);
+
+  // Active Report Tab: sales, loss, stock, expenses, payroll
+  readonly activeTab = signal<ReportTab>('sales');
 
   readonly monthsList: MonthOption[] = [
     { value: '01', label: 'Enero', shortLabel: 'Ene' },
@@ -84,6 +96,10 @@ export class ReportsComponent {
   // Dropdown Actions Menu state (stores orderId of open dropdown, or null)
   readonly openActionOrderId = signal<number | null>(null);
 
+  // Pagination for orders table
+  readonly ordersPageSize = 10;
+  readonly ordersCurrentPage = signal<number>(1);
+
   // Available Couriers
   readonly availableCouriers = [
     'Carlos Rodríguez',
@@ -124,6 +140,28 @@ export class ReportsComponent {
     )
   );
 
+  constructor() {
+    this.route.queryParams.subscribe(params => {
+      const tab = params['tab'];
+      if (tab === 'sales' || tab === 'ventas') {
+        this.activeTab.set('sales');
+      } else if (tab === 'loss' || tab === 'mermas' || tab === 'ideal-vs-real') {
+        this.activeTab.set('loss');
+      } else if (tab === 'stock' || tab === 'cava' || tab === 'inventario') {
+        this.activeTab.set('stock');
+      } else if (tab === 'expenses' || tab === 'gastos' || tab === 'logistica') {
+        this.activeTab.set('expenses');
+      } else if (tab === 'payroll' || tab === 'nomina' || tab === 'rrhh') {
+        this.activeTab.set('payroll');
+      }
+    });
+  }
+
+  setTab(tab: ReportTab) {
+    this.activeTab.set(tab);
+    this.openActionOrderId.set(null);
+  }
+
   @HostListener('document:click')
   closeDropdownOnOutsideClick() {
     if (this.openActionOrderId() !== null) {
@@ -147,7 +185,9 @@ export class ReportsComponent {
     return `${Number(dy)} ${mObj ? mObj.shortLabel : mo} ${yr}`;
   }
 
-  // --- Sales Metrics Computed ---
+  // ==========================================
+  // TAB 1: SALES & KPI COMPUTED
+  // ==========================================
   readonly filteredOrders = computed(() => {
     const orders = this.stateService.orders().filter(o => o.status !== 'CANCELLED');
     const filter = this.selectedDateFilter();
@@ -182,7 +222,17 @@ export class ReportsComponent {
       });
     }
 
+    this.ordersCurrentPage.set(1);
     return orders;
+  });
+
+  readonly totalOrdersPages = computed(() => Math.ceil(this.filteredOrders().length / this.ordersPageSize) || 1);
+
+  readonly paginatedOrders = computed(() => {
+    const all = this.filteredOrders();
+    const page = this.ordersCurrentPage();
+    const start = (page - 1) * this.ordersPageSize;
+    return all.slice(start, start + this.ordersPageSize);
   });
 
   readonly activeFilterSummaryLabel = computed(() => {
@@ -229,7 +279,172 @@ export class ReportsComponent {
     }, 0);
   });
 
-  // --- Status & Courier Helpers in Spanish ---
+  readonly averageTicket = computed(() => {
+    const count = this.filteredOrders().length;
+    return count > 0 ? Math.round(this.totalSalesRevenue() / count) : 0;
+  });
+
+  // ==========================================
+  // TAB 2: AUDITORÍA DE MERMAS (IDEAL VS REAL)
+  // ==========================================
+  readonly idealVsRealAudit = computed<IdealVsRealAuditDto[]>(() => {
+    return this.stateService.idealVsRealLossAudit();
+  });
+
+  readonly lossTotalPulpKg = computed(() => {
+    return this.idealVsRealAudit().reduce((sum, r) => sum + (r.totalPulpKgProduced || 0), 0);
+  });
+
+  readonly lossTotalIdealRevenue = computed(() => {
+    return this.idealVsRealAudit().reduce((sum, r) => sum + (r.idealRevenue || 0), 0);
+  });
+
+  readonly lossTotalRealRevenue = computed(() => {
+    return this.idealVsRealAudit().reduce((sum, r) => sum + (r.realRevenue || 0), 0);
+  });
+
+  readonly lossTotalGapRevenue = computed(() => {
+    return this.lossTotalIdealRevenue() - this.lossTotalRealRevenue();
+  });
+
+  readonly lossGlobalPercentage = computed(() => {
+    const ideal = this.lossTotalIdealRevenue();
+    if (ideal <= 0) return 0;
+    return Number(((this.lossTotalGapRevenue() / ideal) * 100).toFixed(1));
+  });
+
+  // ==========================================
+  // TAB 3: INVENTARIO & VALORACIÓN DE CAVA
+  // ==========================================
+  readonly cavaTotalStockKg = computed(() => this.stateService.totalStockKg());
+  readonly cavaFreshStockKg = computed(() => this.stateService.totalFreshStockKg());
+
+  readonly cavaCommercialValue = computed(() => {
+    return this.stateService.fruits().reduce((sum, f) => {
+      return (
+        sum +
+        (f.stock.g140 || 0) * (f.prices.g140 || 0) +
+        (f.stock.g250 || 0) * (f.prices.g250 || 0) +
+        (f.stock.g500 || 0) * (f.prices.g500 || 0) +
+        (f.stock.g1000 || 0) * (f.prices.g1000 || 0)
+      );
+    }, 0);
+  });
+
+  readonly cavaEstimatedCost = computed(() => Math.round(this.cavaCommercialValue() * 0.55));
+  readonly cavaLowStockCount = computed(() => this.stateService.lowStockFruitsCount());
+
+  getFruitCommercialValue(fruit: any): number {
+    return (
+      (fruit.stock.g140 || 0) * (fruit.prices.g140 || 0) +
+      (fruit.stock.g250 || 0) * (fruit.prices.g250 || 0) +
+      (fruit.stock.g500 || 0) * (fruit.prices.g500 || 0) +
+      (fruit.stock.g1000 || 0) * (fruit.prices.g1000 || 0)
+    );
+  }
+
+  getFruitTotalPulpKg(fruit: any): number {
+    return Number(
+      (
+        (fruit.stock.g140 || 0) * 0.14 +
+        (fruit.stock.g250 || 0) * 0.25 +
+        (fruit.stock.g500 || 0) * 0.5 +
+        (fruit.stock.g1000 || 0) * 1.0
+      ).toFixed(2)
+    );
+  }
+
+  // ==========================================
+  // TAB 4: GASTOS & LOGÍSTICA
+  // ==========================================
+  readonly filteredExpenses = computed<ExpenseDto[]>(() => {
+    const expenses = this.stateService.expenses();
+    const filter = this.selectedDateFilter();
+    const todayStr = new Date().toISOString().substring(0, 10);
+    const yesterdayStr = new Date(Date.now() - 86400000).toISOString().substring(0, 10);
+
+    if (filter === 'today') {
+      return expenses.filter(e => (e.expenseDate || e.createdAt || '').substring(0, 10) === todayStr);
+    }
+    if (filter === 'yesterday') {
+      return expenses.filter(e => (e.expenseDate || e.createdAt || '').substring(0, 10) === yesterdayStr);
+    }
+    if (filter === 'month') {
+      const targetMonth = `${this.selectedYear()}-${this.selectedMonthNumber()}`;
+      return expenses.filter(e => (e.expenseDate || e.createdAt || '').substring(0, 7) === targetMonth);
+    }
+    if (filter === 'year') {
+      const targetYear = this.selectedYear() || todayStr.substring(0, 4);
+      return expenses.filter(e => (e.expenseDate || e.createdAt || '').substring(0, 4) === targetYear);
+    }
+    if (filter === 'range') {
+      const start = this.rangeStartDate() || '0000-01-01';
+      const end = this.rangeEndDate() || '9999-12-31';
+      const [minDate, maxDate] = start <= end ? [start, end] : [end, start];
+      return expenses.filter(e => {
+        const d = (e.expenseDate || e.createdAt || '').substring(0, 10);
+        return d >= minDate && d <= maxDate;
+      });
+    }
+    return expenses;
+  });
+
+  readonly totalExpensesAmount = computed(() => {
+    return this.filteredExpenses().reduce((sum, e) => sum + e.amount, 0);
+  });
+
+  readonly logisticsExpensesAmount = computed(() => {
+    return this.filteredExpenses()
+      .filter(e => (e.categoryName || '').toLowerCase().includes('combustible') || (e.categoryName || '').toLowerCase().includes('logística'))
+      .reduce((sum, e) => sum + e.amount, 0);
+  });
+
+  readonly packagingExpensesAmount = computed(() => {
+    return this.filteredExpenses()
+      .filter(e => (e.categoryName || '').toLowerCase().includes('empaque') || (e.categoryName || '').toLowerCase().includes('inocuidad'))
+      .reduce((sum, e) => sum + e.amount, 0);
+  });
+
+  readonly facilityExpensesAmount = computed(() => {
+    return this.filteredExpenses()
+      .filter(e => (e.categoryName || '').toLowerCase().includes('mantenimiento') || (e.categoryName || '').toLowerCase().includes('servicios'))
+      .reduce((sum, e) => sum + e.amount, 0);
+  });
+
+  // ==========================================
+  // TAB 5: NÓMINA QUINCENAL & ASISTENCIA
+  // ==========================================
+  readonly payrollSettlements = computed<PayrollSettlementDto[]>(() => {
+    return this.stateService.payrollSettlements();
+  });
+
+  readonly totalPayrollNet = computed(() => {
+    return this.payrollSettlements().reduce((sum, s) => sum + s.netPayable, 0);
+  });
+
+  readonly totalPayrollEarnings = computed(() => {
+    return this.payrollSettlements().reduce((sum, s) => sum + s.totalEarnings, 0);
+  });
+
+  readonly totalPayrollDeductions = computed(() => {
+    return this.payrollSettlements().reduce((sum, s) => sum + s.totalDeductions, 0);
+  });
+
+  readonly productionPayrollNet = computed(() => {
+    return this.payrollSettlements()
+      .filter(s => s.area === 'PRODUCCION')
+      .reduce((sum, s) => sum + s.netPayable, 0);
+  });
+
+  readonly deliveryPayrollNet = computed(() => {
+    return this.payrollSettlements()
+      .filter(s => s.area === 'DOMICILIOS')
+      .reduce((sum, s) => sum + s.netPayable, 0);
+  });
+
+  // ==========================================
+  // HELPERS & ACTIONS
+  // ==========================================
   getStatusLabelES(status: OrderStatus | string): string {
     switch (status) {
       case 'PENDING':
@@ -437,6 +652,40 @@ export class ReportsComponent {
     return `${day}/${month}/${year}`;
   }
 
+  formatDateTime(dateStr?: string): string {
+    if (!dateStr) return '—';
+    const d = new Date(dateStr);
+    if (isNaN(d.getTime())) return dateStr.substring(0, 10);
+    const day = String(d.getDate()).padStart(2, '0');
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const year = d.getFullYear();
+    const hours = String(d.getHours()).padStart(2, '0');
+    const minutes = String(d.getMinutes()).padStart(2, '0');
+    return `${day}/${month}/${year} ${hours}:${minutes}`;
+  }
+
+  goToOrdersPage(page: number): void {
+    if (page >= 1 && page <= this.totalOrdersPages()) {
+      this.ordersCurrentPage.set(page);
+    }
+  }
+
+  getOrdersPageNumbers(): number[] {
+    const total = this.totalOrdersPages();
+    const current = this.ordersCurrentPage();
+    const pages: number[] = [];
+    const maxVisible = 5;
+    let start = Math.max(1, current - Math.floor(maxVisible / 2));
+    let end = Math.min(total, start + maxVisible - 1);
+    if (end - start + 1 < maxVisible) {
+      start = Math.max(1, end - maxVisible + 1);
+    }
+    for (let i = start; i <= end; i++) {
+      pages.push(i);
+    }
+    return pages;
+  }
+
   formatNumberES(val: number): string {
     return new Intl.NumberFormat('es-CO', {
       minimumFractionDigits: 2,
@@ -484,33 +733,79 @@ export class ReportsComponent {
     window.print();
   }
 
-  // --- Export to CSV Functionality ---
+  // --- Dynamic Export to CSV Functionality ---
   exportCurrentReportCsv() {
     const now = new Date().toISOString().substring(0, 10);
-    const headers = [
-      'Nro Pedido',
-      'Fecha',
-      'Cliente',
-      'Teléfono',
-      'Método Pago',
-      'Mensajero',
-      'Ítems',
-      'Estado',
-      'Total COP'
-    ];
-    const rows = this.filteredOrders().map(o => [
-      o.orderNumber,
-      o.createdAt.substring(0, 10),
-      `"${o.clientName.replace(/"/g, '""')}"`,
-      o.clientPhone || 'N/A',
-      o.paymentMethodName || 'General',
-      `"${this.getCourierName(o)}"`,
-      `${o.items.length} tipos`,
-      this.getStatusLabelES(o.status),
-      o.totalAmount
-    ]);
-    this.downloadCsv(`reporte_ventas_${now}.csv`, headers, rows);
-    this.notification.success('Reporte Exportado', 'Archivo CSV descargado con éxito.');
+    const tab = this.activeTab();
+
+    if (tab === 'sales') {
+      const headers = ['Nro Pedido', 'Fecha', 'Cliente', 'Teléfono', 'Método Pago', 'Mensajero', 'Ítems', 'Estado', 'Total COP'];
+      const rows = this.filteredOrders().map(o => [
+        o.orderNumber,
+        (o.createdAt || o.orderDate || '').substring(0, 10),
+        `"${(o.clientName || '').replace(/"/g, '""')}"`,
+        o.clientPhone || 'N/A',
+        o.paymentMethodName || 'General',
+        `"${this.getCourierName(o)}"`,
+        `${o.items.length} tipos`,
+        this.getStatusLabelES(o.status),
+        o.totalAmount
+      ]);
+      this.downloadCsv(`reporte_ventas_${now}.csv`, headers, rows);
+    } else if (tab === 'loss') {
+      const headers = ['Fruta', 'Pulpa Producida Kg', 'Unidades Estimadas', 'Unidades Facturadas', 'Venta Ideal COP', 'Venta Real COP', 'Diferencia Unidades', 'Diferencia COP', 'Nivel Merma'];
+      const rows = this.idealVsRealAudit().map(r => [
+        `"${r.fruitName}"`,
+        r.totalPulpKgProduced,
+        r.unitsProduced,
+        r.unitsBilled,
+        r.idealRevenue,
+        r.realRevenue,
+        r.differenceUnits,
+        r.differenceRevenue,
+        r.alertLevel
+      ]);
+      this.downloadCsv(`reporte_auditoria_mermas_${now}.csv`, headers, rows);
+    } else if (tab === 'stock') {
+      const headers = ['Fruta', 'Stock 140g', 'Stock 250g', 'Stock 500g', 'Stock 1000g', 'Total Pulpa Kg', 'Fruta Fresca Kg', 'Valorización COP'];
+      const rows = this.stateService.fruits().map(f => [
+        `"${f.name}"`,
+        f.stock.g140,
+        f.stock.g250,
+        f.stock.g500,
+        f.stock.g1000,
+        this.getFruitTotalPulpKg(f),
+        f.freshStockKg || 0,
+        this.getFruitCommercialValue(f)
+      ]);
+      this.downloadCsv(`reporte_inventario_cava_${now}.csv`, headers, rows);
+    } else if (tab === 'expenses') {
+      const headers = ['Fecha', 'Categoría', 'Descripción', 'Medio Pago', 'Comprobante', 'Monto COP'];
+      const rows = this.filteredExpenses().map(e => [
+        e.expenseDate || e.createdAt.substring(0, 10),
+        `"${e.categoryName}"`,
+        `"${e.description.replace(/"/g, '""')}"`,
+        e.paymentMethodName || 'General',
+        e.receiptNumber || 'N/A',
+        e.amount
+      ]);
+      this.downloadCsv(`reporte_gastos_logistica_${now}.csv`, headers, rows);
+    } else if (tab === 'payroll') {
+      const headers = ['Colaborador', 'Área', 'Días Laborados', 'Salario Base Mes COP', 'Devengado Total COP', 'Deducciones COP', 'Neto a Pagar COP', 'Estado'];
+      const rows = this.payrollSettlements().map(s => [
+        `"${s.employeeName}"`,
+        s.area,
+        s.daysWorked,
+        s.baseSalaryMonthly,
+        s.totalEarnings,
+        s.totalDeductions,
+        s.netPayable,
+        s.paymentStatus
+      ]);
+      this.downloadCsv(`reporte_nomina_quincenal_${now}.csv`, headers, rows);
+    }
+
+    this.notification.success('Reporte Exportado', 'Archivo Excel (CSV) generado con éxito.');
   }
 
   private downloadCsv(filename: string, headers: string[], rows: (string | number)[][]) {

@@ -1,3 +1,5 @@
+import { ExpenseDto, PayrollSettlementDto } from '../models/business.models';
+
 export interface FruitConfig {
   id: string;
   fruitId?: number;
@@ -680,6 +682,224 @@ export const INITIAL_PAYROLL_PERIODS_SAMPLE = [
     endDate: '2026-09-30',
     isClosed: true,
     closedAt: '2026-09-30T18:00:00'
+  }
+];
+
+// ==========================================
+// INITIAL EXPENSES & LOGISTICS SAMPLE
+// ==========================================
+export const INITIAL_EXPENSES_SAMPLE: ExpenseDto[] = [
+  {
+    expenseId: 101,
+    branchId: 1,
+    branchName: 'Cava Principal',
+    categoryId: 1,
+    categoryName: 'Combustible y Logística',
+    description: 'Gasolina y rodamiento moto domicilios (Carlos Rodríguez)',
+    amount: 145000,
+    expenseDate: '2026-10-18',
+    paymentMethodName: 'Efectivo Caja Menor',
+    receiptNumber: 'FAC-GAS-9012',
+    createdAt: '2026-10-18T14:30:00'
+  },
+  {
+    expenseId: 102,
+    branchId: 1,
+    branchName: 'Cava Principal',
+    categoryId: 2,
+    categoryName: 'Empaques y Bolsas',
+    description: 'Lote 5.000 bolsas termosellables calibre 3 para 250g y 500g',
+    amount: 420000,
+    expenseDate: '2026-10-17',
+    paymentMethodName: 'Transferencia Bancolombia',
+    receiptNumber: 'FACT-PLAS-441',
+    createdAt: '2026-10-17T11:00:00'
+  },
+  {
+    expenseId: 103,
+    branchId: 1,
+    branchName: 'Cava Principal',
+    categoryId: 3,
+    categoryName: 'Inocuidad y Desinfección',
+    description: 'Hipoclorito grado alimentario, cofias, guantes nitrilo y detergente neutro',
+    amount: 98000,
+    expenseDate: '2026-10-16',
+    paymentMethodName: 'Efectivo Caja Menor',
+    receiptNumber: 'REC-INOC-112',
+    createdAt: '2026-10-16T09:15:00'
+  },
+  {
+    expenseId: 104,
+    branchId: 1,
+    branchName: 'Cava Principal',
+    categoryId: 4,
+    categoryName: 'Mantenimiento Maquinaria',
+    description: 'Afilado de cuchillas despulpadora industrial y calibración de motor',
+    amount: 280000,
+    expenseDate: '2026-10-14',
+    paymentMethodName: 'Transferencia Bancolombia',
+    receiptNumber: 'MAN-IND-8820',
+    createdAt: '2026-10-14T16:45:00'
+  },
+  {
+    expenseId: 105,
+    branchId: 1,
+    branchName: 'Cava Principal',
+    categoryId: 1,
+    categoryName: 'Combustible y Logística',
+    description: 'Gasolina ruta norte domicilios (Andrés Morales)',
+    amount: 130000,
+    expenseDate: '2026-10-13',
+    paymentMethodName: 'Efectivo Caja Menor',
+    receiptNumber: 'FAC-GAS-8845',
+    createdAt: '2026-10-13T15:20:00'
+  },
+  {
+    expenseId: 106,
+    branchId: 1,
+    branchName: 'Cava Principal',
+    categoryId: 5,
+    categoryName: 'Servicios Públicos',
+    description: 'Energía Enel Condensa - Conservación cava congelación (-18°C)',
+    amount: 850000,
+    expenseDate: '2026-10-10',
+    paymentMethodName: 'Débito Automático',
+    receiptNumber: 'ENEL-CUENTA-5412',
+    createdAt: '2026-10-10T10:00:00'
+  },
+  {
+    expenseId: 107,
+    branchId: 1,
+    branchName: 'Cava Principal',
+    categoryId: 1,
+    categoryName: 'Combustible y Logística',
+    description: 'Flete camión abastecimiento fruta desde Corabastos a planta',
+    amount: 190000,
+    expenseDate: '2026-10-08',
+    paymentMethodName: 'Transferencia Bancolombia',
+    receiptNumber: 'FLET-TRANS-091',
+    createdAt: '2026-10-08T07:30:00'
+  }
+];
+
+// ==========================================
+// INITIAL PAYROLL SETTLEMENTS SAMPLE
+// ==========================================
+export const INITIAL_PAYROLL_SETTLEMENTS_SAMPLE: PayrollSettlementDto[] = [
+  {
+    settlementId: 1,
+    periodId: 1,
+    employeeId: 1,
+    employeeName: 'Hernando Ruiz Gómez',
+    gender: 'MASCULINO',
+    area: 'PRODUCCION',
+    baseSalaryMonthly: 2800000,
+    daysWorked: 15,
+    baseSalaryEarned: 1400000,
+    transportAllowanceEarned: 81000,
+    deliveryBonuses: 0,
+    overtimeAmount: 110000,
+    otherBonuses: 50000,
+    totalEarnings: 1641000,
+    healthDeduction: 56000,
+    pensionDeduction: 56000,
+    otherDeductions: 0,
+    totalDeductions: 112000,
+    netPayable: 1529000,
+    paymentStatus: 'PAID',
+    settledAt: '2026-10-15T17:00:00'
+  },
+  {
+    settlementId: 2,
+    periodId: 1,
+    employeeId: 2,
+    employeeName: 'María Fernanda Castillo',
+    gender: 'FEMENINO',
+    area: 'PRODUCCION',
+    baseSalaryMonthly: 1600000,
+    daysWorked: 15,
+    baseSalaryEarned: 800000,
+    transportAllowanceEarned: 81000,
+    deliveryBonuses: 0,
+    overtimeAmount: 65000,
+    otherBonuses: 0,
+    totalEarnings: 946000,
+    healthDeduction: 32000,
+    pensionDeduction: 32000,
+    otherDeductions: 0,
+    totalDeductions: 64000,
+    netPayable: 882000,
+    paymentStatus: 'PAID',
+    settledAt: '2026-10-15T17:00:00'
+  },
+  {
+    settlementId: 3,
+    periodId: 1,
+    employeeId: 3,
+    employeeName: 'Carlos Andrés Montoya',
+    gender: 'MASCULINO',
+    area: 'PRODUCCION',
+    baseSalaryMonthly: 1550000,
+    daysWorked: 15,
+    baseSalaryEarned: 775000,
+    transportAllowanceEarned: 81000,
+    deliveryBonuses: 0,
+    overtimeAmount: 45000,
+    otherBonuses: 0,
+    totalEarnings: 901000,
+    healthDeduction: 31000,
+    pensionDeduction: 31000,
+    otherDeductions: 0,
+    totalDeductions: 62000,
+    netPayable: 839000,
+    paymentStatus: 'PAID',
+    settledAt: '2026-10-15T17:00:00'
+  },
+  {
+    settlementId: 4,
+    periodId: 1,
+    employeeId: 4,
+    employeeName: 'Jhonatan Valencia',
+    gender: 'MASCULINO',
+    area: 'DOMICILIOS',
+    baseSalaryMonthly: 1450000,
+    daysWorked: 14,
+    baseSalaryEarned: 676667,
+    transportAllowanceEarned: 75600,
+    deliveryBonuses: 195000,
+    overtimeAmount: 0,
+    otherBonuses: 30000,
+    totalEarnings: 977267,
+    healthDeduction: 27067,
+    pensionDeduction: 27067,
+    otherDeductions: 0,
+    totalDeductions: 54134,
+    netPayable: 923133,
+    paymentStatus: 'PAID',
+    settledAt: '2026-10-15T17:00:00'
+  },
+  {
+    settlementId: 5,
+    periodId: 1,
+    employeeId: 5,
+    employeeName: 'Andrés Morales',
+    gender: 'MASCULINO',
+    area: 'DOMICILIOS',
+    baseSalaryMonthly: 1450000,
+    daysWorked: 15,
+    baseSalaryEarned: 725000,
+    transportAllowanceEarned: 81000,
+    deliveryBonuses: 220000,
+    overtimeAmount: 0,
+    otherBonuses: 25000,
+    totalEarnings: 1051000,
+    healthDeduction: 29000,
+    pensionDeduction: 29000,
+    otherDeductions: 0,
+    totalDeductions: 58000,
+    netPayable: 993000,
+    paymentStatus: 'PAID',
+    settledAt: '2026-10-15T17:00:00'
   }
 ];
 

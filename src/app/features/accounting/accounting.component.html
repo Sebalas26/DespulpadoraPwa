@@ -3,26 +3,153 @@
   <!-- Page Header -->
   <div class="clients-header">
     <div>
-      <h1 class="clients-title">Creación de Clientes</h1>
+      <h1 class="clients-title">Clientes</h1>
       <p class="clients-subtitle">
-        Registra y administra los clientes comerciales, restaurantes y distribuidores de la planta.
+        Administra los clientes comerciales, restaurantes y consulta su histórico de compras.
       </p>
+    </div>
+
+    <button
+      type="button"
+      class="btn btn-primary btn-create-client"
+      (click)="openCreateClient()"
+    >
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+        <line x1="12" y1="5" x2="12" y2="19"></line>
+        <line x1="5" y1="12" x2="19" y2="12"></line>
+      </svg>
+      <span>Crear nuevo</span>
+    </button>
+  </div>
+
+  <!-- Full-width Registered Clients List -->
+  <div class="client-list-card">
+    <div class="list-card-header">
+      <div>
+        <h3 class="form-card-title">Clientes Registrados ({{ filteredClients().length }})</h3>
+      </div>
+      <div class="client-search-box">
+        <input
+          type="text"
+          class="form-control"
+          placeholder="Buscar cliente por nombre, NIT o teléfono..."
+          [ngModel]="searchQuery()"
+          (ngModelChange)="searchQuery.set($event)"
+        />
+      </div>
+    </div>
+
+    <div class="clients-table-wrap">
+      <table class="clients-table">
+        <thead>
+          <tr>
+            <th>Cliente / Razón Social</th>
+            <th>NIT / CC</th>
+            <th>Teléfono</th>
+            <th>Dirección / Ciudad</th>
+            <th>Compras realizadas</th>
+            <th style="text-align: right;">Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (client of filteredClients(); track client.clientId) {
+            <tr>
+              <td>
+                <div class="client-name-main">{{ client.fullName }}</div>
+                @if (client.email) {
+                  <div class="client-email-sub">{{ client.email }}</div>
+                }
+              </td>
+              <td class="mono-text">{{ client.identificationNumber }}</td>
+              <td>{{ client.phone }}</td>
+              <td>
+                <div>{{ client.address || 'Sin dirección' }}</div>
+                <div class="client-city-sub">{{ client.city || 'Bogotá D.C.' }}</div>
+              </td>
+              <td>
+                <div class="client-purchases-summary">
+                  <span class="purchases-count-pill">
+                    {{ getClientPurchaseCount(client) }} {{ getClientPurchaseCount(client) === 1 ? 'compra' : 'compras' }}
+                  </span>
+                  @if (getClientTotalSpent(client) > 0) {
+                    <span class="purchases-amount-sub">{{ formatCOP(getClientTotalSpent(client)) }}</span>
+                  }
+                </div>
+              </td>
+              <td style="text-align: right; white-space: nowrap;">
+                <button
+                  type="button"
+                  class="btn-sales-detail"
+                  title="Ver histórico de compras de este cliente"
+                  (click)="openClientSalesHistory(client)"
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="18" y1="20" x2="18" y2="10"></line>
+                    <line x1="12" y1="20" x2="12" y2="4"></line>
+                    <line x1="6" y1="20" x2="6" y2="14"></line>
+                  </svg>
+                  <span>Detalle de ventas</span>
+                </button>
+
+                <button
+                  type="button"
+                  class="action-icon-btn"
+                  title="Editar cliente"
+                  (click)="editClient(client)"
+                >
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                  </svg>
+                </button>
+                <button
+                  type="button"
+                  class="action-icon-btn danger"
+                  title="Eliminar cliente"
+                  (click)="deleteClient(client.clientId)"
+                >
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="3 6 5 6 21 6"></polyline>
+                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                  </svg>
+                </button>
+              </td>
+            </tr>
+          }
+
+          @if (filteredClients().length === 0) {
+            <tr>
+              <td colspan="6" style="text-align: center; padding: 32px; color: var(--text-muted);">
+                No se encontraron clientes con ese criterio.
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
     </div>
   </div>
 
-  <div class="clients-workspace-grid">
-    <!-- Left Card: Client Creation Form -->
-    <div class="client-form-card">
-      <div class="form-card-header">
-        <h3 class="form-card-title">
-          {{ editingClientId() !== null ? 'Editar Cliente' : 'Nuevo Cliente' }}
-        </h3>
-        @if (editingClientId() !== null) {
-          <button type="button" class="btn-cancel-edit" (click)="resetForm()">Cancelar edición</button>
-        }
+</div>
+
+<!-- ========================================================= -->
+<!-- MODAL 1: CREAR NUEVO CLIENTE / EDITAR CLIENTE             -->
+<!-- ========================================================= -->
+@if (showClientForm()) {
+  <div class="client-modal-backdrop" (click)="closeClientForm()">
+    <div class="client-modal-card" (click)="$event.stopPropagation()">
+      <div class="client-modal-header">
+        <div>
+          <h3 class="client-modal-title">
+            {{ editingClientId() !== null ? 'Editar Cliente' : 'Nuevo Cliente' }}
+          </h3>
+          <p class="client-modal-subtitle">
+            Completa la información de contacto y entrega del cliente.
+          </p>
+        </div>
+        <button type="button" class="btn-modal-close" (click)="closeClientForm()">&times;</button>
       </div>
 
-      <div class="form-card-body">
+      <div class="client-modal-body">
         <div class="form-group">
           <label class="form-label">Nombre o Razón Social *</label>
           <input
@@ -103,99 +230,120 @@
             (ngModelChange)="notes.set($event)"
           ></textarea>
         </div>
-
-        <div class="form-actions">
-          @if (editingClientId() !== null) {
-            <button type="button" class="btn btn-secondary" (click)="resetForm()"> Limpiar </button>
-          }
-          <button type="button" class="btn btn-primary btn-full" (click)="saveClient()">
-            {{ editingClientId() !== null ? 'Guardar Cambios del Cliente' : '+ Crear Cliente' }}
-          </button>
-        </div>
-      </div>
-    </div>
-
-    <!-- Right Card: Registered Clients List -->
-    <div class="client-list-card">
-      <div class="list-card-header">
-        <div>
-          <h3 class="form-card-title">Clientes Registrados ({{ filteredClients().length }})</h3>
-        </div>
-        <div class="client-search-box">
-          <input
-            type="text"
-            class="form-control"
-            placeholder="Buscar cliente por nombre, NIT o teléfono..."
-            [ngModel]="searchQuery()"
-            (ngModelChange)="searchQuery.set($event)"
-          />
-        </div>
       </div>
 
-      <div class="clients-table-wrap">
-        <table class="clients-table">
-          <thead>
-            <tr>
-              <th>Cliente / Razón Social</th>
-              <th>NIT / CC</th>
-              <th>Teléfono</th>
-              <th>Dirección / Ciudad</th>
-              <th style="text-align: right;">Acciones</th>
-            </tr>
-          </thead>
-          <tbody>
-            @for (client of filteredClients(); track client.clientId) {
-              <tr>
-                <td>
-                  <div class="client-name-main">{{ client.fullName }}</div>
-                  @if (client.email) {
-                    <div class="client-email-sub">{{ client.email }}</div>
-                  }
-                </td>
-                <td class="mono-text">{{ client.identificationNumber }}</td>
-                <td>{{ client.phone }}</td>
-                <td>
-                  <div>{{ client.address || 'Sin dirección' }}</div>
-                  <div class="client-city-sub">{{ client.city || 'Bogotá D.C.' }}</div>
-                </td>
-                <td style="text-align: right; white-space: nowrap;">
-                  <button
-                    type="button"
-                    class="action-icon-btn"
-                    title="Editar cliente"
-                    (click)="editClient(client)"
-                  >
-                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                      <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
-                      <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
-                    </svg>
-                  </button>
-                  <button
-                    type="button"
-                    class="action-icon-btn danger"
-                    title="Eliminar cliente"
-                    (click)="deleteClient(client.clientId)"
-                  >
-                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                      <polyline points="3 6 5 6 21 6"></polyline>
-                      <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-                    </svg>
-                  </button>
-                </td>
-              </tr>
-            }
-
-            @if (filteredClients().length === 0) {
-              <tr>
-                <td colspan="5" style="text-align: center; padding: 32px; color: var(--text-muted);">
-                  No se encontraron clientes con ese criterio.
-                </td>
-              </tr>
-            }
-          </tbody>
-        </table>
+      <div class="client-modal-footer">
+        <button type="button" class="btn btn-outline" (click)="closeClientForm()">
+          Cancelar
+        </button>
+        <button type="button" class="btn btn-primary" (click)="saveClient()">
+          {{ editingClientId() !== null ? 'Guardar Cambios' : 'Guardar Cliente' }}
+        </button>
       </div>
     </div>
   </div>
+}
 
-</div>
+<!-- ========================================================= -->
+<!-- MODAL 2: DETALLE DE VENTAS E HISTÓRICO DE COMPRAS         -->
+<!-- ========================================================= -->
+@if (selectedHistoryClient(); as client) {
+  <div class="client-modal-backdrop" (click)="closeClientSalesHistory()">
+    <div class="client-modal-card sales-history-modal" (click)="$event.stopPropagation()">
+      <div class="client-modal-header">
+        <div>
+          <h3 class="client-modal-title">Detalle de ventas · {{ client.fullName }}</h3>
+          <p class="client-modal-subtitle">
+            NIT/CC: {{ client.identificationNumber }} · Tel: {{ client.phone }} · {{ client.address || client.city }}
+          </p>
+        </div>
+        <button type="button" class="btn-modal-close" (click)="closeClientSalesHistory()">&times;</button>
+      </div>
+
+      <div class="client-modal-body">
+        <!-- Summary KPIs -->
+        <div class="history-kpi-grid">
+          <div class="history-kpi-box">
+            <span class="hkpi-label">Total compras</span>
+            <span class="hkpi-value">{{ selectedClientHistoryStats().totalPurchases }}</span>
+            <span class="hkpi-sub">Pedidos registrados</span>
+          </div>
+
+          <div class="history-kpi-box highlight-green">
+            <span class="hkpi-label">Total facturado</span>
+            <span class="hkpi-value">{{ formatCOP(selectedClientHistoryStats().totalSpent) }}</span>
+            <span class="hkpi-sub">Acumulado del cliente</span>
+          </div>
+
+          <div class="history-kpi-box">
+            <span class="hkpi-label">Pulpas compradas</span>
+            <span class="hkpi-value">{{ selectedClientHistoryStats().totalUnits }} uds</span>
+            <span class="hkpi-sub">{{ selectedClientHistoryStats().totalKg }} kg en total</span>
+          </div>
+
+          <div class="history-kpi-box">
+            <span class="hkpi-label">Última compra</span>
+            <span class="hkpi-value hkpi-date">{{ selectedClientHistoryStats().lastPurchaseDate }}</span>
+            <span class="hkpi-sub">Fecha más reciente</span>
+          </div>
+        </div>
+
+        <!-- Purchases History List (Max 6 recent orders in compact list) -->
+        <div class="history-section-header">
+          <span class="history-section-title">
+            Últimos pedidos realizados ({{ selectedClientHistoryStats().recentOrders.length }} de {{ selectedClientHistoryStats().orders.length }})
+          </span>
+          <span class="history-section-hint">Máximo últimos 6 pedidos</span>
+        </div>
+
+        @if (selectedClientHistoryStats().recentOrders.length > 0) {
+          <div class="history-compact-list">
+            @for (order of selectedClientHistoryStats().recentOrders; track order.orderId) {
+              <div class="history-compact-row">
+                <div class="hrow-left">
+                  <div class="hrow-top-line">
+                    <span class="history-order-number">{{ order.orderNumber }}</span>
+                    <span class="history-order-date">{{ order.orderDate || (order.createdAt | slice:0:10) }}</span>
+                    <span class="history-status-pill" [attr.data-status]="order.status">
+                      {{ getOrderStatusLabel(order.status) }}
+                    </span>
+                    <span class="hrow-payment-tag">{{ order.paymentMethodName || 'Efectivo' }}</span>
+                  </div>
+                  <div class="hrow-items-line" [title]="formatOrderItemsCompact(order)">
+                    {{ formatOrderItemsCompact(order) }}
+                  </div>
+                </div>
+
+                <div class="hrow-right">
+                  <span class="history-order-total">{{ formatCOP(order.totalAmount) }}</span>
+                  <button
+                    type="button"
+                    class="btn-reorder-order"
+                    title="Volver a crear este mismo pedido para el cliente"
+                    (click)="reorderPurchase(order, client)"
+                  >
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path>
+                      <path d="M3 3v5h5"></path>
+                    </svg>
+                    <span>Rehacer pedido</span>
+                  </button>
+                </div>
+              </div>
+            }
+          </div>
+        } @else {
+          <div class="history-empty-box">
+            <p>Este cliente aún no registra compras en el sistema.</p>
+          </div>
+        }
+      </div>
+
+      <div class="client-modal-footer">
+        <button type="button" class="btn btn-primary" (click)="closeClientSalesHistory()">
+          Cerrar
+        </button>
+      </div>
+    </div>
+  </div>
+}

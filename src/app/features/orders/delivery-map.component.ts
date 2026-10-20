@@ -280,7 +280,7 @@ export const MAP_STYLES: MapStyleOption[] = [
               </svg>
             </div>
             <div>
-              <div class="telemetry-val">{{ couriers().length }} Mensajeros</div>
+              <div class="telemetry-val">{{ assignedCouriers().length }} Mensajeros</div>
               <div class="telemetry-lbl">En Despacho Activo</div>
             </div>
           </div>
@@ -438,9 +438,9 @@ export const MAP_STYLES: MapStyleOption[] = [
               <div class="map-legend-overlay">
                 <div class="legend-chip legend-chip-planta">
                   <span class="legend-color-dot" style="background: #10b981;"></span>
-                  <span>Cava Matriz (Cota/Calle 80)</span>
+                  <span>Bodega Matriz (Cota/Calle 80)</span>
                 </div>
-                @for (c of couriers(); track c.id) {
+                @for (c of assignedCouriers(); track c.id) {
                   <div class="legend-chip" (click)="flyToCourier(c)">
                     <span class="legend-color-dot" [style.background]="c.color"></span>
                     <span>{{ c.name.split(' ')[0] }} ({{ c.orderIds.length }} paradas)</span>
@@ -785,129 +785,137 @@ export const MAP_STYLES: MapStyleOption[] = [
         </div>
 
         <!-- Couriers Real-Time Status Deck -->
-        <div class="couriers-deck-card">
-          <div class="deck-header">
-            <h3 class="deck-title">Domiciliarios disponibles</h3>
-            <span class="badge-pill badge-info">Tiempo Real</span>
-          </div>
+        @if (assignedCouriers().length > 0) {
+          <div class="couriers-deck-card">
+            <div class="deck-header">
+              <h3 class="deck-title">Domiciliarios con entregas asignadas ({{ assignedCouriers().length }})</h3>
+              <span class="badge-pill badge-info">Tiempo Real</span>
+            </div>
 
-          <div class="couriers-list">
-            @for (c of couriers(); track c.id) {
-              <div
-                class="courier-card"
-                [style.borderLeftColor]="c.color"
-                [class.selected]="selectedCourierId() === c.id"
-                (click)="selectCourier(c.id)"
-              >
-                <div class="courier-card-head">
-                  <div class="courier-avatar" [style.background]="c.colorLight" [style.color]="c.color" style="display: flex; align-items: center; justify-content: center;">
-                    @if (c.vehicleType === 'moto') {
-                      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <circle cx="5" cy="16" r="3"></circle>
-                        <circle cx="19" cy="16" r="3"></circle>
-                        <path d="M12 16h3l3-6h-5l-2 3H8l2-5h3"></path>
-                      </svg>
-                    } @else {
-                      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <rect x="1" y="3" width="15" height="13"></rect>
-                        <polygon points="16 8 20 8 23 11 23 16 16 16 16 8"></polygon>
-                        <circle cx="5.5" cy="18.5" r="2.5"></circle>
-                        <circle cx="18.5" cy="18.5" r="2.5"></circle>
-                      </svg>
-                    }
-                  </div>
-                  <div class="courier-meta">
-                    <div class="courier-name-row">
-                      <span class="courier-name">{{ c.name }}</span>
-                      <div class="courier-badges-inline">
-                        <span class="courier-route-code-pill" [style.color]="c.color">
-                          {{ c.routeCode || 'RUTA' }}
-                        </span>
-                        <span class="courier-stops-pill" title="Paradas completadas / asignadas">
-                          Paradas: <strong>{{ getCourierCompletedStops(c) }}/{{ c.orderIds.length }}</strong>
-                        </span>
-                        <span class="courier-status-badge" [class.en-ruta]="c.status === 'en_ruta'" [class.ready-badge]="isCourierReadyToReceive(c)">
-                          {{ isCourierReadyToReceive(c) ? 'Por Recibir' : (c.status === 'en_ruta' ? 'En Ruta' : (c.status === 'entregando' ? 'En Sitio' : 'En Planta')) }}
+            <div class="couriers-list">
+              @for (c of assignedCouriers(); track c.id) {
+                <div
+                  class="courier-card"
+                  [style.borderLeftColor]="c.color"
+                  [class.selected]="selectedCourierId() === c.id"
+                  (click)="selectCourier(c.id)"
+                >
+                  <div class="courier-card-head">
+                    <div class="courier-avatar" [style.background]="c.colorLight" [style.color]="c.color" style="display: flex; align-items: center; justify-content: center;">
+                      @if (c.vehicleType === 'moto') {
+                        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                          <circle cx="5" cy="16" r="3"></circle>
+                          <circle cx="19" cy="16" r="3"></circle>
+                          <path d="M12 16h3l3-6h-5l-2 3H8l2-5h3"></path>
+                        </svg>
+                      } @else {
+                        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                          <rect x="1" y="3" width="15" height="13"></rect>
+                          <polygon points="16 8 20 8 23 11 23 16 16 16 16 8"></polygon>
+                          <circle cx="5.5" cy="18.5" r="2.5"></circle>
+                          <circle cx="18.5" cy="18.5" r="2.5"></circle>
+                        </svg>
+                      }
+                    </div>
+                    <div class="courier-meta">
+                      <div class="courier-name-row">
+                        <span class="courier-name">{{ c.name }}</span>
+                        <div class="courier-badges-inline">
+                          <span class="courier-route-code-pill" [style.color]="c.color">
+                            {{ c.routeCode || 'RUTA' }}
+                          </span>
+                          <span class="courier-stops-pill" title="Paradas completadas / asignadas">
+                            Paradas: <strong>{{ getCourierCompletedStops(c) }}/{{ c.orderIds.length }}</strong>
+                          </span>
+                          <span class="courier-status-badge" [class.en-ruta]="c.status === 'en_ruta'" [class.ready-badge]="isCourierReadyToReceive(c)">
+                            {{ isCourierReadyToReceive(c) ? 'Por Recibir' : (c.status === 'en_ruta' ? 'En Ruta' : (c.status === 'entregando' ? 'En Sitio' : 'En Planta')) }}
+                          </span>
+                        </div>
+                      </div>
+                      <div class="courier-vehicle-info">
+                        <span>{{ c.vehicleModel }} · <strong>{{ c.vehiclePlate }}</strong></span>
+                        <span class="courier-phone-inline">
+                          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path>
+                          </svg>
+                          {{ c.phone }}
                         </span>
                       </div>
                     </div>
-                    <div class="courier-vehicle-info">
-                      {{ c.vehicleModel }} · <strong>{{ c.vehiclePlate }}</strong>
-                    </div>
                   </div>
-                </div>
 
-                @if (isCourierReadyToReceive(c)) {
-                  <div class="courier-ready-banner">
-                    <span class="ready-dot"></span>
-                    <span>Ruta Finalizada · Entregas completas · Recibir caja</span>
-                  </div>
-                }
-
-                <!-- Progress bar -->
-                <div class="progress-track">
-                  <div
-                    class="progress-fill"
-                    [style.background]="c.color"
-                    [style.width.%]="getCourierProgressPct(c)"
-                  ></div>
-                </div>
-
-                <!-- Quick Action Buttons for Courier -->
-                <div class="courier-card-footer">
                   @if (isCourierReadyToReceive(c)) {
-                    <button
-                      type="button"
-                      class="btn-receive-action"
-                      (click)="$event.stopPropagation(); openReceiveCourierModal(c)"
-                      title="Recibir domiciliario y liquidar el dinero de la ruta"
-                    >
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                        <polyline points="7 10 12 15 17 10"></polyline>
-                        <line x1="12" y1="15" x2="12" y2="3"></line>
-                      </svg>
-                      <span>Recibir Domiciliario</span>
-                    </button>
-                  } @else {
-                    <button
-                      type="button"
-                      class="btn-seq-link"
-                      (click)="$event.stopPropagation(); openRoutePlannerFor(c.id)"
-                    >
-                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-                        <circle cx="6" cy="19" r="3"></circle>
-                        <path d="M9 19h8.5a3.5 3.5 0 0 0 0-7h-11a3.5 3.5 0 0 1 0-7H15"></path>
-                        <circle cx="18" cy="5" r="3"></circle>
-                      </svg>
-                      <span>Editar Ruta</span>
-                    </button>
-
-                    @if (c.orderIds.length > 0) {
-                      <button
-                        type="button"
-                        class="btn-force-receive"
-                        (click)="$event.stopPropagation(); markAllCourierStopsDelivered(c.id)"
-                        title="Simular entrega total y habilitar botón Recibir Domiciliario"
-                      >
-                        Finalizar
-                      </button>
-                    }
+                    <div class="courier-ready-banner">
+                      <span class="ready-dot"></span>
+                      <span>Ruta Finalizada · Entregas completas · Recibir caja</span>
+                    </div>
                   }
 
-                  <button
-                    type="button"
-                    class="btn-locate"
-                    (click)="$event.stopPropagation(); flyToCourier(c)"
-                    title="Centrar mapa en el mensajero"
-                  >
-                    Ubicar
-                  </button>
+                  <!-- Progress bar -->
+                  <div class="progress-track">
+                    <div
+                      class="progress-fill"
+                      [style.background]="c.color"
+                      [style.width.%]="getCourierProgressPct(c)"
+                    ></div>
+                  </div>
+
+                  <!-- Quick Action Buttons for Courier -->
+                  <div class="courier-card-footer">
+                    @if (isCourierReadyToReceive(c)) {
+                      <button
+                        type="button"
+                        class="btn-receive-action"
+                        (click)="$event.stopPropagation(); openReceiveCourierModal(c)"
+                        title="Recibir domiciliario y liquidar el dinero de la ruta"
+                      >
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                          <polyline points="7 10 12 15 17 10"></polyline>
+                          <line x1="12" y1="15" x2="12" y2="3"></line>
+                        </svg>
+                        <span>Recibir Domiciliario</span>
+                      </button>
+                    } @else {
+                      <button
+                        type="button"
+                        class="btn-seq-link"
+                        (click)="$event.stopPropagation(); openRoutePlannerFor(c.id)"
+                      >
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                          <circle cx="6" cy="19" r="3"></circle>
+                          <path d="M9 19h8.5a3.5 3.5 0 0 0 0-7h-11a3.5 3.5 0 0 1 0-7H15"></path>
+                          <circle cx="18" cy="5" r="3"></circle>
+                        </svg>
+                        <span>Editar Ruta</span>
+                      </button>
+
+                      @if (c.orderIds.length > 0) {
+                        <button
+                          type="button"
+                          class="btn-force-receive"
+                          (click)="$event.stopPropagation(); markAllCourierStopsDelivered(c.id)"
+                          title="Simular entrega total y habilitar botón Recibir Domiciliario"
+                        >
+                          Finalizar
+                        </button>
+                      }
+                    }
+
+                    <button
+                      type="button"
+                      class="btn-locate"
+                      (click)="$event.stopPropagation(); flyToCourier(c)"
+                      title="Centrar mapa en el mensajero"
+                    >
+                      Ubicar
+                    </button>
+                  </div>
                 </div>
-              </div>
-            }
+              }
+            </div>
           </div>
-        </div>
+        }
       </div>
 
       <!-- ========================================================================= -->
@@ -2464,10 +2472,10 @@ export const MAP_STYLES: MapStyleOption[] = [
       background: var(--bg-card);
       border: 1px solid var(--border-subtle);
       border-radius: var(--radius-lg, 14px);
-      padding: 12px 14px;
+      padding: 10px 12px;
       display: flex;
       flex-direction: column;
-      gap: 10px;
+      gap: 8px;
       box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
     }
 
@@ -2476,19 +2484,36 @@ export const MAP_STYLES: MapStyleOption[] = [
       justify-content: space-between;
       align-items: center;
       border-bottom: 1px solid var(--border-subtle);
-      padding-bottom: 8px;
+      padding-bottom: 6px;
     }
 
     .deck-title {
-      font-size: 0.96rem;
+      font-size: 0.88rem;
       font-weight: 800;
       color: var(--text-main);
     }
 
     .couriers-list {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      display: flex;
       gap: 10px;
+      overflow-x: auto;
+      padding-bottom: 4px;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: thin;
+      scrollbar-color: rgba(0,0,0,0.12) transparent;
+    }
+
+    .couriers-list::-webkit-scrollbar {
+      height: 4px;
+    }
+
+    .couriers-list::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    .couriers-list::-webkit-scrollbar-thumb {
+      background: rgba(0,0,0,0.12);
+      border-radius: 999px;
     }
 
     .courier-card {
@@ -2496,12 +2521,15 @@ export const MAP_STYLES: MapStyleOption[] = [
       border: 1px solid var(--border-subtle);
       border-left-width: 4px;
       border-radius: var(--radius-md, 10px);
-      padding: 9px 11px;
+      padding: 8px 10px;
       display: flex;
       flex-direction: column;
-      gap: 6px;
+      gap: 4px;
       cursor: pointer;
       transition: all 0.2s;
+      min-width: 260px;
+      max-width: 300px;
+      flex-shrink: 0;
     }
 
     .courier-card:hover, .courier-card.selected {
@@ -2513,17 +2541,17 @@ export const MAP_STYLES: MapStyleOption[] = [
     .courier-card-head {
       display: flex;
       align-items: center;
-      gap: 9px;
+      gap: 7px;
     }
 
     .courier-avatar {
-      width: 32px;
-      height: 32px;
-      border-radius: 8px;
+      width: 28px;
+      height: 28px;
+      border-radius: 7px;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 1.05rem;
+      font-size: 0.95rem;
       flex-shrink: 0;
     }
 
@@ -2534,13 +2562,12 @@ export const MAP_STYLES: MapStyleOption[] = [
 
     .courier-name-row {
       display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 6px;
+      flex-direction: column;
+      gap: 3px;
     }
 
     .courier-name {
-      font-size: 0.82rem;
+      font-size: 0.8rem;
       font-weight: 800;
       color: var(--text-main);
       white-space: nowrap;
@@ -2549,10 +2576,10 @@ export const MAP_STYLES: MapStyleOption[] = [
     }
 
     .courier-badges-inline {
-      display: inline-flex;
+      display: flex;
       align-items: center;
-      gap: 5px;
-      flex-shrink: 0;
+      gap: 4px;
+      flex-wrap: wrap;
     }
 
     .courier-stops-pill {
@@ -2584,17 +2611,32 @@ export const MAP_STYLES: MapStyleOption[] = [
     }
 
     .courier-vehicle-info {
-      font-size: 0.7rem;
+      font-size: 0.67rem;
       color: var(--text-muted);
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 6px;
       margin-top: 1px;
+      line-height: 1.3;
+    }
+
+    .courier-phone-inline {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      background: #f0fdf4;
+      color: #166534;
+      border: 1px solid #bbf7d0;
+      padding: 1px 7px;
+      border-radius: 999px;
+      font-size: 0.68rem;
+      font-weight: 700;
     }
 
     .progress-track {
       width: 100%;
-      height: 3px;
+      height: 2.5px;
       background: rgba(148, 163, 184, 0.18);
       border-radius: 999px;
       overflow: hidden;
@@ -3840,15 +3882,15 @@ export const MAP_STYLES: MapStyleOption[] = [
       background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%);
       border: 1px solid #86efac;
       color: #065f46;
-      border-radius: 6px;
-      padding: 5px 8px;
-      font-size: 0.72rem;
+      border-radius: 5px;
+      padding: 4px 7px;
+      font-size: 0.68rem;
       font-weight: 800;
       display: flex;
       align-items: center;
-      gap: 6px;
-      margin-top: 8px;
-      margin-bottom: 6px;
+      gap: 5px;
+      margin-top: 4px;
+      margin-bottom: 2px;
       animation: readyBannerPulse 2s infinite ease-in-out;
     }
 
@@ -4794,6 +4836,15 @@ export class DeliveryMapComponent implements OnInit, AfterViewInit, OnDestroy {
 
   // Delivery Stops / Waypoints
   readonly deliveryStops = signal<DeliveryWaypoint[]>(INITIAL_BOGOTA_STOPS);
+
+  // Couriers that currently have at least one assigned delivery stop
+  readonly assignedCouriers = computed(() => {
+    const stops = this.deliveryStops();
+    const validStopIds = new Set(stops.map(s => s.id));
+    return this.couriers().filter(
+      c => c.orderIds.some(id => validStopIds.has(id)) || stops.some(s => s.assignedCourierId === c.id)
+    );
+  });
 
   // Telemetry Computeds
   readonly deliveredCount = computed(() => {

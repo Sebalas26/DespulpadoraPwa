@@ -10,7 +10,7 @@
       <!-- Mobile location & status pill (Shown only on Mobile screen) -->
       <div class="mobile-location-tag">
         <span class="dot-indicator"></span>
-        <span>Cava principal • En línea</span>
+        <span>Bodega principal • En línea</span>
       </div>
     </div>
 
@@ -39,7 +39,7 @@
   <!-- ROW 1: 4 QUICK KPI CARDS (2x2 on Mobile)    -->
   <!-- ========================================== -->
   <div class="quick-kpis-grid">
-    <!-- Card 1: Facturación estimada hoy -->
+    <!-- Card 1: Facturación hoy -->
     <div class="quick-kpi-card">
       <div class="kpi-icon-box icon-green">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -48,9 +48,9 @@
           <path d="M6 12h.01M18 12h.01"></path>
         </svg>
       </div>
-      <span class="kpi-label">Facturación estimada hoy</span>
+      <span class="kpi-label">Facturación hoy</span>
       <div class="kpi-value-row">
-        <span class="kpi-big-value">{{ formatCOP(stateService.todayRevenue()) }}</span>
+        <span class="kpi-big-value">{{ formatCOP(todayBillingStats().revenue) }}</span>
         <svg class="kpi-sparkline" viewBox="0 0 68 34" fill="none" aria-hidden="true">
           <defs>
             <linearGradient id="sparkGreen1" x1="0" y1="0" x2="0" y2="1">
@@ -62,10 +62,12 @@
           <path d="M2 22 C 16 22, 24 20, 34 11 C 42 4, 52 8, 65 20" stroke="#22c55e" stroke-width="1.8" stroke-linecap="round" />
         </svg>
       </div>
-      <span class="kpi-subtext">Sin facturación registrada hoy</span>
+      <span class="kpi-subtext">
+        {{ todayBillingStats().ordersCount > 0 ? todayBillingStats().ordersCount + ' pedido(s) · ' + todayBillingStats().unitsSold + ' pulpas hoy' : 'Sin facturación registrada hoy' }}
+      </span>
     </div>
 
-    <!-- Card 2: Pulpa total en cava -->
+    <!-- Card 2: Pulpa total en bodega -->
     <div class="quick-kpi-card">
       <div class="kpi-icon-box icon-green">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -73,7 +75,7 @@
           <path d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12"></path>
         </svg>
       </div>
-      <span class="kpi-label">Pulpa total en cava</span>
+      <span class="kpi-label">Pulpa total en bodega</span>
       <div class="kpi-value-row">
         <span class="kpi-big-value">{{ stateService.totalStockKg().toFixed(1) }} kg</span>
         <svg class="kpi-sparkline" viewBox="0 0 68 34" fill="none" aria-hidden="true">
@@ -88,7 +90,7 @@
           <circle cx="63" cy="9" r="2.6" fill="#15803d" />
         </svg>
       </div>
-      <span class="kpi-subtext">{{ stateService.fruits().length }} frutas disponibles</span>
+      <span class="kpi-subtext">{{ totalPreparedPulpUnits() }} pulpas · {{ stateService.fruits().length }} frutas en bodega</span>
     </div>
 
     <!-- Card 3: En alistamiento -->
@@ -101,7 +103,7 @@
       </div>
       <span class="kpi-label">En alistamiento</span>
       <div class="kpi-value-row">
-        <span class="kpi-big-value">{{ ordersByStatus().picking + ordersByStatus().pending }} pedido</span>
+        <span class="kpi-big-value">{{ ordersByStatus().picking + ordersByStatus().pending }} {{ (ordersByStatus().picking + ordersByStatus().pending) === 1 ? 'pedido' : 'pedidos' }}</span>
         <svg class="kpi-sparkline" viewBox="0 0 68 34" fill="none" aria-hidden="true">
           <defs>
             <linearGradient id="sparkRed3" x1="0" y1="0" x2="0" y2="1">
@@ -129,7 +131,7 @@
       </div>
       <span class="kpi-label">En ruta</span>
       <div class="kpi-value-row">
-        <span class="kpi-big-value">{{ ordersByStatus().dispatched }} despacho</span>
+        <span class="kpi-big-value">{{ ordersByStatus().dispatched }} {{ ordersByStatus().dispatched === 1 ? 'despacho' : 'despachos' }}</span>
         <svg class="kpi-sparkline" viewBox="0 0 68 34" fill="none" aria-hidden="true">
           <defs>
             <linearGradient id="sparkPurple4" x1="0" y1="0" x2="0" y2="1">
@@ -183,47 +185,42 @@
 
     <!-- 3 Metric Columns -->
     <div class="financial-metrics-row">
-      <!-- Col 1: Utilidad bruta (Figma Dark Green Container with decorative waves) -->
+      <!-- Col 1: Ventas del mes -->
       <div class="fin-metric-box dark-green-card">
         <svg class="fin-bg-waves" viewBox="0 0 320 130" preserveAspectRatio="none" aria-hidden="true">
           <path d="M0 105 C 45 95, 75 70, 115 88 C 155 106, 185 45, 225 65 C 260 82, 285 25, 320 48 L 320 130 L 0 130 Z" fill="rgba(255, 255, 255, 0.05)" stroke="rgba(255, 255, 255, 0.14)" stroke-width="1.5" />
           <path d="M0 118 C 60 112, 95 85, 145 102 C 190 116, 225 75, 265 92 C 290 102, 305 68, 320 75 L 320 130 L 0 130 Z" fill="rgba(255, 255, 255, 0.04)" stroke="rgba(255, 255, 255, 0.1)" stroke-width="1.2" />
         </svg>
         <div class="fin-box-header">
-          <span>Utilidad bruta</span>
-          <span class="fin-badge-white">46% margen</span>
-        </div>
-        <div class="fin-box-value">{{ formatCOP(stateService.salesPerformance().grossProfit) }}</div>
-        <div class="fin-box-desc">Valor neto sobre las ventas del mes</div>
-      </div>
-
-      <!-- Col 2: Ventas del mes (Figma White Box with Red Badge) -->
-      <div class="fin-metric-box white-card">
-        <div class="fin-box-header">
           <span>Ventas del mes</span>
-          <span class="fin-badge-red">-97.3%</span>
+          <span class="fin-badge-white">{{ stateService.salesPerformance().totalOrdersCount }} pedidos</span>
         </div>
         <div class="fin-box-value">{{ formatCOP(stateService.salesPerformance().currentMonthRevenue) }}</div>
-        <div class="fin-box-desc">Mes anterior: $ 15.000.000</div>
+        <div class="fin-box-desc">Total facturado acumulado del mes</div>
       </div>
 
-      <!-- Col 3: Ticket promedio (Figma White Box with Mini Bar Sparkline) -->
+      <!-- Col 2: Cliente del mes -->
       <div class="fin-metric-box white-card">
         <div class="fin-box-header">
-          <span>Ticket promedio</span>
-          <svg class="fin-mini-bars" width="54" height="20" viewBox="0 0 54 20" fill="none" aria-hidden="true">
-            <line x1="2" y1="16" x2="46" y2="16" stroke="#d1e7d8" stroke-width="1.5" stroke-linecap="round" />
-            <rect x="8" y="13" width="3" height="3" rx="1.5" fill="#86efac" />
-            <rect x="16" y="11" width="3" height="5" rx="1.5" fill="#86efac" />
-            <rect x="24" y="13" width="3" height="3" rx="1.5" fill="#86efac" />
-            <rect x="31" y="8" width="3" height="8" rx="1.5" fill="#4ade80" />
-            <rect x="37" y="4" width="3" height="12" rx="1.5" fill="#1e5e3a" />
-            <rect x="43" y="10" width="3" height="6" rx="1.5" fill="#4ade80" />
-            <circle cx="50" cy="15" r="2.2" fill="#14532d" />
-          </svg>
+          <span>Cliente del mes</span>
+          <span class="fin-badge-green">
+            {{ topClientOfMonth().orders }} {{ topClientOfMonth().orders === 1 ? 'compra' : 'compras' }}
+          </span>
         </div>
-        <div class="fin-box-value">{{ formatCOP(stateService.salesPerformance().averageTicketValue) }}</div>
-        <div class="fin-box-desc">Promedio por venta</div>
+        <div class="fin-box-value fin-box-client-name" [title]="topClientOfMonth().name">
+          {{ topClientOfMonth().name }}
+        </div>
+        <div class="fin-box-desc">Total comprado: {{ formatCOP(topClientOfMonth().total) }}</div>
+      </div>
+
+      <!-- Col 3: Pulpas vendidas -->
+      <div class="fin-metric-box white-card">
+        <div class="fin-box-header">
+          <span>Pulpas vendidas</span>
+          <span class="fin-badge-green">{{ soldPulpsSummary().totalKg }} kg</span>
+        </div>
+        <div class="fin-box-value">{{ soldPulpsSummary().totalUnits }} uds</div>
+        <div class="fin-box-desc">{{ soldPulpsSummary().topFruitLabel }} · {{ stateService.salesPerformance().totalOrdersCount }} pedidos</div>
       </div>
     </div>
 
@@ -255,8 +252,205 @@
     </div>
   </div>
 
+  <!-- ========================================================== -->
+  <!-- ROW 3: INFORMES DE INVENTARIO DE FRUTA Y PULPAS PREPARADAS -->
+  <!-- ========================================================== -->
+  <div class="inventory-reports-grid">
+
+    <!-- Left Report: Informe de Inventario de Fruta (Kg) -->
+    <div class="card-section-box report-card">
+      <div class="report-card-header">
+        <div class="card-title-group">
+          <div class="card-title-icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z"></path>
+              <path d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12"></path>
+            </svg>
+          </div>
+          <div>
+            <h3 class="card-main-title">Informe de inventario de fruta</h3>
+            <p class="card-main-subtitle">Fruta fresca disponible en bodega para despulpado.</p>
+          </div>
+        </div>
+        <a routerLink="/settings" [queryParams]="{ tab: 'fruits' }" class="report-action-pill">
+          Ajustar Kg &rarr;
+        </a>
+      </div>
+
+      <!-- Mini Summary Strip -->
+      <div class="report-summary-strip">
+        <div class="summary-mini-stat">
+          <span class="mini-stat-label">Fruta total en bodega</span>
+          <span class="mini-stat-value text-green">{{ stateService.totalFreshStockKg() }} kg</span>
+        </div>
+        <div class="summary-mini-stat">
+          <span class="mini-stat-label">Pulpa estimada (rendimiento)</span>
+          <span class="mini-stat-value">~{{ estimatedPulpFromFreshFruitKg() }} kg</span>
+        </div>
+        <div class="summary-mini-stat">
+          <span class="mini-stat-label">Variedades activas</span>
+          <span class="mini-stat-value">{{ stateService.fruits().length }} frutas</span>
+        </div>
+      </div>
+
+      <!-- Fruit Inventory Bars List -->
+      <div class="fruit-report-list">
+        @for (item of fruitInventoryReport(); track item.id) {
+          <div class="fruit-report-row">
+            <div class="fruit-report-top">
+              <div class="fruit-report-identity">
+                <span class="pulp-fruit-dot" [style.background]="item.color"></span>
+                <div>
+                  <span class="fruit-report-name">{{ item.name }}</span>
+                  <span class="fruit-report-meta">Rend. {{ item.yieldPct }}% · ~{{ item.estimatedPulpKg }} kg pulpa</span>
+                </div>
+              </div>
+              <div class="fruit-report-numbers">
+                <span class="fruit-kg-strong">{{ item.freshKg }} kg</span>
+                <span
+                  class="fruit-status-pill"
+                  [class.status-optimo]="item.status === 'OPTIMO'"
+                  [class.status-medio]="item.status === 'MEDIO'"
+                  [class.status-bajo]="item.status === 'BAJO'"
+                >
+                  {{ item.status === 'OPTIMO' ? 'Óptimo' : item.status === 'MEDIO' ? 'Medio' : 'Bajo' }}
+                </span>
+              </div>
+            </div>
+            <div class="fruit-progress-track">
+              <div
+                class="fruit-progress-fill"
+                [style.width.%]="item.barPct"
+                [style.background]="item.color"
+              ></div>
+            </div>
+          </div>
+        }
+      </div>
+
+      <div class="card-actions-bottom">
+        <a routerLink="/settings" [queryParams]="{ tab: 'fruits' }" class="dgl-text-link">
+          <span>Ver inventario completo de fruta</span>
+          <span>&rarr;</span>
+        </a>
+      </div>
+    </div>
+
+    <!-- Right Report: Informe de Pulpas Preparadas (Stock en Bodega) -->
+    <div class="card-section-box report-card">
+      <div class="report-card-header">
+        <div class="card-title-group">
+          <div class="card-title-icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
+              <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
+              <line x1="12" y1="22.08" x2="12" y2="12"></line>
+            </svg>
+          </div>
+          <div>
+            <h3 class="card-main-title">Informe de pulpas preparadas</h3>
+            <p class="card-main-subtitle">Unidades empacadas listas en bodega por presentación.</p>
+          </div>
+        </div>
+        <a routerLink="/settings" [queryParams]="{ tab: 'variants' }" class="report-action-pill">
+          Gestionar Stock &rarr;
+        </a>
+      </div>
+
+      <!-- Mini Summary Strip -->
+      <div class="report-summary-strip">
+        <div class="summary-mini-stat">
+          <span class="mini-stat-label">Total pulpas hechas</span>
+          <span class="mini-stat-value text-green">{{ preparedPulpsReport().totalUnits }} uds</span>
+        </div>
+        <div class="summary-mini-stat">
+          <span class="mini-stat-label">Peso neto en bodega</span>
+          <span class="mini-stat-value">{{ stateService.totalStockKg().toFixed(1) }} kg</span>
+        </div>
+        <div class="summary-mini-stat">
+          <span class="mini-stat-label">Valor en bodega</span>
+          <span class="mini-stat-value">{{ formatCOP(preparedPulpsReport().totalRetailValue) }}</span>
+        </div>
+      </div>
+
+      <!-- Grammage Totals Bar -->
+      <div class="grammage-pills-row">
+        <div class="gram-pill">
+          <span class="gram-pill-tag">140g</span>
+          <strong>{{ preparedPulpsReport().byGrammage.g140 }} uds</strong>
+        </div>
+        <div class="gram-pill">
+          <span class="gram-pill-tag">250g</span>
+          <strong>{{ preparedPulpsReport().byGrammage.g250 }} uds</strong>
+        </div>
+        <div class="gram-pill">
+          <span class="gram-pill-tag">500g</span>
+          <strong>{{ preparedPulpsReport().byGrammage.g500 }} uds</strong>
+        </div>
+        <div class="gram-pill">
+          <span class="gram-pill-tag">1000g</span>
+          <strong>{{ preparedPulpsReport().byGrammage.g1000 }} uds</strong>
+        </div>
+      </div>
+
+      <!-- Prepared Pulps Table by Fruit -->
+      <div class="prepared-pulps-table-wrap">
+        <table class="prepared-pulps-table">
+          <thead>
+            <tr>
+              <th>Fruta</th>
+              <th class="text-center">140g</th>
+              <th class="text-center">250g</th>
+              <th class="text-center">500g</th>
+              <th class="text-center">1000g</th>
+              <th class="text-right">Total</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (row of preparedPulpsReport().items; track row.id) {
+              <tr>
+                <td>
+                  <div class="pulp-fruit-cell">
+                    <span class="pulp-fruit-dot" [style.background]="row.color"></span>
+                    <span class="pulp-fruit-name">{{ row.name }}</span>
+                  </div>
+                </td>
+                <td class="text-center">
+                  <span class="gram-qty-badge" [class.low-stock-cell]="row.low140">{{ row.g140 }}</span>
+                </td>
+                <td class="text-center">
+                  <span class="gram-qty-badge" [class.low-stock-cell]="row.low250">{{ row.g250 }}</span>
+                </td>
+                <td class="text-center">
+                  <span class="gram-qty-badge" [class.low-stock-cell]="row.low500">{{ row.g500 }}</span>
+                </td>
+                <td class="text-center">
+                  <span class="gram-qty-badge" [class.low-stock-cell]="row.low1000">{{ row.g1000 }}</span>
+                </td>
+                <td class="text-right">
+                  <div class="pulp-total-cell">
+                    <strong>{{ row.units }} uds</strong>
+                    <span>{{ row.totalKg }} kg</span>
+                  </div>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+
+      <div class="card-actions-bottom">
+        <a routerLink="/settings" [queryParams]="{ tab: 'variants' }" class="dgl-text-link">
+          <span>Ir al stock de pulpas preparadas</span>
+          <span>&rarr;</span>
+        </a>
+      </div>
+    </div>
+
+  </div>
+
   <!-- ========================================== -->
-  <!-- ROW 3: FLUJO DE PEDIDOS & ATENCIÓN EN CAVA  -->
+  <!-- ROW 4: FLUJO DE PEDIDOS & ATENCIÓN EN BODEGA -->
   <!-- ========================================== -->
   <div class="bottom-two-cards-grid">
 
@@ -322,7 +516,7 @@
             </div>
             <div>
               <div class="status-title">Pendientes de aprobación</div>
-              <div class="status-subtitle">Sin pedidos por aprobar</div>
+              <div class="status-subtitle">{{ ordersByStatus().pending > 0 ? 'Pedidos pendientes por confirmar' : 'Sin pedidos por aprobar' }}</div>
             </div>
           </div>
           <span class="status-count">{{ ordersByStatus().pending }}</span>
@@ -339,10 +533,10 @@
             </div>
             <div>
               <div class="status-title">En alistamiento</div>
-              <div class="status-subtitle">Picking en cava • Prioridad de despacho</div>
+              <div class="status-subtitle">Picking en bodega • Prioridad de despacho</div>
             </div>
           </div>
-          <span class="status-count">{{ ordersByStatus().picking + (ordersByStatus().pending === 0 && ordersByStatus().picking === 0 ? 1 : 0) }}</span>
+          <span class="status-count">{{ ordersByStatus().picking }}</span>
         </div>
 
         <!-- 3. En ruta (Purple card) -->
@@ -361,7 +555,7 @@
               <div class="status-subtitle">Despacho en seguimiento</div>
             </div>
           </div>
-          <span class="status-count">{{ ordersByStatus().dispatched + (ordersByStatus().dispatched === 0 ? 1 : 0) }}</span>
+          <span class="status-count">{{ ordersByStatus().dispatched }}</span>
         </div>
       </div>
 
@@ -382,7 +576,7 @@
       </div>
     </div>
 
-    <!-- Right Card: Atención en cava -->
+    <!-- Right Card: Atención en bodega -->
     <div class="card-section-box">
       <div class="card-title-group" style="margin-bottom: 4px;">
         <div class="card-title-icon" style="color: #dc2626;">
@@ -393,59 +587,39 @@
           </svg>
         </div>
         <div>
-          <h3 class="card-main-title">Atención en cava</h3>
-          <p class="card-main-subtitle">Presentaciones con stock bajo.</p>
+          <h3 class="card-main-title">Atención en bodega</h3>
+          <p class="card-main-subtitle">Presentaciones de pulpa con stock bajo.</p>
         </div>
       </div>
 
       <div class="items-list-container">
-        <!-- Low stock alert item 1: Lulo de Castilla 1/4 kg -->
-        <a routerLink="/settings" [queryParams]="{ tab: 'variants' }" class="cava-alert-item">
-          <div class="alert-left-group">
-            <span class="alert-fruit-icon" style="width: 14px; height: 14px; border-radius: 50%; background: #10b981; display: inline-block;"></span>
-            <div>
-              <div class="alert-fruit-title">Lulo de Castilla</div>
-              <div class="alert-presentation">Presentación de 1/4 kg</div>
-              <div class="alert-meta-row">
-                <span class="badge-low-stock">Stock bajo</span>
-                <span class="alert-replenish-link">Revisar reposición</span>
+        @for (alert of lowStockItems(); track alert.fruitName + alert.presentation) {
+          <a routerLink="/settings" [queryParams]="{ tab: 'variants' }" class="cava-alert-item">
+            <div class="alert-left-group">
+              <span class="alert-fruit-icon" [style.background]="alert.color" style="width: 14px; height: 14px; border-radius: 50%; display: inline-block;"></span>
+              <div>
+                <div class="alert-fruit-title">{{ alert.fruitName }}</div>
+                <div class="alert-presentation">{{ alert.presentation }}</div>
+                <div class="alert-meta-row">
+                  <span class="badge-low-stock">Stock actual: {{ alert.currentUnits }} uds</span>
+                  <span class="alert-replenish-link">Revisar reposición</span>
+                </div>
+                <div class="alert-suggested-min">Mínimo sugerido: {{ alert.minUnits }} uds</div>
               </div>
-              <div class="alert-suggested-min">Mínimo sugerido: 60 und</div>
             </div>
-          </div>
-          <div class="alert-chevron">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-              <polyline points="9 18 15 12 9 6"></polyline>
-            </svg>
-          </div>
-        </a>
-
-        <!-- Low stock alert item 2: Lulo de Castilla 1/2 kg -->
-        <a routerLink="/settings" [queryParams]="{ tab: 'variants' }" class="cava-alert-item">
-          <div class="alert-left-group">
-            <span class="alert-fruit-icon" style="width: 14px; height: 14px; border-radius: 50%; background: #10b981; display: inline-block;"></span>
-            <div>
-              <div class="alert-fruit-title">Lulo de Castilla</div>
-              <div class="alert-presentation">Presentación de 1/2 kg</div>
-              <div class="alert-meta-row">
-                <span class="badge-low-stock">Stock bajo</span>
-                <span class="alert-replenish-link">Revisar reposición</span>
-              </div>
-              <div class="alert-suggested-min">Mínimo sugerido: 50 und</div>
+            <div class="alert-chevron">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <polyline points="9 18 15 12 9 6"></polyline>
+              </svg>
             </div>
-          </div>
-          <div class="alert-chevron">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-              <polyline points="9 18 15 12 9 6"></polyline>
-            </svg>
-          </div>
-        </a>
+          </a>
+        }
       </div>
 
       <!-- Action link at bottom -->
       <div class="card-actions-bottom">
         <a routerLink="/settings" [queryParams]="{ tab: 'variants' }" class="dgl-text-link">
-          <span>Ir al inventario en cava</span>
+          <span>Ir a Inventario y Stock</span>
           <span>&rarr;</span>
         </a>
       </div>

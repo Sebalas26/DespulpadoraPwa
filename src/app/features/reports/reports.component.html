@@ -3,11 +3,11 @@
   <!-- Header & Actions -->
   <div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 16px;">
     <div>
-      <h1 style="font-size: 1.85rem; font-weight: 800; margin-bottom: 4px;">
-        Ventas
+      <h1 style="font-size: 1.85rem; font-weight: 800; margin-bottom: 4px; color: var(--text-main);">
+        Centro de Reportes Gerenciales
       </h1>
       <p style="color: var(--text-muted); font-size: 0.92rem;">
-        Consolidado gerencial de ventas, auditoría de pérdidas, inventario de cava, nómina quincenal y flujo de caja.
+        Consolidado analítico de ventas, auditoría de mermas, inventario en cava, gastos operativos y nómina quincenal.
       </p>
     </div>
 
@@ -149,7 +149,7 @@
 
       <button
         type="button"
-        class="btn btn-secondary"
+        class="btn btn-secondary no-print"
         style="gap: 8px;"
         (click)="printReport()"
         title="Imprimir informe en PDF o papel"
@@ -164,10 +164,10 @@
 
       <button
         type="button"
-        class="btn btn-primary"
+        class="btn btn-primary no-print"
         style="gap: 8px;"
         (click)="exportCurrentReportCsv()"
-        title="Descargar datos actuales en formato Excel CSV"
+        title="Descargar reporte activo en formato Excel CSV"
       >
         <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
@@ -179,174 +179,725 @@
     </div>
   </div>
 
-  <!-- REPORTE DE VENTAS & METAS -->
-  <div style="display: flex; flex-direction: column; gap: 20px;">
-    <!-- KPI Row -->
-    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px;">
-      <div class="card hover-lift">
-        <div class="card-body">
-          <div style="font-size: 0.78rem; text-transform: uppercase; color: var(--text-muted); font-weight: 700;">Total Facturado</div>
-          <div style="font-size: 1.85rem; font-weight: 800; color: #10b981; margin-top: 4px;">
-            {{ formatCOP(totalSalesRevenue()) }}
-          </div>
-          <div style="font-size: 0.75rem; color: var(--text-dim); margin-top: 2px;">
-            {{ filteredOrders().length }} pedidos procesados · {{ activeFilterSummaryLabel() }}
-          </div>
-        </div>
-      </div>
+  <!-- Executive Reports Navigation Pills (Figma Style) -->
+  <div class="reports-nav-tabs no-print">
+    <button
+      type="button"
+      class="report-tab-btn"
+      [class.active]="activeTab() === 'sales'"
+      (click)="setTab('sales')"
+    >
+      <span class="report-tab-icon">📊</span>
+      <span>Ventas & Facturación</span>
+      <span class="report-tab-badge">{{ filteredOrders().length }}</span>
+    </button>
 
-      <div class="card hover-lift">
-        <div class="card-body">
-          <div style="font-size: 0.78rem; text-transform: uppercase; color: var(--text-muted); font-weight: 700;">Utilidad Bruta Acumulada</div>
-          <div style="font-size: 1.85rem; font-weight: 800; color: #06b6d4; margin-top: 4px;">
-            {{ formatCOP(filteredGrossProfit()) }}
-          </div>
-          <div style="font-size: 0.75rem; color: var(--text-dim); margin-top: 2px;">
-            Margen bruto: {{ filteredGrossMarginPct().toFixed(1) }}%
-          </div>
-        </div>
-      </div>
+    <button
+      type="button"
+      class="report-tab-btn"
+      [class.active]="activeTab() === 'loss'"
+      (click)="setTab('loss')"
+    >
+      <span class="report-tab-icon">⚖️</span>
+      <span>Auditoría de Mermas (Ideal vs Real)</span>
+      <span class="report-tab-badge accent">{{ idealVsRealAudit().length }} frutas</span>
+    </button>
 
-      <div class="card hover-lift">
-        <div class="card-body">
-          <div style="font-size: 0.78rem; text-transform: uppercase; color: var(--text-muted); font-weight: 700;">Cumplimiento Meta Mensual</div>
-          <div style="font-size: 1.85rem; font-weight: 800; color: #f59e0b; margin-top: 4px;">
-            {{ filteredCompliancePct().toFixed(1) }}%
-          </div>
-          <div style="font-size: 0.75rem; color: var(--text-dim); margin-top: 2px;">
-            Meta: {{ formatCOP(stateService.salesPerformance().monthTargetRevenue) }}
-          </div>
-        </div>
-      </div>
+    <button
+      type="button"
+      class="report-tab-btn"
+      [class.active]="activeTab() === 'stock'"
+      (click)="setTab('stock')"
+    >
+      <span class="report-tab-icon">❄️</span>
+      <span>Inventario & Valoración Cava</span>
+      <span class="report-tab-badge">{{ cavaTotalStockKg() | number:'1.0-0' }} Kg</span>
+    </button>
 
-      <div class="card hover-lift">
-        <div class="card-body">
-          <div style="font-size: 0.78rem; text-transform: uppercase; color: var(--text-muted); font-weight: 700;">Unidades Despachadas</div>
-          <div style="font-size: 1.85rem; font-weight: 800; color: #8b5cf6; margin-top: 4px;">
-            {{ formatNum(totalUnitsSold()) }} unds
-          </div>
-          <div style="font-size: 0.75rem; color: var(--text-dim); margin-top: 2px;">Presentaciones comerciales</div>
-        </div>
-      </div>
-    </div>
+    <button
+      type="button"
+      class="report-tab-btn"
+      [class.active]="activeTab() === 'expenses'"
+      (click)="setTab('expenses')"
+    >
+      <span class="report-tab-icon">🚚</span>
+      <span>Gastos & Logística</span>
+      <span class="report-tab-badge">{{ filteredExpenses().length }}</span>
+    </button>
 
-    <!-- Sales Orders Table -->
-    <div class="card" style="overflow: visible;">
-      <div class="card-header" style="justify-content: space-between;">
-        <h3 class="card-title">Detalle de Ventas Registradas</h3>
-        <span class="badge badge-success">{{ filteredOrders().length }} pedidos</span>
-      </div>
-      <div class="card-body" style="padding: 0; overflow: visible;">
-        <div class="table-container" style="overflow: visible;">
-          <table>
-            <thead>
-              <tr>
-                <th>Nro Pedido</th>
-                <th>Fecha</th>
-                <th>Cliente</th>
-                <th>Contacto</th>
-                <th>Método Pago</th>
-                <th>Mensajero</th>
-                <th>Ítems</th>
-                <th>Estado</th>
-                <th style="text-align: right;">Total COP</th>
-                <th class="no-print" style="text-align: center;">Acciones</th>
-              </tr>
-            </thead>
-            <tbody>
-              @for (order of filteredOrders(); track order.orderId) {
-                <tr>
-                  <td style="font-family: monospace; font-weight: 700;">{{ order.orderNumber }}</td>
-                  <td style="font-size: 0.85rem; color: var(--text-muted);">{{ order.createdAt.substring(0, 10) }}</td>
-                  <td style="font-weight: 600;">{{ order.clientName }}</td>
-                  <td style="font-size: 0.85rem;">{{ order.clientPhone || 'N/A' }}</td>
-                  <td>
-                    <span class="badge badge-info" style="font-size: 0.72rem;">{{ order.paymentMethodName || 'General' }}</span>
-                  </td>
-                  <td>
-                    <span class="courier-pill">
-                      {{ getCourierName(order) }}
-                    </span>
-                  </td>
-                  <td style="font-size: 0.85rem;">{{ order.items.length }} tipos</td>
-                  <td>
-                    <span class="badge" [ngClass]="getStatusBadgeClass(order.status)">
-                      {{ getStatusLabelES(order.status) }}
-                    </span>
-                  </td>
-                  <td style="text-align: right; font-weight: 800; color: #10b981;">
-                    {{ formatCOP(order.totalAmount) }}
-                  </td>
-                  <td class="no-print actions-cell" style="text-align: center;">
-                    <div class="actions-dropdown-wrapper">
-                      <button
-                        type="button"
-                        class="actions-trigger-btn"
-                        (click)="toggleActionsDropdown(order.orderId, $event)"
-                        [class.active]="openActionOrderId() === order.orderId"
-                      >
-                        <span>Acciones</span>
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-                          <polyline points="6 9 12 15 18 9"></polyline>
-                        </svg>
-                      </button>
-
-                      @if (openActionOrderId() === order.orderId) {
-                        <div class="actions-dropdown-menu" (click)="$event.stopPropagation()">
-                          <button type="button" class="dropdown-action-item" (click)="onEditOrder(order, $event)">
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
-                              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
-                            </svg>
-                            <span>Editar</span>
-                          </button>
-
-                          <button type="button" class="dropdown-action-item" (click)="onViewInvoice(order, $event)">
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-                              <polyline points="14 2 14 8 20 8"></polyline>
-                              <line x1="16" y1="13" x2="8" y2="13"></line>
-                              <line x1="16" y1="17" x2="8" y2="17"></line>
-                            </svg>
-                            <span>Ver factura</span>
-                          </button>
-
-                          <button type="button" class="dropdown-action-item" (click)="onRemakeOrder(order, $event)">
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                              <polyline points="23 4 23 10 17 10"></polyline>
-                              <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
-                            </svg>
-                            <span>Rehacer pedido</span>
-                          </button>
-
-                          <div class="dropdown-divider"></div>
-
-                          <button type="button" class="dropdown-action-item danger" (click)="onDeleteOrder(order, $event)">
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                              <polyline points="3 6 5 6 21 6"></polyline>
-                              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-                            </svg>
-                            <span>Eliminar</span>
-                          </button>
-                        </div>
-                      }
-                    </div>
-                  </td>
-                </tr>
-              }
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </div>
+    <button
+      type="button"
+      class="report-tab-btn"
+      [class.active]="activeTab() === 'payroll'"
+      (click)="setTab('payroll')"
+    >
+      <span class="report-tab-icon">👥</span>
+      <span>Nómina Quincenal & RRHH</span>
+      <span class="report-tab-badge">{{ payrollSettlements().length }} colabs</span>
+    </button>
   </div>
+
+  <!-- ======================================================== -->
+  <!-- TAB 1: REPORTE DE VENTAS & METAS                         -->
+  <!-- ======================================================== -->
+  @if (activeTab() === 'sales') {
+    <div style="display: flex; flex-direction: column; gap: 20px;">
+      <!-- KPI Row -->
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 16px;">
+        <div class="card hover-lift">
+          <div class="card-body">
+            <div style="font-size: 0.78rem; text-transform: uppercase; color: var(--text-muted); font-weight: 700;">Total Facturado</div>
+            <div style="font-size: 1.85rem; font-weight: 800; color: #10b981; margin-top: 4px;">
+              {{ formatCOP(totalSalesRevenue()) }}
+            </div>
+            <div style="font-size: 0.75rem; color: var(--text-dim); margin-top: 2px;">
+              {{ filteredOrders().length }} pedidos procesados · {{ activeFilterSummaryLabel() }}
+            </div>
+          </div>
+        </div>
+
+        <div class="card hover-lift">
+          <div class="card-body">
+            <div style="font-size: 0.78rem; text-transform: uppercase; color: var(--text-muted); font-weight: 700;">Utilidad Bruta Acumulada</div>
+            <div style="font-size: 1.85rem; font-weight: 800; color: #06b6d4; margin-top: 4px;">
+              {{ formatCOP(filteredGrossProfit()) }}
+            </div>
+            <div style="font-size: 0.75rem; color: var(--text-dim); margin-top: 2px;">
+              Margen bruto: {{ filteredGrossMarginPct().toFixed(1) }}%
+            </div>
+          </div>
+        </div>
+
+        <div class="card hover-lift">
+          <div class="card-body">
+            <div style="font-size: 0.78rem; text-transform: uppercase; color: var(--text-muted); font-weight: 700;">Cumplimiento Meta Mensual</div>
+            <div style="font-size: 1.85rem; font-weight: 800; color: #f59e0b; margin-top: 4px;">
+              {{ filteredCompliancePct().toFixed(1) }}%
+            </div>
+            <div style="font-size: 0.75rem; color: var(--text-dim); margin-top: 2px;">
+              Meta: {{ formatCOP(stateService.salesPerformance().monthTargetRevenue) }}
+            </div>
+          </div>
+        </div>
+
+        <div class="card hover-lift">
+          <div class="card-body">
+            <div style="font-size: 0.78rem; text-transform: uppercase; color: var(--text-muted); font-weight: 700;">Unidades & Ticket Promedio</div>
+            <div style="font-size: 1.85rem; font-weight: 800; color: #8b5cf6; margin-top: 4px;">
+              {{ formatNum(totalUnitsSold()) }} unds
+            </div>
+            <div style="font-size: 0.75rem; color: var(--text-dim); margin-top: 2px;">
+              Ticket Prom: {{ formatCOP(averageTicket()) }}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Sales Orders Table -->
+      <div class="card" style="overflow: visible;">
+        <div class="card-header" style="justify-content: space-between;">
+          <h3 class="card-title">Detalle de Ventas Registradas</h3>
+          <span class="badge badge-success">{{ filteredOrders().length }} pedidos</span>
+        </div>
+        <div class="card-body" style="padding: 0; overflow: visible;">
+          <div class="table-container" style="overflow: visible;">
+            <table>
+              <thead>
+                <tr>
+                  <th>Nro Pedido</th>
+                  <th>Fecha</th>
+                  <th>Cliente</th>
+                  <th>Contacto</th>
+                  <th>Método Pago</th>
+                  <th>Mensajero</th>
+                  <th>Ítems</th>
+                  <th>Estado</th>
+                  <th style="text-align: right;">Total COP</th>
+                  <th class="no-print" style="text-align: center;">Acciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (order of filteredOrders(); track order.orderId) {
+                  <tr>
+                    <td style="font-family: monospace; font-weight: 700;">{{ order.orderNumber }}</td>
+                    <td style="font-size: 0.85rem; color: var(--text-muted);">{{ (order.createdAt || order.orderDate || '').substring(0, 10) }}</td>
+                    <td style="font-weight: 600;">{{ order.clientName }}</td>
+                    <td style="font-size: 0.85rem;">{{ order.clientPhone || 'N/A' }}</td>
+                    <td>
+                      <span class="badge badge-info" style="font-size: 0.72rem;">{{ order.paymentMethodName || 'General' }}</span>
+                    </td>
+                    <td>
+                      <span class="courier-pill">
+                        {{ getCourierName(order) }}
+                      </span>
+                    </td>
+                    <td style="font-size: 0.85rem;">{{ order.items.length }} tipos</td>
+                    <td>
+                      <span class="badge" [ngClass]="getStatusBadgeClass(order.status)">
+                        {{ getStatusLabelES(order.status) }}
+                      </span>
+                    </td>
+                    <td style="text-align: right; font-weight: 800; color: #10b981;">
+                      {{ formatCOP(order.totalAmount) }}
+                    </td>
+                    <td class="no-print actions-cell" style="text-align: center;">
+                      <div class="actions-dropdown-wrapper">
+                        <button
+                          type="button"
+                          class="actions-trigger-btn"
+                          (click)="toggleActionsDropdown(order.orderId, $event)"
+                          [class.active]="openActionOrderId() === order.orderId"
+                        >
+                          <span>Acciones</span>
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                            <polyline points="6 9 12 15 18 9"></polyline>
+                          </svg>
+                        </button>
+
+                        @if (openActionOrderId() === order.orderId) {
+                          <div class="actions-dropdown-menu" (click)="$event.stopPropagation()">
+                            <button type="button" class="dropdown-action-item" (click)="onViewInvoice(order, $event)">
+                              <span class="action-icon">📄</span>
+                              <span>Ver Factura Corporativa</span>
+                            </button>
+                            <button type="button" class="dropdown-action-item" (click)="onEditOrder(order, $event)">
+                              <span class="action-icon">✏️</span>
+                              <span>Editar Pedido</span>
+                            </button>
+                            <button type="button" class="dropdown-action-item" (click)="onRemakeOrder(order, $event)">
+                              <span class="action-icon">🔁</span>
+                              <span>Rehacer Pedido</span>
+                            </button>
+                            <div class="dropdown-divider"></div>
+                            <button type="button" class="dropdown-action-item danger" (click)="onDeleteOrder(order, $event)">
+                              <span class="action-icon">🗑️</span>
+                              <span>Eliminar Registro</span>
+                            </button>
+                          </div>
+                        }
+                      </div>
+                    </td>
+                  </tr>
+                } @empty {
+                  <tr>
+                    <td colspan="10" style="text-align: center; padding: 40px; color: var(--text-muted);">
+                      No se encontraron pedidos en el período seleccionado.
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- ======================================================== -->
+  <!-- TAB 2: AUDITORÍA DE MERMAS (VENTA IDEAL VS VENTA REAL)   -->
+  <!-- ======================================================== -->
+  @if (activeTab() === 'loss') {
+    <div style="display: flex; flex-direction: column; gap: 20px;">
+      <!-- KPI Row -->
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 16px;">
+        <div class="card hover-lift">
+          <div class="card-body">
+            <div style="font-size: 0.78rem; text-transform: uppercase; color: var(--text-muted); font-weight: 700;">Pulpa Producida Total</div>
+            <div style="font-size: 1.85rem; font-weight: 800; color: #1e5e3a; margin-top: 4px;">
+              {{ formatNum(lossTotalPulpKg()) }} Kg
+            </div>
+            <div style="font-size: 0.75rem; color: var(--text-dim); margin-top: 2px;">
+              Procesado en planta a través de lotes
+            </div>
+          </div>
+        </div>
+
+        <div class="card hover-lift">
+          <div class="card-body">
+            <div style="font-size: 0.78rem; text-transform: uppercase; color: var(--text-muted); font-weight: 700;">Venta Ideal Teórica</div>
+            <div style="font-size: 1.85rem; font-weight: 800; color: #0284c7; margin-top: 4px;">
+              {{ formatCOP(lossTotalIdealRevenue()) }}
+            </div>
+            <div style="font-size: 0.75rem; color: var(--text-dim); margin-top: 2px;">
+              Valoración al 100% de producto terminado
+            </div>
+          </div>
+        </div>
+
+        <div class="card hover-lift">
+          <div class="card-body">
+            <div style="font-size: 0.78rem; text-transform: uppercase; color: var(--text-muted); font-weight: 700;">Venta Real Facturada</div>
+            <div style="font-size: 1.85rem; font-weight: 800; color: #10b981; margin-top: 4px;">
+              {{ formatCOP(lossTotalRealRevenue()) }}
+            </div>
+            <div style="font-size: 0.75rem; color: var(--text-dim); margin-top: 2px;">
+              Ingresos efectivos registrados en despachos
+            </div>
+          </div>
+        </div>
+
+        <div class="card hover-lift">
+          <div class="card-body">
+            <div style="font-size: 0.78rem; text-transform: uppercase; color: var(--text-muted); font-weight: 700;">Brecha de Merma / Fuga</div>
+            <div style="font-size: 1.85rem; font-weight: 800; color: #dc2626; margin-top: 4px;">
+              {{ formatCOP(lossTotalGapRevenue()) }}
+            </div>
+            <div style="font-size: 0.75rem; color: #dc2626; font-weight: 700; margin-top: 2px;">
+              Merma global estimada: {{ lossGlobalPercentage() }}%
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Logic Explanatory Banner (Excel Model) -->
+      <div class="loss-formula-banner">
+        <div class="banner-icon-box">⚖️</div>
+        <div class="banner-body">
+          <div class="banner-title">Algoritmo de Control de Mermas (Venta Ideal vs. Venta Real)</div>
+          <p class="banner-text">
+            Este modelo matemático cruza los <strong>kilos de pulpa producidos en planta</strong> convertidos a unidades teóricas contra las <strong>unidades reales facturadas y despachadas</strong>.
+            Cualquier discrepancia negativa indica mermas de dosificado, merma por descongelamiento, degustaciones o desajuste de inventario en cava.
+          </p>
+        </div>
+      </div>
+
+      <!-- Loss Audit Table -->
+      <div class="card">
+        <div class="card-header" style="justify-content: space-between;">
+          <h3 class="card-title">Auditoría Detallada por Fruta</h3>
+          <span class="badge badge-info">{{ idealVsRealAudit().length }} referencias auditadas</span>
+        </div>
+        <div class="card-body" style="padding: 0;">
+          <div class="table-container">
+            <table>
+              <thead>
+                <tr>
+                  <th>Fruta</th>
+                  <th style="text-align: right;">Pulpa Producida</th>
+                  <th style="text-align: right;">Unds Teóricas</th>
+                  <th style="text-align: right;">Unds Facturadas</th>
+                  <th style="text-align: right;">Venta Ideal</th>
+                  <th style="text-align: right;">Venta Real</th>
+                  <th style="text-align: right;">Dif. Unidades</th>
+                  <th style="text-align: right;">Diferencia en Dinero</th>
+                  <th style="text-align: center;">Nivel de Merma</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (row of idealVsRealAudit(); track row.fruitId) {
+                  <tr>
+                    <td style="font-weight: 700; color: #1e5e3a;">
+                      {{ row.fruitName }}
+                    </td>
+                    <td style="text-align: right; font-weight: 600;">
+                      {{ row.totalPulpKgProduced }} Kg
+                    </td>
+                    <td style="text-align: right; color: var(--text-muted);">
+                      {{ formatNum(row.unitsProduced) }} unds
+                    </td>
+                    <td style="text-align: right; font-weight: 700; color: #10b981;">
+                      {{ formatNum(row.unitsBilled) }} unds
+                    </td>
+                    <td style="text-align: right; font-weight: 600;">
+                      {{ formatCOP(row.idealRevenue) }}
+                    </td>
+                    <td style="text-align: right; font-weight: 700; color: #1e5e3a;">
+                      {{ formatCOP(row.realRevenue) }}
+                    </td>
+                    <td style="text-align: right; font-weight: 700;" [style.color]="row.differenceUnits < 0 ? '#dc2626' : '#10b981'">
+                      {{ row.differenceUnits > 0 ? '+' : '' }}{{ formatNum(row.differenceUnits) }} unds
+                    </td>
+                    <td style="text-align: right; font-weight: 800;" [style.color]="row.differenceRevenue > 0 ? '#dc2626' : '#10b981'">
+                      {{ formatCOP(row.differenceRevenue) }}
+                    </td>
+                    <td style="text-align: center;">
+                      @if (row.alertLevel === 'NORMAL') {
+                        <span class="badge badge-success" style="font-size: 0.74rem;">NORMAL (&lt;5%)</span>
+                      } @else if (row.alertLevel === 'MODERADA') {
+                        <span class="badge badge-warning" style="font-size: 0.74rem;">MODERADA (5-10%)</span>
+                      } @else {
+                        <span class="badge badge-danger" style="font-size: 0.74rem;">CRÍTICA (&gt;10%)</span>
+                      }
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- ======================================================== -->
+  <!-- TAB 3: INVENTARIO & VALORACIÓN DE CAVA                   -->
+  <!-- ======================================================== -->
+  @if (activeTab() === 'stock') {
+    <div style="display: flex; flex-direction: column; gap: 20px;">
+      <!-- KPI Row -->
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 16px;">
+        <div class="card hover-lift">
+          <div class="card-body">
+            <div style="font-size: 0.78rem; text-transform: uppercase; color: var(--text-muted); font-weight: 700;">Pulpa Congelada en Cava</div>
+            <div style="font-size: 1.85rem; font-weight: 800; color: #0284c7; margin-top: 4px;">
+              {{ formatNum(cavaTotalStockKg()) }} Kg
+            </div>
+            <div style="font-size: 0.75rem; color: var(--text-dim); margin-top: 2px;">
+              Producto terminado a -18°C listo para despacho
+            </div>
+          </div>
+        </div>
+
+        <div class="card hover-lift">
+          <div class="card-body">
+            <div style="font-size: 0.78rem; text-transform: uppercase; color: var(--text-muted); font-weight: 700;">Fruta Fresca en Bodega</div>
+            <div style="font-size: 1.85rem; font-weight: 800; color: #10b981; margin-top: 4px;">
+              {{ formatNum(cavaFreshStockKg()) }} Kg
+            </div>
+            <div style="font-size: 0.75rem; color: var(--text-dim); margin-top: 2px;">
+              Materia prima disponible para proceso
+            </div>
+          </div>
+        </div>
+
+        <div class="card hover-lift">
+          <div class="card-body">
+            <div style="font-size: 0.78rem; text-transform: uppercase; color: var(--text-muted); font-weight: 700;">Valorización Comercial Cava</div>
+            <div style="font-size: 1.85rem; font-weight: 800; color: #1e5e3a; margin-top: 4px;">
+              {{ formatCOP(cavaCommercialValue()) }}
+            </div>
+            <div style="font-size: 0.75rem; color: var(--text-dim); margin-top: 2px;">
+              A precio de venta promedio COP
+            </div>
+          </div>
+        </div>
+
+        <div class="card hover-lift">
+          <div class="card-body">
+            <div style="font-size: 0.78rem; text-transform: uppercase; color: var(--text-muted); font-weight: 700;">Costo Estimado & Alertas</div>
+            <div style="font-size: 1.85rem; font-weight: 800; color: #f59e0b; margin-top: 4px;">
+              {{ formatCOP(cavaEstimatedCost()) }}
+            </div>
+            <div style="font-size: 0.75rem; color: #dc2626; font-weight: 700; margin-top: 2px;">
+              {{ cavaLowStockCount() }} frutas bajo stock mínimo
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Cava Inventory Table -->
+      <div class="card">
+        <div class="card-header" style="justify-content: space-between;">
+          <h3 class="card-title">Existencias por Presentación y Valorización</h3>
+          <span class="badge badge-success">{{ stateService.fruits().length }} frutas en catálogo</span>
+        </div>
+        <div class="card-body" style="padding: 0;">
+          <div class="table-container">
+            <table>
+              <thead>
+                <tr>
+                  <th>Fruta</th>
+                  <th style="text-align: right;">140g (Vasos)</th>
+                  <th style="text-align: right;">250g (Medias)</th>
+                  <th style="text-align: right;">500g (Libras)</th>
+                  <th style="text-align: right;">1000g (1 Kg)</th>
+                  <th style="text-align: right;">Total Pulpa</th>
+                  <th style="text-align: right;">Fruta Fresca</th>
+                  <th style="text-align: right;">Valor Comercial</th>
+                  <th style="text-align: center;">Estado Cava</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (fruit of stateService.fruits(); track fruit.id) {
+                  <tr>
+                    <td style="font-weight: 700; color: #1e5e3a;">
+                      <span style="margin-right: 6px;">{{ fruit.emoji }}</span>
+                      {{ fruit.name }}
+                    </td>
+                    <td style="text-align: right; font-weight: 600;" [class.text-danger]="fruit.stock.g140 <= fruit.minStock.g140">
+                      {{ fruit.stock.g140 }} unds
+                    </td>
+                    <td style="text-align: right; font-weight: 600;" [class.text-danger]="fruit.stock.g250 <= fruit.minStock.g250">
+                      {{ fruit.stock.g250 }} unds
+                    </td>
+                    <td style="text-align: right; font-weight: 600;" [class.text-danger]="fruit.stock.g500 <= fruit.minStock.g500">
+                      {{ fruit.stock.g500 }} unds
+                    </td>
+                    <td style="text-align: right; font-weight: 600;" [class.text-danger]="fruit.stock.g1000 <= fruit.minStock.g1000">
+                      {{ fruit.stock.g1000 }} unds
+                    </td>
+                    <td style="text-align: right; font-weight: 800; color: #0284c7;">
+                      {{ getFruitTotalPulpKg(fruit) }} Kg
+                    </td>
+                    <td style="text-align: right; font-weight: 700; color: #10b981;">
+                      {{ fruit.freshStockKg || 0 }} Kg
+                    </td>
+                    <td style="text-align: right; font-weight: 800; color: #1e5e3a;">
+                      {{ formatCOP(getFruitCommercialValue(fruit)) }}
+                    </td>
+                    <td style="text-align: center;">
+                      @if (fruit.stock.g140 <= fruit.minStock.g140 || fruit.stock.g250 <= fruit.minStock.g250) {
+                        <span class="badge badge-danger" style="font-size: 0.72rem;">BAJO STOCK</span>
+                      } @else {
+                        <span class="badge badge-success" style="font-size: 0.72rem;">ÓPTIMO</span>
+                      }
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- ======================================================== -->
+  <!-- TAB 4: GASTOS OPERATIVOS & LOGÍSTICA                     -->
+  <!-- ======================================================== -->
+  @if (activeTab() === 'expenses') {
+    <div style="display: flex; flex-direction: column; gap: 20px;">
+      <!-- KPI Row -->
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 16px;">
+        <div class="card hover-lift">
+          <div class="card-body">
+            <div style="font-size: 0.78rem; text-transform: uppercase; color: var(--text-muted); font-weight: 700;">Total Gastos Operativos</div>
+            <div style="font-size: 1.85rem; font-weight: 800; color: #dc2626; margin-top: 4px;">
+              {{ formatCOP(totalExpensesAmount()) }}
+            </div>
+            <div style="font-size: 0.75rem; color: var(--text-dim); margin-top: 2px;">
+              {{ filteredExpenses().length }} registros en período · {{ activeFilterSummaryLabel() }}
+            </div>
+          </div>
+        </div>
+
+        <div class="card hover-lift">
+          <div class="card-body">
+            <div style="font-size: 0.78rem; text-transform: uppercase; color: var(--text-muted); font-weight: 700;">Combustible & Fletes Domicilios</div>
+            <div style="font-size: 1.85rem; font-weight: 800; color: #f59e0b; margin-top: 4px;">
+              {{ formatCOP(logisticsExpensesAmount()) }}
+            </div>
+            <div style="font-size: 0.75rem; color: var(--text-dim); margin-top: 2px;">
+              Rodamiento y combustible de despachos
+            </div>
+          </div>
+        </div>
+
+        <div class="card hover-lift">
+          <div class="card-body">
+            <div style="font-size: 0.78rem; text-transform: uppercase; color: var(--text-muted); font-weight: 700;">Empaques, Bolsas & Insumos</div>
+            <div style="font-size: 1.85rem; font-weight: 800; color: #0284c7; margin-top: 4px;">
+              {{ formatCOP(packagingExpensesAmount()) }}
+            </div>
+            <div style="font-size: 0.75rem; color: var(--text-dim); margin-top: 2px;">
+              Bolsas termosellables, desinfección y BPM
+            </div>
+          </div>
+        </div>
+
+        <div class="card hover-lift">
+          <div class="card-body">
+            <div style="font-size: 0.78rem; text-transform: uppercase; color: var(--text-muted); font-weight: 700;">Servicios & Mantenimiento Planta</div>
+            <div style="font-size: 1.85rem; font-weight: 800; color: #8b5cf6; margin-top: 4px;">
+              {{ formatCOP(facilityExpensesAmount()) }}
+            </div>
+            <div style="font-size: 0.75rem; color: var(--text-dim); margin-top: 2px;">
+              Energía cava frigorífica y mantenimiento despulpadora
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Expenses Table -->
+      <div class="card">
+        <div class="card-header" style="justify-content: space-between;">
+          <h3 class="card-title">Comprobantes de Gastos y Logística</h3>
+          <span class="badge badge-info">{{ filteredExpenses().length }} egresos</span>
+        </div>
+        <div class="card-body" style="padding: 0;">
+          <div class="table-container">
+            <table>
+              <thead>
+                <tr>
+                  <th>Fecha</th>
+                  <th>Categoría</th>
+                  <th>Descripción del Gasto</th>
+                  <th>Medio de Pago</th>
+                  <th>Comprobante</th>
+                  <th style="text-align: right;">Valor COP</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (expense of filteredExpenses(); track expense.expenseId) {
+                  <tr>
+                    <td style="font-size: 0.85rem; color: var(--text-muted);">
+                      {{ expense.expenseDate || expense.createdAt.substring(0, 10) }}
+                    </td>
+                    <td>
+                      <span class="badge badge-info" style="font-size: 0.72rem;">{{ expense.categoryName }}</span>
+                    </td>
+                    <td style="font-weight: 600; color: var(--text-main);">
+                      {{ expense.description }}
+                    </td>
+                    <td style="font-size: 0.85rem;">
+                      {{ expense.paymentMethodName || 'Efectivo Caja Menor' }}
+                    </td>
+                    <td style="font-family: monospace; font-size: 0.82rem; color: var(--text-muted);">
+                      {{ expense.receiptNumber || 'N/A' }}
+                    </td>
+                    <td style="text-align: right; font-weight: 800; color: #dc2626;">
+                      {{ formatCOP(expense.amount) }}
+                    </td>
+                  </tr>
+                } @empty {
+                  <tr>
+                    <td colspan="6" style="text-align: center; padding: 40px; color: var(--text-muted);">
+                      No se encontraron gastos registrados en este período.
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- ======================================================== -->
+  <!-- TAB 5: NÓMINA QUINCENAL & RRHH                           -->
+  <!-- ======================================================== -->
+  @if (activeTab() === 'payroll') {
+    <div style="display: flex; flex-direction: column; gap: 20px;">
+      <!-- KPI Row -->
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 16px;">
+        <div class="card hover-lift">
+          <div class="card-body">
+            <div style="font-size: 0.78rem; text-transform: uppercase; color: var(--text-muted); font-weight: 700;">Total Nómina Quincenal</div>
+            <div style="font-size: 1.85rem; font-weight: 800; color: #1e5e3a; margin-top: 4px;">
+              {{ formatCOP(totalPayrollNet()) }}
+            </div>
+            <div style="font-size: 0.75rem; color: var(--text-dim); margin-top: 2px;">
+              Liquidación neta pagadera a colaboradores
+            </div>
+          </div>
+        </div>
+
+        <div class="card hover-lift">
+          <div class="card-body">
+            <div style="font-size: 0.78rem; text-transform: uppercase; color: var(--text-muted); font-weight: 700;">Colaboradores en Planta</div>
+            <div style="font-size: 1.85rem; font-weight: 800; color: #0284c7; margin-top: 4px;">
+              {{ payrollSettlements().length }} activos
+            </div>
+            <div style="font-size: 0.75rem; color: var(--text-dim); margin-top: 2px;">
+              Operarios de producción y domiciliarios
+            </div>
+          </div>
+        </div>
+
+        <div class="card hover-lift">
+          <div class="card-body">
+            <div style="font-size: 0.78rem; text-transform: uppercase; color: var(--text-muted); font-weight: 700;">Área Producción (Planta)</div>
+            <div style="font-size: 1.85rem; font-weight: 800; color: #10b981; margin-top: 4px;">
+              {{ formatCOP(productionPayrollNet()) }}
+            </div>
+            <div style="font-size: 0.75rem; color: var(--text-dim); margin-top: 2px;">
+              Jefe de planta, despulpe y empaque
+            </div>
+          </div>
+        </div>
+
+        <div class="card hover-lift">
+          <div class="card-body">
+            <div style="font-size: 0.78rem; text-transform: uppercase; color: var(--text-muted); font-weight: 700;">Área Domicilios (Rutas)</div>
+            <div style="font-size: 1.85rem; font-weight: 800; color: #f59e0b; margin-top: 4px;">
+              {{ formatCOP(deliveryPayrollNet()) }}
+            </div>
+            <div style="font-size: 0.75rem; color: var(--text-dim); margin-top: 2px;">
+              Salario base quincenal + bonos por entrega
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Payroll Table -->
+      <div class="card">
+        <div class="card-header" style="justify-content: space-between;">
+          <h3 class="card-title">Liquidación Quincenal Detallada</h3>
+          <span class="badge badge-success">Período 1 al 15 · Quincena activa</span>
+        </div>
+        <div class="card-body" style="padding: 0;">
+          <div class="table-container">
+            <table>
+              <thead>
+                <tr>
+                  <th>Colaborador</th>
+                  <th>Área / Cargo</th>
+                  <th style="text-align: center;">Días Lab.</th>
+                  <th style="text-align: right;">Salario Base Mes</th>
+                  <th style="text-align: right;">Básico Quincena</th>
+                  <th style="text-align: right;">Aux. Transporte</th>
+                  <th style="text-align: right;">Bonos / Entregas</th>
+                  <th style="text-align: right;">Deducciones (8%)</th>
+                  <th style="text-align: right;">Total Neto</th>
+                  <th style="text-align: center;">Estado</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (item of payrollSettlements(); track item.settlementId) {
+                  <tr>
+                    <td style="font-weight: 700; color: #1e5e3a;">
+                      {{ item.employeeName }}
+                    </td>
+                    <td>
+                      <span class="badge" [ngClass]="item.area === 'PRODUCCION' ? 'badge-info' : 'badge-warning'" style="font-size: 0.72rem;">
+                        {{ item.area }}
+                      </span>
+                    </td>
+                    <td style="text-align: center; font-weight: 700;">
+                      {{ item.daysWorked }}
+                    </td>
+                    <td style="text-align: right; color: var(--text-muted); font-size: 0.85rem;">
+                      {{ formatCOP(item.baseSalaryMonthly) }}
+                    </td>
+                    <td style="text-align: right; font-weight: 600;">
+                      {{ formatCOP(item.baseSalaryEarned) }}
+                    </td>
+                    <td style="text-align: right; color: #10b981; font-weight: 600;">
+                      {{ formatCOP(item.transportAllowanceEarned) }}
+                    </td>
+                    <td style="text-align: right; font-weight: 600;" [style.color]="item.deliveryBonuses > 0 ? '#f59e0b' : 'inherit'">
+                      {{ formatCOP(item.deliveryBonuses + (item.overtimeAmount || 0)) }}
+                    </td>
+                    <td style="text-align: right; color: #dc2626; font-weight: 600;">
+                      - {{ formatCOP(item.totalDeductions) }}
+                    </td>
+                    <td style="text-align: right; font-weight: 900; color: #1e5e3a; font-size: 0.95rem;">
+                      {{ formatCOP(item.netPayable) }}
+                    </td>
+                    <td style="text-align: center;">
+                      <span class="badge badge-success" style="font-size: 0.72rem;">
+                        {{ item.paymentStatus === 'PAID' ? 'PAGADO' : 'APROBADO' }}
+                      </span>
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  }
 
 </div>
 
-<!-- MODAL: EDITAR PEDIDO -->
+<!-- ======================================================== -->
+<!-- MODAL: EDITAR PEDIDO (VENTAS)                            -->
+<!-- ======================================================== -->
 @if (showEditOrderModal()) {
   <div class="modal-overlay" (click)="showEditOrderModal.set(false)">
-    <div class="modal-content" style="max-width: 720px;" (click)="$event.stopPropagation()">
+    <div class="modal-content" style="max-width: 680px;" (click)="$event.stopPropagation()">
       <div class="modal-header">
         <div>
           <h3 class="modal-title">Editar Pedido {{ editingOrderNumber() }}</h3>
@@ -541,7 +1092,9 @@
   </div>
 }
 
-<!-- MODAL: VER FACTURA CORPORATIVA -->
+<!-- ======================================================== -->
+<!-- MODAL: VER FACTURA CORPORATIVA (VENTAS)                  -->
+<!-- ======================================================== -->
 @if (showInvoiceModal() && selectedOrderForInvoice(); as modalOrder) {
   <div class="modal-overlay invoice-modal-overlay" (click)="showInvoiceModal.set(false)">
     <div

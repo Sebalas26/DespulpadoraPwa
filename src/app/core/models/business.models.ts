@@ -500,14 +500,18 @@ export interface IdealVsRealAuditDto {
   startDate: string;
   endDate: string;
   // Quantities
+  totalPulpKgProduced: number;
   unitsProduced: number;
   unitsBilled: number;
   unitsDifference: number; // negative = loss / merma
+  differenceUnits: number;
   // Financials
   idealRevenue: number;    // unitsProduced * basePrice
   realRevenue: number;     // actual billed amount
   moneyDifference: number; // realRevenue - idealRevenue
+  differenceRevenue: number;
   lossPercentage: number;  // (unitsDifference / unitsProduced) * 100
+  alertLevel: 'NORMAL' | 'MODERADA' | 'CRITICA';
   notes?: string;
   createdAt: string;
 }

@@ -109,8 +109,8 @@ import { StateService } from '../../core/services/state.service';
           <span class="dgl-nav-text">Inventario y Stock</span>
         </a>
 
-        <!-- Ventas (antes Reportes) -->
-        <a routerLink="/reports" routerLinkActive="active" class="dgl-nav-item">
+        <!-- Reportes Gerenciales -->
+        <a routerLink="/reports" routerLinkActive="active" class="dgl-nav-item" title="Centro de Reportes Gerenciales">
           <span class="dgl-nav-icon">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <line x1="18" y1="20" x2="18" y2="10"></line>
@@ -118,7 +118,7 @@ import { StateService } from '../../core/services/state.service';
               <line x1="6" y1="20" x2="6" y2="14"></line>
             </svg>
           </span>
-          <span class="dgl-nav-text">Ventas</span>
+          <span class="dgl-nav-text">Reportes</span>
         </a>
 
         <!-- Clientes -->

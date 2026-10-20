@@ -33,9 +33,11 @@ import {
   INITIAL_BATCHES_SAMPLE,
   INITIAL_CLIENTS_SAMPLE,
   INITIAL_EMPLOYEES_SAMPLE,
+  INITIAL_EXPENSES_SAMPLE,
   INITIAL_FRUITS,
   INITIAL_ORDERS_SAMPLE,
   INITIAL_PAYROLL_PERIODS_SAMPLE,
+  INITIAL_PAYROLL_SETTLEMENTS_SAMPLE,
   INITIAL_PRODUCT_VARIANTS,
   INITIAL_SALES_TARGETS_SAMPLE,
   INITIAL_SHIFTS_SAMPLE,
@@ -233,14 +235,18 @@ export class StateService {
         periodLabel: 'Mes en Curso',
         startDate: new Date().toISOString().substring(0, 7) + '-01',
         endDate: new Date().toISOString().substring(0, 10),
+        totalPulpKgProduced,
         unitsProduced,
         unitsBilled,
         unitsDifference,
+        differenceUnits: unitsDifference,
         idealRevenue,
         realRevenue,
         moneyDifference,
+        differenceRevenue: Math.abs(moneyDifference),
         lossPercentage,
-        notes: unitsDifference < 0 ? 'Merma operativa o producto en maduración/cava' : 'Inventario cuadrado',
+        alertLevel: lossPercentage > 15 ? 'CRITICA' : lossPercentage > 5 ? 'MODERADA' : 'NORMAL',
+        notes: unitsDifference < 0 ? 'Merma operativa o producto en maduración/bodega' : 'Inventario cuadrado',
         createdAt: new Date().toISOString()
       };
     });
@@ -277,7 +283,13 @@ export class StateService {
 
   private loadExpensesFromStorage(): ExpenseDto[] {
     const data = localStorage.getItem('despulpadora_expenses');
-    return data ? JSON.parse(data) : [];
+    if (!data) return INITIAL_EXPENSES_SAMPLE;
+    try {
+      const parsed = JSON.parse(data);
+      return Array.isArray(parsed) && parsed.length > 0 ? parsed : INITIAL_EXPENSES_SAMPLE;
+    } catch {
+      return INITIAL_EXPENSES_SAMPLE;
+    }
   }
 
   private loadClientsFromStorage(): ClientDto[] {
@@ -302,7 +314,13 @@ export class StateService {
 
   private loadPayrollSettlementsFromStorage(): PayrollSettlementDto[] {
     const data = localStorage.getItem('despulpadora_payroll_settlements');
-    return data ? JSON.parse(data) : [];
+    if (!data) return INITIAL_PAYROLL_SETTLEMENTS_SAMPLE;
+    try {
+      const parsed = JSON.parse(data);
+      return Array.isArray(parsed) && parsed.length > 0 ? parsed : INITIAL_PAYROLL_SETTLEMENTS_SAMPLE;
+    } catch {
+      return INITIAL_PAYROLL_SETTLEMENTS_SAMPLE;
+    }
   }
 
   private loadShiftsFromStorage(): WorkShiftDto[] {
