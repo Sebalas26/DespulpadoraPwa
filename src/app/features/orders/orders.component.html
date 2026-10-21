@@ -73,9 +73,30 @@
           class="picking-order-card"
           draggable="true"
           [class.is-dragging]="draggingOrderId() === order.orderId"
+          [class.mobile-card-expanded]="isMobileCardExpanded('pick-' + order.orderId)"
           (dragstart)="onOrderDragStart($event, order)"
           (dragend)="onOrderDragEnd()"
         >
+          <!-- Resumen Compacto Mobile PWA -->
+          <div class="mobile-summary-header" (click)="toggleMobileCard('pick-' + order.orderId, $event)">
+            <div class="ms-left">
+              <span class="ms-code-badge">{{ getOrderDay(order) }}</span>
+              <span class="ms-subtitle">#{{ order.orderNumber }} • {{ order.clientName }}</span>
+            </div>
+            <div class="ms-right">
+              <div class="ms-top-right">
+                <span class="ms-value">{{ formatCOP(order.totalAmount) }}</span>
+                <span class="ms-chevron" [class.is-open]="isMobileCardExpanded('pick-' + order.orderId)">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="6 9 12 15 18 9"></polyline>
+                  </svg>
+                </span>
+              </div>
+              <span class="ms-status-pill">{{ order.status === 'PICKING' ? 'En Picking' : 'Pendiente' }}</span>
+            </div>
+          </div>
+
+          <div class="mobile-collapsible-content">
           <div class="picking-card-top">
             <!-- Header: Order Code + Client Name + Edit Button & Status Pill -->
             <div class="picking-card-header">
@@ -186,6 +207,7 @@
               <span class="arrow-icon">→</span>
             </button>
           </div>
+          </div>
         </div>
       }
 
@@ -263,7 +285,30 @@
 
     <div class="billing-cards-grid">
       @for (order of tabOrders(); track order.orderId) {
-        <div class="billing-queue-card">
+        <div
+          class="billing-queue-card"
+          [class.mobile-card-expanded]="isMobileCardExpanded('bill-' + order.orderId)"
+        >
+          <!-- Resumen Compacto Mobile PWA -->
+          <div class="mobile-summary-header" (click)="toggleMobileCard('bill-' + order.orderId, $event)">
+            <div class="ms-left">
+              <span class="ms-code-badge">{{ getOriginCode(order) }}</span>
+              <span class="ms-subtitle">#{{ getInvoiceCode(order) }} • {{ order.clientName }}</span>
+            </div>
+            <div class="ms-right">
+              <div class="ms-top-right">
+                <span class="ms-value">$ {{ formatNumberES(getInvoiceTotalWithTax(order)) }}</span>
+                <span class="ms-chevron" [class.is-open]="isMobileCardExpanded('bill-' + order.orderId)">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="6 9 12 15 18 9"></polyline>
+                  </svg>
+                </span>
+              </div>
+              <span class="ms-status-pill">{{ order.items.length }} ítems</span>
+            </div>
+          </div>
+
+          <div class="mobile-collapsible-content">
           <div class="queue-card-top">
             <div>
               <div class="queue-inv-code">{{ getInvoiceCode(order) }}</div>
@@ -322,6 +367,7 @@
                 Despachar →
               </button>
             </div>
+          </div>
           </div>
         </div>
       }
@@ -474,7 +520,29 @@
               [class.row-delivered]="order.status === 'DELIVERED'"
               [class.row-transit]="order.status === 'DISPATCHED'"
               [class.row-pending]="order.status !== 'DELIVERED' && order.status !== 'DISPATCHED'"
+              [class.mobile-card-expanded]="isMobileCardExpanded('hist-' + order.orderId)"
             >
+              <!-- Resumen Compacto Mobile PWA -->
+              <div class="mobile-summary-header" (click)="toggleMobileCard('hist-' + order.orderId, $event)">
+                <div class="ms-left">
+                  <span class="ms-code-badge">{{ getCourierForOrder(order)?.vehiclePlate || 'PATIO' }}</span>
+                  <span class="ms-subtitle">#{{ order.orderNumber }} • {{ order.clientName }}</span>
+                </div>
+                <div class="ms-right">
+                  <div class="ms-top-right">
+                    <span class="ms-value">{{ formatCOP(order.totalAmount) }}</span>
+                    <span class="ms-chevron" [class.is-open]="isMobileCardExpanded('hist-' + order.orderId)">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="6 9 12 15 18 9"></polyline>
+                      </svg>
+                    </span>
+                  </div>
+                  <span class="ms-status-pill">
+                    {{ order.status === 'DELIVERED' ? 'Entregada' : (order.status === 'DISPATCHED' ? 'En Camino' : 'En Patio') }}
+                  </span>
+                </div>
+              </div>
+
               <!-- 1. GUÍA -->
               <div class="ledger-cell cell-guide">
                 <span class="guide-code-tag">GUÍA · {{ order.orderNumber }}</span>

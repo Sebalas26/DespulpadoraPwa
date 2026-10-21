@@ -67,6 +67,23 @@ export class OrdersComponent {
   // Active Sub-tab
   readonly activeSubTab = signal<'picking' | 'facturacion' | 'despachos'>('picking');
 
+  // Mobile Collapsible Cards State
+  readonly expandedMobileCards = signal<Record<string, boolean>>({});
+
+  toggleMobileCard(key: string, event?: Event): void {
+    if (event) {
+      event.stopPropagation();
+    }
+    this.expandedMobileCards.update(prev => ({
+      ...prev,
+      [key]: !prev[key]
+    }));
+  }
+
+  isMobileCardExpanded(key: string): boolean {
+    return !!this.expandedMobileCards()[key];
+  }
+
   // Weekly Picking Day Cards (Drag & Drop enabled)
   readonly weekDayConfigs: {
     name: string;

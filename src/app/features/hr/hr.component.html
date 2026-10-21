@@ -156,6 +156,25 @@
             <tbody>
               @for (emp of filteredEmployees(); track emp.employeeId) {
                 <tr>
+                  <td class="mobile-tr-summary-cell">
+                    <div class="mobile-summary-header">
+                      <div class="ms-left">
+                        <span class="ms-code-badge">{{ emp.area || emp.department }}</span>
+                        <span class="ms-subtitle">#CC-{{ emp.identificationNumber }} • {{ emp.fullName }}</span>
+                      </div>
+                      <div class="ms-right">
+                        <div class="ms-top-right">
+                          <span class="ms-value">{{ formatCOP(emp.baseSalary) }}</span>
+                          <span class="ms-chevron">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+                              <polyline points="6 9 12 15 18 9"></polyline>
+                            </svg>
+                          </span>
+                        </div>
+                        <span class="ms-status-pill">{{ isEmployeeInActiveShift(emp.employeeId) ? 'En Turno' : 'Fuera de Turno' }}</span>
+                      </div>
+                    </div>
+                  </td>
                   <td data-label="Personal / Colaborador">
                     <div style="display: flex; align-items: center; gap: 12px;">
                       <div class="user-avatar-badge" [class.avatar-female]="emp.gender === 'FEMENINO'">
@@ -503,6 +522,25 @@
               <tbody>
                 @for (shift of closedShifts(); track shift.shiftId) {
                   <tr>
+                    <td class="mobile-tr-summary-cell">
+                      <div class="mobile-summary-header">
+                        <div class="ms-left">
+                          <span class="ms-code-badge">{{ shift.shiftType }}</span>
+                          <span class="ms-subtitle">#TUR-{{ shift.shiftId }} • {{ shift.employeeName }}</span>
+                        </div>
+                        <div class="ms-right">
+                          <div class="ms-top-right">
+                            <span class="ms-value">{{ shift.hoursWorked || 8 }} hrs</span>
+                            <span class="ms-chevron">
+                              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+                                <polyline points="6 9 12 15 18 9"></polyline>
+                              </svg>
+                            </span>
+                          </div>
+                          <span class="ms-status-pill">Cerrado</span>
+                        </div>
+                      </div>
+                    </td>
                     <td data-label="Colaborador"><strong>{{ shift.employeeName }}</strong></td>
                     <td data-label="Horario"><span class="badge badge-outline-gray">{{ shift.shiftType }}</span></td>
                     <td data-label="Entrada">{{ shift.startTime }}</td>
@@ -802,6 +840,25 @@
             <tbody>
               @for (st of stateService.payrollSettlements(); track st.settlementId) {
                 <tr>
+                  <td class="mobile-tr-summary-cell">
+                    <div class="mobile-summary-header">
+                      <div class="ms-left">
+                        <span class="ms-code-badge">{{ st.area }}</span>
+                        <span class="ms-subtitle">#NOM-{{ st.settlementId }} • {{ st.employeeName }}</span>
+                      </div>
+                      <div class="ms-right">
+                        <div class="ms-top-right">
+                          <span class="ms-value">{{ formatCOP(st.netPayable) }}</span>
+                          <span class="ms-chevron">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+                              <polyline points="6 9 12 15 18 9"></polyline>
+                            </svg>
+                          </span>
+                        </div>
+                        <span class="ms-status-pill">{{ st.daysWorked }} días</span>
+                      </div>
+                    </div>
+                  </td>
                   <td data-label="Periodo">
                     <span class="badge badge-neutral" style="background: #f1f5f9; color: #334155; border: 1px solid #e2e8f0; font-weight: 700;">
                       {{ st.periodId === 1 ? '1ra Quincena (01-15)' : '2da Quincena (16-30)' }}

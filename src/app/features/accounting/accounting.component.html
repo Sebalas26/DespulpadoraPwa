@@ -54,6 +54,27 @@
         <tbody>
           @for (client of filteredClients(); track client.clientId) {
             <tr>
+              <td class="mobile-tr-summary-cell">
+                <div class="mobile-summary-header">
+                  <div class="ms-left">
+                    <span class="ms-code-badge">{{ client.identificationNumber || 'CLIENTE' }}</span>
+                    <span class="ms-subtitle">#CLI-{{ client.clientId }} • {{ client.fullName }}</span>
+                  </div>
+                  <div class="ms-right">
+                    <div class="ms-top-right">
+                      <span class="ms-value">{{ formatCOP(getClientTotalSpent(client)) }}</span>
+                      <span class="ms-chevron">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+                          <polyline points="6 9 12 15 18 9"></polyline>
+                        </svg>
+                      </span>
+                    </div>
+                    <span class="ms-status-pill">
+                      {{ getClientPurchaseCount(client) }} {{ getClientPurchaseCount(client) === 1 ? 'compra' : 'compras' }}
+                    </span>
+                  </div>
+                </div>
+              </td>
               <td data-label="Cliente / Razón Social">
                 <div class="client-name-main">{{ client.fullName }}</div>
                 @if (client.email) {

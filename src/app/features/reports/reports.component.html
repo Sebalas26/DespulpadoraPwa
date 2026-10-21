@@ -314,6 +314,25 @@
               <tbody>
                 @for (order of filteredOrders(); track order.orderId) {
                   <tr>
+                    <td class="mobile-tr-summary-cell">
+                      <div class="mobile-summary-header">
+                        <div class="ms-left">
+                          <span class="ms-code-badge">{{ getCourierName(order) | slice:0:12 }}</span>
+                          <span class="ms-subtitle">#{{ order.orderNumber }} • {{ order.clientName }}</span>
+                        </div>
+                        <div class="ms-right">
+                          <div class="ms-top-right">
+                            <span class="ms-value">{{ formatCOP(order.totalAmount) }}</span>
+                            <span class="ms-chevron">
+                              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+                                <polyline points="6 9 12 15 18 9"></polyline>
+                              </svg>
+                            </span>
+                          </div>
+                          <span class="ms-status-pill">{{ getStatusLabelES(order.status) }}</span>
+                        </div>
+                      </div>
+                    </td>
                     <td data-label="Nro Pedido" style="font-family: monospace; font-weight: 700;">{{ order.orderNumber }}</td>
                     <td data-label="Fecha" style="font-size: 0.85rem; color: var(--text-muted); white-space: nowrap;">{{ formatDateTime(order.createdAt || order.orderDate) }}</td>
                     <td data-label="Cliente" style="font-weight: 600;">{{ order.clientName }}</td>
@@ -514,6 +533,25 @@
               <tbody>
                 @for (row of idealVsRealAudit(); track row.fruitId) {
                   <tr>
+                    <td class="mobile-tr-summary-cell">
+                      <div class="mobile-summary-header">
+                        <div class="ms-left">
+                          <span class="ms-code-badge">{{ row.alertLevel }}</span>
+                          <span class="ms-subtitle">#MER-0{{ row.fruitId }} • {{ row.fruitName }}</span>
+                        </div>
+                        <div class="ms-right">
+                          <div class="ms-top-right">
+                            <span class="ms-value">{{ formatCOP(row.realRevenue) }}</span>
+                            <span class="ms-chevron">
+                              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+                                <polyline points="6 9 12 15 18 9"></polyline>
+                              </svg>
+                            </span>
+                          </div>
+                          <span class="ms-status-pill">{{ row.totalPulpKgProduced }} Kg</span>
+                        </div>
+                      </div>
+                    </td>
                     <td data-label="Fruta" style="font-weight: 700; color: #1e5e3a;">
                       {{ row.fruitName }}
                     </td>
@@ -638,6 +676,25 @@
               <tbody>
                 @for (fruit of stateService.fruits(); track fruit.id) {
                   <tr>
+                    <td class="mobile-tr-summary-cell">
+                      <div class="mobile-summary-header">
+                        <div class="ms-left">
+                          <span class="ms-code-badge">{{ fruit.name }}</span>
+                          <span class="ms-subtitle">#CAV-0{{ fruit.id }} • {{ getFruitTotalPulpKg(fruit) }} Kg pulpa</span>
+                        </div>
+                        <div class="ms-right">
+                          <div class="ms-top-right">
+                            <span class="ms-value">{{ formatCOP(getFruitCommercialValue(fruit)) }}</span>
+                            <span class="ms-chevron">
+                              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+                                <polyline points="6 9 12 15 18 9"></polyline>
+                              </svg>
+                            </span>
+                          </div>
+                          <span class="ms-status-pill">{{ fruit.freshStockKg || 0 }} Kg fresca</span>
+                        </div>
+                      </div>
+                    </td>
                     <td data-label="Fruta" style="font-weight: 700; color: #1e5e3a;">
                       {{ fruit.name }}
                     </td>
@@ -757,6 +814,25 @@
               <tbody>
                 @for (expense of filteredExpenses(); track expense.expenseId) {
                   <tr>
+                    <td class="mobile-tr-summary-cell">
+                      <div class="mobile-summary-header">
+                        <div class="ms-left">
+                          <span class="ms-code-badge">{{ expense.categoryName }}</span>
+                          <span class="ms-subtitle">#{{ expense.receiptNumber || ('GAS-' + expense.expenseId) }} • {{ expense.description }}</span>
+                        </div>
+                        <div class="ms-right">
+                          <div class="ms-top-right">
+                            <span class="ms-value">{{ formatCOP(expense.amount) }}</span>
+                            <span class="ms-chevron">
+                              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+                                <polyline points="6 9 12 15 18 9"></polyline>
+                              </svg>
+                            </span>
+                          </div>
+                          <span class="ms-status-pill">{{ expense.expenseDate || expense.createdAt.substring(0, 10) }}</span>
+                        </div>
+                      </div>
+                    </td>
                     <td data-label="Fecha" style="font-size: 0.85rem; color: var(--text-muted);">
                       {{ expense.expenseDate || expense.createdAt.substring(0, 10) }}
                     </td>
@@ -873,6 +949,25 @@
               <tbody>
                 @for (item of payrollSettlements(); track item.settlementId) {
                   <tr>
+                    <td class="mobile-tr-summary-cell">
+                      <div class="mobile-summary-header">
+                        <div class="ms-left">
+                          <span class="ms-code-badge">{{ item.area }}</span>
+                          <span class="ms-subtitle">#LIQ-{{ item.settlementId }} • {{ item.employeeName }}</span>
+                        </div>
+                        <div class="ms-right">
+                          <div class="ms-top-right">
+                            <span class="ms-value">{{ formatCOP(item.netPayable) }}</span>
+                            <span class="ms-chevron">
+                              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+                                <polyline points="6 9 12 15 18 9"></polyline>
+                              </svg>
+                            </span>
+                          </div>
+                          <span class="ms-status-pill">{{ item.paymentStatus === 'PAID' ? 'Pagado' : 'Aprobado' }}</span>
+                        </div>
+                      </div>
+                    </td>
                     <td data-label="Colaborador" style="font-weight: 700; color: #1e5e3a;">
                       {{ item.employeeName }}
                     </td>

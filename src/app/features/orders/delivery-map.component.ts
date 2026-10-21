@@ -912,8 +912,31 @@ export const MAP_STYLES: MapStyleOption[] = [
                   class="courier-card"
                   [style.borderLeftColor]="c.color"
                   [class.selected]="selectedCourierId() === c.id"
+                  [class.mobile-card-expanded]="isMobileCourierCardExpanded(c.id)"
                   (click)="selectCourier(c.id)"
                 >
+                  <!-- Resumen Compacto Mobile PWA -->
+                  <div class="mobile-summary-header" (click)="toggleMobileCourierCard(c.id, $event); selectCourier(c.id)">
+                    <div class="ms-left">
+                      <span class="ms-code-badge">{{ c.vehiclePlate }}</span>
+                      <span class="ms-subtitle">#{{ c.routeCode || 'RUTA' }} • {{ c.vehicleType === 'moto' ? 'moto' : 'carro' }} · {{ c.name }}</span>
+                    </div>
+                    <div class="ms-right">
+                      <div class="ms-top-right">
+                        <span class="ms-value">{{ getCourierCompletedStops(c) }}/{{ c.orderIds.length }} paradas</span>
+                        <span class="ms-chevron" [class.is-open]="isMobileCourierCardExpanded(c.id)">
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="6 9 12 15 18 9"></polyline>
+                          </svg>
+                        </span>
+                      </div>
+                      <span class="ms-status-pill">
+                        {{ isCourierReadyToReceive(c) ? 'Por Recibir' : (c.status === 'en_ruta' ? 'En Ruta' : (c.status === 'entregando' ? 'En Sitio' : 'En Patio')) }}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div class="mobile-courier-details">
                   <div class="courier-card-head">
                     <div class="courier-avatar" [style.background]="c.colorLight" [style.color]="c.color" style="display: flex; align-items: center; justify-content: center;">
                       @if (c.vehicleType === 'moto') {
@@ -1024,6 +1047,7 @@ export const MAP_STYLES: MapStyleOption[] = [
                     >
                       Ubicar
                     </button>
+                  </div>
                   </div>
                 </div>
               }
@@ -2813,6 +2837,10 @@ export const MAP_STYLES: MapStyleOption[] = [
       border-color: var(--color-primary);
     }
 
+    .mobile-courier-details {
+      display: contents;
+    }
+
     @media (max-width: 768px) {
       .couriers-deck-card {
         padding: 14px;
@@ -2849,12 +2877,26 @@ export const MAP_STYLES: MapStyleOption[] = [
         min-width: 0;
         max-width: 100%;
         width: 100%;
-        padding: 12px 14px;
-        gap: 8px;
-        border-radius: 12px;
+        padding: 13px 16px;
+        gap: 0;
+        border-radius: 14px;
+        border: 1.5px solid #e2e8f0;
         border-left-width: 5px;
         background: #ffffff;
-        box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
+        box-shadow: 0 2px 6px rgba(15, 23, 42, 0.03);
+      }
+
+      .courier-card:not(.mobile-card-expanded) .mobile-courier-details {
+        display: none !important;
+      }
+
+      .courier-card.mobile-card-expanded .mobile-courier-details {
+        display: flex !important;
+        flex-direction: column !important;
+        gap: 8px !important;
+        margin-top: 12px !important;
+        padding-top: 12px !important;
+        border-top: 1px dashed #e2e8f0 !important;
       }
 
       .courier-card-head {
@@ -4874,6 +4916,21 @@ export class DeliveryMapComponent implements OnInit, AfterViewInit, OnDestroy {
 
   // Slide-over Deliveries Drawer State
   readonly showDeliveriesDrawer = signal<boolean>(false);
+  readonly expandedMobileCourierIds = signal<Record<string, boolean>>({});
+
+  toggleMobileCourierCard(courierId: string, event?: Event): void {
+    if (event) {
+      event.stopPropagation();
+    }
+    this.expandedMobileCourierIds.update(prev => ({
+      ...prev,
+      [courierId]: !prev[courierId]
+    }));
+  }
+
+  isMobileCourierCardExpanded(courierId: string): boolean {
+    return !!this.expandedMobileCourierIds()[courierId];
+  }
   readonly showDrawerQuickAdd = signal<boolean>(false);
   readonly drawerCourierFilter = signal<string>('all');
   readonly drawerSearchQuery = signal<string>('');
