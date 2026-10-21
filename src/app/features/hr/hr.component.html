@@ -453,20 +453,20 @@
             @if (activeShifts().length > 0) {
               <div style="display: flex; flex-direction: column; gap: 12px;">
                 @for (shift of activeShifts(); track shift.shiftId) {
-                  <div class="active-shift-ticket">
-                    <div class="shift-ticket-left">
-                      <div class="shift-ticket-avatar">
+                  <div class="active-shift-card">
+                    <div class="shift-card-left">
+                      <div class="shift-card-avatar">
                         {{ shift.employeeName.charAt(0) }}
                       </div>
                       <div>
-                        <div class="shift-ticket-name">{{ shift.employeeName }}</div>
-                        <div class="shift-ticket-meta">
+                        <div class="shift-card-name">{{ shift.employeeName }}</div>
+                        <div class="shift-card-meta">
                           <span>Entrada: <strong>{{ shift.startTime }}</strong></span>
                           <span>·</span>
                           <span class="badge badge-purple" style="font-size: 0.68rem;">{{ shift.shiftType }}</span>
                         </div>
                         @if (shift.notes) {
-                          <div class="shift-ticket-notes">{{ shift.notes }}</div>
+                          <div class="shift-card-notes">{{ shift.notes }}</div>
                         }
                       </div>
                     </div>

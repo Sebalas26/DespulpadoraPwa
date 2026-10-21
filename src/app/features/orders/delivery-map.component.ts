@@ -885,7 +885,6 @@ export const MAP_STYLES: MapStyleOption[] = [
                 <path d="M3 16h3a2 2 0 0 1 2 2v3"></path>
                 <path d="M16 21v-3a2 2 0 0 1 2-2h3"></path>
               </svg>
-              <span>Salir Pantalla Completa</span>
             } @else {
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M15 3h6v6"></path>
@@ -893,7 +892,6 @@ export const MAP_STYLES: MapStyleOption[] = [
                 <path d="M21 3l-7 7"></path>
                 <path d="M3 21l7-7"></path>
               </svg>
-              <span>Pantalla Completa</span>
             }
           </button>
         </div>
@@ -5542,8 +5540,8 @@ export class DeliveryMapComponent implements OnInit, AfterViewInit, OnDestroy {
       attribution: style.id.startsWith('stadia')
         ? '&copy; <a href="https://stadiamaps.com/" target="_blank">Stadia Maps</a> &copy; <a href="https://openmaptiles.org/" target="_blank">OpenMapTiles</a> &copy; <a href="https://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap</a>'
         : (style.id === 'esri-gray'
-            ? 'Tiles &copy; Esri &mdash; Esri, DeLorme, NAVTEQ'
-            : '&copy; OpenStreetMap contributors')
+          ? 'Tiles &copy; Esri &mdash; Esri, DeLorme, NAVTEQ'
+          : '&copy; OpenStreetMap contributors')
     };
 
     this.currentTileLayer = L.tileLayer(style.url, options).addTo(this.map);
@@ -5560,7 +5558,7 @@ export class DeliveryMapComponent implements OnInit, AfterViewInit, OnDestroy {
 
     try {
       localStorage.setItem('despulpadora_map_style', styleId);
-    } catch {}
+    } catch { }
   }
 
   private updatePolylineStylesForActiveMap() {
@@ -5989,9 +5987,9 @@ export class DeliveryMapComponent implements OnInit, AfterViewInit, OnDestroy {
           cursor: pointer;
         ">
           ${courier.vehicleType === 'moto'
-            ? `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="5" cy="16" r="3"></circle><circle cx="19" cy="16" r="3"></circle><path d="M12 16h3l3-6h-5l-2 3H8l2-5h3"></path></svg>`
-            : `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="15" height="13"></rect><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"></polygon><circle cx="5.5" cy="18.5" r="2.5"></circle><circle cx="18.5" cy="18.5" r="2.5"></circle></svg>`
-          }
+          ? `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="5" cy="16" r="3"></circle><circle cx="19" cy="16" r="3"></circle><path d="M12 16h3l3-6h-5l-2 3H8l2-5h3"></path></svg>`
+          : `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="15" height="13"></rect><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"></polygon><circle cx="5.5" cy="18.5" r="2.5"></circle><circle cx="18.5" cy="18.5" r="2.5"></circle></svg>`
+        }
           <span style="
             position: absolute;
             bottom: -6px;

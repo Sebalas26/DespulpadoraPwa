@@ -98,7 +98,7 @@ export class DashboardComponent {
     };
   });
 
-  // Pulpas vendidas summary (replaces Ticket promedio)
+  // Pulpas vendidas summary
   readonly soldPulpsSummary = computed(() => {
     const validOrders = this.stateService.orders().filter(o => o.status !== 'CANCELLED');
     let totalUnits = 0;

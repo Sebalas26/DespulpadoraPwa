@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { RouterLink, RouterLinkActive } from '@angular/router';
 import { StateService } from '../../core/services/state.service';
 import { AuthService } from '../../core/services/auth.service';
+import { environment } from '../../../environments/environment';
 
 @Component({
   selector: 'app-mobile-nav',
@@ -209,6 +210,9 @@ import { AuthService } from '../../core/services/auth.service';
               >
                 Cerrar Sesión
               </button>
+              <div style="font-size: 0.68rem; font-weight: 600; color: #9ca3af; text-align: center; margin-top: 10px; letter-spacing: 0.04em;">
+                V. {{ environment.version }}
+              </div>
             </div>
           </div>
         </div>
@@ -372,4 +376,5 @@ export class MobileNavComponent {
   readonly stateService = inject(StateService);
   readonly authService = inject(AuthService);
   readonly showMoreDrawer = signal<boolean>(false);
+  readonly environment = environment;
 }

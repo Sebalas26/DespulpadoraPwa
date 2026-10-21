@@ -323,7 +323,7 @@
   }
 }
 
-.active-shift-ticket {
+.active-shift-card {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -340,13 +340,13 @@
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
   }
 
-  .shift-ticket-left {
+  .shift-card-left {
     display: flex;
     align-items: center;
     gap: 12px;
   }
 
-  .shift-ticket-avatar {
+  .shift-card-avatar {
     width: 36px;
     height: 36px;
     border-radius: 50%;
@@ -358,13 +358,13 @@
     justify-content: center;
   }
 
-  .shift-ticket-name {
+  .shift-card-name {
     font-weight: 800;
     font-size: 0.88rem;
     color: #0f172a;
   }
 
-  .shift-ticket-meta {
+  .shift-card-meta {
     font-size: 0.74rem;
     color: #64748b;
     display: flex;
@@ -373,13 +373,13 @@
     margin-top: 2px;
   }
 
-  .shift-ticket-notes {
+  .shift-card-notes {
     font-size: 0.72rem;
     color: #94a3b8;
     font-style: italic;
     margin-top: 2px;
   }
-
+}
   .btn-punch-out {
     display: inline-flex;
     align-items: center;

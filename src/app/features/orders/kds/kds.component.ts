@@ -14,7 +14,7 @@ import { NotificationService } from '../../../core/services/notification.service
 import { OrderDto, OrderStatus } from '../../../core/models/business.models';
 import confetti from 'canvas-confetti';
 
-interface TicketTimer {
+interface OrderTimer {
   orderId: number;
   startTime: number; // timestamp
 }
@@ -1387,7 +1387,7 @@ export class KdsComponent implements OnInit, OnDestroy {
   }
 
   // =========================================================================
-  // TICKET ACTIONS & STATUS ADVANCEMENTS
+  // ORDER ACTIONS & STATUS ADVANCEMENTS
   // =========================================================================
   advanceStatus(order: OrderDto, newStatus: OrderStatus) {
     this.stateService.updateOrderStatus(order.orderId, newStatus);

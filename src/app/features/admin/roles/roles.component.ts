@@ -78,7 +78,7 @@ export const SYSTEM_MODULES: PermissionModule[] = [
     scope: 'PWA',
     description: 'Cobro de pedidos, emisión de tirilla POS, registro de medios de pago y factura corporativa.',
     actions: [
-      { actionId: 401, name: 'Facturar y Emitir Ticket POS', slug: 'orders.bill', description: 'Generar comprobante de venta POS y registrar salida' },
+      { actionId: 401, name: 'Facturar y Emitir Factura POS', slug: 'orders.bill', description: 'Generar comprobante de venta POS y registrar salida' },
       { actionId: 402, name: 'Consultar Flujo de Facturación', slug: 'billing.view', description: 'Ver facturación diaria consolidada y arqueo' },
       { actionId: 403, name: 'Registrar Métodos de Pago', slug: 'billing.payment_collect', description: 'Registrar Efectivo, Nequi, Daviplata o Bancolombia' },
       { actionId: 404, name: 'Visualizar Factura Corporativa', slug: 'billing.invoice_preview', description: 'Consultar vista previa de factura legal de la empresa' }

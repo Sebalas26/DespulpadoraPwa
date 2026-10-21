@@ -4,6 +4,7 @@ import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angula
 import { Router } from '@angular/router';
 import { AuthService } from '../../../core/services/auth.service';
 import { NotificationService } from '../../../core/services/notification.service';
+import { environment } from '../../../../environments/environment';
 
 @Component({
   selector: 'app-login',
@@ -13,6 +14,7 @@ import { NotificationService } from '../../../core/services/notification.service
   styleUrls: ['./login.component.scss']
 })
 export class LoginComponent {
+  readonly environment = environment;
   private readonly fb = inject(FormBuilder);
   private readonly auth = inject(AuthService);
   private readonly router = inject(Router);

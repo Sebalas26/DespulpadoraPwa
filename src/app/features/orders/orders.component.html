@@ -4,791 +4,672 @@
   <!-- VIEW 1: ALISTAMIENTO DE PEDIDOS (PICKING) - FIGMA DESIGN  -->
   <!-- ========================================================= -->
   @if (activeSubTab() === 'picking') {
-    <!-- Page Title & Subtitle -->
-    <div class="picking-page-header">
-      <h1 class="picking-main-title">
-        Alistamiento de Pedidos
-      </h1>
-      <p class="picking-main-subtitle">
-        Flujo de alistamiento, facturación con ticket térmico POS y control de repartidores.
-      </p>
-    </div>
+  <!-- Page Title & Subtitle -->
+  <div class="picking-page-header">
+    <h1 class="picking-main-title">
+      Alistamiento de Pedidos
+    </h1>
+    <p class="picking-main-subtitle">
+      Flujo de alistamiento, facturación POS y control de repartidores.
+    </p>
+  </div>
 
-    <!-- 7 Day-of-Week Cards Strip -->
-    <div class="picking-days-grid">
-      @for (day of weekDays(); track day.name; let i = $index) {
-        <div
-          class="picking-day-card"
-          [class.is-active]="day.active"
-          [class.is-drop-target]="dragOverDay() === day.name"
-          [class.is-drop-candidate]="draggingOrderId() !== null && dragOverDay() !== day.name"
-          (click)="toggleDayCard(i)"
-          (dragenter)="onDayDragEnter($event, day.name)"
-          (dragover)="onDayDragOver($event, day.name)"
-          (dragleave)="onDayDragLeave($event, day.name)"
-          (drop)="onDayDrop($event, day.name)"
-        >
-          <div class="day-card-top">
-            <span class="day-card-name">{{ day.name }}</span>
-            <span class="day-card-badge" [ngClass]="day.active ? 'badge-active' : 'badge-' + day.color">
-              {{ day.count }}
+  <!-- 7 Day-of-Week Cards Strip -->
+  <div class="picking-days-grid">
+    @for (day of weekDays(); track day.name; let i = $index) {
+    <div class="picking-day-card" [class.is-active]="day.active" [class.is-drop-target]="dragOverDay() === day.name"
+      [class.is-drop-candidate]="draggingOrderId() !== null && dragOverDay() !== day.name" (click)="toggleDayCard(i)"
+      (dragenter)="onDayDragEnter($event, day.name)" (dragover)="onDayDragOver($event, day.name)"
+      (dragleave)="onDayDragLeave($event, day.name)" (drop)="onDayDrop($event, day.name)">
+      <div class="day-card-top">
+        <span class="day-card-name">{{ day.name }}</span>
+        <span class="day-card-badge" [ngClass]="day.active ? 'badge-active' : 'badge-' + day.color">
+          {{ day.count }}
+        </span>
+      </div>
+      <div class="day-card-bottom">
+        <span class="day-card-sub">
+          {{ dragOverDay() === day.name ? 'Soltar aquí' : (day.active ? 'Grouped / Activo' : day.count + ' pedidos') }}
+        </span>
+        @if (day.hasIndicator && !day.active) {
+        <span class="day-mini-indicator">
+          <span class="mini-bar"></span>
+          <span class="mini-dot"></span>
+        </span>
+        }
+      </div>
+    </div>
+    }
+  </div>
+
+  <!-- Search Input Row -->
+  <div class="picking-toolbar-row" style="justify-content: flex-end;">
+    <div class="picking-search-box">
+      <svg class="search-box-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+        stroke-width="2">
+        <circle cx="11" cy="11" r="8"></circle>
+        <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+      </svg>
+      <input type="text" class="picking-search-input" placeholder="Buscar orden o cliente..." [ngModel]="searchTerm()"
+        (ngModelChange)="searchTerm.set($event)" />
+    </div>
+  </div>
+
+  <!-- Picking Order Cards Grid -->
+  <div class="picking-cards-grid">
+    @for (order of tabOrders(); track order.orderId) {
+    <div class="picking-order-card" draggable="true" [class.is-dragging]="draggingOrderId() === order.orderId"
+      [class.mobile-card-expanded]="isMobileCardExpanded('pick-' + order.orderId)"
+      (dragstart)="onOrderDragStart($event, order)" (dragend)="onOrderDragEnd()">
+      <!-- Resumen Compacto Mobile PWA -->
+      <div class="mobile-summary-header" (click)="toggleMobileCard('pick-' + order.orderId, $event)">
+        <div class="ms-left">
+          <span class="ms-code-badge">{{ order.clientName }}</span>
+          <span class="ms-subtitle">#{{ order.orderNumber }} • {{ getOrderDay(order) }}</span>
+        </div>
+        <div class="ms-right">
+          <div class="ms-top-right">
+            <span class="ms-value">{{ formatCOP(order.totalAmount) }}</span>
+            <span class="ms-chevron" [class.is-open]="isMobileCardExpanded('pick-' + order.orderId)">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"
+                stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="6 9 12 15 18 9"></polyline>
+              </svg>
             </span>
           </div>
-          <div class="day-card-bottom">
-            <span class="day-card-sub">
-              {{ dragOverDay() === day.name ? 'Soltar aquí' : (day.active ? 'Grouped / Activo' : day.count + ' pedidos') }}
-            </span>
-            @if (day.hasIndicator && !day.active) {
-              <span class="day-mini-indicator">
-                <span class="mini-bar"></span>
-                <span class="mini-dot"></span>
+          <span class="ms-status-pill">{{ order.status === 'PICKING' ? 'En Picking' : 'Pendiente' }}</span>
+        </div>
+      </div>
+
+      <div class="mobile-collapsible-content">
+        <div class="picking-card-top">
+          <!-- Header: Order Code + Client Name + Edit Button & Status Pill -->
+          <div class="picking-card-header">
+            <div class="picking-header-left">
+              <div class="picking-code-row">
+                <span class="drag-grip" title="Arrastra esta tarjeta hacia un día de la semana">⋮⋮</span>
+                <span class="picking-order-code">{{ order.orderNumber }}</span>
+                <span class="order-day-chip">{{ getOrderDay(order) }}</span>
+              </div>
+              <h4 class="picking-client-name">{{ order.clientName }}</h4>
+            </div>
+            <div class="picking-header-actions">
+              <button type="button" class="btn-edit-order-pill" title="Modificar datos o productos del pedido"
+                (click)="openEditOrderModal(order)">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3">
+                  <path d="M12 20h9"></path>
+                  <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
+                </svg>
+                <span>Editar</span>
+              </button>
+              <span class="picking-status-pill">
+                {{ order.status === 'PICKING' ? 'EN PICKING' : 'PENDIENTE' }}
               </span>
+            </div>
+          </div>
+
+          <!-- Address, Phone & Optional Note -->
+          <div class="picking-client-details">
+            <div class="detail-row">
+              <span class="detail-icon" style="display: inline-flex; align-items: center; color: var(--text-muted);">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+                  <circle cx="12" cy="10" r="3"></circle>
+                </svg>
+              </span>
+              <span>{{ order.clientAddress || 'Sin dirección registrada' }}</span>
+            </div>
+            <div class="detail-row">
+              <span class="detail-icon" style="display: inline-flex; align-items: center; color: var(--text-muted);">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path
+                    d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z">
+                  </path>
+                </svg>
+              </span>
+              <span>{{ order.clientPhone }}</span>
+            </div>
+            @if (order.notes) {
+            <div class="picking-note-highlight">
+              {{ order.notes }}
+            </div>
+            }
+          </div>
+
+          <!-- Checklist Section -->
+          <div class="picking-checklist-heading">
+            CHECKLIST DE PULPA EN CAVA:
+          </div>
+
+          <div class="picking-checklist-items">
+            @for (item of order.items; track (item.fruitName || '') + item.grammage) {
+            <div class="picking-checklist-box" [class.is-checked]="(item.pickedQuantity || 0) >= item.quantity"
+              (click)="toggleItemPicked(order.orderId, item.fruitId, item.grammage, item.quantity, item.pickedQuantity)">
+              <div class="checklist-box-left">
+                <input type="checkbox" class="checklist-checkbox"
+                  [checked]="(item.pickedQuantity || 0) >= item.quantity"
+                  (click)="$event.stopPropagation(); toggleItemPicked(order.orderId, item.fruitId, item.grammage, item.quantity, item.pickedQuantity)" />
+                <div class="checklist-item-title" [class.line-through]="(item.pickedQuantity || 0) >= item.quantity">
+                  {{ item.quantity }}x {{ item.fruitName }} ({{ item.grammage }}g)
+                </div>
+              </div>
+
+              <span class="checklist-qty-pill" [class.is-complete]="(item.pickedQuantity || 0) >= item.quantity">
+                {{ item.pickedQuantity || 0 }} / {{ item.quantity }}
+              </span>
+            </div>
             }
           </div>
         </div>
-      }
-    </div>
 
-    <!-- Search Input Row -->
-    <div class="picking-toolbar-row" style="justify-content: flex-end;">
-      <div class="picking-search-box">
-        <svg class="search-box-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <circle cx="11" cy="11" r="8"></circle>
-          <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-        </svg>
-        <input
-          type="text"
-          class="picking-search-input"
-          placeholder="Buscar orden o cliente..."
-          [ngModel]="searchTerm()"
-          (ngModelChange)="searchTerm.set($event)"
-        />
+        <!-- Card Footer: Total + Completar Alistamiento Button -->
+        <div class="picking-card-footer">
+          <div class="footer-total-block">
+            <div class="footer-total-label">TOTAL PEDIDO</div>
+            <div class="footer-total-value">{{ formatCOP(order.totalAmount) }}</div>
+          </div>
+
+          <button type="button" class="btn-complete-picking" (click)="advanceOrderStatus(order, 'BILLED')">
+            <span>Completar Alistamiento</span>
+            <span class="arrow-icon">→</span>
+          </button>
+        </div>
       </div>
     </div>
+    }
 
-    <!-- Picking Order Cards Grid -->
-    <div class="picking-cards-grid">
-      @for (order of tabOrders(); track order.orderId) {
+    @if (tabOrders().length === 0) {
+    <div class="card" style="grid-column: 1 / -1; text-align: center; padding: 48px 24px;">
+      <div style="display: flex; justify-content: center; margin-bottom: 8px;">
         <div
-          class="picking-order-card"
-          draggable="true"
-          [class.is-dragging]="draggingOrderId() === order.orderId"
-          [class.mobile-card-expanded]="isMobileCardExpanded('pick-' + order.orderId)"
-          (dragstart)="onOrderDragStart($event, order)"
-          (dragend)="onOrderDragEnd()"
-        >
-          <!-- Resumen Compacto Mobile PWA -->
-          <div class="mobile-summary-header" (click)="toggleMobileCard('pick-' + order.orderId, $event)">
-            <div class="ms-left">
-              <span class="ms-code-badge">{{ order.clientName }}</span>
-              <span class="ms-subtitle">#{{ order.orderNumber }} • {{ getOrderDay(order) }}</span>
-            </div>
-            <div class="ms-right">
-              <div class="ms-top-right">
-                <span class="ms-value">{{ formatCOP(order.totalAmount) }}</span>
-                <span class="ms-chevron" [class.is-open]="isMobileCardExpanded('pick-' + order.orderId)">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
-                    <polyline points="6 9 12 15 18 9"></polyline>
-                  </svg>
-                </span>
-              </div>
-              <span class="ms-status-pill">{{ order.status === 'PICKING' ? 'En Picking' : 'Pendiente' }}</span>
-            </div>
-          </div>
-
-          <div class="mobile-collapsible-content">
-          <div class="picking-card-top">
-            <!-- Header: Order Code + Client Name + Edit Button & Status Pill -->
-            <div class="picking-card-header">
-              <div class="picking-header-left">
-                <div class="picking-code-row">
-                  <span class="drag-grip" title="Arrastra esta tarjeta hacia un día de la semana">⋮⋮</span>
-                  <span class="picking-order-code">{{ order.orderNumber }}</span>
-                  <span class="order-day-chip">{{ getOrderDay(order) }}</span>
-                </div>
-                <h4 class="picking-client-name">{{ order.clientName }}</h4>
-              </div>
-              <div class="picking-header-actions">
-                <button
-                  type="button"
-                  class="btn-edit-order-pill"
-                  title="Modificar datos o productos del pedido"
-                  (click)="openEditOrderModal(order)"
-                >
-                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3">
-                    <path d="M12 20h9"></path>
-                    <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
-                  </svg>
-                  <span>Editar</span>
-                </button>
-                <span class="picking-status-pill">
-                  {{ order.status === 'PICKING' ? 'EN PICKING' : 'PENDIENTE' }}
-                </span>
-              </div>
-            </div>
-
-            <!-- Address, Phone & Optional Note -->
-            <div class="picking-client-details">
-              <div class="detail-row">
-                <span class="detail-icon" style="display: inline-flex; align-items: center; color: var(--text-muted);">
-                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
-                    <circle cx="12" cy="10" r="3"></circle>
-                  </svg>
-                </span>
-                <span>{{ order.clientAddress || 'Sin dirección registrada' }}</span>
-              </div>
-              <div class="detail-row">
-                <span class="detail-icon" style="display: inline-flex; align-items: center; color: var(--text-muted);">
-                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path>
-                  </svg>
-                </span>
-                <span>{{ order.clientPhone }}</span>
-              </div>
-              @if (order.notes) {
-                <div class="picking-note-highlight">
-                  {{ order.notes }}
-                </div>
-              }
-            </div>
-
-            <!-- Checklist Section -->
-            <div class="picking-checklist-heading">
-              CHECKLIST DE PULPA EN CAVA:
-            </div>
-
-            <div class="picking-checklist-items">
-              @for (item of order.items; track (item.fruitName || '') + item.grammage) {
-                <div
-                  class="picking-checklist-box"
-                  [class.is-checked]="(item.pickedQuantity || 0) >= item.quantity"
-                  (click)="toggleItemPicked(order.orderId, item.fruitId, item.grammage, item.quantity, item.pickedQuantity)"
-                >
-                  <div class="checklist-box-left">
-                    <input
-                      type="checkbox"
-                      class="checklist-checkbox"
-                      [checked]="(item.pickedQuantity || 0) >= item.quantity"
-                      (click)="$event.stopPropagation(); toggleItemPicked(order.orderId, item.fruitId, item.grammage, item.quantity, item.pickedQuantity)"
-                    />
-                    <div
-                      class="checklist-item-title"
-                      [class.line-through]="(item.pickedQuantity || 0) >= item.quantity"
-                    >
-                      {{ item.quantity }}x {{ item.fruitName }} ({{ item.grammage }}g)
-                    </div>
-                  </div>
-
-                  <span
-                    class="checklist-qty-pill"
-                    [class.is-complete]="(item.pickedQuantity || 0) >= item.quantity"
-                  >
-                    {{ item.pickedQuantity || 0 }} / {{ item.quantity }}
-                  </span>
-                </div>
-              }
-            </div>
-          </div>
-
-          <!-- Card Footer: Total + Completar Alistamiento Button -->
-          <div class="picking-card-footer">
-            <div class="footer-total-block">
-              <div class="footer-total-label">TOTAL PEDIDO</div>
-              <div class="footer-total-value">{{ formatCOP(order.totalAmount) }}</div>
-            </div>
-
-            <button
-              type="button"
-              class="btn-complete-picking"
-              (click)="advanceOrderStatus(order, 'BILLED')"
-            >
-              <span>Completar Alistamiento</span>
-              <span class="arrow-icon">→</span>
-            </button>
-          </div>
-          </div>
+          style="width: 52px; height: 52px; border-radius: 50%; background: rgba(16, 185, 129, 0.15); display: flex; align-items: center; justify-content: center; color: #10b981;">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+            stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="20 6 9 17 4 12"></polyline>
+          </svg>
         </div>
-      }
-
-      @if (tabOrders().length === 0) {
-        <div class="card" style="grid-column: 1 / -1; text-align: center; padding: 48px 24px;">
-          <div style="display: flex; justify-content: center; margin-bottom: 8px;">
-            <div style="width: 52px; height: 52px; border-radius: 50%; background: rgba(16, 185, 129, 0.15); display: flex; align-items: center; justify-content: center; color: #10b981;">
-              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                <polyline points="20 6 9 17 4 12"></polyline>
-              </svg>
-            </div>
-          </div>
-          <h3 style="margin-top: 12px; font-size: 1.25rem;">¡Cava al día! No hay pedidos pendientes de alistamiento</h3>
-          <p style="color: var(--text-muted); font-size: 0.88rem; margin-top: 6px;">
-            Utilice el botón "+ Nuevo pedido" en la barra superior o "Audios WA" para ingresar órdenes al sistema.
-          </p>
-        </div>
-      }
+      </div>
+      <h3 style="margin-top: 12px; font-size: 1.25rem;">¡Cava al día! No hay pedidos pendientes de alistamiento</h3>
+      <p style="color: var(--text-muted); font-size: 0.88rem; margin-top: 6px;">
+        Utilice el botón "+ Nuevo pedido" en la barra superior o "Audios WA" para ingresar órdenes al sistema.
+      </p>
     </div>
+    }
+  </div>
   }
 
   <!-- ========================================================= -->
   <!-- VIEW 2: FACTURACIÓN & POS - PRO CORPORATE INVOICE STUDIO  -->
   <!-- ========================================================= -->
   @if (activeSubTab() === 'facturacion') {
-    <div class="separated-view-header">
-      <div>
-        <h1 class="picking-main-title">Facturación & POS</h1>
-        <p class="picking-main-subtitle">
-          Emisión de factura ejecutiva formato A4 ({{ stateService.companyInfo().invoicePrefix }}...), control de descuentos/bonificaciones e IVA.
-        </p>
+  <div class="separated-view-header">
+    <div>
+      <h1 class="picking-main-title">Facturación & POS</h1>
+      <p class="picking-main-subtitle">
+        Emisión de factura, control de descuentos/bonificaciones e IVA.
+      </p>
+    </div>
+
+    <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 12px;">
+      <!-- Quick Tax Rate Toggle -->
+      <div class="billing-tax-pill">
+        <span class="tax-pill-label">Impuesto:</span>
+        <button type="button" class="tax-pill-btn" [class.active]="invoiceTaxRate() === 19"
+          (click)="invoiceTaxRate.set(19)">
+          IVA 19%
+        </button>
+        <button type="button" class="tax-pill-btn" [class.active]="invoiceTaxRate() === 0"
+          (click)="invoiceTaxRate.set(0)">
+          Exento 0%
+        </button>
       </div>
 
-      <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 12px;">
-        <!-- Quick Tax Rate Toggle -->
-        <div class="billing-tax-pill">
-          <span class="tax-pill-label">Impuesto:</span>
-          <button
-            type="button"
-            class="tax-pill-btn"
-            [class.active]="invoiceTaxRate() === 19"
-            (click)="invoiceTaxRate.set(19)"
-          >
-            IVA 19%
-          </button>
-          <button
-            type="button"
-            class="tax-pill-btn"
-            [class.active]="invoiceTaxRate() === 0"
-            (click)="invoiceTaxRate.set(0)"
-          >
-            Exento 0%
-          </button>
+      <div class="picking-search-box">
+        <svg class="search-box-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+          stroke-width="2">
+          <circle cx="11" cy="11" r="8"></circle>
+          <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+        </svg>
+        <input type="text" class="picking-search-input" placeholder="Buscar factura o cliente..."
+          [ngModel]="searchTerm()" (ngModelChange)="searchTerm.set($event)" />
+      </div>
+    </div>
+  </div>
+
+  <div class="billing-queue-header" style="margin-bottom: 4px;">
+    <span>Órdenes para Facturar ({{ tabOrders().length }})</span>
+  </div>
+
+  <div class="billing-cards-grid">
+    @for (order of tabOrders(); track order.orderId) {
+    <div class="billing-queue-card" [class.mobile-card-expanded]="isMobileCardExpanded('bill-' + order.orderId)">
+      <!-- Resumen Compacto Mobile PWA -->
+      <div class="mobile-summary-header" (click)="toggleMobileCard('bill-' + order.orderId, $event)">
+        <div class="ms-left">
+          <span class="ms-code-badge">{{ order.clientName }}</span>
+          <span class="ms-subtitle">#{{ getInvoiceCode(order) }} • {{ getOriginCode(order) }}</span>
+        </div>
+        <div class="ms-right">
+          <div class="ms-top-right">
+            <span class="ms-value">$ {{ formatNumberES(getInvoiceTotalWithTax(order)) }}</span>
+            <span class="ms-chevron" [class.is-open]="isMobileCardExpanded('bill-' + order.orderId)">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"
+                stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="6 9 12 15 18 9"></polyline>
+              </svg>
+            </span>
+          </div>
+          <span class="ms-status-pill">{{ order.items.length }} ítems</span>
+        </div>
+      </div>
+
+      <div class="mobile-collapsible-content">
+        <div class="queue-card-top">
+          <div>
+            <div class="queue-inv-code">{{ getInvoiceCode(order) }}</div>
+            <h4 class="queue-client-name">{{ order.clientName }}</h4>
+          </div>
+          <span class="queue-origin-badge">{{ getOriginCode(order) }}</span>
         </div>
 
-        <div class="picking-search-box">
-          <svg class="search-box-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <circle cx="11" cy="11" r="8"></circle>
-            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-          </svg>
-          <input
-            type="text"
-            class="picking-search-input"
-            placeholder="Buscar factura o cliente..."
-            [ngModel]="searchTerm()"
-            (ngModelChange)="searchTerm.set($event)"
-          />
+        <div class="queue-card-meta">
+          <span>{{ formatInvoiceDate(order.createdAt) }}</span>
+          <span>•</span>
+          <span>{{ order.items.length }} ítems</span>
+          <span>•</span>
+          <span>{{ order.paymentMethodName || 'Contado' }}</span>
+        </div>
+
+        <!-- Items summary inside the card -->
+        <div class="queue-card-items-summary">
+          @for (item of order.items; track (item.fruitName || '') + item.grammage) {
+          <div class="queue-item-row">
+            <span>[{{ item.grammage }}g] Pulpa de {{ item.fruitName }} <strong>× {{ item.quantity }}</strong></span>
+            <span>$ {{ formatNumberES(item.quantity * item.unitPrice) }}</span>
+          </div>
+          }
+        </div>
+
+        <div class="queue-card-bottom">
+          <div>
+            <div class="queue-total-label">Total Factura</div>
+            <div class="queue-total-val">$ {{ formatNumberES(getInvoiceTotalWithTax(order)) }}</div>
+          </div>
+
+          <div class="queue-card-actions">
+            <button type="button" class="btn-queue-action" title="Modificar pedido" (click)="openEditOrderModal(order)">
+              Editar
+            </button>
+            <button type="button" class="btn-queue-action" title="Abrir e imprimir Factura Corporativa"
+              (click)="openInvoice(order, 'a4')">
+              Imprimir
+            </button>
+            <button type="button" class="btn-queue-dispatch" title="Despachar pedido a ruta"
+              (click)="advanceOrderStatus(order, 'DISPATCHED')">
+              Despachar →
+            </button>
+          </div>
         </div>
       </div>
     </div>
+    }
 
-    <div class="billing-queue-header" style="margin-bottom: 4px;">
-      <span>Órdenes para Facturar ({{ tabOrders().length }})</span>
+    @if (tabOrders().length === 0) {
+    <div class="card" style="grid-column: 1 / -1; text-align: center; padding: 48px 24px;">
+      <div
+        style="width: 44px; height: 44px; border-radius: 12px; background: rgba(0,0,0,0.04); color: var(--text-muted); display: inline-flex; align-items: center; justify-content: center; margin-bottom: 8px;">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+          <polyline points="14 2 14 8 20 8"></polyline>
+          <line x1="16" y1="13" x2="8" y2="13"></line>
+          <line x1="16" y1="17" x2="8" y2="17"></line>
+        </svg>
+      </div>
+      <h4 style="margin-top: 8px;">Sin órdenes en cola para facturar</h4>
+      <p style="font-size: 0.85rem; color: var(--text-muted);">
+        Complete el alistamiento de un pedido o cree uno nuevo.
+      </p>
     </div>
-
-    <div class="billing-cards-grid">
-      @for (order of tabOrders(); track order.orderId) {
-        <div
-          class="billing-queue-card"
-          [class.mobile-card-expanded]="isMobileCardExpanded('bill-' + order.orderId)"
-        >
-          <!-- Resumen Compacto Mobile PWA -->
-          <div class="mobile-summary-header" (click)="toggleMobileCard('bill-' + order.orderId, $event)">
-            <div class="ms-left">
-              <span class="ms-code-badge">{{ order.clientName }}</span>
-              <span class="ms-subtitle">#{{ getInvoiceCode(order) }} • {{ getOriginCode(order) }}</span>
-            </div>
-            <div class="ms-right">
-              <div class="ms-top-right">
-                <span class="ms-value">$ {{ formatNumberES(getInvoiceTotalWithTax(order)) }}</span>
-                <span class="ms-chevron" [class.is-open]="isMobileCardExpanded('bill-' + order.orderId)">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
-                    <polyline points="6 9 12 15 18 9"></polyline>
-                  </svg>
-                </span>
-              </div>
-              <span class="ms-status-pill">{{ order.items.length }} ítems</span>
-            </div>
-          </div>
-
-          <div class="mobile-collapsible-content">
-          <div class="queue-card-top">
-            <div>
-              <div class="queue-inv-code">{{ getInvoiceCode(order) }}</div>
-              <h4 class="queue-client-name">{{ order.clientName }}</h4>
-            </div>
-            <span class="queue-origin-badge">{{ getOriginCode(order) }}</span>
-          </div>
-
-          <div class="queue-card-meta">
-            <span>{{ formatInvoiceDate(order.createdAt) }}</span>
-            <span>•</span>
-            <span>{{ order.items.length }} ítems</span>
-            <span>•</span>
-            <span>{{ order.paymentMethodName || 'Contado' }}</span>
-          </div>
-
-          <!-- Items summary inside the card -->
-          <div class="queue-card-items-summary">
-            @for (item of order.items; track (item.fruitName || '') + item.grammage) {
-              <div class="queue-item-row">
-                <span>[{{ item.grammage }}g] Pulpa de {{ item.fruitName }} <strong>× {{ item.quantity }}</strong></span>
-                <span>$ {{ formatNumberES(item.quantity * item.unitPrice) }}</span>
-              </div>
-            }
-          </div>
-
-          <div class="queue-card-bottom">
-            <div>
-              <div class="queue-total-label">Total Factura</div>
-              <div class="queue-total-val">$ {{ formatNumberES(getInvoiceTotalWithTax(order)) }}</div>
-            </div>
-
-            <div class="queue-card-actions">
-              <button
-                type="button"
-                class="btn-queue-action"
-                title="Modificar pedido"
-                (click)="openEditOrderModal(order)"
-              >
-                Editar
-              </button>
-              <button
-                type="button"
-                class="btn-queue-action"
-                title="Abrir e imprimir Factura Corporativa"
-                (click)="openInvoice(order, 'a4')"
-              >
-                Imprimir
-              </button>
-              <button
-                type="button"
-                class="btn-queue-dispatch"
-                title="Despachar pedido a ruta"
-                (click)="advanceOrderStatus(order, 'DISPATCHED')"
-              >
-                Despachar →
-              </button>
-            </div>
-          </div>
-          </div>
-        </div>
-      }
-
-      @if (tabOrders().length === 0) {
-        <div class="card" style="grid-column: 1 / -1; text-align: center; padding: 48px 24px;">
-          <div style="width: 44px; height: 44px; border-radius: 12px; background: rgba(0,0,0,0.04); color: var(--text-muted); display: inline-flex; align-items: center; justify-content: center; margin-bottom: 8px;">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-              <polyline points="14 2 14 8 20 8"></polyline>
-              <line x1="16" y1="13" x2="8" y2="13"></line>
-              <line x1="16" y1="17" x2="8" y2="17"></line>
-            </svg>
-          </div>
-          <h4 style="margin-top: 8px;">Sin órdenes en cola para facturar</h4>
-          <p style="font-size: 0.85rem; color: var(--text-muted);">
-            Complete el alistamiento de un pedido o cree uno nuevo.
-          </p>
-        </div>
-      }
-    </div>
+    }
+  </div>
   }
 
   <!-- ========================================================= -->
   <!-- VIEW 3: DESPACHOS & RUTAS                                 -->
   <!-- ========================================================= -->
   @if (activeSubTab() === 'despachos') {
-    <div class="separated-view-header">
-      <div>
-        <h1 class="picking-main-title">Despachos & Rutas</h1>
-        <p class="picking-main-subtitle">
-          Monitoreo GPS de domiciliarios en tiempo real, enrutamiento inteligente y confirmación de recaudo.
-        </p>
-      </div>
+  <div class="separated-view-header">
+    <div>
+      <h1 class="picking-main-title">Despachos & Rutas</h1>
+      <p class="picking-main-subtitle">
+        Monitoreo GPS de domiciliarios en tiempo real, enrutamiento inteligente y confirmación de recaudo.
+      </p>
     </div>
+  </div>
 
-    <!-- Real-time Interactive Delivery Simulation Map & Route Sequencer -->
-    <app-delivery-map #deliveryMapRef></app-delivery-map>
+  <!-- Real-time Interactive Delivery Simulation Map & Route Sequencer -->
+  <app-delivery-map #deliveryMapRef></app-delivery-map>
 
-    <!-- ========================================================================= -->
-    <!-- HISTÓRICO DE ENTREGAS & DESPACHOS DEL DÍA (LISTA / MANIFIESTO EJECUTIVO)    -->
-    <!-- ========================================================================= -->
-    <div class="delivery-history-container">
-      <!-- Header Card with Title, KPIs & Filters -->
-      <div class="history-header-card">
-        <div class="history-top-row">
-          <div class="history-title-group">
-            <div>
-              <h2 class="history-title">Histórico de Entregas & Despachos del Día</h2>
-              <p class="history-subtitle">
-                Trazabilidad completa: estado de cada guía, cliente, recaudos y domiciliarios asignados en ruta.
-              </p>
-            </div>
-          </div>
-
-          <!-- KPI Summary Counters -->
-          <div class="history-kpis-deck">
-            <div class="kpi-mini-card total-kpi">
-              <span class="kpi-num">{{ totalHistoryOrdersCount() }}</span>
-              <span class="kpi-lbl">Total Envíos</span>
-            </div>
-            <div class="kpi-mini-card delivered-kpi">
-              <span class="kpi-num text-emerald">{{ deliveredHistoryOrdersCount() }}</span>
-              <span class="kpi-lbl">Entregadas</span>
-            </div>
-            <div class="kpi-mini-card transit-kpi">
-              <span class="kpi-num text-cyan">{{ inTransitHistoryOrdersCount() }}</span>
-              <span class="kpi-lbl">En Camino</span>
-            </div>
-            <div class="kpi-mini-card pending-kpi">
-              <span class="kpi-num text-amber">{{ unassignedHistoryOrdersCount() }}</span>
-              <span class="kpi-lbl">Sin Gestionar</span>
-            </div>
+  <!-- ========================================================================= -->
+  <!-- HISTÓRICO DE ENTREGAS & DESPACHOS DEL DÍA (LISTA / MANIFIESTO EJECUTIVO)    -->
+  <!-- ========================================================================= -->
+  <div class="delivery-history-container">
+    <!-- Header Card with Title, KPIs & Filters -->
+    <div class="history-header-card">
+      <div class="history-top-row">
+        <div class="history-title-group">
+          <div>
+            <h2 class="history-title">Histórico de Entregas & Despachos del Día</h2>
+            <p class="history-subtitle">
+              Trazabilidad completa: estado de cada guía, cliente, recaudos y domiciliarios asignados en ruta.
+            </p>
           </div>
         </div>
 
-        <!-- Filter Pills & Search Shell -->
-        <div class="history-toolbar-row">
-          <div class="history-filter-pills">
-            <button
-              type="button"
-              class="history-pill"
-              [class.active]="historyFilter() === 'ALL'"
-              (click)="setHistoryFilter('ALL')"
-            >
-              Todas ({{ totalHistoryOrdersCount() }})
-            </button>
-            <button
-              type="button"
-              class="history-pill pill-delivered"
-              [class.active]="historyFilter() === 'DELIVERED'"
-              (click)="setHistoryFilter('DELIVERED')"
-            >
-              <span class="pill-dot dot-delivered"></span>
-              <span>Entregadas ({{ deliveredHistoryOrdersCount() }})</span>
-            </button>
-            <button
-              type="button"
-              class="history-pill pill-transit"
-              [class.active]="historyFilter() === 'DISPATCHED'"
-              (click)="setHistoryFilter('DISPATCHED')"
-            >
-              <span class="pill-dot dot-transit"></span>
-              <span>En Camino ({{ inTransitHistoryOrdersCount() }})</span>
-            </button>
-            <button
-              type="button"
-              class="history-pill pill-pending"
-              [class.active]="historyFilter() === 'UNASSIGNED'"
-              (click)="setHistoryFilter('UNASSIGNED')"
-            >
-              <span class="pill-dot dot-pending"></span>
-              <span>Sin Gestionar ({{ unassignedHistoryOrdersCount() }})</span>
+        <!-- KPI Summary Counters -->
+        <div class="history-kpis-deck">
+          <div class="kpi-mini-card total-kpi">
+            <span class="kpi-num">{{ totalHistoryOrdersCount() }}</span>
+            <span class="kpi-lbl">Total Envíos</span>
+          </div>
+          <div class="kpi-mini-card delivered-kpi">
+            <span class="kpi-num text-emerald">{{ deliveredHistoryOrdersCount() }}</span>
+            <span class="kpi-lbl">Entregadas</span>
+          </div>
+          <div class="kpi-mini-card transit-kpi">
+            <span class="kpi-num text-cyan">{{ inTransitHistoryOrdersCount() }}</span>
+            <span class="kpi-lbl">En Camino</span>
+          </div>
+          <div class="kpi-mini-card pending-kpi">
+            <span class="kpi-num text-amber">{{ unassignedHistoryOrdersCount() }}</span>
+            <span class="kpi-lbl">Sin Gestionar</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Filter Pills & Search Shell -->
+      <div class="history-toolbar-row">
+        <div class="history-filter-pills">
+          <button type="button" class="history-pill" [class.active]="historyFilter() === 'ALL'"
+            (click)="setHistoryFilter('ALL')">
+            Todas ({{ totalHistoryOrdersCount() }})
+          </button>
+          <button type="button" class="history-pill pill-delivered" [class.active]="historyFilter() === 'DELIVERED'"
+            (click)="setHistoryFilter('DELIVERED')">
+            <span class="pill-dot dot-delivered"></span>
+            <span>Entregadas ({{ deliveredHistoryOrdersCount() }})</span>
+          </button>
+          <button type="button" class="history-pill pill-transit" [class.active]="historyFilter() === 'DISPATCHED'"
+            (click)="setHistoryFilter('DISPATCHED')">
+            <span class="pill-dot dot-transit"></span>
+            <span>En Camino ({{ inTransitHistoryOrdersCount() }})</span>
+          </button>
+          <button type="button" class="history-pill pill-pending" [class.active]="historyFilter() === 'UNASSIGNED'"
+            (click)="setHistoryFilter('UNASSIGNED')">
+            <span class="pill-dot dot-pending"></span>
+            <span>Sin Gestionar ({{ unassignedHistoryOrdersCount() }})</span>
+          </button>
+        </div>
+
+        <div class="history-search-shell">
+          <input type="text" class="history-search-input"
+            placeholder="Buscar por guía, cliente, dirección o domiciliario..." [ngModel]="historySearchQuery()"
+            (ngModelChange)="setHistorySearchQuery($event)" />
+          @if (historySearchQuery()) {
+          <button type="button" class="clear-search-btn" (click)="setHistorySearchQuery('')">✕</button>
+          }
+        </div>
+      </div>
+    </div>
+
+    <!-- Main Ledger List Card -->
+    <div class="history-ledger-card">
+      <!-- Table Column Headers (Desktop) -->
+      <div class="ledger-header-row">
+        <div class="col-head col-guide">GUÍA</div>
+        <div class="col-head col-order" style="text-align: center;">PEDIDO</div>
+        <div class="col-head col-client">CLIENTE & DESTINO</div>
+        <div class="col-head col-courier">DOMICILIARIO & RUTA</div>
+        <div class="col-head col-amount">RECAUDO / PAGO</div>
+        <div class="col-head col-status">ESTADO DE ENTREGA</div>
+        <div class="col-head col-actions">ACCIONES</div>
+      </div>
+
+      <!-- Ledger Rows List -->
+      <div class="ledger-rows-wrapper">
+        @for (order of paginatedHistoryOrders(); track order.orderId) {
+        <div class="ledger-row-item" [class.row-delivered]="order.status === 'DELIVERED'"
+          [class.row-transit]="order.status === 'DISPATCHED'"
+          [class.row-pending]="order.status !== 'DELIVERED' && order.status !== 'DISPATCHED'"
+          [class.mobile-card-expanded]="isMobileCardExpanded('hist-' + order.orderId)">
+          <!-- Resumen Compacto Mobile PWA -->
+          <div class="mobile-summary-header" (click)="toggleMobileCard('hist-' + order.orderId, $event)">
+            <div class="ms-left">
+              <span class="ms-code-badge">{{ order.clientName }}</span>
+              <span class="ms-subtitle">#{{ order.orderNumber }} • Placa: {{ getCourierForOrder(order)?.vehiclePlate ||
+                'PATIO' }}</span>
+            </div>
+            <div class="ms-right">
+              <div class="ms-top-right">
+                <span class="ms-value">{{ formatCOP(order.totalAmount) }}</span>
+                <span class="ms-chevron" [class.is-open]="isMobileCardExpanded('hist-' + order.orderId)">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="6 9 12 15 18 9"></polyline>
+                  </svg>
+                </span>
+              </div>
+              <span class="ms-status-pill">
+                {{ order.status === 'DELIVERED' ? 'Entregada' : (order.status === 'DISPATCHED' ? 'En Camino' : 'En
+                Patio') }}
+              </span>
+            </div>
+          </div>
+
+          <!-- 1. GUÍA -->
+          <div class="ledger-cell cell-guide">
+            <span class="guide-code-tag">GUÍA · {{ order.orderNumber }}</span>
+          </div>
+
+          <!-- 2. PEDIDO (Icono de Ojo) -->
+          <div class="ledger-cell cell-order">
+            <button type="button" class="btn-eye-order" title="Ver detalle del pedido"
+              (click)="viewOrderDetails(order)">
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round">
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                <circle cx="12" cy="12" r="3"></circle>
+              </svg>
             </button>
           </div>
 
-          <div class="history-search-shell">
-            <input
-              type="text"
-              class="history-search-input"
-              placeholder="Buscar por guía, cliente, dirección o domiciliario..."
-              [ngModel]="historySearchQuery()"
-              (ngModelChange)="setHistorySearchQuery($event)"
-            />
-            @if (historySearchQuery()) {
-              <button type="button" class="clear-search-btn" (click)="setHistorySearchQuery('')">✕</button>
+          <!-- 2. CLIENTE & DESTINO -->
+          <div class="ledger-cell cell-client">
+            <div class="client-title-row">
+              <strong class="client-name-text">{{ order.clientName }}</strong>
+            </div>
+            <div class="client-address-text" [title]="order.clientAddress">
+              {{ order.clientAddress || 'Bogotá D.C.' }}
+            </div>
+            <div class="client-phone-text">
+              <a [href]="'tel:' + order.clientPhone" class="phone-link">
+                {{ order.clientPhone || '300 123 4567' }}
+              </a>
+              @if (order.notes) {
+              <span class="order-notes-chip" [title]="order.notes">
+                {{ order.notes }}
+              </span>
+              }
+            </div>
+          </div>
+
+          <!-- 3. DOMICILIARIO & RUTA -->
+          <div class="ledger-cell cell-courier">
+            @if (getCourierForOrder(order); as courier) {
+            <div class="courier-card-mini">
+              <div class="courier-mini-avatar" [style.background]="courier.colorLight" [style.color]="courier.color">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <rect x="1" y="3" width="15" height="13"></rect>
+                  <polygon points="16 8 20 8 23 11 23 16 16 16 16 8"></polygon>
+                  <circle cx="5.5" cy="18.5" r="2.5"></circle>
+                  <circle cx="18.5" cy="18.5" r="2.5"></circle>
+                </svg>
+              </div>
+              <div class="courier-mini-info">
+                <div class="courier-name-line">
+                  <span class="courier-name-val">{{ courier.name }}</span>
+                  <span class="courier-route-badge" [style.borderColor]="courier.color" [style.color]="courier.color">
+                    {{ courier.routeCode }}
+                  </span>
+                </div>
+                <div class="courier-vehicle-line">
+                  {{ courier.vehiclePlate }} · {{ courier.vehicleModel }}
+                </div>
+              </div>
+            </div>
+            } @else {
+            <div class="unassigned-courier-box">
+              <span class="unassigned-badge">Sin Domiciliario Asignado</span>
+              <select class="quick-assign-select" (change)="assignCourierToOrder(order, $any($event.target).value)">
+                <option value="" disabled selected>+ Asignar a ruta...</option>
+                @for (c of COURIER_CATALOG; track c.id) {
+                <option [value]="c.id">
+                  {{ c.name }} ({{ c.routeCode }} · {{ c.vehicleType === 'moto' ? 'Moto' : 'Furgón' }})
+                </option>
+                }
+              </select>
+            </div>
             }
           </div>
-        </div>
-      </div>
 
-      <!-- Main Ledger List Card -->
-      <div class="history-ledger-card">
-        <!-- Table Column Headers (Desktop) -->
-        <div class="ledger-header-row">
-          <div class="col-head col-guide">GUÍA</div>
-          <div class="col-head col-order" style="text-align: center;">PEDIDO</div>
-          <div class="col-head col-client">CLIENTE & DESTINO</div>
-          <div class="col-head col-courier">DOMICILIARIO & RUTA</div>
-          <div class="col-head col-amount">RECAUDO / PAGO</div>
-          <div class="col-head col-status">ESTADO DE ENTREGA</div>
-          <div class="col-head col-actions">ACCIONES</div>
-        </div>
-
-        <!-- Ledger Rows List -->
-        <div class="ledger-rows-wrapper">
-          @for (order of paginatedHistoryOrders(); track order.orderId) {
-            <div
-              class="ledger-row-item"
-              [class.row-delivered]="order.status === 'DELIVERED'"
-              [class.row-transit]="order.status === 'DISPATCHED'"
-              [class.row-pending]="order.status !== 'DELIVERED' && order.status !== 'DISPATCHED'"
-              [class.mobile-card-expanded]="isMobileCardExpanded('hist-' + order.orderId)"
-            >
-              <!-- Resumen Compacto Mobile PWA -->
-              <div class="mobile-summary-header" (click)="toggleMobileCard('hist-' + order.orderId, $event)">
-                <div class="ms-left">
-                  <span class="ms-code-badge">{{ order.clientName }}</span>
-                  <span class="ms-subtitle">#{{ order.orderNumber }} • Placa: {{ getCourierForOrder(order)?.vehiclePlate || 'PATIO' }}</span>
-                </div>
-                <div class="ms-right">
-                  <div class="ms-top-right">
-                    <span class="ms-value">{{ formatCOP(order.totalAmount) }}</span>
-                    <span class="ms-chevron" [class.is-open]="isMobileCardExpanded('hist-' + order.orderId)">
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
-                        <polyline points="6 9 12 15 18 9"></polyline>
-                      </svg>
-                    </span>
-                  </div>
-                  <span class="ms-status-pill">
-                    {{ order.status === 'DELIVERED' ? 'Entregada' : (order.status === 'DISPATCHED' ? 'En Camino' : 'En Patio') }}
-                  </span>
-                </div>
-              </div>
-
-              <!-- 1. GUÍA -->
-              <div class="ledger-cell cell-guide">
-                <span class="guide-code-tag">GUÍA · {{ order.orderNumber }}</span>
-              </div>
-
-              <!-- 2. PEDIDO (Icono de Ojo) -->
-              <div class="ledger-cell cell-order">
-                <button
-                  type="button"
-                  class="btn-eye-order"
-                  title="Ver detalle del pedido"
-                  (click)="viewOrderDetails(order)"
-                >
-                  <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
-                    <circle cx="12" cy="12" r="3"></circle>
-                  </svg>
-                </button>
-              </div>
-
-              <!-- 2. CLIENTE & DESTINO -->
-              <div class="ledger-cell cell-client">
-                <div class="client-title-row">
-                  <strong class="client-name-text">{{ order.clientName }}</strong>
-                </div>
-                <div class="client-address-text" [title]="order.clientAddress">
-                  {{ order.clientAddress || 'Bogotá D.C.' }}
-                </div>
-                <div class="client-phone-text">
-                  <a [href]="'tel:' + order.clientPhone" class="phone-link">
-                    {{ order.clientPhone || '300 123 4567' }}
-                  </a>
-                  @if (order.notes) {
-                    <span class="order-notes-chip" [title]="order.notes">
-                      {{ order.notes }}
-                    </span>
-                  }
-                </div>
-              </div>
-
-              <!-- 3. DOMICILIARIO & RUTA -->
-              <div class="ledger-cell cell-courier">
-                @if (getCourierForOrder(order); as courier) {
-                  <div class="courier-card-mini">
-                    <div
-                      class="courier-mini-avatar"
-                      [style.background]="courier.colorLight"
-                      [style.color]="courier.color"
-                    >
-                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <rect x="1" y="3" width="15" height="13"></rect>
-                        <polygon points="16 8 20 8 23 11 23 16 16 16 16 8"></polygon>
-                        <circle cx="5.5" cy="18.5" r="2.5"></circle>
-                        <circle cx="18.5" cy="18.5" r="2.5"></circle>
-                      </svg>
-                    </div>
-                    <div class="courier-mini-info">
-                      <div class="courier-name-line">
-                        <span class="courier-name-val">{{ courier.name }}</span>
-                        <span class="courier-route-badge" [style.borderColor]="courier.color" [style.color]="courier.color">
-                          {{ courier.routeCode }}
-                        </span>
-                      </div>
-                      <div class="courier-vehicle-line">
-                        {{ courier.vehiclePlate }} · {{ courier.vehicleModel }}
-                      </div>
-                    </div>
-                  </div>
-                } @else {
-                  <div class="unassigned-courier-box">
-                    <span class="unassigned-badge">Sin Domiciliario Asignado</span>
-                    <select
-                      class="quick-assign-select"
-                      (change)="assignCourierToOrder(order, $any($event.target).value)"
-                    >
-                      <option value="" disabled selected>+ Asignar a ruta...</option>
-                      @for (c of COURIER_CATALOG; track c.id) {
-                        <option [value]="c.id">
-                          {{ c.name }} ({{ c.routeCode }} · {{ c.vehicleType === 'moto' ? 'Moto' : 'Furgón' }})
-                        </option>
-                      }
-                    </select>
-                  </div>
-                }
-              </div>
-
-              <!-- 4. RECAUDO / PAGO -->
-              <div class="ledger-cell cell-amount">
-                <div class="amount-main-val">
-                  {{ formatCOP(order.totalAmount) }}
-                </div>
-                <div class="payment-method-chip">
-                  <span>{{ order.paymentMethodName || 'Efectivo Contra Entrega' }}</span>
-                </div>
-              </div>
-
-              <!-- 5. ESTADO DE ENTREGA -->
-              <div class="ledger-cell cell-status">
-                @if (order.status === 'DELIVERED') {
-                  <span class="status-badge-chip badge-delivered">
-                    <span class="badge-icon">✓</span>
-                    <span class="badge-txt">ENTREGADA</span>
-                  </span>
-                } @else if (order.status === 'DISPATCHED') {
-                  <span class="status-badge-chip badge-transit">
-                    <span class="transit-radar-dot"></span>
-                    <span class="badge-txt">EN CAMINO</span>
-                  </span>
-                } @else {
-                  <span class="status-badge-chip badge-pending">
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-                      <circle cx="12" cy="12" r="10"></circle>
-                      <polyline points="12 6 12 12 16 14"></polyline>
-                    </svg>
-                    <span class="badge-txt">SIN GESTIONAR</span>
-                  </span>
-                }
-              </div>
-
-              <!-- 6. ACCIONES -->
-              <div class="ledger-cell cell-actions">
-                @if (order.status === 'DISPATCHED') {
-                  <button
-                    type="button"
-                    class="btn-ledger-action btn-confirm-delivery"
-                    title="Confirmar entrega y recaudo de este pedido"
-                    (click)="advanceOrderStatus(order, 'DELIVERED')"
-                  >
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-                      <polyline points="20 6 9 17 4 12"></polyline>
-                    </svg>
-                    <span>Confirmar Entrega</span>
-                  </button>
-                } @else if (order.status === 'DELIVERED') {
-                  <div class="delivered-confirmed-indicator">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-                      <polyline points="20 6 9 17 4 12"></polyline>
-                    </svg>
-                    <span>Entregada</span>
-                  </div>
-                } @else {
-                  <button
-                    type="button"
-                    class="btn-ledger-action btn-dispatch-action"
-                    title="Enviar a ruta y marcar en camino"
-                    (click)="advanceOrderStatus(order, 'DISPATCHED')"
-                  >
-                    <span>Despachar</span>
-                  </button>
-                }
-
-                <div class="action-icons-group">
-                  @if (order.status !== 'DELIVERED') {
-                    <button
-                      type="button"
-                      class="btn-icon-shortcut"
-                      title="Ubicar dirección en el mapa"
-                      (click)="locateOrderInMap(order)"
-                    >
-                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
-                        <circle cx="12" cy="10" r="3"></circle>
-                      </svg>
-                    </button>
-                  }
-                  <button
-                    type="button"
-                    class="btn-icon-shortcut"
-                    title="Modificar datos del pedido"
-                    (click)="openEditOrderModal(order)"
-                  >
-                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                      <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
-                      <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
-                    </svg>
-                  </button>
-                </div>
-              </div>
+          <!-- 4. RECAUDO / PAGO -->
+          <div class="ledger-cell cell-amount">
+            <div class="amount-main-val">
+              {{ formatCOP(order.totalAmount) }}
             </div>
-          }
-
-          <!-- History Pagination Bar -->
-          @if (filteredHistoryOrders().length > 0) {
-            <div class="history-pagination-bar">
-              <div class="pagination-summary">
-                Mostrando <strong>{{ historyPaginationInfo().start }}</strong> a <strong>{{ historyPaginationInfo().end }}</strong> de <strong>{{ historyPaginationInfo().total }}</strong> entregas
-              </div>
-
-              <div class="history-pagination-controls">
-                <button
-                  type="button"
-                  class="history-page-btn"
-                  [disabled]="historyCurrentPage() <= 1"
-                  (click)="setHistoryPage(historyCurrentPage() - 1)"
-                  title="Página anterior"
-                >
-                  &larr; Anterior
-                </button>
-
-                @for (p of historyPagesList(); track p) {
-                  <button
-                    type="button"
-                    class="history-page-btn page-num"
-                    [class.active]="historyCurrentPage() === p"
-                    (click)="setHistoryPage(p)"
-                  >
-                    {{ p }}
-                  </button>
-                }
-
-                <button
-                  type="button"
-                  class="history-page-btn"
-                  [disabled]="historyCurrentPage() >= historyTotalPages()"
-                  (click)="setHistoryPage(historyCurrentPage() + 1)"
-                  title="Página siguiente"
-                >
-                  Siguiente &rarr;
-                </button>
-              </div>
+            <div class="payment-method-chip">
+              <span>{{ order.paymentMethodName || 'Efectivo Contra Entrega' }}</span>
             </div>
-          }
+          </div>
 
-          @if (filteredHistoryOrders().length === 0) {
-            <div class="ledger-empty-box">
-              <span class="empty-icon" style="display: inline-flex; align-items: center; justify-content: center; color: var(--text-muted);">
-                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
-                  <circle cx="11" cy="11" r="8"></circle>
-                  <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+          <!-- 5. ESTADO DE ENTREGA -->
+          <div class="ledger-cell cell-status">
+            @if (order.status === 'DELIVERED') {
+            <span class="status-badge-chip badge-delivered">
+              <span class="badge-icon">✓</span>
+              <span class="badge-txt">ENTREGADA</span>
+            </span>
+            } @else if (order.status === 'DISPATCHED') {
+            <span class="status-badge-chip badge-transit">
+              <span class="transit-radar-dot"></span>
+              <span class="badge-txt">EN CAMINO</span>
+            </span>
+            } @else {
+            <span class="status-badge-chip badge-pending">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <circle cx="12" cy="12" r="10"></circle>
+                <polyline points="12 6 12 12 16 14"></polyline>
+              </svg>
+              <span class="badge-txt">SIN GESTIONAR</span>
+            </span>
+            }
+          </div>
+
+          <!-- 6. ACCIONES -->
+          <div class="ledger-cell cell-actions">
+            @if (order.status === 'DISPATCHED') {
+            <button type="button" class="btn-ledger-action btn-confirm-delivery"
+              title="Confirmar entrega y recaudo de este pedido" (click)="advanceOrderStatus(order, 'DELIVERED')">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <polyline points="20 6 9 17 4 12"></polyline>
+              </svg>
+              <span>Confirmar Entrega</span>
+            </button>
+            } @else if (order.status === 'DELIVERED') {
+            <div class="delivered-confirmed-indicator">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <polyline points="20 6 9 17 4 12"></polyline>
+              </svg>
+              <span>Entregada</span>
+            </div>
+            } @else {
+            <button type="button" class="btn-ledger-action btn-dispatch-action" title="Enviar a ruta y marcar en camino"
+              (click)="advanceOrderStatus(order, 'DISPATCHED')">
+              <span>Despachar</span>
+            </button>
+            }
+
+            <div class="action-icons-group">
+              @if (order.status !== 'DELIVERED') {
+              <button type="button" class="btn-icon-shortcut" title="Ubicar dirección en el mapa"
+                (click)="locateOrderInMap(order)">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+                  <circle cx="12" cy="10" r="3"></circle>
                 </svg>
-              </span>
-              <h4>No se encontraron entregas en el histórico</h4>
-              <p>No hay pedidos que coincidan con el filtro "{{ historyFilter() }}" o el texto buscado.</p>
-              <button
-                type="button"
-                class="btn btn-secondary"
-                style="margin-top: 10px; font-size: 0.8rem;"
-                (click)="historyFilter.set('ALL'); historySearchQuery.set('')"
-              >
-                Limpiar Filtros
+              </button>
+              }
+              <button type="button" class="btn-icon-shortcut" title="Modificar datos del pedido"
+                (click)="openEditOrderModal(order)">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                  <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                </svg>
               </button>
             </div>
-          }
+          </div>
         </div>
+        }
+
+        <!-- History Pagination Bar -->
+        @if (filteredHistoryOrders().length > 0) {
+        <div class="history-pagination-bar">
+          <div class="pagination-summary">
+            Mostrando <strong>{{ historyPaginationInfo().start }}</strong> a <strong>{{ historyPaginationInfo().end
+              }}</strong> de <strong>{{ historyPaginationInfo().total }}</strong> entregas
+          </div>
+
+          <div class="history-pagination-controls">
+            <button type="button" class="history-page-btn" [disabled]="historyCurrentPage() <= 1"
+              (click)="setHistoryPage(historyCurrentPage() - 1)" title="Página anterior">
+              &larr; Anterior
+            </button>
+
+            @for (p of historyPagesList(); track p) {
+            <button type="button" class="history-page-btn page-num" [class.active]="historyCurrentPage() === p"
+              (click)="setHistoryPage(p)">
+              {{ p }}
+            </button>
+            }
+
+            <button type="button" class="history-page-btn" [disabled]="historyCurrentPage() >= historyTotalPages()"
+              (click)="setHistoryPage(historyCurrentPage() + 1)" title="Página siguiente">
+              Siguiente &rarr;
+            </button>
+          </div>
+        </div>
+        }
+
+        @if (filteredHistoryOrders().length === 0) {
+        <div class="ledger-empty-box">
+          <span class="empty-icon"
+            style="display: inline-flex; align-items: center; justify-content: center; color: var(--text-muted);">
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+              <circle cx="11" cy="11" r="8"></circle>
+              <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+            </svg>
+          </span>
+          <h4>No se encontraron entregas en el histórico</h4>
+          <p>No hay pedidos que coincidan con el filtro "{{ historyFilter() }}" o el texto buscado.</p>
+          <button type="button" class="btn btn-secondary" style="margin-top: 10px; font-size: 0.8rem;"
+            (click)="historyFilter.set('ALL'); historySearchQuery.set('')">
+            Limpiar Filtros
+          </button>
+        </div>
+        }
       </div>
     </div>
+  </div>
   }
 
 </div>
@@ -799,7 +680,8 @@
   <div class="modal-content" style="max-width: 580px;" (click)="$event.stopPropagation()">
     <div class="modal-header">
       <div style="display: flex; align-items: center; gap: 10px;">
-        <div style="width: 34px; height: 34px; border-radius: 8px; background: rgba(34, 197, 94, 0.12); color: #16a34a; display: flex; align-items: center; justify-content: center;">
+        <div
+          style="width: 34px; height: 34px; border-radius: 8px; background: rgba(34, 197, 94, 0.12); color: #16a34a; display: flex; align-items: center; justify-content: center;">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
           </svg>
@@ -845,16 +727,13 @@
           {{ editingOrderId() !== null ? 'Modificar Pedido · ' + editingOrderNumber() : 'Crear Nuevo Pedido Manual' }}
         </h3>
         <p style="font-size: 0.78rem; color: var(--text-muted); margin-top: 2px;">
-          {{ editingOrderId() !== null ? 'Corrija cliente, dirección, observaciones, cantidades o precios unitarios.' : 'Registre los datos del cliente y los productos requeridos en cava.' }}
+          {{ editingOrderId() !== null ? 'Corrija cliente, dirección, observaciones, cantidades o precios unitarios.' :
+          'Registre los datos del cliente y los productos requeridos en cava.' }}
         </p>
       </div>
-      <button
-        type="button"
-        class="modal-close-btn"
-        (click)="showNewOrderModal.set(false)"
-        title="Cerrar modal"
-      >
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+      <button type="button" class="modal-close-btn" (click)="showNewOrderModal.set(false)" title="Cerrar modal">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+          stroke-linecap="round" stroke-linejoin="round">
           <line x1="18" y1="6" x2="6" y2="18"></line>
           <line x1="6" y1="6" x2="18" y2="18"></line>
         </svg>
@@ -866,46 +745,37 @@
         <div class="form-group" style="position: relative;">
           <label class="form-label">Nombre del Cliente *</label>
           <div style="position: relative;">
-            <input
-              type="text"
-              class="form-control"
-              [ngModel]="manualClientName()"
-              (ngModelChange)="onClientNameInput($event)"
-              (focus)="onClientNameFocus()"
-              (blur)="hideClientSuggestionsWithDelay()"
-              placeholder="ej: Restaurante El Prado"
-              autocomplete="off"
-            />
+            <input type="text" class="form-control" [ngModel]="manualClientName()"
+              (ngModelChange)="onClientNameInput($event)" (focus)="onClientNameFocus()"
+              (blur)="hideClientSuggestionsWithDelay()" placeholder="ej: Restaurante El Prado" autocomplete="off" />
             @if (manualClientName()) {
-              <button
-                type="button"
-                (click)="clearClientNameInput()"
-                style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 13px; padding: 4px;"
-                title="Limpiar"
-              >✕</button>
+            <button type="button" (click)="clearClientNameInput()"
+              style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 13px; padding: 4px;"
+              title="Limpiar">✕</button>
             }
           </div>
 
           <!-- Sugerencias de clientes ya registrados -->
           @if (showClientSuggestions() && filteredClientSuggestions().length > 0) {
-            <div class="client-suggestions-dropdown">
-              <div style="padding: 6px 12px; font-size: 0.68rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase; background: var(--bg-surface-elevated, #f8fafc); border-bottom: 1px solid var(--border-subtle, #e2e8f0);">
-                Clientes Registrados ({{ filteredClientSuggestions().length }})
+          <div class="client-suggestions-dropdown">
+            <div
+              style="padding: 6px 12px; font-size: 0.68rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase; background: var(--bg-surface-elevated, #f8fafc); border-bottom: 1px solid var(--border-subtle, #e2e8f0);">
+              Clientes Registrados ({{ filteredClientSuggestions().length }})
+            </div>
+            @for (client of filteredClientSuggestions(); track client.fullName) {
+            <div class="client-suggestion-item" (mousedown)="selectClientSuggestion(client)">
+              <div class="client-suggestion-main">
+                <span class="client-sugg-name">{{ client.fullName }}</span>
+                @if (client.address) {
+                <span class="client-sugg-addr">{{ client.address }}</span>
+                }
               </div>
-              @for (client of filteredClientSuggestions(); track client.fullName) {
-                <div class="client-suggestion-item" (mousedown)="selectClientSuggestion(client)">
-                  <div class="client-suggestion-main">
-                    <span class="client-sugg-name">{{ client.fullName }}</span>
-                    @if (client.address) {
-                      <span class="client-sugg-addr">{{ client.address }}</span>
-                    }
-                  </div>
-                  @if (client.phone) {
-                    <span class="client-sugg-phone">{{ client.phone }}</span>
-                  }
-                </div>
+              @if (client.phone) {
+              <span class="client-sugg-phone">{{ client.phone }}</span>
               }
             </div>
+            }
+          </div>
           }
         </div>
         <div class="form-group">
@@ -920,17 +790,14 @@
           <label class="form-label" style="margin-bottom: 0;">Dirección de Entrega *</label>
           <div style="display: flex; align-items: center; gap: 8px;">
             @if (selectedManualGeo(); as geo) {
-              <span class="badge badge-emerald" style="font-size: 0.68rem; text-transform: none;">
-                {{ geo.zone }} ({{ geo.lat.toFixed(4) }}, {{ geo.lng.toFixed(4) }})
-              </span>
+            <span class="badge badge-emerald" style="font-size: 0.68rem; text-transform: none;">
+              {{ geo.zone }} ({{ geo.lat.toFixed(4) }}, {{ geo.lng.toFixed(4) }})
+            </span>
             }
-            <button
-              type="button"
-              class="btn-map-picker-trigger"
-              (click)="openMapAddressPicker()"
-              title="Abrir mapa interactivo para seleccionar la ubicación de entrega"
-            >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <button type="button" class="btn-map-picker-trigger" (click)="openMapAddressPicker()"
+              title="Abrir mapa interactivo para seleccionar la ubicación de entrega">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+                stroke-linecap="round" stroke-linejoin="round">
                 <polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"></polygon>
                 <line x1="8" y1="2" x2="8" y2="18"></line>
                 <line x1="16" y1="6" x2="16" y2="22"></line>
@@ -939,15 +806,11 @@
             </button>
           </div>
         </div>
-        <input
-          type="text"
-          class="form-control"
-          [ngModel]="manualAddress()"
+        <input type="text" class="form-control" [ngModel]="manualAddress()"
           (ngModelChange)="onManualAddressChange($event)"
-          placeholder="Ej: Cra 15 # 93-40, Calle 80 # 68-15, o presiona 'Seleccionar en Mapa'"
-        />
+          placeholder="Ej: Cra 15 # 93-40, Calle 80 # 68-15, o presiona 'Seleccionar en Mapa'" />
         @if (manualAddressSuggestions().length > 0) {
-          <div style="
+        <div style="
             position: absolute;
             top: 100%;
             left: 0;
@@ -961,10 +824,8 @@
             max-height: 210px;
             overflow-y: auto;
           ">
-            @for (loc of manualAddressSuggestions(); track loc.id) {
-              <div
-                (click)="selectManualAddressSuggestion(loc)"
-                style="
+          @for (loc of manualAddressSuggestions(); track loc.id) {
+          <div (click)="selectManualAddressSuggestion(loc)" style="
                   padding: 9px 14px;
                   cursor: pointer;
                   border-bottom: 1px solid var(--border-subtle);
@@ -973,22 +834,23 @@
                   justify-content: space-between;
                   gap: 10px;
                   font-size: 0.83rem;
-                "
-              >
-                <div style="overflow: hidden;">
-                  <div style="font-weight: 700; color: var(--text-main); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
-                    {{ loc.name }}
-                  </div>
-                  <div style="font-size: 0.74rem; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
-                    {{ loc.label }}
-                  </div>
-                </div>
-                <span class="badge badge-emerald" style="font-size: 0.65rem; flex-shrink: 0;">
-                  {{ loc.zone }}
-                </span>
+                ">
+            <div style="overflow: hidden;">
+              <div
+                style="font-weight: 700; color: var(--text-main); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                {{ loc.name }}
               </div>
-            }
+              <div
+                style="font-size: 0.74rem; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                {{ loc.label }}
+              </div>
+            </div>
+            <span class="badge badge-emerald" style="font-size: 0.65rem; flex-shrink: 0;">
+              {{ loc.zone }}
+            </span>
           </div>
+          }
+        </div>
         }
       </div>
 
@@ -997,59 +859,43 @@
         <div class="form-group">
           <label class="form-label" style="display: flex; justify-content: space-between; align-items: center;">
             <span>¿El pedido ya fue pagado?</span>
-            <span style="font-size: 0.7rem; font-weight: 800;" [style.color]="isManualOrderPaid() ? '#16a34a' : '#d97706'">
+            <span style="font-size: 0.7rem; font-weight: 800;"
+              [style.color]="isManualOrderPaid() ? '#16a34a' : '#d97706'">
               {{ isManualOrderPaid() ? 'PAGADO' : 'POR COBRAR' }}
             </span>
           </label>
           <div class="paid-toggle-pills">
-            <button
-              type="button"
-              class="paid-pill-btn"
-              [class.active]="!isManualOrderPaid()"
-              (click)="isManualOrderPaid.set(false)"
-            >
+            <button type="button" class="paid-pill-btn" [class.active]="!isManualOrderPaid()"
+              (click)="isManualOrderPaid.set(false)">
               No (Por Cobrar)
             </button>
-            <button
-              type="button"
-              class="paid-pill-btn paid-pill-btn-yes"
-              [class.active]="isManualOrderPaid()"
-              (click)="isManualOrderPaid.set(true)"
-            >
+            <button type="button" class="paid-pill-btn paid-pill-btn-yes" [class.active]="isManualOrderPaid()"
+              (click)="isManualOrderPaid.set(true)">
               Sí, Ya Pagado
             </button>
           </div>
 
           @if (isManualOrderPaid()) {
-            <div style="margin-top: 10px; animation: fadeIn 0.2s ease;">
-              <label class="form-label" style="color: #15803d; font-size: 0.76rem; font-weight: 700;">
-                Forma de Pago Recibida *
-              </label>
-              <select
-                class="form-control"
-                [ngModel]="manualPaymentMethod()"
-                (ngModelChange)="manualPaymentMethod.set($event)"
-                style="border-color: #86efac; background: #f0fdf4;"
-              >
-                <option value="Transferencia Bancolombia">Transferencia Bancolombia</option>
-                <option value="Nequi / Daviplata">Nequi / Daviplata</option>
-                <option value="Efectivo Recibido">Efectivo Recibido</option>
-                <option value="Datáfono / Tarjeta">Datáfono / Tarjeta</option>
-                <option value="Crédito Corporativo 15 días">Crédito Corporativo 15 días</option>
-              </select>
-            </div>
+          <div style="margin-top: 10px; animation: fadeIn 0.2s ease;">
+            <label class="form-label" style="color: #15803d; font-size: 0.76rem; font-weight: 700;">
+              Forma de Pago Recibida *
+            </label>
+            <select class="form-control" [ngModel]="manualPaymentMethod()"
+              (ngModelChange)="manualPaymentMethod.set($event)" style="border-color: #86efac; background: #f0fdf4;">
+              <option value="Transferencia Bancolombia">Transferencia Bancolombia</option>
+              <option value="Nequi / Daviplata">Nequi / Daviplata</option>
+              <option value="Efectivo Recibido">Efectivo Recibido</option>
+              <option value="Datáfono / Tarjeta">Datáfono / Tarjeta</option>
+              <option value="Crédito Corporativo 15 días">Crédito Corporativo 15 días</option>
+            </select>
+          </div>
           }
         </div>
 
         <div class="form-group">
           <label class="form-label">Nota / Observación del Pedido</label>
-          <input
-            type="text"
-            class="form-control"
-            [ngModel]="manualNotes()"
-            (ngModelChange)="manualNotes.set($event)"
-            placeholder="Ej: Entregar antes de las 11am, pedir por cocina..."
-          />
+          <input type="text" class="form-control" [ngModel]="manualNotes()" (ngModelChange)="manualNotes.set($event)"
+            placeholder="Ej: Entregar antes de las 11am, pedir por cocina..." />
         </div>
       </div>
 
@@ -1061,7 +907,8 @@
             (click)="addManualItem()">+ Agregar Pulpa</button>
         </div>
 
-        <div style="display: grid; grid-template-columns: 2fr 1.1fr 0.8fr 1.1fr 1.2fr auto; gap: 8px; font-size: 0.7rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase; padding: 0 4px 6px;">
+        <div
+          style="display: grid; grid-template-columns: 2fr 1.1fr 0.8fr 1.1fr 1.2fr auto; gap: 8px; font-size: 0.7rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase; padding: 0 4px 6px;">
           <span>Fruta</span>
           <span>Gramaje</span>
           <span>Cant.</span>
@@ -1088,39 +935,26 @@
             <option [ngValue]="1000">1000g (1Kg)</option>
           </select>
 
-          <input
-            type="number"
-            min="1"
-            class="form-control"
-            [ngModel]="item.quantity"
-            (ngModelChange)="updateManualItemQuantity($index, $event)"
-          />
+          <input type="number" min="1" class="form-control" [ngModel]="item.quantity"
+            (ngModelChange)="updateManualItemQuantity($index, $event)" />
 
-          <input
-            type="number"
-            min="0"
-            step="100"
-            class="form-control"
-            [ngModel]="item.unitPrice"
-            (ngModelChange)="updateManualItemPrice($index, $event)"
-            title="Precio unitario COP"
-          />
+          <input type="number" min="0" step="100" class="form-control" [ngModel]="item.unitPrice"
+            (ngModelChange)="updateManualItemPrice($index, $event)" title="Precio unitario COP" />
 
           <div style="font-weight: 800; font-size: 0.86rem; color: #1e5e3a; text-align: right;">
             {{ formatCOP(item.quantity * item.unitPrice) }}
           </div>
 
-          <button
-            type="button"
-            title="Quitar ítem"
+          <button type="button" title="Quitar ítem"
             style="background: #fee2e2; border: none; color: #dc2626; width: 26px; height: 26px; border-radius: 6px; font-weight: 800; cursor: pointer; display: flex; align-items: center; justify-content: center;"
-            (click)="removeManualItem($index)"
-          >&times;</button>
+            (click)="removeManualItem($index)">&times;</button>
         </div>
         }
 
-        <div style="display: flex; justify-content: flex-end; align-items: center; gap: 12px; margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border-subtle);">
-          <span style="font-size: 0.82rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">Total del Pedido:</span>
+        <div
+          style="display: flex; justify-content: flex-end; align-items: center; gap: 12px; margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border-subtle);">
+          <span style="font-size: 0.82rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">Total
+            del Pedido:</span>
           <span style="font-size: 1.25rem; font-weight: 900; color: #1e5e3a;">{{ formatCOP(manualOrderTotal()) }}</span>
         </div>
       </div>
@@ -1129,30 +963,22 @@
     <div class="modal-footer" style="justify-content: space-between;">
       <div>
         @if (editingOrderId() !== null) {
-          <button
-            type="button"
-            class="btn btn-outline"
-            style="color: #dc2626; border-color: #fecaca; background: #fef2f2; gap: 6px;"
-            (click)="deleteCurrentEditingOrder()"
-          >
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <polyline points="3 6 5 6 21 6"></polyline>
-              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-            </svg>
-            <span>Eliminar Pedido</span>
-          </button>
+        <button type="button" class="btn btn-outline"
+          style="color: #dc2626; border-color: #fecaca; background: #fef2f2; gap: 6px;"
+          (click)="deleteCurrentEditingOrder()">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="3 6 5 6 21 6"></polyline>
+            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+          </svg>
+          <span>Eliminar Pedido</span>
+        </button>
         }
       </div>
       <div style="display: flex; gap: 10px;">
         <button type="button" class="btn btn-outline" (click)="showNewOrderModal.set(false)">Cancelar</button>
-        <button
-          type="button"
-          class="btn btn-primary"
-          [disabled]="!isManualOrderValid()"
-          [class.btn-disabled]="!isManualOrderValid()"
-          (click)="submitManualOrder()"
-          [title]="!isManualOrderValid() ? 'Complete el cliente, teléfono, dirección y al menos 1 producto para guardar' : ''"
-        >
+        <button type="button" class="btn btn-primary" [disabled]="!isManualOrderValid()"
+          [class.btn-disabled]="!isManualOrderValid()" (click)="submitManualOrder()"
+          [title]="!isManualOrderValid() ? 'Complete el cliente, teléfono, dirección y al menos 1 producto para guardar' : ''">
           {{ editingOrderId() !== null ? 'Guardar Cambios' : 'Guardar Pedido' }}
         </button>
       </div>
@@ -1173,22 +999,19 @@
           <h2 class="map-picker-title">Seleccionar Ubicación Exacta de Entrega</h2>
         </div>
         <p class="map-picker-subtitle">
-          Haz clic o arrastra el marcador para ubicar el punto de entrega en Bogotá. El sistema obtendrá la dirección y zona en tiempo real.
+          Haz clic o arrastra el marcador para ubicar el punto de entrega en Bogotá. El sistema obtendrá la dirección y
+          zona en tiempo real.
         </p>
       </div>
 
       <!-- Quick Search inside Map -->
       <div class="map-picker-search-bar">
-        <input
-          type="text"
-          class="map-picker-search-input"
-          [ngModel]="pickerSearchText()"
-          (ngModelChange)="pickerSearchText.set($event)"
-          (keyup.enter)="searchPickerAddress()"
-          placeholder="Escribe una dirección (ej: Cra 15 # 93-40) y presiona Enter..."
-        />
+        <input type="text" class="map-picker-search-input" [ngModel]="pickerSearchText()"
+          (ngModelChange)="pickerSearchText.set($event)" (keyup.enter)="searchPickerAddress()"
+          placeholder="Escribe una dirección (ej: Cra 15 # 93-40) y presiona Enter..." />
         <button type="button" class="btn-picker-search" (click)="searchPickerAddress()">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 4px;">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            style="margin-right: 4px;">
             <circle cx="11" cy="11" r="8"></circle>
             <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
           </svg>
@@ -1197,13 +1020,9 @@
       </div>
 
       <!-- Close Button with Sleek Design -->
-      <button
-        type="button"
-        class="map-picker-close-btn"
-        (click)="closeMapAddressPicker()"
-        title="Cerrar mapa"
-      >
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+      <button type="button" class="map-picker-close-btn" (click)="closeMapAddressPicker()" title="Cerrar mapa">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+          stroke-linecap="round" stroke-linejoin="round">
           <line x1="18" y1="6" x2="6" y2="18"></line>
           <line x1="6" y1="6" x2="18" y2="18"></line>
         </svg>
@@ -1226,24 +1045,27 @@
           <div class="map-picker-info-text">
             <div class="map-picker-address-display">
               @if (isReverseGeocoding()) {
-                <span class="picker-geocoding-spinner">Geocodificando coordenadas...</span>
+              <span class="picker-geocoding-spinner">Geocodificando coordenadas...</span>
               } @else {
-                {{ pickerCurrentAddress() || 'Punto fijado en el mapa' }}
+              {{ pickerCurrentAddress() || 'Punto fijado en el mapa' }}
               }
             </div>
             <div class="map-picker-zone-coords">
               <span class="badge badge-emerald" style="font-weight: 800;">{{ pickerCurrentZone() }}</span>
-              <span class="map-picker-coords">Lat: {{ pickerCurrentLat().toFixed(5) }}, Lng: {{ pickerCurrentLng().toFixed(5) }}</span>
+              <span class="map-picker-coords">Lat: {{ pickerCurrentLat().toFixed(5) }}, Lng: {{
+                pickerCurrentLng().toFixed(5) }}</span>
             </div>
           </div>
         </div>
 
         <div class="map-picker-actions">
-          <button type="button" class="btn btn-outline" style="background: #fff; font-weight: 700;" (click)="closeMapAddressPicker()">
+          <button type="button" class="btn btn-outline" style="background: #fff; font-weight: 700;"
+            (click)="closeMapAddressPicker()">
             Cancelar
           </button>
           <button type="button" class="btn btn-primary btn-picker-confirm" (click)="confirmPickerSelection()">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 6px;">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+              stroke-linecap="round" stroke-linejoin="round" style="margin-right: 6px;">
               <polyline points="20 6 9 17 4 12"></polyline>
             </svg>
             <span>Usar Esta Ubicación</span>
@@ -1258,11 +1080,7 @@
 <!-- PRO CORPORATE INVOICE MODAL -->
 @if (showInvoiceModal() && selectedOrderForInvoice(); as modalOrder) {
 <div class="modal-overlay invoice-modal-overlay" (click)="showInvoiceModal.set(false)">
-  <div
-    class="modal-content invoice-modal-container"
-    style="max-width: 880px;"
-    (click)="$event.stopPropagation()"
-  >
+  <div class="modal-content invoice-modal-container" style="max-width: 880px;" (click)="$event.stopPropagation()">
     <div class="modal-header no-print" style="flex-wrap: wrap; gap: 12px;">
       <div style="display: flex; align-items: center; gap: 12px;">
         <h3 class="modal-title">
@@ -1279,11 +1097,8 @@
 
         <div class="pro-invoice-header">
           <div class="pro-brand-block">
-            <img
-              [src]="stateService.companyInfo().logoUrl || '/logo-dgl.png'"
-              alt="DGL Despulpadora"
-              class="pro-brand-logo"
-            />
+            <img [src]="stateService.companyInfo().logoUrl || '/logo-dgl.png'" alt="DGL Despulpadora"
+              class="pro-brand-logo" />
             <div class="pro-brand-info">
               <div class="pro-company-name">{{ stateService.companyInfo().companyName }}</div>
               <div class="pro-company-legal">{{ stateService.companyInfo().legalName }}</div>
@@ -1309,10 +1124,10 @@
             <div class="client-box-label">CLIENTE / DESTINATARIO</div>
             <div class="client-box-name">{{ modalOrder.clientName }}</div>
             @if (modalOrder.clientAddress) {
-              <div class="client-box-line">{{ modalOrder.clientAddress }}</div>
+            <div class="client-box-line">{{ modalOrder.clientAddress }}</div>
             }
             @if (modalOrder.clientPhone) {
-              <div class="client-box-line">Tel: {{ modalOrder.clientPhone }}</div>
+            <div class="client-box-line">Tel: {{ modalOrder.clientPhone }}</div>
             }
             <div class="client-box-country">{{ stateService.companyInfo().country }}</div>
           </div>
@@ -1358,37 +1173,31 @@
             </thead>
             <tbody>
               @for (item of modalOrder.items; track (item.fruitName || '') + item.grammage; let idx = $index) {
-                <tr [class.is-free-row]="getItemDiscount(modalOrder.orderId, idx) >= 100">
-                  <td class="col-desc">
-                    <span class="grammage-tag">[{{ item.grammage }}g]</span>
-                    <span class="product-upper">PULPA DE {{ item.fruitName | uppercase }}</span>
-                  </td>
-                  <td class="col-qty">{{ item.quantity }} Unidades</td>
-                  <td class="col-price">{{ formatNumberES(item.unitPrice) }}</td>
-                  <td class="col-disc">
-                    <div class="disc-input-wrap">
-                      <input
-                        type="number"
-                        min="0"
-                        max="100"
-                        step="5"
-                        class="disc-inline-input no-print"
-                        [ngModel]="getItemDiscount(modalOrder.orderId, idx)"
-                        (ngModelChange)="setItemDiscount(modalOrder.orderId, idx, $event)"
-                        title="Porcentaje de descuento o bonificación (100% = $0,00)"
-                      />
-                      <span class="print-only-disc">{{ formatNumberES(getItemDiscount(modalOrder.orderId, idx)) }}</span>
-                    </div>
-                  </td>
-                  <td class="col-tax">
-                    @if (getItemDiscount(modalOrder.orderId, idx) < 100 && invoiceTaxRate() > 0) {
-                      <span class="tax-chip">{{ invoiceTaxRate() }}%</span>
+              <tr [class.is-free-row]="getItemDiscount(modalOrder.orderId, idx) >= 100">
+                <td class="col-desc">
+                  <span class="grammage-tag">[{{ item.grammage }}g]</span>
+                  <span class="product-upper">PULPA DE {{ item.fruitName | uppercase }}</span>
+                </td>
+                <td class="col-qty">{{ item.quantity }} Unidades</td>
+                <td class="col-price">{{ formatNumberES(item.unitPrice) }}</td>
+                <td class="col-disc">
+                  <div class="disc-input-wrap">
+                    <input type="number" min="0" max="100" step="5" class="disc-inline-input no-print"
+                      [ngModel]="getItemDiscount(modalOrder.orderId, idx)"
+                      (ngModelChange)="setItemDiscount(modalOrder.orderId, idx, $event)"
+                      title="Porcentaje de descuento o bonificación (100% = $0,00)" />
+                    <span class="print-only-disc">{{ formatNumberES(getItemDiscount(modalOrder.orderId, idx)) }}</span>
+                  </div>
+                </td>
+                <td class="col-tax">
+                  @if (getItemDiscount(modalOrder.orderId, idx) < 100 && invoiceTaxRate()> 0) {
+                    <span class="tax-chip">{{ invoiceTaxRate() }}%</span>
                     } @else {
-                      <span class="tax-exempt">—</span>
+                    <span class="tax-exempt">—</span>
                     }
-                  </td>
-                  <td class="col-total">$ {{ formatNumberES(getItemImporte(item, modalOrder.orderId, idx)) }}</td>
-                </tr>
+                </td>
+                <td class="col-total">$ {{ formatNumberES(getItemImporte(item, modalOrder.orderId, idx)) }}</td>
+              </tr>
               }
             </tbody>
           </table>
@@ -1400,13 +1209,15 @@
               Comunicación de pago: <strong>{{ getInvoiceCode(modalOrder) }}</strong>
             </div>
             <div class="comm-sub-box">
-              <div><strong>Método de pago:</strong> {{ modalOrder.paymentMethodName || 'Transferencia Bancolombia / Contado' }}</div>
+              <div><strong>Método de pago:</strong> {{ modalOrder.paymentMethodName || 'Transferencia Bancolombia /
+                Contado' }}</div>
               <div><strong>Orden asociada:</strong> {{ modalOrder.orderNumber }} ({{ getOriginCode(modalOrder) }})</div>
               @if (stateService.companyInfo().dianResolution) {
-                <div><strong>Resolución:</strong> {{ stateService.companyInfo().dianResolution }}</div>
+              <div><strong>Resolución:</strong> {{ stateService.companyInfo().dianResolution }}</div>
               }
               @if (stateService.companyInfo().invoiceFooterNote) {
-                <div style="margin-top: 2px; font-style: italic; color: #64748b;">{{ stateService.companyInfo().invoiceFooterNote }}</div>
+              <div style="margin-top: 2px; font-style: italic; color: #64748b;">{{
+                stateService.companyInfo().invoiceFooterNote }}</div>
               }
             </div>
           </div>
@@ -1417,10 +1228,10 @@
               <span class="totals-val">$ {{ formatNumberES(getInvoiceBaseAmount(modalOrder)) }}</span>
             </div>
             @if (getInvoiceDiscountSaved(modalOrder) > 0) {
-              <div class="totals-row totals-discount-row">
-                <span class="totals-label">Descuento / Bonificación</span>
-                <span class="totals-val">- $ {{ formatNumberES(getInvoiceDiscountSaved(modalOrder)) }}</span>
-              </div>
+            <div class="totals-row totals-discount-row">
+              <span class="totals-label">Descuento / Bonificación</span>
+              <span class="totals-val">- $ {{ formatNumberES(getInvoiceDiscountSaved(modalOrder)) }}</span>
+            </div>
             }
             <div class="totals-row">
               <span class="totals-label">IVA {{ invoiceTaxRate() }}%</span>
@@ -1461,190 +1272,204 @@
 
 <!-- MODAL: DETALLE DEL PEDIDO (VISTA LUPA) -->
 @if (showOrderViewModal() && selectedOrderForView(); as viewOrder) {
-  <div class="modal-overlay" (click)="showOrderViewModal.set(false)">
-    <div class="modal-content modal-lg" style="max-width: 720px; border-radius: 18px; overflow: hidden;" (click)="$event.stopPropagation()">
-      <div class="modal-header" style="background: #ffffff; padding: 18px 24px; border-bottom: 1px solid var(--border-subtle);">
-        <div style="display: flex; align-items: center; gap: 12px;">
-          <div style="width: 40px; height: 40px; border-radius: 10px; background: #e0f2fe; color: #0284c7; display: flex; align-items: center; justify-content: center;">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <circle cx="11" cy="11" r="8"></circle>
-              <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-            </svg>
-          </div>
-          <div>
-            <div style="display: flex; align-items: center; gap: 8px;">
-              <h3 class="modal-title" style="margin: 0; font-size: 1.2rem; font-weight: 800; color: #0f172a;">
-                Detalle del Pedido · {{ viewOrder.orderNumber }}
-              </h3>
-              @if (viewOrder.status === 'DELIVERED') {
-                <span class="status-badge-chip badge-delivered" style="font-size: 0.72rem; padding: 2px 8px;">Entregada</span>
-              } @else if (viewOrder.status === 'DISPATCHED') {
-                <span class="status-badge-chip badge-transit" style="font-size: 0.72rem; padding: 2px 8px;">En Camino</span>
-              } @else {
-                <span class="status-badge-chip badge-pending" style="font-size: 0.72rem; padding: 2px 8px;">Sin Gestionar</span>
-              }
-            </div>
-            <p style="margin: 2px 0 0 0; font-size: 0.8rem; color: #64748b;">
-              Fecha programada: <strong>{{ viewOrder.scheduledDay || 'Hoy' }}</strong> · Registrado: {{ formatInvoiceDate(viewOrder.createdAt) }}
-            </p>
-          </div>
-        </div>
-        <button type="button" class="modal-close" (click)="showOrderViewModal.set(false)">&times;</button>
-      </div>
-
-      <div class="modal-body" style="padding: 22px 24px; background: #f8fafc; display: flex; flex-direction: column; gap: 16px; max-height: 75vh; overflow-y: auto;">
-        <!-- Info Cards Grid: Cliente & Domiciliario -->
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 14px;">
-          <!-- Cliente Card -->
-          <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 14px 16px;">
-            <div style="font-size: 0.72rem; font-weight: 800; text-transform: uppercase; color: #94a3b8; letter-spacing: 0.04em; margin-bottom: 6px;">
-              Datos del Cliente
-            </div>
-            <div style="font-size: 1rem; font-weight: 700; color: #1e293b; margin-bottom: 4px;">
-              {{ viewOrder.clientName }}
-            </div>
-            <div style="font-size: 0.85rem; color: #475569; display: flex; align-items: center; gap: 6px; margin-bottom: 4px;">
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: var(--text-muted); flex-shrink: 0;">
-                <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
-                <circle cx="12" cy="10" r="3"></circle>
-              </svg>
-              <span>{{ viewOrder.clientAddress || 'Sin dirección registrada' }}</span>
-            </div>
-            <div style="font-size: 0.85rem; color: #475569; display: flex; align-items: center; gap: 6px;">
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: var(--text-muted); flex-shrink: 0;">
-                <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path>
-              </svg>
-              <a [href]="'tel:' + viewOrder.clientPhone" style="color: #0284c7; text-decoration: none; font-weight: 600;">{{ viewOrder.clientPhone || 'No registrado' }}</a>
-            </div>
-            @if (viewOrder.notes) {
-              <div style="margin-top: 8px; padding-top: 8px; border-top: 1px dashed #e2e8f0; font-size: 0.8rem; color: #b45309; background: #fffbeb; padding: 6px 10px; border-radius: 6px;">
-                <strong>Nota:</strong> {{ viewOrder.notes }}
-              </div>
-            }
-          </div>
-
-          <!-- Domiciliario & Pago Card -->
-          <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 14px 16px;">
-            <div style="font-size: 0.72rem; font-weight: 800; text-transform: uppercase; color: #94a3b8; letter-spacing: 0.04em; margin-bottom: 6px;">
-              Domiciliario & Recaudo
-            </div>
-            @if (getCourierForOrder(viewOrder); as courier) {
-              <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px;">
-                <div style="width: 32px; height: 32px; border-radius: 8px; background: rgba(59, 130, 246, 0.12); color: #0284c7; display: flex; align-items: center; justify-content: center;">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <rect x="1" y="3" width="15" height="13"></rect>
-                    <polygon points="16 8 20 8 23 11 23 16 16 16 8"></polygon>
-                    <circle cx="5.5" cy="18.5" r="2.5"></circle>
-                    <circle cx="18.5" cy="18.5" r="2.5"></circle>
-                  </svg>
-                </div>
-                <div>
-                  <div style="font-size: 0.92rem; font-weight: 700; color: #1e293b;">{{ courier.name }}</div>
-                  <div style="font-size: 0.75rem; color: #64748b;">{{ courier.routeCode }} · {{ courier.vehiclePlate }}</div>
-                </div>
-              </div>
-            } @else {
-              <div style="font-size: 0.85rem; color: #94a3b8; margin-bottom: 8px;">
-                Sin domiciliario asignado a ruta
-              </div>
-            }
-            <div style="padding-top: 8px; border-top: 1px dashed #e2e8f0; display: flex; justify-content: space-between; align-items: center;">
-              <div>
-                <div style="font-size: 0.72rem; color: #64748b;">Método de Pago</div>
-                <div style="font-size: 0.85rem; font-weight: 600; color: #1e293b;">{{ viewOrder.paymentMethodName || 'Contra Entrega' }}</div>
-              </div>
-              <div style="text-align: right;">
-                <div style="font-size: 0.72rem; color: #64748b;">Total a Pagar</div>
-                <div style="font-size: 1.1rem; font-weight: 800; color: #166534;">{{ formatCOP(viewOrder.totalAmount) }}</div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Tabla de Productos del Pedido -->
-        <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden;">
-          <div style="padding: 10px 16px; background: #f1f5f9; border-bottom: 1px solid #e2e8f0; font-size: 0.75rem; font-weight: 800; color: #475569; text-transform: uppercase;">
-            Productos Solicitados ({{ viewOrder.items.length }})
-          </div>
-          <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem;">
-            <thead>
-              <tr style="border-bottom: 1px solid #f1f5f9; color: #64748b; font-size: 0.75rem; text-align: left;">
-                <th style="padding: 10px 16px;">PRESENTACIÓN / FRUTA</th>
-                <th style="padding: 10px 14px; text-align: center;">CANTIDAD</th>
-                <th style="padding: 10px 14px; text-align: right;">PRECIO UNIT.</th>
-                <th style="padding: 10px 16px; text-align: right;">SUBTOTAL</th>
-              </tr>
-            </thead>
-            <tbody>
-              @for (item of viewOrder.items; track (item.fruitName || '') + item.grammage) {
-                <tr style="border-bottom: 1px solid #f8fafc;">
-                  <td style="padding: 10px 16px;">
-                    <span style="font-weight: 700; color: #0284c7; background: #f0f9ff; padding: 2px 6px; border-radius: 4px; font-size: 0.75rem; margin-right: 6px;">[{{ item.grammage }}g]</span>
-                    <strong style="color: #1e293b;">Pulpa de {{ item.fruitName }}</strong>
-                  </td>
-                  <td style="padding: 10px 14px; text-align: center; font-weight: 700; color: #0f172a;">
-                    {{ item.quantity }} uds
-                  </td>
-                  <td style="padding: 10px 14px; text-align: right; color: #64748b;">
-                    {{ formatCOP(item.unitPrice) }}
-                  </td>
-                  <td style="padding: 10px 16px; text-align: right; font-weight: 700; color: #1e293b;">
-                    {{ formatCOP(item.quantity * item.unitPrice) }}
-                  </td>
-                </tr>
-              }
-            </tbody>
-            <tfoot>
-              <tr style="background: #f8fafc; font-weight: 800; border-top: 1.5px solid #e2e8f0;">
-                <td colspan="3" style="padding: 12px 16px; text-align: right; color: #475569;">TOTAL DEL PEDIDO:</td>
-                <td style="padding: 12px 16px; text-align: right; font-size: 1.05rem; color: #166534;">
-                  {{ formatCOP(viewOrder.totalAmount) }}
-                </td>
-              </tr>
-            </tfoot>
-          </table>
-        </div>
-      </div>
-
-      <div class="modal-footer" style="padding: 14px 24px; background: #ffffff; border-top: 1px solid var(--border-subtle); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
-        <button
-          type="button"
-          class="btn btn-outline"
-          style="gap: 8px; font-size: 0.85rem;"
-          (click)="showOrderViewModal.set(false); openInvoice(viewOrder, 'a4')"
-        >
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-            <polyline points="14 2 14 8 20 8"></polyline>
-            <line x1="16" y1="13" x2="8" y2="13"></line>
-            <line x1="16" y1="17" x2="8" y2="17"></line>
+<div class="modal-overlay" (click)="showOrderViewModal.set(false)">
+  <div class="modal-content modal-lg" style="max-width: 720px; border-radius: 18px; overflow: hidden;"
+    (click)="$event.stopPropagation()">
+    <div class="modal-header"
+      style="background: #ffffff; padding: 18px 24px; border-bottom: 1px solid var(--border-subtle);">
+      <div style="display: flex; align-items: center; gap: 12px;">
+        <div
+          style="width: 40px; height: 40px; border-radius: 10px; background: #e0f2fe; color: #0284c7; display: flex; align-items: center; justify-content: center;">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="11" cy="11" r="8"></circle>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
           </svg>
-          <span>Ver Factura Corporativa</span>
-        </button>
-
-        <div style="display: flex; gap: 10px;">
-          <button
-            type="button"
-            class="btn btn-outline"
-            style="gap: 6px; font-size: 0.85rem;"
-            (click)="showOrderViewModal.set(false); openEditOrderModal(viewOrder)"
-          >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
-              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
-            </svg>
-            <span>Editar Pedido</span>
-          </button>
-          <button
-            type="button"
-            class="btn btn-primary"
-            style="font-size: 0.85rem;"
-            (click)="showOrderViewModal.set(false)"
-          >
-            Cerrar
-          </button>
         </div>
+        <div>
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <h3 class="modal-title" style="margin: 0; font-size: 1.2rem; font-weight: 800; color: #0f172a;">
+              Detalle del Pedido · {{ viewOrder.orderNumber }}
+            </h3>
+            @if (viewOrder.status === 'DELIVERED') {
+            <span class="status-badge-chip badge-delivered"
+              style="font-size: 0.72rem; padding: 2px 8px;">Entregada</span>
+            } @else if (viewOrder.status === 'DISPATCHED') {
+            <span class="status-badge-chip badge-transit" style="font-size: 0.72rem; padding: 2px 8px;">En Camino</span>
+            } @else {
+            <span class="status-badge-chip badge-pending" style="font-size: 0.72rem; padding: 2px 8px;">Sin
+              Gestionar</span>
+            }
+          </div>
+          <p style="margin: 2px 0 0 0; font-size: 0.8rem; color: #64748b;">
+            Fecha programada: <strong>{{ viewOrder.scheduledDay || 'Hoy' }}</strong> · Registrado: {{
+            formatInvoiceDate(viewOrder.createdAt) }}
+          </p>
+        </div>
+      </div>
+      <button type="button" class="modal-close" (click)="showOrderViewModal.set(false)">&times;</button>
+    </div>
+
+    <div class="modal-body"
+      style="padding: 22px 24px; background: #f8fafc; display: flex; flex-direction: column; gap: 16px; max-height: 75vh; overflow-y: auto;">
+      <!-- Info Cards Grid: Cliente & Domiciliario -->
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 14px;">
+        <!-- Cliente Card -->
+        <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 14px 16px;">
+          <div
+            style="font-size: 0.72rem; font-weight: 800; text-transform: uppercase; color: #94a3b8; letter-spacing: 0.04em; margin-bottom: 6px;">
+            Datos del Cliente
+          </div>
+          <div style="font-size: 1rem; font-weight: 700; color: #1e293b; margin-bottom: 4px;">
+            {{ viewOrder.clientName }}
+          </div>
+          <div
+            style="font-size: 0.85rem; color: #475569; display: flex; align-items: center; gap: 6px; margin-bottom: 4px;">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              style="color: var(--text-muted); flex-shrink: 0;">
+              <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+              <circle cx="12" cy="10" r="3"></circle>
+            </svg>
+            <span>{{ viewOrder.clientAddress || 'Sin dirección registrada' }}</span>
+          </div>
+          <div style="font-size: 0.85rem; color: #475569; display: flex; align-items: center; gap: 6px;">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              style="color: var(--text-muted); flex-shrink: 0;">
+              <path
+                d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z">
+              </path>
+            </svg>
+            <a [href]="'tel:' + viewOrder.clientPhone"
+              style="color: #0284c7; text-decoration: none; font-weight: 600;">{{ viewOrder.clientPhone || 'No
+              registrado' }}</a>
+          </div>
+          @if (viewOrder.notes) {
+          <div
+            style="margin-top: 8px; padding-top: 8px; border-top: 1px dashed #e2e8f0; font-size: 0.8rem; color: #b45309; background: #fffbeb; padding: 6px 10px; border-radius: 6px;">
+            <strong>Nota:</strong> {{ viewOrder.notes }}
+          </div>
+          }
+        </div>
+
+        <!-- Domiciliario & Pago Card -->
+        <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 14px 16px;">
+          <div
+            style="font-size: 0.72rem; font-weight: 800; text-transform: uppercase; color: #94a3b8; letter-spacing: 0.04em; margin-bottom: 6px;">
+            Domiciliario & Recaudo
+          </div>
+          @if (getCourierForOrder(viewOrder); as courier) {
+          <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px;">
+            <div
+              style="width: 32px; height: 32px; border-radius: 8px; background: rgba(59, 130, 246, 0.12); color: #0284c7; display: flex; align-items: center; justify-content: center;">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="1" y="3" width="15" height="13"></rect>
+                <polygon points="16 8 20 8 23 11 23 16 16 16 8"></polygon>
+                <circle cx="5.5" cy="18.5" r="2.5"></circle>
+                <circle cx="18.5" cy="18.5" r="2.5"></circle>
+              </svg>
+            </div>
+            <div>
+              <div style="font-size: 0.92rem; font-weight: 700; color: #1e293b;">{{ courier.name }}</div>
+              <div style="font-size: 0.75rem; color: #64748b;">{{ courier.routeCode }} · {{ courier.vehiclePlate }}
+              </div>
+            </div>
+          </div>
+          } @else {
+          <div style="font-size: 0.85rem; color: #94a3b8; margin-bottom: 8px;">
+            Sin domiciliario asignado a ruta
+          </div>
+          }
+          <div
+            style="padding-top: 8px; border-top: 1px dashed #e2e8f0; display: flex; justify-content: space-between; align-items: center;">
+            <div>
+              <div style="font-size: 0.72rem; color: #64748b;">Método de Pago</div>
+              <div style="font-size: 0.85rem; font-weight: 600; color: #1e293b;">{{ viewOrder.paymentMethodName ||
+                'Contra Entrega' }}</div>
+            </div>
+            <div style="text-align: right;">
+              <div style="font-size: 0.72rem; color: #64748b;">Total a Pagar</div>
+              <div style="font-size: 1.1rem; font-weight: 800; color: #166534;">{{ formatCOP(viewOrder.totalAmount) }}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tabla de Productos del Pedido -->
+      <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden;">
+        <div
+          style="padding: 10px 16px; background: #f1f5f9; border-bottom: 1px solid #e2e8f0; font-size: 0.75rem; font-weight: 800; color: #475569; text-transform: uppercase;">
+          Productos Solicitados ({{ viewOrder.items.length }})
+        </div>
+        <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem;">
+          <thead>
+            <tr style="border-bottom: 1px solid #f1f5f9; color: #64748b; font-size: 0.75rem; text-align: left;">
+              <th style="padding: 10px 16px;">PRESENTACIÓN / FRUTA</th>
+              <th style="padding: 10px 14px; text-align: center;">CANTIDAD</th>
+              <th style="padding: 10px 14px; text-align: right;">PRECIO UNIT.</th>
+              <th style="padding: 10px 16px; text-align: right;">SUBTOTAL</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (item of viewOrder.items; track (item.fruitName || '') + item.grammage) {
+            <tr style="border-bottom: 1px solid #f8fafc;">
+              <td style="padding: 10px 16px;">
+                <span
+                  style="font-weight: 700; color: #0284c7; background: #f0f9ff; padding: 2px 6px; border-radius: 4px; font-size: 0.75rem; margin-right: 6px;">[{{
+                  item.grammage }}g]</span>
+                <strong style="color: #1e293b;">Pulpa de {{ item.fruitName }}</strong>
+              </td>
+              <td style="padding: 10px 14px; text-align: center; font-weight: 700; color: #0f172a;">
+                {{ item.quantity }} uds
+              </td>
+              <td style="padding: 10px 14px; text-align: right; color: #64748b;">
+                {{ formatCOP(item.unitPrice) }}
+              </td>
+              <td style="padding: 10px 16px; text-align: right; font-weight: 700; color: #1e293b;">
+                {{ formatCOP(item.quantity * item.unitPrice) }}
+              </td>
+            </tr>
+            }
+          </tbody>
+          <tfoot>
+            <tr style="background: #f8fafc; font-weight: 800; border-top: 1.5px solid #e2e8f0;">
+              <td colspan="3" style="padding: 12px 16px; text-align: right; color: #475569;">TOTAL DEL PEDIDO:</td>
+              <td style="padding: 12px 16px; text-align: right; font-size: 1.05rem; color: #166534;">
+                {{ formatCOP(viewOrder.totalAmount) }}
+              </td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+    </div>
+
+    <div class="modal-footer"
+      style="padding: 14px 24px; background: #ffffff; border-top: 1px solid var(--border-subtle); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+      <button type="button" class="btn btn-outline" style="gap: 8px; font-size: 0.85rem;"
+        (click)="showOrderViewModal.set(false); openInvoice(viewOrder, 'a4')">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+          <polyline points="14 2 14 8 20 8"></polyline>
+          <line x1="16" y1="13" x2="8" y2="13"></line>
+          <line x1="16" y1="17" x2="8" y2="17"></line>
+        </svg>
+        <span>Ver Factura Corporativa</span>
+      </button>
+
+      <div style="display: flex; gap: 10px;">
+        <button type="button" class="btn btn-outline" style="gap: 6px; font-size: 0.85rem;"
+          (click)="showOrderViewModal.set(false); openEditOrderModal(viewOrder)">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+          </svg>
+          <span>Editar Pedido</span>
+        </button>
+        <button type="button" class="btn btn-primary" style="font-size: 0.85rem;"
+          (click)="showOrderViewModal.set(false)">
+          Cerrar
+        </button>
       </div>
     </div>
   </div>
+</div>
 }

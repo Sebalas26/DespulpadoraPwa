@@ -5,6 +5,7 @@ import { toSignal } from '@angular/core/rxjs-interop';
 import { filter, map } from 'rxjs/operators';
 import { AuthService } from '../../core/services/auth.service';
 import { StateService } from '../../core/services/state.service';
+import { environment } from '../../../environments/environment';
 
 @Component({
   selector: 'app-sidebar',
@@ -207,6 +208,10 @@ import { StateService } from '../../core/services/state.service';
               <line x1="21" y1="12" x2="9" y2="12"></line>
             </svg>
           </button>
+        </div>
+
+        <div class="sidebar-version-badge">
+          V. {{ environment.version }}
         </div>
       </div>
     </aside>
@@ -462,6 +467,16 @@ import { StateService } from '../../core/services/state.service';
       }
     }
 
+    .sidebar-version-badge {
+      font-size: 0.68rem;
+      font-weight: 600;
+      color: #9ca3af;
+      text-align: center;
+      margin-top: 8px;
+      letter-spacing: 0.05em;
+      user-select: none;
+    }
+
     .user-avatar-circle {
       width: 32px;
       height: 32px;
@@ -526,6 +541,7 @@ import { StateService } from '../../core/services/state.service';
 export class SidebarComponent {
   readonly authService = inject(AuthService);
   readonly stateService = inject(StateService);
+  readonly environment = environment;
   private readonly router = inject(Router);
 
   private readonly navEnd$ = this.router.events.pipe(
