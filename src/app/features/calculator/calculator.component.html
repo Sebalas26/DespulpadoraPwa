@@ -12,13 +12,12 @@
     </div>
 
     <!-- Navigation Tabs -->
-    <div style="display: flex; gap: 8px;">
+    <div class="dgl-subnav-bar no-print" style="width: auto; max-width: 100%;">
       <button
         type="button"
-        class="btn"
-        [ngClass]="activeTab() === 'formulation' ? 'btn-primary' : 'btn-outline'"
+        class="dgl-subnav-btn"
+        [class.active]="activeTab() === 'formulation'"
         (click)="activeTab.set('formulation')"
-        style="gap: 8px; font-size: 0.85rem;"
       >
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <rect x="4" y="2" width="16" height="20" rx="2"></rect>
@@ -29,16 +28,14 @@
 
       <button
         type="button"
-        class="btn"
-        [ngClass]="activeTab() === 'loss-audit' ? 'btn-primary' : 'btn-outline'"
+        class="dgl-subnav-btn"
+        [class.active]="activeTab() === 'loss-audit'"
         (click)="activeTab.set('loss-audit')"
-        style="gap: 8px; font-size: 0.85rem;"
       >
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
         </svg>
         <span>Venta Ideal vs Real (Mermas)</span>
-        <span class="badge badge-warning" style="font-size: 0.7rem; padding: 2px 6px;">Módulo 3</span>
       </button>
     </div>
   </div>

@@ -26,13 +26,12 @@
     </div>
 
     <!-- Main Navigation Tabs: General | Usuarios | Roles -->
-    <div style="display: flex; gap: 8px; border-bottom: 1px solid var(--border-subtle); padding-bottom: 8px; overflow-x: auto;">
+    <div class="dgl-subnav-bar no-print" style="margin-bottom: 8px;">
       <button
         type="button"
-        class="btn"
-        [ngClass]="activeTab() === 'general' ? 'btn-primary' : 'btn-outline'"
+        class="dgl-subnav-btn"
+        [class.active]="activeTab() === 'general'"
         (click)="activeTab.set('general')"
-        style="gap: 8px; font-size: 0.85rem;"
       >
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
@@ -44,10 +43,9 @@
 
       <button
         type="button"
-        class="btn"
-        [ngClass]="activeTab() === 'users' ? 'btn-primary' : 'btn-outline'"
+        class="dgl-subnav-btn"
+        [class.active]="activeTab() === 'users'"
         (click)="activeTab.set('users')"
-        style="gap: 8px; font-size: 0.85rem;"
       >
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
@@ -60,10 +58,9 @@
 
       <button
         type="button"
-        class="btn"
-        [ngClass]="activeTab() === 'roles' ? 'btn-primary' : 'btn-outline'"
+        class="dgl-subnav-btn"
+        [class.active]="activeTab() === 'roles'"
         (click)="activeTab.set('roles')"
-        style="gap: 8px; font-size: 0.85rem;"
       >
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
@@ -747,25 +744,25 @@
     <!-- Sub-header & Subtabs for Inventario (Fruta) vs Stock (Pulpas Hechas) -->
     <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 14px; margin-bottom: 14px;">
       <!-- Subtabs: 1. Inventario (Cantidad de Fruta) | 2. Stock (Pulpas Hechas) -->
-      <div style="display: flex; gap: 8px;">
+      <div class="dgl-subnav-bar no-print" style="width: auto; max-width: 100%;">
         <button
           type="button"
-          class="btn"
-          [ngClass]="inventorySubTab() === 'fruits' ? 'btn-primary' : 'btn-outline'"
+          class="dgl-subnav-btn"
+          [class.active]="inventorySubTab() === 'fruits'"
           (click)="inventorySubTab.set('fruits')"
-          style="gap: 8px; font-size: 0.88rem; font-weight: 700;"
         >
-          <span>Inventario · Fruta Disponible ({{ stateService.totalFreshStockKg() }} Kg)</span>
+          <span>Inventario · Fruta Disponible</span>
+          <span class="dgl-subnav-badge">{{ stateService.totalFreshStockKg() }} Kg</span>
         </button>
 
         <button
           type="button"
-          class="btn"
-          [ngClass]="inventorySubTab() === 'variants' ? 'btn-primary' : 'btn-outline'"
+          class="dgl-subnav-btn"
+          [class.active]="inventorySubTab() === 'variants'"
           (click)="inventorySubTab.set('variants')"
-          style="gap: 8px; font-size: 0.88rem; font-weight: 700;"
         >
-          <span>Stock · Pulpas Hechas ({{ totalPulpUnitsStock() }} uds)</span>
+          <span>Stock · Pulpas Hechas</span>
+          <span class="dgl-subnav-badge">{{ totalPulpUnitsStock() }} uds</span>
         </button>
       </div>
 

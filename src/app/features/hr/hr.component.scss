@@ -16,8 +16,22 @@
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
 
   @media (max-width: 768px) {
-    grid-template-columns: 1fr;
+    display: flex;
+    overflow-x: auto;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+    padding: 5px;
     gap: 6px;
+
+    &::-webkit-scrollbar {
+      display: none;
+    }
+
+    .hr-tab-btn {
+      flex-shrink: 0;
+      padding: 8px 14px;
+      font-size: 0.8rem;
+    }
   }
 }
 

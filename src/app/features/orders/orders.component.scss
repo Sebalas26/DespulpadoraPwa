@@ -2224,11 +2224,19 @@
 @media (max-width: 768px) {
   .picking-cards-grid,
   .billing-cards-grid {
+    display: flex !important;
+    flex-direction: column !important;
+    width: 100% !important;
+    grid-template-columns: 1fr !important;
     gap: 10px !important;
   }
 
   .picking-order-card,
   .billing-queue-card {
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+    margin: 0 !important;
     padding: 13px 16px !important;
     border-radius: 14px !important;
     border: 1.5px solid #e2e8f0 !important;

@@ -158,9 +158,9 @@
 <!-- MODAL 1: CREAR NUEVO CLIENTE / EDITAR CLIENTE             -->
 <!-- ========================================================= -->
 @if (showClientForm()) {
-  <div class="client-modal-backdrop" (click)="closeClientForm()">
-    <div class="client-modal-card" (click)="$event.stopPropagation()">
-      <div class="client-modal-header">
+  <div class="modal-overlay client-modal-backdrop" (click)="closeClientForm()">
+    <div class="modal-content client-modal-card" style="max-width: 520px;" (click)="$event.stopPropagation()">
+      <div class="modal-header client-modal-header">
         <div>
           <h3 class="client-modal-title">
             {{ editingClientId() !== null ? 'Editar Cliente' : 'Nuevo Cliente' }}
@@ -169,10 +169,10 @@
             Completa la información de contacto y entrega del cliente.
           </p>
         </div>
-        <button type="button" class="btn-modal-close" (click)="closeClientForm()">&times;</button>
+        <button type="button" class="modal-close btn-modal-close" (click)="closeClientForm()">&times;</button>
       </div>
 
-      <div class="client-modal-body">
+      <div class="modal-body client-modal-body">
         <div class="form-group">
           <label class="form-label">Nombre o Razón Social *</label>
           <input
@@ -255,7 +255,7 @@
         </div>
       </div>
 
-      <div class="client-modal-footer">
+      <div class="modal-footer client-modal-footer">
         <button type="button" class="btn btn-outline" (click)="closeClientForm()">
           Cancelar
         </button>
@@ -271,19 +271,19 @@
 <!-- MODAL 2: DETALLE DE VENTAS E HISTÓRICO DE COMPRAS         -->
 <!-- ========================================================= -->
 @if (selectedHistoryClient(); as client) {
-  <div class="client-modal-backdrop" (click)="closeClientSalesHistory()">
-    <div class="client-modal-card sales-history-modal" (click)="$event.stopPropagation()">
-      <div class="client-modal-header">
+  <div class="modal-overlay client-modal-backdrop" (click)="closeClientSalesHistory()">
+    <div class="modal-content client-modal-card sales-history-modal" style="max-width: 720px;" (click)="$event.stopPropagation()">
+      <div class="modal-header client-modal-header">
         <div>
           <h3 class="client-modal-title">Detalle de ventas · {{ client.fullName }}</h3>
           <p class="client-modal-subtitle">
             NIT/CC: {{ client.identificationNumber }} · Tel: {{ client.phone }} · {{ client.address || client.city }}
           </p>
         </div>
-        <button type="button" class="btn-modal-close" (click)="closeClientSalesHistory()">&times;</button>
+        <button type="button" class="modal-close btn-modal-close" (click)="closeClientSalesHistory()">&times;</button>
       </div>
 
-      <div class="client-modal-body">
+      <div class="modal-body client-modal-body">
         <!-- Summary KPIs -->
         <div class="history-kpi-grid">
           <div class="history-kpi-box">
