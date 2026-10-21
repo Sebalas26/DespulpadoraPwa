@@ -348,6 +348,7 @@ export const MAP_STYLES: MapStyleOption[] = [
           class="map-canvas-card"
           [class.is-map-locked]="mapViewMode() === 'locked'"
           [class.map-fullscreen-active]="isMapFullscreen()"
+          [class.is-stops-mode]="mapViewMode() === 'stops' || showDeliveriesDrawer()"
         >
           <!-- Blurred & Locked Inner Wrapper when mapViewMode() === 'locked' -->
           <div class="map-blur-target" [class.blurred]="mapViewMode() === 'locked'">
@@ -524,6 +525,32 @@ export const MAP_STYLES: MapStyleOption[] = [
                     <circle cx="11" cy="11" r="8"></circle>
                     <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
                   </svg>
+                </button>
+              }
+
+              <!-- Fullscreen Button in mode bar when in Stops mode -->
+              @if (mapViewMode() === 'stops') {
+                <button
+                  type="button"
+                  class="unlocked-mode-fullscreen-btn"
+                  (click)="toggleMapFullscreen()"
+                  [title]="isMapFullscreen() ? 'Salir de pantalla completa' : 'Ver mapa en pantalla completa'"
+                >
+                  @if (isMapFullscreen()) {
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                      <path d="M8 3v3a2 2 0 0 1-2 2H3"></path>
+                      <path d="M21 8h-3a2 2 0 0 1-2-2V3"></path>
+                      <path d="M3 16h3a2 2 0 0 1 2 2v3"></path>
+                      <path d="M16 21v-3a2 2 0 0 1 2-2h3"></path>
+                    </svg>
+                  } @else {
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                      <path d="M15 3h6v6"></path>
+                      <path d="M9 21H3v-6"></path>
+                      <path d="M21 3l-7 7"></path>
+                      <path d="M3 21l7-7"></path>
+                    </svg>
+                  }
                 </button>
               }
 
@@ -903,10 +930,10 @@ export const MAP_STYLES: MapStyleOption[] = [
             </div>
           }
 
-          <!-- Left Floating Controls Container: Vertical Courier Initials Stack + Fullscreen Button -->
-          <div class="map-left-controls-container" [class.is-fullscreen]="isMapFullscreen()">
-            <!-- Vertical Courier Initials List (Directly above Fullscreen FAB) -->
-            @if (mapViewMode() !== 'stops') {
+          <!-- Left Floating Controls Container: Vertical Courier Initials Stack + Fullscreen Button (ONLY IN LIVE MODE) -->
+          @if (mapViewMode() === 'live') {
+            <div class="map-left-controls-container" [class.is-fullscreen]="isMapFullscreen()">
+              <!-- Vertical Courier Initials List (Directly above Fullscreen FAB) -->
               <div class="map-couriers-vertical-fab-stack">
                 <!-- Bodega Matriz Plant Button -->
                 <button
@@ -936,33 +963,33 @@ export const MAP_STYLES: MapStyleOption[] = [
                   </button>
                 }
               </div>
-            }
 
-            <!-- Fullscreen Map Button (Web & Mobile PWA) -->
-            <button
-              type="button"
-              class="map-fullscreen-fab"
-              [class.is-fullscreen]="isMapFullscreen()"
-              (click)="toggleMapFullscreen()"
-              [title]="isMapFullscreen() ? 'Salir de pantalla completa' : 'Ver mapa en pantalla completa'"
-            >
-              @if (isMapFullscreen()) {
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M8 3v3a2 2 0 0 1-2 2H3"></path>
-                  <path d="M21 8h-3a2 2 0 0 1-2-2V3"></path>
-                  <path d="M3 16h3a2 2 0 0 1 2 2v3"></path>
-                  <path d="M16 21v-3a2 2 0 0 1 2-2h3"></path>
-                </svg>
-              } @else {
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M15 3h6v6"></path>
-                  <path d="M9 21H3v-6"></path>
-                  <path d="M21 3l-7 7"></path>
-                  <path d="M3 21l7-7"></path>
-                </svg>
-              }
-            </button>
-          </div>
+              <!-- Fullscreen Map Button (Web & Mobile PWA) -->
+              <button
+                type="button"
+                class="map-fullscreen-fab"
+                [class.is-fullscreen]="isMapFullscreen()"
+                (click)="toggleMapFullscreen()"
+                [title]="isMapFullscreen() ? 'Salir de pantalla completa' : 'Ver mapa en pantalla completa'"
+              >
+                @if (isMapFullscreen()) {
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M8 3v3a2 2 0 0 1-2 2H3"></path>
+                    <path d="M21 8h-3a2 2 0 0 1-2-2V3"></path>
+                    <path d="M3 16h3a2 2 0 0 1 2 2v3"></path>
+                    <path d="M16 21v-3a2 2 0 0 1 2-2h3"></path>
+                  </svg>
+                } @else {
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M15 3h6v6"></path>
+                    <path d="M9 21H3v-6"></path>
+                    <path d="M21 3l-7 7"></path>
+                    <path d="M3 21l7-7"></path>
+                  </svg>
+                }
+              </button>
+            </div>
+          }
         </div>
 
         <!-- Couriers Real-Time Status Deck -->
@@ -1981,6 +2008,9 @@ export const MAP_STYLES: MapStyleOption[] = [
     .unlocked-mode-search-icon-btn {
       display: none;
     }
+    .unlocked-mode-fullscreen-btn {
+      display: none;
+    }
     .search-mobile-close-btn {
       display: none;
     }
@@ -2042,6 +2072,29 @@ export const MAP_STYLES: MapStyleOption[] = [
         background: rgba(255, 255, 255, 0.95);
         border: 1.5px solid #dbe4de;
         color: #1e5e3a;
+        cursor: pointer;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+        flex-shrink: 0;
+        transition: all 0.2s ease;
+        padding: 0;
+
+        &:active {
+          transform: scale(0.92);
+          background: #ecfdf5;
+        }
+      }
+
+      .unlocked-mode-fullscreen-btn {
+        display: inline-flex !important;
+        align-items: center;
+        justify-content: center;
+        width: 32px;
+        height: 32px;
+        min-width: 32px;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.95);
+        border: 1.5px solid #dbe4de;
+        color: #065f46;
         cursor: pointer;
         box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
         flex-shrink: 0;
@@ -2394,7 +2447,18 @@ export const MAP_STYLES: MapStyleOption[] = [
 
     @media (max-width: 768px) {
       .map-canvas-card {
-        min-height: 400px;
+        min-height: 420px;
+        transition: min-height 0.25s ease, height 0.25s ease;
+
+        &.is-stops-mode {
+          min-height: 520px;
+          height: clamp(500px, 70vh, 620px);
+
+          .leaflet-map-element {
+            height: 100% !important;
+            min-height: 500px;
+          }
+        }
       }
 
       .map-left-controls-container {
@@ -3717,9 +3781,9 @@ export const MAP_STYLES: MapStyleOption[] = [
         width: 100% !important;
         max-width: 100% !important;
         margin: 0 !important;
-        height: var(--drawer-height, 58vh);
-        min-height: 160px;
-        max-height: 88vh;
+        height: var(--drawer-height, 36%);
+        min-height: 135px;
+        max-height: 76%;
         border-radius: 22px 22px 0 0 !important;
         border-left: none !important;
         border-right: none !important;
@@ -3766,6 +3830,11 @@ export const MAP_STYLES: MapStyleOption[] = [
         padding-bottom: max(40px, calc(env(safe-area-inset-bottom, 16px) + 24px)) !important;
         -webkit-overflow-scrolling: touch;
       }
+    }
+
+    .map-canvas-card.map-fullscreen-active .deliveries-drawer {
+      height: var(--drawer-height, 38vh) !important;
+      max-height: 82vh !important;
     }
 
     .drawer-head {
@@ -5170,9 +5239,17 @@ export class DeliveryMapComponent implements OnInit, AfterViewInit, OnDestroy {
       return `${px}px`;
     }
     const preset = this.drawerHeightPreset();
-    if (preset === 'compact') return '28vh';
-    if (preset === 'expanded') return '86vh';
-    return '58vh';
+    const isFullscreen = this.isMapFullscreen();
+
+    if (isFullscreen) {
+      if (preset === 'compact') return '22vh';
+      if (preset === 'expanded') return '76vh';
+      return '38vh'; // Small/half default so map takes 62vh in fullscreen
+    } else {
+      if (preset === 'compact') return '140px';
+      if (preset === 'expanded') return '72%';
+      return '36%'; // Small/compact default so map takes 64% in normal mode
+    }
   });
 
   private isDraggingDrawer = false;
@@ -5191,7 +5268,9 @@ export class DeliveryMapComponent implements OnInit, AfterViewInit, OnDestroy {
     this.dragStartY = event.clientY;
 
     const drawerEl = (event.target as HTMLElement).closest('.deliveries-drawer') as HTMLElement | null;
-    this.dragStartHeight = drawerEl ? drawerEl.getBoundingClientRect().height : (window.innerHeight * 0.58);
+    const isFullscreen = this.isMapFullscreen();
+    const parentH = isFullscreen ? window.innerHeight : (drawerEl?.parentElement?.clientHeight || 520);
+    this.dragStartHeight = drawerEl ? drawerEl.getBoundingClientRect().height : (parentH * 0.36);
 
     const onPointerMove = (e: PointerEvent) => {
       if (!this.isDraggingDrawer) return;
@@ -5199,8 +5278,8 @@ export class DeliveryMapComponent implements OnInit, AfterViewInit, OnDestroy {
       if (Math.abs(deltaY) > 4) {
         this.dragMoved = true;
       }
-      const minH = 160;
-      const maxH = window.innerHeight * 0.88;
+      const minH = 135;
+      const maxH = isFullscreen ? (window.innerHeight * 0.82) : (parentH * 0.74);
       const newHeight = Math.max(minH, Math.min(maxH, this.dragStartHeight + deltaY));
       this.drawerHeightPx.set(Math.round(newHeight));
     };
@@ -5215,12 +5294,11 @@ export class DeliveryMapComponent implements OnInit, AfterViewInit, OnDestroy {
       if (!this.dragMoved) {
         this.toggleDrawerExpandPreset();
       } else {
-        const currentH = this.drawerHeightPx() || (window.innerHeight * 0.58);
-        const winH = window.innerHeight;
-        if (currentH < winH * 0.38) {
+        const currentH = this.drawerHeightPx() || (parentH * 0.36);
+        if (currentH < parentH * 0.28) {
           this.drawerHeightPreset.set('compact');
           this.drawerHeightPx.set(null);
-        } else if (currentH > winH * 0.72) {
+        } else if (currentH > parentH * 0.55) {
           this.drawerHeightPreset.set('expanded');
           this.drawerHeightPx.set(null);
         } else {
@@ -7289,6 +7367,10 @@ export class DeliveryMapComponent implements OnInit, AfterViewInit, OnDestroy {
     } else {
       this.showDeliveriesDrawer.update(v => !v);
     }
+    setTimeout(() => {
+      this.map?.invalidateSize();
+      this.fitMapToAllStops();
+    }, 150);
   }
 
   refreshDeliveriesFromOrders() {
@@ -7818,7 +7900,10 @@ export class DeliveryMapComponent implements OnInit, AfterViewInit, OnDestroy {
       setTimeout(() => {
         this.map?.invalidateSize();
         this.fitMapToAllStops();
-      }, 60);
+      }, 100);
+      setTimeout(() => {
+        this.map?.invalidateSize();
+      }, 300);
     }
   }
 
