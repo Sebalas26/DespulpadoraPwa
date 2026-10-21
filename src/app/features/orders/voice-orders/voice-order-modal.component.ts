@@ -82,7 +82,7 @@ export class VoiceOrderModalComponent {
       `💰 *Total:* ${totalStr}\n` +
       `📍 *Entrega:* ${addressStr} (${timeStr})\n` +
       `💳 *Pago:* ${paymentStr}\n\n` +
-      `¡Tu pedido ya está en preparación en cava! Muchas gracias por confiar en DGL. 🌿`;
+      `¡Tu pedido ya está en preparación en cava! Muchas gracias por confiar en DGL.`;
   });
 
   constructor() {

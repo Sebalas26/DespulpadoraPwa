@@ -59,6 +59,8 @@ export interface DeliveryWaypoint {
   assignedCourierId: string;
   orderRef?: OrderDto;
   paymentMethod?: 'EFECTIVO' | 'NEQUI' | 'BANCOLOMBIA' | 'CREDITO';
+  isPriority?: boolean;
+  isBilled?: boolean;
 }
 
 // Coordinates of Planta Cava Matriz Cundinamarca (Parque Industrial Calle 80 / Cota)
@@ -80,7 +82,8 @@ const INITIAL_BOGOTA_STOPS: DeliveryWaypoint[] = [
     weightKg: 18.5,
     itemsSummary: '10x Maracuyá 1kg, 8x Mango 1kg, 5x Lulo 500g',
     isDelivered: false,
-    assignedCourierId: 'c1'
+    assignedCourierId: 'c1',
+    isBilled: true
   },
   {
     id: 1002,
@@ -95,7 +98,8 @@ const INITIAL_BOGOTA_STOPS: DeliveryWaypoint[] = [
     weightKg: 14.0,
     itemsSummary: '24x Mora 140g, 20x Maracuyá 140g, 8x Guanábana 250g',
     isDelivered: false,
-    assignedCourierId: 'c1'
+    assignedCourierId: 'c1',
+    isBilled: true
   },
   {
     id: 1003,
@@ -110,7 +114,8 @@ const INITIAL_BOGOTA_STOPS: DeliveryWaypoint[] = [
     weightKg: 9.2,
     itemsSummary: '10x Mango Tommy 500g, 10x Lulo 250g',
     isDelivered: false,
-    assignedCourierId: 'c1'
+    assignedCourierId: '',
+    isBilled: false
   },
   {
     id: 1004,
@@ -125,7 +130,8 @@ const INITIAL_BOGOTA_STOPS: DeliveryWaypoint[] = [
     weightKg: 16.0,
     itemsSummary: '15x Maracuyá 1kg, 12x Fresa 500g',
     isDelivered: false,
-    assignedCourierId: 'c2'
+    assignedCourierId: 'c2',
+    isBilled: true
   },
   {
     id: 1005,
@@ -140,7 +146,8 @@ const INITIAL_BOGOTA_STOPS: DeliveryWaypoint[] = [
     weightKg: 22.0,
     itemsSummary: '20x Guanábana 1kg, 10x Maracuyá 1kg',
     isDelivered: false,
-    assignedCourierId: 'c2'
+    assignedCourierId: '',
+    isBilled: false
   },
   {
     id: 1006,
@@ -155,7 +162,8 @@ const INITIAL_BOGOTA_STOPS: DeliveryWaypoint[] = [
     weightKg: 19.5,
     itemsSummary: '18x Mango Tommy 1kg, 15x Mora 500g',
     isDelivered: false,
-    assignedCourierId: 'c2'
+    assignedCourierId: 'c2',
+    isBilled: true
   },
   {
     id: 1007,
@@ -170,7 +178,8 @@ const INITIAL_BOGOTA_STOPS: DeliveryWaypoint[] = [
     weightKg: 35.0,
     itemsSummary: '30x Maracuyá 1kg, 25x Mango 1kg, 20x Lulo 1kg',
     isDelivered: false,
-    assignedCourierId: 'c3'
+    assignedCourierId: '',
+    isBilled: false
   },
   {
     id: 1008,
@@ -185,7 +194,8 @@ const INITIAL_BOGOTA_STOPS: DeliveryWaypoint[] = [
     weightKg: 28.0,
     itemsSummary: '25x Guanábana 1kg, 20x Mora 1kg',
     isDelivered: false,
-    assignedCourierId: 'c3'
+    assignedCourierId: 'c3',
+    isBilled: true
   }
 ];
 
@@ -608,7 +618,6 @@ export const MAP_STYLES: MapStyleOption[] = [
                   </span>
                   <div>
                     <div class="drawer-title">Entregas en el Mapa ({{ filteredDrawerStops().length }})</div>
-                    <div class="drawer-subtitle">Se actualiza automáticamente al crear pedidos</div>
                   </div>
                 </div>
                 <div class="drawer-head-actions">
@@ -677,6 +686,54 @@ export const MAP_STYLES: MapStyleOption[] = [
                 />
               </div>
 
+              <!-- 10-Second Informative Banner: Unbilled Order Courier Assignment Alert -->
+              @if (activeUnbilledAlert(); as alert) {
+                <div class="drawer-unbilled-alert-banner">
+                  <div class="alert-content">
+                    <div class="alert-icon-box">
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#dc2626" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <line x1="12" y1="8" x2="12" y2="12"></line>
+                        <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                      </svg>
+                    </div>
+                    <div class="alert-details">
+                      <div class="alert-headline">
+                        El pedido <strong>{{ alert.orderNumber }}</strong> aún no está listo
+                      </div>
+                      <div class="alert-subline">
+                        No se puede asignar mensajero porque el pedido aún no está facturado.
+                      </div>
+                    </div>
+                    <div class="alert-actions">
+                      <button
+                        type="button"
+                        class="btn-alert-priority"
+                        (click)="requestPriorityFromBanner()"
+                        title="Solicitar prioridad urgente en cava para este pedido"
+                      >
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
+                          <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+                        </svg>
+                        <span>Solicitar Prioridad</span>
+                      </button>
+                      <button
+                        type="button"
+                        class="btn-alert-close"
+                        (click)="dismissUnbilledAlert()"
+                        title="Cerrar alerta"
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  </div>
+                  <!-- 10s Countdown Progress Bar -->
+                  <div class="alert-countdown-track">
+                    <div class="alert-countdown-bar"></div>
+                  </div>
+                </div>
+              }
+
               <!-- Deliveries List -->
               <div
                 class="drawer-stops-list"
@@ -686,6 +743,7 @@ export const MAP_STYLES: MapStyleOption[] = [
                 @for (stop of filteredDrawerStops(); track stop.id) {
                   <div
                     class="drawer-stop-item"
+                    [class.is-priority]="isStopPriority(stop)"
                     draggable="true"
                     [class.is-dragging]="draggedRouteStopId() === stop.id"
                     [class.is-drag-over]="dragOverRouteStopId() === stop.id && draggedRouteStopId() !== stop.id"
@@ -708,40 +766,96 @@ export const MAP_STYLES: MapStyleOption[] = [
                     </div>
 
                     <div class="drawer-stop-body">
+                      <!-- Línea 1: Cliente a la izquierda y Valor total a la derecha -->
                       <div class="drawer-stop-top">
-                        <span class="drawer-stop-client">{{ stop.clientName }}</span>
+                        <span class="drawer-stop-client" [title]="stop.clientName">{{ stop.clientName }}</span>
                         <span class="drawer-stop-amount">{{ formatCOP(stop.totalAmount) }}</span>
                       </div>
-                      <div class="drawer-stop-addr">{{ stop.address }}</div>
-                      <div class="drawer-stop-meta" (click)="$event.stopPropagation()">
+
+                      <!-- Línea 2: Dirección completa e independiente -->
+                      <div class="drawer-stop-addr" [title]="stop.address">
+                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0; color: #64748b;">
+                          <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+                          <circle cx="12" cy="10" r="3"></circle>
+                        </svg>
+                        <span>{{ stop.address }}</span>
+                      </div>
+
+                      <!-- Línea 3: Guía de pedido + Badge Facturado/Sin Facturar (espacio propio sin cortar) -->
+                      <div class="drawer-stop-status-line">
                         <span class="drawer-stop-code">{{ stop.orderNumber }}</span>
-                        <span>·</span>
-                        <select
-                          class="drawer-stop-courier-select"
-                          [ngModel]="stop.assignedCourierId || ''"
-                          (ngModelChange)="assignCourierToStop(stop.id, $event)"
-                          title="Asignar o cambiar mensajero de esta entrega"
+                        <span
+                          class="stop-billed-badge"
+                          [class.is-billed]="isStopBilled(stop)"
+                          [title]="isStopBilled(stop) ? 'Pedido Facturado' : 'Pedido No Facturado (Aún en cava)'"
                         >
-                          <option value="">Sin mensajero</option>
-                          @for (c of couriers(); track c.id) {
-                            <option [value]="c.id">{{ c.name }}</option>
+                          @if (isStopBilled(stop)) {
+                            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+                              <polyline points="20 6 9 17 4 12"></polyline>
+                            </svg>
+                            <span>Facturado</span>
+                          } @else {
+                            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                              <circle cx="12" cy="12" r="10"></circle>
+                              <line x1="12" y1="8" x2="12" y2="12"></line>
+                              <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                            </svg>
+                            <span>Sin facturar</span>
                           }
-                        </select>
+                        </span>
+                      </div>
+
+                      <!-- Línea 4: Asignación de mensajero y botones de acción rápida -->
+                      <div class="drawer-stop-footer-line" (click)="$event.stopPropagation()">
+                        <div class="drawer-courier-wrap">
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="color: #64748b; flex-shrink: 0;">
+                            <circle cx="5" cy="16" r="3"></circle>
+                            <circle cx="19" cy="16" r="3"></circle>
+                            <path d="M12 16h3l3-6h-5l-2 3H8l2-5h3"></path>
+                          </svg>
+                          <select
+                            class="drawer-stop-courier-select"
+                            [ngModel]="stop.assignedCourierId || ''"
+                            (ngModelChange)="onCourierSelectChange(stop, $event)"
+                            title="Asignar o cambiar mensajero de esta entrega"
+                          >
+                            <option value="">Sin mensajero</option>
+                            @for (c of couriers(); track c.id) {
+                              <option [value]="c.id">{{ c.name }}</option>
+                            }
+                          </select>
+                        </div>
+
+                        <div class="drawer-stop-actions">
+                          <!-- Priority Alert Button -->
+                          <button
+                            type="button"
+                            class="drawer-stop-priority-btn"
+                            [class.is-active-priority]="isStopPriority(stop)"
+                            [title]="isStopPriority(stop) ? 'Quitar alerta de prioridad' : 'Marcar alerta de prioridad urgente en cava'"
+                            (click)="toggleStopPriority(stop)"
+                          >
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                              <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+                            </svg>
+                          </button>
+
+                          <!-- Delete Stop Button -->
+                          <button
+                            type="button"
+                            class="drawer-stop-del-btn"
+                            title="Eliminar esta entrega del mapa"
+                            (click)="deleteDeliveryStop(stop.id)"
+                            style="display: flex; align-items: center; justify-content: center;"
+                          >
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                              <polyline points="3 6 5 6 21 6"></polyline>
+                              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                            </svg>
+                          </button>
+                        </div>
                       </div>
                     </div>
-
-                    <button
-                      type="button"
-                      class="drawer-stop-del-btn"
-                      title="Eliminar esta entrega del mapa"
-                      (click)="$event.stopPropagation(); deleteDeliveryStop(stop.id)"
-                      style="display: flex; align-items: center; justify-content: center;"
-                    >
-                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <polyline points="3 6 5 6 21 6"></polyline>
-                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-                      </svg>
-                    </button>
                   </div>
                 } @empty {
                   <div class="drawer-empty">
@@ -3206,8 +3320,8 @@ export const MAP_STYLES: MapStyleOption[] = [
       top: 64px;
       right: 16px;
       bottom: 64px;
-      width: 365px;
-      max-width: calc(100% - 32px);
+      width: 415px;
+      max-width: calc(100% - 24px);
       z-index: 950;
       background: rgba(255, 255, 255, 0.97);
       backdrop-filter: blur(14px);
@@ -3513,10 +3627,10 @@ export const MAP_STYLES: MapStyleOption[] = [
 
     .drawer-stop-item {
       display: flex;
-      align-items: center;
-      gap: 8px;
-      padding: 9px 10px;
-      border-radius: 11px;
+      align-items: flex-start;
+      gap: 10px;
+      padding: 10px 12px;
+      border-radius: 12px;
       border: 1px solid #e2e8f0;
       background: #ffffff;
       cursor: grab;
@@ -3562,7 +3676,21 @@ export const MAP_STYLES: MapStyleOption[] = [
 
     .drawer-stop-item:hover {
       border-color: #1e5e3a;
-      box-shadow: 0 4px 12px rgba(15, 23, 42, 0.06);
+      box-shadow: 0 4px 14px rgba(15, 23, 42, 0.08);
+    }
+
+    .stop-drag-grip {
+      font-size: 0.95rem;
+      font-weight: 900;
+      color: #94a3b8;
+      cursor: grab;
+      user-select: none;
+      letter-spacing: -1px;
+      line-height: 1;
+      padding: 2px 0;
+      margin-top: 3px;
+      flex-shrink: 0;
+      transition: color 0.15s ease;
     }
 
     .drawer-stop-num {
@@ -3576,6 +3704,7 @@ export const MAP_STYLES: MapStyleOption[] = [
       align-items: center;
       justify-content: center;
       flex-shrink: 0;
+      margin-top: 1px;
 
       &.is-unassigned {
         background: #ffffff !important;
@@ -3588,75 +3717,168 @@ export const MAP_STYLES: MapStyleOption[] = [
     .drawer-stop-body {
       flex: 1;
       min-width: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
     }
 
     .drawer-stop-top {
       display: flex;
-      align-items: center;
+      align-items: baseline;
       justify-content: space-between;
-      gap: 6px;
+      gap: 8px;
     }
 
     .drawer-stop-client {
-      font-size: 0.8rem;
+      font-size: 0.88rem;
       font-weight: 800;
       color: #0f172a;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
+      line-height: 1.25;
+      word-break: break-word;
     }
 
     .drawer-stop-amount {
-      font-size: 0.76rem;
+      font-size: 0.85rem;
       font-weight: 800;
-      color: #10b981;
+      color: #059669;
+      white-space: nowrap;
       flex-shrink: 0;
     }
 
     .drawer-stop-addr {
-      font-size: 0.72rem;
-      color: #475569;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      margin-top: 1px;
-    }
-
-    .drawer-stop-meta {
       display: flex;
       align-items: center;
       gap: 5px;
-      font-size: 0.68rem;
-      color: #64748b;
-      margin-top: 2px;
+      font-size: 0.74rem;
+      color: #475569;
+      line-height: 1.3;
+      word-break: break-word;
+    }
+
+    .drawer-stop-status-line {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-top: 1px;
     }
 
     .drawer-stop-code {
       font-family: monospace;
+      font-size: 0.72rem;
       font-weight: 700;
+      color: #334155;
+      background: #f1f5f9;
+      border: 1px solid #e2e8f0;
+      padding: 2px 7px;
+      border-radius: 5px;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+
+    .stop-billed-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 0.65rem;
+      font-weight: 800;
+      padding: 2px 7px;
+      border-radius: 5px;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+      background: #fef2f2;
+      color: #dc2626;
+      border: 1px solid #fecaca;
+      white-space: nowrap;
+      flex-shrink: 0;
+
+      &.is-billed {
+        background: #ecfdf5;
+        color: #047857;
+        border-color: #a7f3d0;
+      }
+    }
+
+    .drawer-stop-footer-line {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin-top: 2px;
+      padding-top: 6px;
+      border-top: 1px dashed #f1f5f9;
+    }
+
+    .drawer-courier-wrap {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex: 1;
+      min-width: 0;
     }
 
     .drawer-stop-courier-select {
       border: 1px solid #cbd5e1;
       background: #f8fafc;
       color: #0f172a;
-      font-size: 0.68rem;
+      font-size: 0.72rem;
       font-weight: 700;
-      padding: 2px 6px;
+      padding: 3px 8px;
       border-radius: 6px;
       cursor: pointer;
       outline: none;
+      flex: 1;
+      min-width: 0;
+      max-width: 175px;
+      transition: all 0.15s ease;
     }
 
     .drawer-stop-courier-select:focus {
       border-color: #1e5e3a;
       background: #ffffff;
+      box-shadow: 0 0 0 2px rgba(30, 94, 58, 0.15);
+    }
+
+    .drawer-stop-actions {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-shrink: 0;
+    }
+
+    .drawer-stop-priority-btn {
+      width: 28px;
+      height: 28px;
+      border-radius: 7px;
+      border: 1px solid #e2e8f0;
+      background: #ffffff;
+      color: #94a3b8;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.18s ease;
+
+      &:hover {
+        border-color: #f87171;
+        color: #ef4444;
+        background: #fef2f2;
+      }
+
+      &.is-active-priority {
+        background: #fee2e2;
+        border-color: #ef4444;
+        color: #dc2626;
+        fill: #ef4444;
+        box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.2);
+        animation: priorityPulse 1.8s infinite;
+      }
     }
 
     .drawer-stop-del-btn {
-      width: 30px;
-      height: 30px;
-      border-radius: 8px;
+      width: 28px;
+      height: 28px;
+      border-radius: 7px;
       border: 1px solid #fecaca;
       background: #fef2f2;
       color: #dc2626;
@@ -3667,12 +3889,132 @@ export const MAP_STYLES: MapStyleOption[] = [
       justify-content: center;
       flex-shrink: 0;
       transition: all 0.15s ease;
+
+      &:hover {
+        background: #dc2626;
+        color: #ffffff;
+        border-color: #dc2626;
+      }
     }
 
-    .drawer-stop-del-btn:hover {
-      background: #dc2626;
+    .drawer-stop-item.is-priority {
+      border: 1.5px solid #ef4444 !important;
+      background: #fffdfd;
+      box-shadow: 0 2px 8px rgba(239, 68, 68, 0.12);
+    }
+
+    /* 10-Second Unbilled Courier Alert Banner */
+    .drawer-unbilled-alert-banner {
+      background: #fff1f2;
+      border: 1px solid #fecdd3;
+      border-radius: 10px;
+      margin: 10px 14px 6px;
+      overflow: hidden;
+      animation: slideAlertDown 0.25s ease-out;
+      box-shadow: 0 4px 12px rgba(225, 29, 72, 0.12);
+    }
+
+    @keyframes slideAlertDown {
+      from { opacity: 0; transform: translateY(-8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .alert-content {
+      padding: 10px 12px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .alert-icon-box {
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      background: #ffe4e6;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .alert-details {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .alert-headline {
+      font-size: 0.78rem;
+      font-weight: 700;
+      color: #9f1239;
+      line-height: 1.25;
+    }
+
+    .alert-subline {
+      font-size: 0.7rem;
+      color: #be123c;
+      margin-top: 2px;
+    }
+
+    .alert-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-shrink: 0;
+    }
+
+    .btn-alert-priority {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      background: #e11d48;
       color: #ffffff;
-      border-color: #dc2626;
+      border: none;
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-size: 0.74rem;
+      font-weight: 800;
+      cursor: pointer;
+      box-shadow: 0 2px 6px rgba(225, 29, 72, 0.25);
+      transition: background 0.15s ease, transform 0.15s ease;
+
+      &:hover {
+        background: #be123c;
+        transform: translateY(-1px);
+      }
+    }
+
+    .btn-alert-close {
+      background: transparent;
+      border: none;
+      color: #9f1239;
+      font-size: 0.9rem;
+      font-weight: 800;
+      cursor: pointer;
+      padding: 4px;
+      line-height: 1;
+      border-radius: 4px;
+
+      &:hover {
+        background: #fecdd3;
+      }
+    }
+
+    .alert-countdown-track {
+      height: 3px;
+      background: #fecdd3;
+      width: 100%;
+    }
+
+    .alert-countdown-bar {
+      height: 100%;
+      background: #e11d48;
+      width: 100%;
+      animation: alertCountdown 10s linear forwards;
+    }
+
+    @keyframes alertCountdown {
+      from { width: 100%; }
+      to { width: 0%; }
     }
 
     .drawer-empty {
@@ -4411,6 +4753,15 @@ export class DeliveryMapComponent implements OnInit, AfterViewInit, OnDestroy {
   readonly drawerNewCourierId = signal<string>('');
   readonly drawerNewAmount = signal<number>(125000);
 
+  // 10-Second Unbilled Order Assignment Alert State
+  readonly activeUnbilledAlert = signal<{
+    stopId: number;
+    orderNumber: string;
+    clientName: string;
+    targetCourierId: string;
+  } | null>(null);
+  private unbilledAlertTimeout?: any;
+
   // =========================================================================
   // RECEIVE COURIER & CASH SETTLEMENT STATE (ARQUEO DE CAJA DE REPARTO)
   // =========================================================================
@@ -4749,11 +5100,11 @@ export class DeliveryMapComponent implements OnInit, AfterViewInit, OnDestroy {
   selectedPulpItem = signal<string>('Maracuyá 1000g');
 
   readonly quickPulpOptions = [
-    { name: 'Maracuyá 1000g', emoji: '🟡', price: 11000, kg: 1.0 },
-    { name: 'Mango Tommy 1000g', emoji: '🥭', price: 10500, kg: 1.0 },
-    { name: 'Lulo de Castilla 500g', emoji: '🟢', price: 6600, kg: 0.5 },
-    { name: 'Mora de Castilla 500g', emoji: '🟣', price: 6500, kg: 0.5 },
-    { name: 'Guanábana Criolla 1000g', emoji: '🍈', price: 13800, kg: 1.0 }
+    { name: 'Maracuyá 1000g', price: 11000, kg: 1.0 },
+    { name: 'Mango Tommy 1000g', price: 10500, kg: 1.0 },
+    { name: 'Lulo de Castilla 500g', price: 6600, kg: 0.5 },
+    { name: 'Mora de Castilla 500g', price: 6500, kg: 0.5 },
+    { name: 'Guanábana Criolla 1000g', price: 13800, kg: 1.0 }
   ];
 
   // Route Sequencer / Planner Modal Signals
@@ -4927,6 +5278,7 @@ export class DeliveryMapComponent implements OnInit, AfterViewInit, OnDestroy {
     if (this.map) {
       this.map.remove();
     }
+    this.dismissUnbilledAlert();
   }
 
   // =========================================================================
@@ -6259,6 +6611,10 @@ export class DeliveryMapComponent implements OnInit, AfterViewInit, OnDestroy {
 
     if (draggedId === null) return;
     const stop = this.deliveryStops().find(s => s.id === draggedId);
+    if (stop && !this.isStopBilled(stop)) {
+      this.showUnbilledOrderAlert(stop, courierId);
+      return;
+    }
     const courier = this.couriers().find(c => c.id === courierId);
     this.assignCourierToStop(draggedId, courierId);
     if (stop && courier) {
@@ -6414,6 +6770,105 @@ export class DeliveryMapComponent implements OnInit, AfterViewInit, OnDestroy {
       this.enterAllDeliveriesMode();
     }
     this.showDeliveriesDrawer.set(next);
+  }
+
+  onCourierSelectChange(stop: DeliveryWaypoint, newCourierId: string) {
+    if (newCourierId && !this.isStopBilled(stop)) {
+      // Revert select model value to current assigned courier
+      const currentAssigned = stop.assignedCourierId || '';
+      this.deliveryStops.update(stops =>
+        stops.map(s => (s.id === stop.id ? { ...s, assignedCourierId: '' } : s))
+      );
+      setTimeout(() => {
+        this.deliveryStops.update(stops =>
+          stops.map(s => (s.id === stop.id ? { ...s, assignedCourierId: currentAssigned } : s))
+        );
+      }, 50);
+
+      // Trigger the 10-second informative banner!
+      this.showUnbilledOrderAlert(stop, newCourierId);
+      return;
+    }
+    this.assignCourierToStop(stop.id, newCourierId);
+  }
+
+  showUnbilledOrderAlert(stop: DeliveryWaypoint, targetCourierId: string) {
+    if (this.unbilledAlertTimeout) {
+      clearTimeout(this.unbilledAlertTimeout);
+    }
+    this.activeUnbilledAlert.set({
+      stopId: stop.id,
+      orderNumber: stop.orderNumber,
+      clientName: stop.clientName,
+      targetCourierId
+    });
+
+    this.unbilledAlertTimeout = setTimeout(() => {
+      this.dismissUnbilledAlert();
+    }, 10000);
+  }
+
+  dismissUnbilledAlert() {
+    if (this.unbilledAlertTimeout) {
+      clearTimeout(this.unbilledAlertTimeout);
+      this.unbilledAlertTimeout = undefined;
+    }
+    this.activeUnbilledAlert.set(null);
+  }
+
+  requestPriorityFromBanner() {
+    const alert = this.activeUnbilledAlert();
+    if (!alert) return;
+    const stop = this.deliveryStops().find(s => s.id === alert.stopId);
+    if (stop) {
+      this.toggleStopPriority(stop, true);
+    } else {
+      this.stateService.setOrderPriority(alert.stopId, true);
+      this.stateService.setOrderPriority(alert.orderNumber, true);
+      this.notification.warning(
+        'Alerta de Prioridad Activada',
+        `Pedido ${alert.orderNumber} marcado con ALTA PRIORIDAD en Cava / KDS.`
+      );
+    }
+    this.dismissUnbilledAlert();
+  }
+
+  isStopBilled(stop: DeliveryWaypoint): boolean {
+    if (stop.isBilled !== undefined) return stop.isBilled;
+    const order = this.stateService.orders().find(o => o.orderId === stop.id || o.orderNumber === stop.orderNumber);
+    if (order) {
+      return order.isBilled === true || order.status === 'BILLED' || order.status === 'DISPATCHED' || order.status === 'DELIVERED';
+    }
+    return stop.isDelivered;
+  }
+
+  isStopPriority(stop: DeliveryWaypoint): boolean {
+    if (stop.isPriority) return true;
+    const order = this.stateService.orders().find(o => o.orderId === stop.id || o.orderNumber === stop.orderNumber);
+    return order?.isPriority === true;
+  }
+
+  toggleStopPriority(stop: DeliveryWaypoint, forceState?: boolean) {
+    const nextVal = forceState !== undefined ? forceState : !this.isStopPriority(stop);
+
+    this.deliveryStops.update(stops =>
+      stops.map(s => (s.id === stop.id ? { ...s, isPriority: nextVal } : s))
+    );
+
+    this.stateService.setOrderPriority(stop.id, nextVal);
+    this.stateService.setOrderPriority(stop.orderNumber, nextVal);
+
+    if (nextVal) {
+      this.notification.warning(
+        'Alerta de Prioridad Activada',
+        `El pedido ${stop.orderNumber} se marcó con ALTA PRIORIDAD. Se resaltó con borde rojo en la pantalla de Cava (KDS).`
+      );
+    } else {
+      this.notification.info(
+        'Prioridad Desactivada',
+        `Se retiró la alerta de prioridad del pedido ${stop.orderNumber}.`
+      );
+    }
   }
 
   assignCourierToStop(stopId: number, newCourierId: string) {

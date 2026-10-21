@@ -115,6 +115,15 @@ export class ReportsComponent {
   readonly invoiceTaxRate = signal<number>(19);
   readonly itemDiscounts = signal<Record<string, number>>({});
 
+  // Items List Modal State
+  readonly showItemsListModal = signal<boolean>(false);
+  readonly selectedOrderForItems = signal<OrderDto | null>(null);
+
+  openItemsListModal(order: OrderDto) {
+    this.selectedOrderForItems.set(order);
+    this.showItemsListModal.set(true);
+  }
+
   // Edit Order Modal State
   readonly showEditOrderModal = signal<boolean>(false);
   readonly editingOrderId = signal<number | null>(null);
@@ -654,6 +663,12 @@ export class ReportsComponent {
 
   formatDateTime(dateStr?: string): string {
     if (!dateStr) return '—';
+    if (dateStr.includes('T')) {
+      const [dPart, tPart] = dateStr.split('T');
+      const [y, m, d] = dPart.split('-');
+      const time = tPart ? tPart.substring(0, 5) : '00:00';
+      return `${d}/${m}/${y} ${time}`;
+    }
     const d = new Date(dateStr);
     if (isNaN(d.getTime())) return dateStr.substring(0, 10);
     const day = String(d.getDate()).padStart(2, '0');
@@ -742,12 +757,12 @@ export class ReportsComponent {
       const headers = ['Nro Pedido', 'Fecha', 'Cliente', 'Teléfono', 'Método Pago', 'Mensajero', 'Ítems', 'Estado', 'Total COP'];
       const rows = this.filteredOrders().map(o => [
         o.orderNumber,
-        (o.createdAt || o.orderDate || '').substring(0, 10),
+        this.formatDateTime(o.createdAt || o.orderDate),
         `"${(o.clientName || '').replace(/"/g, '""')}"`,
         o.clientPhone || 'N/A',
         o.paymentMethodName || 'General',
         `"${this.getCourierName(o)}"`,
-        `${o.items.length} tipos`,
+        o.items.length,
         this.getStatusLabelES(o.status),
         o.totalAmount
       ]);

@@ -132,7 +132,7 @@ export class VoiceOrdersService {
     // Play subtle audio chime & show notification
     this.playNotificationSound();
     this.notification.info(
-      '🎙️ Nuevo Pedido por Audio (WhatsApp)',
+      'Nuevo Pedido por Audio (WhatsApp)',
       `De: ${order.customerName} (${order.senderPhone})`
     );
   }

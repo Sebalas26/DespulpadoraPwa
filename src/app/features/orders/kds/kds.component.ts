@@ -27,22 +27,9 @@ interface TicketTimer {
     <div class="kds-root" [class.dark-theme]="isDarkTheme()">
       <!-- KDS Top Header (TV Monitor Style) -->
       <header class="kds-header">
-        <div class="kds-brand-block">
-          <button type="button" class="btn-back" (click)="returnToErp()" title="Volver a la gestión de pedidos ERP">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-              <line x1="19" y1="12" x2="5" y2="12"></line>
-              <polyline points="12 19 5 12 12 5"></polyline>
-            </svg>
-            <span>ERP</span>
-          </button>
-
-          <div class="kds-title-group">
-            <div class="kds-logo-row">
-              <span class="kds-badge-tag">KDS 4.0</span>
-              <h1 class="kds-title">ALISTAMIENTO EN CAVA · PANTALLA DE PEDIDOS</h1>
-            </div>
-            <div class="kds-sub">Flujo visual continuo de preparación y picking de pulpa congelada</div>
-          </div>
+        <!-- Live Clock on the Left (Styled prominent like the title, no box/border) -->
+        <div class="kds-clock-left">
+          <span class="clock-time-large">{{ currentTime() }}</span>
         </div>
 
         <!-- Live Metrics Bar -->
@@ -70,15 +57,6 @@ interface TicketTimer {
 
         <!-- Utility Controls -->
         <div class="kds-actions-group">
-          <!-- Live Clock -->
-          <div class="kds-clock">
-            <svg class="clock-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <circle cx="12" cy="12" r="10"></circle>
-              <polyline points="12 6 12 12 16 14"></polyline>
-            </svg>
-            <span class="clock-time">{{ currentTime() }}</span>
-          </div>
-
           <!-- Simulate Urgent Order Button -->
           <button
             type="button"
@@ -178,6 +156,20 @@ interface TicketTimer {
               </svg>
             }
           </button>
+
+          <!-- Return to ERP Button -->
+          <button
+            type="button"
+            class="kds-icon-btn"
+            (click)="returnToErp()"
+            title="Volver a Pedidos ERP"
+          >
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+              <polyline points="16 17 21 12 16 7"></polyline>
+              <line x1="21" y1="12" x2="9" y2="12"></line>
+            </svg>
+          </button>
         </div>
       </header>
 
@@ -198,7 +190,7 @@ interface TicketTimer {
 
             <div class="kds-column-body">
               @for (order of pendingOrders(); track order.orderId) {
-                <article class="kds-ticket ticket-pending animate-slide-in">
+                <article class="kds-ticket ticket-pending animate-slide-in" [class.ticket-priority]="order.isPriority">
                   <header class="ticket-header">
                     <div class="ticket-meta-left">
                       <span class="ticket-id">{{ order.orderNumber }}</span>
@@ -227,7 +219,17 @@ interface TicketTimer {
                     }
                   </div>
 
-                  @if (order.notes) {
+                  @if (order.isPriority) {
+                    <div class="ticket-priority-alert">
+                      <div class="priority-head">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
+                          <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+                        </svg>
+                        <span>URGENTE · PRIORIDAD ALTA</span>
+                      </div>
+                      <div class="priority-msg">Alistamiento prioritario solicitado desde Despacho / Entregas</div>
+                    </div>
+                  } @else if (order.notes && !order.notes.includes('simulado') && !order.notes.includes('URGENTE')) {
                     <div class="ticket-note">
                       {{ order.notes }}
                     </div>
@@ -276,10 +278,10 @@ interface TicketTimer {
 
             <div class="kds-column-body">
               @for (order of pickingOrders(); track order.orderId) {
-                <article class="kds-ticket ticket-picking animate-slide-in">
+                <article class="kds-ticket ticket-picking animate-slide-in" [class.ticket-priority]="order.isPriority">
                   <header class="ticket-header">
                     <div class="ticket-meta-left">
-                      <span class="ticket-id text-purple">{{ order.orderNumber }}</span>
+                      <span class="ticket-id">{{ order.orderNumber }}</span>
                       <h3 class="ticket-client">{{ order.clientName }}</h3>
                     </div>
                     <div class="ticket-timer timer-active" [class.timer-alert]="isTimerOverdue(order)">
@@ -314,6 +316,18 @@ interface TicketTimer {
                     }
                   </div>
 
+                  @if (order.isPriority) {
+                    <div class="ticket-priority-alert">
+                      <div class="priority-head">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
+                          <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+                        </svg>
+                        <span>URGENTE · PRIORIDAD ALTA</span>
+                      </div>
+                      <div class="priority-msg">Alistamiento prioritario solicitado desde Despacho / Entregas</div>
+                    </div>
+                  }
+
                   <!-- Progress Bar -->
                   <div class="ticket-progress-wrap">
                     <div class="ticket-progress-bar" [style.width.%]="getOrderPickedPercentage(order)"></div>
@@ -326,7 +340,10 @@ interface TicketTimer {
                       (click)="advanceStatus(order, 'PENDING')"
                       title="Devolver a pendientes"
                     >
-                      ↩
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                        <polyline points="9 14 4 9 9 4"></polyline>
+                        <path d="M20 20v-7a4 4 0 0 0-4-4H4"></path>
+                      </svg>
                     </button>
                     <button
                       type="button"
@@ -368,7 +385,7 @@ interface TicketTimer {
                 <article class="kds-ticket ticket-ready animate-slide-in">
                   <header class="ticket-header">
                     <div class="ticket-meta-left">
-                      <span class="ticket-id text-emerald">{{ order.orderNumber }}</span>
+                      <span class="ticket-id">{{ order.orderNumber }}</span>
                       <h3 class="ticket-client">{{ order.clientName }}</h3>
                     </div>
                     <span class="badge-ready-pill">
@@ -393,8 +410,13 @@ interface TicketTimer {
                       class="btn-ticket-secondary"
                       (click)="advanceStatus(order, 'PICKING')"
                       title="Devolver a picking si requiere cambios"
+                      style="display: inline-flex; align-items: center; gap: 4px;"
                     >
-                      ↩ Reabrir
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                        <polyline points="9 14 4 9 9 4"></polyline>
+                        <path d="M20 20v-7a4 4 0 0 0-4-4H4"></path>
+                      </svg>
+                      <span>Reabrir</span>
                     </button>
                   </footer>
                 </article>
@@ -424,6 +446,7 @@ interface TicketTimer {
           @for (order of allActiveOrders(); track order.orderId) {
             <article
               class="kds-ticket ticket-grid"
+              [class.ticket-priority]="order.isPriority"
               [class.ticket-pending]="order.status === 'PENDING'"
               [class.ticket-picking]="order.status === 'PICKING'"
               [class.ticket-ready]="order.status === 'BILLED' || order.status === 'DISPATCHED'"
@@ -460,6 +483,18 @@ interface TicketTimer {
                 }
               </div>
 
+              @if (order.isPriority) {
+                <div class="ticket-priority-alert">
+                  <div class="priority-head">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
+                      <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+                    </svg>
+                    <span>URGENTE · PRIORIDAD ALTA</span>
+                  </div>
+                  <div class="priority-msg">Alistamiento prioritario solicitado desde Despacho</div>
+                </div>
+              }
+
               <footer class="ticket-footer">
                 <div class="ticket-timer">
                   <span>{{ getOrderElapsedTime(order) }}</span>
@@ -484,7 +519,7 @@ interface TicketTimer {
   `,
   styles: [`
     /* ========================================================================= */
-    /* KDS ROOT & KIOSK THEME (DISTRACTION-FREE CLEAN SCREEN)                    */
+    /* KDS ROOT & KIOSK THEME (CLEAN PWA LIGHT AESTHETIC - MINIMAL COLOR)        */
     /* ========================================================================= */
     .kds-root {
       width: 100vw;
@@ -492,217 +527,125 @@ interface TicketTimer {
       overflow: hidden;
       display: flex;
       flex-direction: column;
-      background: #0f172a;
-      color: #f8fafc;
-      font-family: var(--font-body, 'Lato', -apple-system, sans-serif);
+      background: #f6f8f7;
+      color: #111827;
+      font-family: var(--font-body, 'Lato', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif);
       user-select: none;
-      transition: background-color 0.3s, color 0.3s;
+      transition: background-color 0.25s ease, color 0.25s ease;
     }
 
-    /* Clean Light Theme Option */
-    .kds-root:not(.dark-theme) {
-      background: #f1f5f9;
-      color: #0f172a;
-    }
-
-    /* KDS Header Bar */
+    /* KDS Top Header Bar */
     .kds-header {
-      background: rgba(15, 23, 42, 0.95);
-      border-bottom: 2px solid rgba(255, 255, 255, 0.08);
+      background: #ffffff;
+      border-bottom: 1px solid #eef2ef;
       padding: 12px 24px;
       display: flex;
       align-items: center;
       justify-content: space-between;
       gap: 20px;
       flex-shrink: 0;
-      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
     }
 
-    .kds-root:not(.dark-theme) .kds-header {
-      background: #ffffff;
-      border-bottom: 2px solid #e2e8f0;
-      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.06);
-    }
-
-    .kds-brand-block {
+    /* Live Clock on the Left (Centered in its section) */
+    .kds-clock-left {
+      flex: 1 1 0%;
       display: flex;
       align-items: center;
-      gap: 16px;
+      justify-content: center;
+      text-align: center;
     }
 
-    .btn-back {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      background: rgba(255, 255, 255, 0.08);
-      border: 1px solid rgba(255, 255, 255, 0.15);
-      color: #f8fafc;
-      font-size: 0.82rem;
-      font-weight: 800;
-      padding: 7px 14px;
-      border-radius: 8px;
-      cursor: pointer;
-      transition: all 0.2s;
-    }
-
-    .kds-root:not(.dark-theme) .btn-back {
-      background: #f1f5f9;
-      border-color: #cbd5e1;
-      color: #0f172a;
-    }
-
-    .btn-back:hover {
-      background: #10b981;
-      color: #fff;
-      border-color: #10b981;
-    }
-
-    .kds-title-group {
-      display: flex;
-      flex-direction: column;
-      gap: 2px;
-    }
-
-    .kds-logo-row {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
-
-    .kds-badge-tag {
-      background: #10b981;
-      color: #fff;
-      font-size: 0.68rem;
-      font-weight: 800;
-      padding: 2px 7px;
-      border-radius: 4px;
-      letter-spacing: 0.6px;
-    }
-
-    .kds-title {
-      font-size: 1.15rem;
-      font-weight: 800;
-      margin: 0;
-      letter-spacing: 0.4px;
-      color: #f8fafc;
-    }
-
-    .kds-root:not(.dark-theme) .kds-title {
-      color: #0f172a;
-    }
-
-    .kds-sub {
-      font-size: 0.74rem;
-      color: #94a3b8;
+    .clock-time-large {
+      font-size: 1.95rem;
+      font-weight: 900;
+      color: #111827;
+      letter-spacing: -0.025em;
+      line-height: 1;
+      font-variant-numeric: tabular-nums;
+      font-family: inherit;
+      white-space: nowrap;
+      user-select: none;
+      text-align: center;
     }
 
     /* Live Metrics Bar */
     .kds-metrics-bar {
+      flex: 0 0 auto;
       display: flex;
       align-items: center;
-      gap: 12px;
+      justify-content: center;
+      gap: 10px;
     }
 
     .kds-metric-pill {
       display: flex;
       flex-direction: column;
       align-items: center;
-      padding: 4px 14px;
-      border-radius: 8px;
-      border: 1px solid transparent;
-      min-width: 90px;
-    }
-
-    .metric-pending {
-      background: rgba(245, 158, 11, 0.12);
-      border-color: rgba(245, 158, 11, 0.3);
-      color: #f59e0b;
-    }
-
-    .metric-picking {
-      background: rgba(139, 92, 246, 0.12);
-      border-color: rgba(139, 92, 246, 0.3);
-      color: #a855f7;
-    }
-
-    .metric-ready {
-      background: rgba(16, 185, 129, 0.12);
-      border-color: rgba(16, 185, 129, 0.3);
-      color: #10b981;
-    }
-
-    .metric-kg {
-      background: rgba(14, 165, 233, 0.12);
-      border-color: rgba(14, 165, 233, 0.3);
-      color: #0ea5e9;
+      padding: 6px 16px;
+      border-radius: 10px;
+      background: #ffffff;
+      border: 1px solid #e5e7eb;
+      min-width: 95px;
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+      transition: all 0.2s ease;
     }
 
     .metric-num {
       font-size: 1.15rem;
       font-weight: 800;
       line-height: 1.2;
+      color: #111827;
     }
 
     .metric-lbl {
       font-size: 0.65rem;
       font-weight: 700;
       text-transform: uppercase;
-      letter-spacing: 0.4px;
-      opacity: 0.85;
+      letter-spacing: 0.03em;
+      color: #6b7280;
+      margin-top: 1px;
+    }
+
+    .metric-ready .metric-num {
+      color: #1e5e3a;
     }
 
     /* Actions & Utility Controls */
     .kds-actions-group {
+      flex: 1 1 0%;
       display: flex;
       align-items: center;
+      justify-content: flex-end;
       gap: 10px;
-    }
-
-    .kds-clock {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      background: rgba(255, 255, 255, 0.06);
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      padding: 6px 12px;
-      border-radius: 8px;
-      font-family: monospace;
-      font-weight: 800;
-      font-size: 0.92rem;
-      color: #38bdf8;
-    }
-
-    .kds-root:not(.dark-theme) .kds-clock {
-      background: #f8fafc;
-      border-color: #cbd5e1;
-      color: #0284c7;
     }
 
     .btn-kds-simulate {
       display: flex;
       align-items: center;
       gap: 8px;
-      background: #8b5cf6;
+      background: #1e5e3a;
       border: none;
-      color: #fff;
+      color: #ffffff;
       font-size: 0.82rem;
-      font-weight: 800;
+      font-weight: 700;
       padding: 8px 16px;
       border-radius: 8px;
       cursor: pointer;
-      box-shadow: 0 4px 12px rgba(139, 92, 246, 0.35);
-      transition: all 0.2s;
+      box-shadow: 0 2px 6px rgba(30, 94, 58, 0.18);
+      transition: all 0.18s ease;
     }
 
     .btn-kds-simulate:hover {
-      background: #7c3aed;
+      background: #164a2d;
       transform: translateY(-1px);
+      box-shadow: 0 4px 10px rgba(30, 94, 58, 0.25);
     }
 
     .sim-pulse {
       width: 8px;
       height: 8px;
-      background: #fff;
+      background: #86efac;
       border-radius: 50%;
       animation: pulseSim 1.2s infinite;
     }
@@ -720,52 +663,46 @@ interface TicketTimer {
       align-items: center;
       justify-content: center;
       border-radius: 8px;
-      background: rgba(255, 255, 255, 0.06);
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      color: #f8fafc;
+      background: #ffffff;
+      border: 1px solid #e5e7eb;
+      color: #4b5563;
       font-size: 1rem;
       cursor: pointer;
-      transition: all 0.2s;
-    }
-
-    .kds-root:not(.dark-theme) .kds-icon-btn {
-      background: #f8fafc;
-      border-color: #cbd5e1;
-      color: #0f172a;
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+      transition: all 0.18s ease;
     }
 
     .kds-icon-btn:hover {
-      background: rgba(255, 255, 255, 0.15);
+      background: #f9fafb;
+      border-color: #cbd5e1;
+      color: #111827;
     }
 
     .kds-view-toggle {
       display: flex;
-      background: rgba(255, 255, 255, 0.06);
-      border: 1px solid rgba(255, 255, 255, 0.1);
+      background: #f3f4f6;
+      border: 1px solid #e5e7eb;
       border-radius: 8px;
       padding: 2px;
-    }
-
-    .kds-root:not(.dark-theme) .kds-view-toggle {
-      background: #f8fafc;
-      border-color: #cbd5e1;
     }
 
     .kds-view-toggle button {
       background: transparent;
       border: none;
-      color: #94a3b8;
+      color: #6b7280;
       padding: 5px 8px;
       border-radius: 6px;
       cursor: pointer;
       display: flex;
       align-items: center;
-      transition: all 0.2s;
+      transition: all 0.15s ease;
     }
 
     .kds-view-toggle button.active {
-      background: #10b981;
-      color: #fff;
+      background: #ffffff;
+      color: #1e5e3a;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+      font-weight: 700;
     }
 
     /* ========================================================================= */
@@ -781,37 +718,24 @@ interface TicketTimer {
     }
 
     .kds-column {
-      background: rgba(30, 41, 59, 0.6);
-      border: 1px solid rgba(255, 255, 255, 0.08);
+      background: #f8faf8;
+      border: 1px solid #e5e7eb;
       border-radius: 14px;
       display: flex;
       flex-direction: column;
       overflow: hidden;
-      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
-    }
-
-    .kds-root:not(.dark-theme) .kds-column {
-      background: #ffffff;
-      border-color: #e2e8f0;
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
     }
 
     .kds-column-header {
       padding: 12px 16px;
-      border-bottom: 2px solid;
+      border-bottom: 1px solid #e5e7eb;
       display: flex;
       justify-content: space-between;
       align-items: center;
-      background: rgba(0, 0, 0, 0.15);
+      background: #ffffff;
+      border-radius: 13px 13px 0 0;
     }
-
-    .kds-root:not(.dark-theme) .kds-column-header {
-      background: #f8fafc;
-    }
-
-    .col-pending .kds-column-header { border-bottom-color: #f59e0b; }
-    .col-picking .kds-column-header { border-bottom-color: #8b5cf6; }
-    .col-ready .kds-column-header { border-bottom-color: #10b981; }
 
     .col-title-group {
       display: flex;
@@ -820,33 +744,31 @@ interface TicketTimer {
     }
 
     .col-dot {
-      width: 10px;
-      height: 10px;
+      width: 8px;
+      height: 8px;
       border-radius: 50%;
     }
 
-    .dot-pending { background: #f59e0b; box-shadow: 0 0 8px #f59e0b; }
-    .dot-picking { background: #8b5cf6; box-shadow: 0 0 8px #8b5cf6; }
-    .dot-ready { background: #10b981; box-shadow: 0 0 8px #10b981; }
+    .dot-pending { background: #d97706; }
+    .dot-picking { background: #475569; }
+    .dot-ready { background: #1e5e3a; }
 
     .col-title {
-      font-size: 1rem;
+      font-size: 0.95rem;
       font-weight: 800;
       margin: 0;
-      letter-spacing: 0.3px;
+      letter-spacing: -0.01em;
+      color: #111827;
     }
 
     .col-counter-badge {
-      font-size: 0.76rem;
-      font-weight: 800;
+      font-size: 0.75rem;
+      font-weight: 700;
       padding: 3px 9px;
       border-radius: 999px;
-      background: rgba(255, 255, 255, 0.1);
-    }
-
-    .kds-root:not(.dark-theme) .col-counter-badge {
-      background: #e2e8f0;
-      color: #0f172a;
+      background: #f3f4f6;
+      color: #374151;
+      border: 1px solid #e5e7eb;
     }
 
     .kds-column-body {
@@ -860,27 +782,21 @@ interface TicketTimer {
 
     /* KDS Ticket Cards (Kitchen Display Order Tickets) */
     .kds-ticket {
-      background: #1e293b;
-      border: 1.5px solid rgba(255, 255, 255, 0.1);
-      border-top-width: 5px;
+      background: #ffffff;
+      border: 1px solid #e5e7eb;
       border-radius: 12px;
       padding: 14px 16px;
       display: flex;
       flex-direction: column;
       gap: 10px;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-      transition: transform 0.2s, box-shadow 0.2s;
+      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
+      transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
     }
 
-    .kds-root:not(.dark-theme) .kds-ticket {
-      background: #ffffff;
+    .kds-ticket:hover {
       border-color: #cbd5e1;
-      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
+      box-shadow: 0 3px 8px rgba(0, 0, 0, 0.06);
     }
-
-    .ticket-pending { border-top-color: #f59e0b; }
-    .ticket-picking { border-top-color: #8b5cf6; }
-    .ticket-ready { border-top-color: #10b981; }
 
     .ticket-header {
       display: flex;
@@ -897,86 +813,52 @@ interface TicketTimer {
 
     .ticket-id {
       font-family: monospace;
-      font-weight: 800;
+      font-weight: 700;
       font-size: 0.78rem;
-      color: #38bdf8;
+      color: #6b7280;
     }
-
-    .text-purple { color: #c084fc !important; }
-    .text-emerald { color: #34d399 !important; }
 
     .ticket-client {
-      font-size: 1.05rem;
+      font-size: 1rem;
       font-weight: 800;
       margin: 0;
-      line-height: 1.25;
-      color: #f8fafc;
-    }
-
-    .kds-root:not(.dark-theme) .ticket-client {
-      color: #0f172a;
+      line-height: 1.3;
+      color: #111827;
     }
 
     .ticket-location {
       font-size: 0.76rem;
-      color: #94a3b8;
-    }
-
-    .kds-root:not(.dark-theme) .ticket-location {
-      color: #64748b;
+      color: #6b7280;
     }
 
     /* Timers */
     .ticket-timer {
-      background: rgba(255, 255, 255, 0.08);
-      border: 1px solid rgba(255, 255, 255, 0.12);
+      background: #f3f4f6;
+      border: 1px solid #e5e7eb;
       padding: 3px 8px;
       border-radius: 6px;
       font-family: monospace;
-      font-size: 0.75rem;
-      font-weight: 800;
+      font-size: 0.74rem;
+      font-weight: 700;
+      color: #4b5563;
       white-space: nowrap;
     }
 
-    .timer-new {
-      color: #f59e0b;
-      background: rgba(245, 158, 11, 0.12);
-      border-color: rgba(245, 158, 11, 0.3);
-    }
-
-    .timer-active {
-      color: #10b981;
-      background: rgba(16, 185, 129, 0.12);
-      border-color: rgba(16, 185, 129, 0.3);
-    }
-
     .timer-alert {
-      color: #ef4444 !important;
-      background: rgba(239, 68, 68, 0.15) !important;
-      border-color: #ef4444 !important;
-      animation: timerBlink 1.2s infinite;
-    }
-
-    @keyframes timerBlink {
-      0% { opacity: 1; }
-      50% { opacity: 0.4; }
-      100% { opacity: 1; }
+      color: #dc2626 !important;
+      background: #fef2f2 !important;
+      border-color: #fecaca !important;
     }
 
     /* Items Checklist */
     .ticket-items-list {
-      background: rgba(0, 0, 0, 0.18);
-      border: 1px solid rgba(255, 255, 255, 0.05);
+      background: #f9fafb;
+      border: 1px solid #f3f4f6;
       border-radius: 8px;
       padding: 6px;
       display: flex;
       flex-direction: column;
       gap: 4px;
-    }
-
-    .kds-root:not(.dark-theme) .ticket-items-list {
-      background: #f8fafc;
-      border-color: #e2e8f0;
     }
 
     .ticket-item-row {
@@ -985,14 +867,11 @@ interface TicketTimer {
       gap: 8px;
       padding: 6px 10px;
       border-radius: 6px;
-      font-size: 0.88rem;
-      background: rgba(255, 255, 255, 0.03);
-      transition: background 0.15s;
-    }
-
-    .kds-root:not(.dark-theme) .ticket-item-row {
+      font-size: 0.86rem;
       background: #ffffff;
-      border: 1px solid #f1f5f9;
+      border: 1px solid #e5e7eb;
+      color: #374151;
+      transition: background 0.15s ease, border-color 0.15s ease;
     }
 
     .ticket-item-row.interactive {
@@ -1000,80 +879,124 @@ interface TicketTimer {
     }
 
     .ticket-item-row.interactive:hover {
-      background: rgba(255, 255, 255, 0.08);
-    }
-
-    .kds-root:not(.dark-theme) .ticket-item-row.interactive:hover {
-      background: #f1f5f9;
+      background: #f8faf8;
+      border-color: #cbd5e1;
     }
 
     .ticket-item-row.item-completed {
-      background: rgba(16, 185, 129, 0.12);
-      border-color: rgba(16, 185, 129, 0.3);
+      background: #f0fdf4;
+      border-color: #bbf7d0;
     }
 
     .item-check {
       width: 18px;
       height: 18px;
       border-radius: 4px;
-      border: 1.5px solid #64748b;
+      border: 1.5px solid #d1d5db;
       display: flex;
       align-items: center;
       justify-content: center;
       font-size: 0.7rem;
       font-weight: 800;
-      color: #fff;
+      color: #ffffff;
+      background: #ffffff;
+      flex-shrink: 0;
+      transition: all 0.15s ease;
     }
 
     .item-check.checked {
-      background: #10b981;
-      border-color: #10b981;
+      background: #1e5e3a;
+      border-color: #1e5e3a;
     }
 
     .item-qty {
       font-weight: 800;
-      color: #f59e0b;
+      color: #111827;
     }
 
     .item-name {
-      font-weight: 700;
+      font-weight: 600;
+      color: #1f2937;
       flex: 1;
     }
 
     .item-gram {
       font-size: 0.75rem;
-      color: #94a3b8;
+      color: #6b7280;
     }
 
     .item-ratio {
       font-size: 0.72rem;
-      font-weight: 800;
-      background: rgba(255, 255, 255, 0.1);
+      font-weight: 700;
+      background: #f3f4f6;
+      color: #4b5563;
+      border: 1px solid #e5e7eb;
       padding: 2px 6px;
       border-radius: 4px;
     }
 
     /* Progress Bar */
     .ticket-progress-wrap {
-      height: 4px;
-      background: rgba(255, 255, 255, 0.08);
+      height: 5px;
+      background: #e5e7eb;
       border-radius: 999px;
       overflow: hidden;
     }
 
     .ticket-progress-bar {
       height: 100%;
-      background: #10b981;
+      background: #1e5e3a;
       border-radius: 999px;
       transition: width 0.25s ease;
     }
 
+    /* Priority Card Style: Red Border */
+    .kds-ticket.ticket-priority {
+      border: 2px solid #ef4444 !important;
+      box-shadow: 0 0 0 1px #ef4444, 0 4px 14px rgba(239, 68, 68, 0.16) !important;
+    }
+
+    .ticket-priority-alert {
+      background: #fef2f2;
+      border: 1px solid #fecaca;
+      border-radius: 8px;
+      padding: 7px 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      animation: priorityAlertPulse 2s infinite ease-in-out;
+    }
+
+    @keyframes priorityAlertPulse {
+      0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.2); }
+      50% { box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.25); }
+      100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.2); }
+    }
+
+    .priority-head {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      font-weight: 800;
+      color: #dc2626;
+      font-size: 0.72rem;
+      letter-spacing: 0.02em;
+    }
+
+    .priority-msg {
+      font-size: 0.69rem;
+      color: #991b1b;
+      font-weight: 600;
+    }
+
     .ticket-note {
       font-size: 0.76rem;
-      color: #f59e0b;
-      background: rgba(245, 158, 11, 0.1);
-      padding: 4px 8px;
+      color: #92400e;
+      background: #fef3c7;
+      border: 1px solid #fde68a;
+      padding: 6px 10px;
       border-radius: 6px;
+      font-weight: 600;
     }
 
     .ticket-footer {
@@ -1086,75 +1009,84 @@ interface TicketTimer {
 
     .ticket-total-kg {
       font-size: 0.8rem;
-      color: #94a3b8;
+      color: #6b7280;
+    }
+
+    .ticket-total-kg strong {
+      color: #111827;
+      font-weight: 800;
     }
 
     .btn-ticket-primary {
-      background: #10b981;
+      background: #1e5e3a;
       border: none;
-      color: #fff;
+      color: #ffffff;
       font-size: 0.82rem;
-      font-weight: 800;
+      font-weight: 700;
       padding: 8px 16px;
       border-radius: 8px;
       cursor: pointer;
       display: flex;
       align-items: center;
       gap: 6px;
-      transition: all 0.15s;
+      box-shadow: 0 1px 3px rgba(30, 94, 58, 0.15);
+      transition: all 0.15s ease;
     }
 
     .btn-ticket-primary:hover {
-      background: #059669;
+      background: #164a2d;
       transform: translateY(-1px);
     }
 
-    .btn-start-picking {
-      background: #f59e0b;
-    }
-
-    .btn-start-picking:hover {
-      background: #d97706;
-    }
-
+    .btn-start-picking,
     .btn-complete-picking {
-      background: #10b981;
+      background: #1e5e3a;
     }
 
     .btn-ticket-secondary {
-      background: rgba(255, 255, 255, 0.08);
-      border: 1px solid rgba(255, 255, 255, 0.12);
-      color: #94a3b8;
+      background: #ffffff;
+      border: 1px solid #e5e7eb;
+      color: #4b5563;
       font-size: 0.78rem;
       font-weight: 700;
       padding: 6px 12px;
       border-radius: 6px;
       cursor: pointer;
+      transition: all 0.15s ease;
     }
 
-    .kds-root:not(.dark-theme) .btn-ticket-secondary {
-      background: #f1f5f9;
+    .btn-ticket-secondary:hover {
+      background: #f9fafb;
       border-color: #cbd5e1;
-      color: #475569;
+      color: #111827;
     }
 
     .badge-ready-pill {
-      background: rgba(16, 185, 129, 0.15);
-      color: #10b981;
+      background: #eaf5ee;
+      color: #1e5e3a;
       font-size: 0.72rem;
       font-weight: 800;
       padding: 3px 8px;
       border-radius: 6px;
-      border: 1px solid rgba(16, 185, 129, 0.3);
+      border: 1px solid #d1e7d8;
     }
 
     .ready-stamp {
-      font-size: 0.74rem;
+      font-size: 0.72rem;
       font-weight: 800;
-      color: #10b981;
+      color: #374151;
+      background: #f3f4f6;
+      border: 1px solid #e5e7eb;
+      padding: 3px 8px;
+      border-radius: 6px;
       display: flex;
       align-items: center;
       gap: 4px;
+    }
+
+    .ticket-items-summary {
+      font-size: 0.8rem;
+      color: #6b7280;
     }
 
     .kds-empty-column {
@@ -1164,7 +1096,7 @@ interface TicketTimer {
       justify-content: center;
       padding: 48px 20px;
       text-align: center;
-      color: #64748b;
+      color: #9ca3af;
       gap: 8px;
     }
 
@@ -1191,9 +1123,9 @@ interface TicketTimer {
       border-radius: 6px;
     }
 
-    .chip-warning { background: rgba(245, 158, 11, 0.15); color: #f59e0b; }
-    .chip-purple { background: rgba(139, 92, 246, 0.15); color: #c084fc; }
-    .chip-success { background: rgba(16, 185, 129, 0.15); color: #10b981; }
+    .chip-warning { background: #fef3c7; color: #92400e; border: 1px solid #fde68a; }
+    .chip-purple { background: #f3f4f6; color: #374151; border: 1px solid #e5e7eb; }
+    .chip-success { background: #eaf5ee; color: #1e5e3a; border: 1px solid #d1e7d8; }
 
     /* Animations */
     .animate-slide-in {
@@ -1204,6 +1136,43 @@ interface TicketTimer {
       from { opacity: 0; transform: translateY(12px) scale(0.98); }
       to { opacity: 1; transform: translateY(0) scale(1); }
     }
+
+    /* Optional Dark Mode (Only if explicitly toggled) */
+    .kds-root.dark-theme {
+      background: #0f172a;
+      color: #f8fafc;
+    }
+    .kds-root.dark-theme .kds-header {
+      background: #1e293b;
+      border-bottom-color: #334155;
+    }
+    .kds-root.dark-theme .clock-time-large {
+      color: #f8fafc;
+    }
+    .kds-root.dark-theme .kds-icon-btn,
+    .kds-root.dark-theme .kds-metric-pill,
+    .kds-root.dark-theme .kds-column-header,
+    .kds-root.dark-theme .kds-ticket,
+    .kds-root.dark-theme .ticket-item-row {
+      background: #1e293b;
+      border-color: #334155;
+      color: #f8fafc;
+    }
+    .kds-root.dark-theme .kds-column {
+      background: #0f172a;
+      border-color: #334155;
+    }
+    .kds-root.dark-theme .metric-num,
+    .kds-root.dark-theme .ticket-client,
+    .kds-root.dark-theme .col-title,
+    .kds-root.dark-theme .item-name,
+    .kds-root.dark-theme .item-qty {
+      color: #f8fafc;
+    }
+    .kds-root.dark-theme .ticket-items-list {
+      background: #0f172a;
+      border-color: #334155;
+    }
   `]
 })
 export class KdsComponent implements OnInit, OnDestroy {
@@ -1213,7 +1182,7 @@ export class KdsComponent implements OnInit, OnDestroy {
 
   // Layout and Display Signals
   readonly viewMode = signal<'columns' | 'grid'>('columns');
-  readonly isDarkTheme = signal<boolean>(true);
+  readonly isDarkTheme = signal<boolean>(false);
   readonly soundEnabled = signal<boolean>(true);
   readonly currentTime = signal<string>('');
 
@@ -1262,10 +1231,12 @@ export class KdsComponent implements OnInit, OnDestroy {
       this.orderTimers.set(o.orderId, now - (index * 180000 + 120000));
     });
 
-    // Check saved theme
-    const savedTheme = localStorage.getItem('despulpadora_theme');
+    // Default to clean light PWA theme
+    const savedTheme = localStorage.getItem('despulpadora_kds_theme');
     if (savedTheme) {
       this.isDarkTheme.set(savedTheme === 'dark');
+    } else {
+      this.isDarkTheme.set(false);
     }
   }
 
@@ -1289,6 +1260,7 @@ export class KdsComponent implements OnInit, OnDestroy {
 
   toggleTheme() {
     this.isDarkTheme.update(v => !v);
+    localStorage.setItem('despulpadora_kds_theme', this.isDarkTheme() ? 'dark' : 'light');
   }
 
   toggleSound() {
@@ -1391,7 +1363,7 @@ export class KdsComponent implements OnInit, OnDestroy {
       clientName: client.name,
       clientPhone: '315 ' + Math.floor(1000000 + Math.random() * 9000000),
       clientAddress: client.address,
-      notes: 'URGENTE · Pedido simulado para alistamiento en cava',
+      notes: 'Comanda generada para alistamiento en cava',
       paymentMethodName: 'Contra Entrega Efectivo',
       items
     });

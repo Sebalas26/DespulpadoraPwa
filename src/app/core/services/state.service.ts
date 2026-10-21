@@ -263,7 +263,13 @@ export class StateService {
   // ==========================================
   private loadFruitsFromStorage(): FruitConfig[] {
     const data = localStorage.getItem('despulpadora_fruits');
-    return data ? JSON.parse(data) : INITIAL_FRUITS;
+    if (!data) return INITIAL_FRUITS;
+    try {
+      const list: FruitConfig[] = JSON.parse(data);
+      return list.map(f => ({ ...f, emoji: '' }));
+    } catch {
+      return INITIAL_FRUITS;
+    }
   }
 
   private loadBatchesFromStorage(): BatchDto[] {
@@ -755,6 +761,27 @@ export class StateService {
         const nextStatus: OrderStatus = allDone ? 'BILLED' : 'PICKING';
 
         return { ...o, items: updatedItems, status: nextStatus };
+      }
+      return o;
+    }));
+    this.saveAllToStorage();
+  }
+
+  toggleOrderPriority(orderId: number, isPriority?: boolean) {
+    this.orders.update(list => list.map(o => {
+      if (o.orderId === orderId) {
+        const nextVal = isPriority !== undefined ? isPriority : !o.isPriority;
+        return { ...o, isPriority: nextVal };
+      }
+      return o;
+    }));
+    this.saveAllToStorage();
+  }
+
+  setOrderPriority(identifier: number | string, isPriority: boolean = true) {
+    this.orders.update(list => list.map(o => {
+      if (o.orderId === identifier || o.orderNumber === identifier) {
+        return { ...o, isPriority };
       }
       return o;
     }));

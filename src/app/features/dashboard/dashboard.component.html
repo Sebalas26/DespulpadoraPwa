@@ -299,7 +299,6 @@
           <div class="fruit-report-row">
             <div class="fruit-report-top">
               <div class="fruit-report-identity">
-                <span class="pulp-fruit-dot" [style.background]="item.color"></span>
                 <div>
                   <span class="fruit-report-name">{{ item.name }}</span>
                   <span class="fruit-report-meta">Rend. {{ item.yieldPct }}% · ~{{ item.estimatedPulpKg }} kg pulpa</span>
@@ -321,7 +320,6 @@
               <div
                 class="fruit-progress-fill"
                 [style.width.%]="item.barPct"
-                [style.background]="item.color"
               ></div>
             </div>
           </div>
@@ -411,7 +409,6 @@
               <tr>
                 <td>
                   <div class="pulp-fruit-cell">
-                    <span class="pulp-fruit-dot" [style.background]="row.color"></span>
                     <span class="pulp-fruit-name">{{ row.name }}</span>
                   </div>
                 </td>
@@ -596,7 +593,6 @@
         @for (alert of lowStockItems(); track alert.fruitName + alert.presentation) {
           <a routerLink="/settings" [queryParams]="{ tab: 'variants' }" class="cava-alert-item">
             <div class="alert-left-group">
-              <span class="alert-fruit-icon" [style.background]="alert.color" style="width: 14px; height: 14px; border-radius: 50%; display: inline-block;"></span>
               <div>
                 <div class="alert-fruit-title">{{ alert.fruitName }}</div>
                 <div class="alert-presentation">{{ alert.presentation }}</div>

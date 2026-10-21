@@ -1,4 +1,4 @@
-import { Component, computed, inject } from '@angular/core';
+import { Component, computed, HostBinding, HostListener, inject, OnInit, OnDestroy, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, NavigationEnd } from '@angular/router';
 import { toSignal } from '@angular/core/rxjs-interop';
@@ -12,7 +12,7 @@ import { VoiceOrdersService } from '../../core/services/voice-orders.service';
   standalone: true,
   imports: [CommonModule],
   template: `
-    <header class="topbar">
+    <header class="topbar" [class.header-hidden]="isHeaderHidden()">
       <!-- Desktop Left: (Sidebar Toggle + Brand when collapsed) + Dynamic Module Title -->
       <div class="topbar-left no-mobile">
         @if (stateService.isSidebarCollapsed()) {
@@ -113,18 +113,49 @@ import { VoiceOrdersService } from '../../core/services/voice-orders.service';
     </header>
   `,
   styles: [`
+    :host {
+      display: block;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      width: 100%;
+      will-change: transform, opacity;
+      transition: transform 0.32s cubic-bezier(0.16, 1, 0.3, 1),
+                  opacity 0.28s ease,
+                  visibility 0.28s ease;
+    }
+
+    :host(.header-hidden) {
+      transform: translateY(-100%);
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+    }
+
     .topbar {
       height: 64px;
       border-bottom: 1px solid var(--border-subtle);
-      background: #ffffff;
+      background: #ffffff !important;
       display: flex;
       align-items: center;
       justify-content: space-between;
       padding: 0 24px;
-      position: sticky;
-      top: 0;
-      z-index: 30;
-      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+      width: 100%;
+      box-sizing: border-box;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+      position: relative;
+      z-index: 100;
+      will-change: transform, opacity;
+      transition: transform 0.32s cubic-bezier(0.16, 1, 0.3, 1),
+                  opacity 0.28s ease,
+                  visibility 0.28s ease;
+    }
+
+    .topbar.header-hidden {
+      transform: translateY(-100%);
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
     }
 
     .topbar-left {
@@ -469,11 +500,83 @@ import { VoiceOrdersService } from '../../core/services/voice-orders.service';
     }
   `]
 })
-export class HeaderComponent {
+export class HeaderComponent implements OnInit, OnDestroy {
   readonly authService = inject(AuthService);
   readonly stateService = inject(StateService);
   readonly voiceOrdersService = inject(VoiceOrdersService);
   private readonly router = inject(Router);
+
+  // Auto-hide on scroll down, reappear on scroll up
+  readonly isHeaderHidden = signal<boolean>(false);
+  private lastScrollY = 0;
+  private readonly scrollThreshold = 8;
+  private cleanupScrollListeners?: () => void;
+
+  @HostBinding('class.header-hidden')
+  get hostHeaderHidden() {
+    return this.isHeaderHidden();
+  }
+
+  ngOnInit() {
+    if (typeof window !== 'undefined') {
+      const scrollHandler = () => this.handleScroll();
+      window.addEventListener('scroll', scrollHandler, { passive: true });
+      document.addEventListener('scroll', scrollHandler, { passive: true, capture: true });
+
+      this.cleanupScrollListeners = () => {
+        window.removeEventListener('scroll', scrollHandler);
+        document.removeEventListener('scroll', scrollHandler, { capture: true });
+      };
+    }
+
+    // Reset visibility when navigating to another view
+    this.router.events.pipe(filter(e => e instanceof NavigationEnd)).subscribe(() => {
+      this.isHeaderHidden.set(false);
+      this.lastScrollY = 0;
+    });
+  }
+
+  ngOnDestroy() {
+    if (this.cleanupScrollListeners) {
+      this.cleanupScrollListeners();
+    }
+  }
+
+  @HostListener('window:scroll')
+  onWindowScroll() {
+    this.handleScroll();
+  }
+
+  private handleScroll() {
+    if (typeof window === 'undefined') return;
+
+    const currentScrollY = window.scrollY || document.documentElement.scrollTop || document.body.scrollTop || 0;
+
+    // At top of page, always show header
+    if (currentScrollY <= 25) {
+      this.isHeaderHidden.set(false);
+      this.lastScrollY = currentScrollY;
+      return;
+    }
+
+    const delta = currentScrollY - this.lastScrollY;
+
+    // Ignore tiny movements below threshold
+    if (Math.abs(delta) < this.scrollThreshold) {
+      return;
+    }
+
+    // Scrolling down past the header height -> hide smoothly
+    if (delta > 0 && currentScrollY > 64) {
+      this.isHeaderHidden.set(true);
+    }
+    // Scrolling up -> show smoothly
+    else if (delta < 0) {
+      this.isHeaderHidden.set(false);
+    }
+
+    this.lastScrollY = currentScrollY;
+  }
 
   private readonly navEnd$ = this.router.events.pipe(
     filter(e => e instanceof NavigationEnd),

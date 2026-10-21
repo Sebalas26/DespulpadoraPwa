@@ -156,6 +156,8 @@ export interface OrderDto {
   isPaid: boolean;
   notes?: string;
   createdAt: string;
+  isPriority?: boolean;
+  isBilled?: boolean;
 }
 
 export interface CreateOrderDto {

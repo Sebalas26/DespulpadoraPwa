@@ -49,16 +49,8 @@
       }
     </div>
 
-    <!-- Summary Bar + Search Input Row -->
-    <div class="picking-toolbar-row">
-      <div class="pulp-summary-pill">
-        <span class="summary-pill-label">Resumen de pulpa a alistar</span>
-        <span class="summary-pill-divider"></span>
-        <span class="summary-pill-text">
-          <strong>Total Pulpa por Alistar:</strong> {{ pulpSummaryText() }}
-        </span>
-      </div>
-
+    <!-- Search Input Row -->
+    <div class="picking-toolbar-row" style="justify-content: flex-end;">
       <div class="picking-search-box">
         <svg class="search-box-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <circle cx="11" cy="11" r="8"></circle>
@@ -159,16 +151,11 @@
                       [checked]="(item.pickedQuantity || 0) >= item.quantity"
                       (click)="$event.stopPropagation(); toggleItemPicked(order.orderId, item.fruitId, item.grammage, item.quantity, item.pickedQuantity)"
                     />
-                    <div class="checklist-item-texts">
-                      <div
-                        class="checklist-item-title"
-                        [class.line-through]="(item.pickedQuantity || 0) >= item.quantity"
-                      >
-                        {{ item.quantity }}x {{ item.fruitName }} ({{ item.grammage }}g)
-                      </div>
-                      <div class="checklist-item-price">
-                        {{ formatCOP(item.subtotal) }}
-                      </div>
+                    <div
+                      class="checklist-item-title"
+                      [class.line-through]="(item.pickedQuantity || 0) >= item.quantity"
+                    >
+                      {{ item.quantity }}x {{ item.fruitName }} ({{ item.grammage }}g)
                     </div>
                   </div>
 
@@ -382,15 +369,6 @@
       <div class="history-header-card">
         <div class="history-top-row">
           <div class="history-title-group">
-            <div class="history-icon-badge">
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-                <polyline points="14 2 14 8 20 8"></polyline>
-                <line x1="16" y1="13" x2="8" y2="13"></line>
-                <line x1="16" y1="17" x2="8" y2="17"></line>
-                <polyline points="10 9 9 9 8 9"></polyline>
-              </svg>
-            </div>
             <div>
               <h2 class="history-title">Histórico de Entregas & Despachos del Día</h2>
               <p class="history-subtitle">
@@ -427,7 +405,7 @@
               type="button"
               class="history-pill"
               [class.active]="historyFilter() === 'ALL'"
-              (click)="historyFilter.set('ALL')"
+              (click)="setHistoryFilter('ALL')"
             >
               Todas ({{ totalHistoryOrdersCount() }})
             </button>
@@ -435,7 +413,7 @@
               type="button"
               class="history-pill pill-delivered"
               [class.active]="historyFilter() === 'DELIVERED'"
-              (click)="historyFilter.set('DELIVERED')"
+              (click)="setHistoryFilter('DELIVERED')"
             >
               <span class="pill-dot dot-delivered"></span>
               <span>Entregadas ({{ deliveredHistoryOrdersCount() }})</span>
@@ -444,7 +422,7 @@
               type="button"
               class="history-pill pill-transit"
               [class.active]="historyFilter() === 'DISPATCHED'"
-              (click)="historyFilter.set('DISPATCHED')"
+              (click)="setHistoryFilter('DISPATCHED')"
             >
               <span class="pill-dot dot-transit"></span>
               <span>En Camino ({{ inTransitHistoryOrdersCount() }})</span>
@@ -453,7 +431,7 @@
               type="button"
               class="history-pill pill-pending"
               [class.active]="historyFilter() === 'UNASSIGNED'"
-              (click)="historyFilter.set('UNASSIGNED')"
+              (click)="setHistoryFilter('UNASSIGNED')"
             >
               <span class="pill-dot dot-pending"></span>
               <span>Sin Gestionar ({{ unassignedHistoryOrdersCount() }})</span>
@@ -470,10 +448,10 @@
               class="history-search-input"
               placeholder="Buscar por guía, cliente, dirección o domiciliario..."
               [ngModel]="historySearchQuery()"
-              (ngModelChange)="historySearchQuery.set($event)"
+              (ngModelChange)="setHistorySearchQuery($event)"
             />
             @if (historySearchQuery()) {
-              <button type="button" class="clear-search-btn" (click)="historySearchQuery.set('')">✕</button>
+              <button type="button" class="clear-search-btn" (click)="setHistorySearchQuery('')">✕</button>
             }
           </div>
         </div>
@@ -483,7 +461,8 @@
       <div class="history-ledger-card">
         <!-- Table Column Headers (Desktop) -->
         <div class="ledger-header-row">
-          <div class="col-head col-guide">GUÍA & PEDIDO</div>
+          <div class="col-head col-guide">GUÍA</div>
+          <div class="col-head col-order" style="text-align: center;">PEDIDO</div>
           <div class="col-head col-client">CLIENTE & DESTINO</div>
           <div class="col-head col-courier">DOMICILIARIO & RUTA</div>
           <div class="col-head col-amount">RECAUDO / PAGO</div>
@@ -493,29 +472,31 @@
 
         <!-- Ledger Rows List -->
         <div class="ledger-rows-wrapper">
-          @for (order of filteredHistoryOrders(); track order.orderId) {
+          @for (order of paginatedHistoryOrders(); track order.orderId) {
             <div
               class="ledger-row-item"
               [class.row-delivered]="order.status === 'DELIVERED'"
               [class.row-transit]="order.status === 'DISPATCHED'"
               [class.row-pending]="order.status !== 'DELIVERED' && order.status !== 'DISPATCHED'"
             >
-              <!-- 1. GUÍA & PRODUCTOS -->
+              <!-- 1. GUÍA -->
               <div class="ledger-cell cell-guide">
-                <div class="guide-badge-row">
-                  <span
-                    class="guide-code-tag"
-                    [class.tag-delivered]="order.status === 'DELIVERED'"
-                    [class.tag-transit]="order.status === 'DISPATCHED'"
-                    [class.tag-pending]="order.status !== 'DELIVERED' && order.status !== 'DISPATCHED'"
-                  >
-                    GUÍA · {{ order.orderNumber }}
-                  </span>
-                  <span class="guide-day-tag">{{ order.scheduledDay || 'Hoy' }}</span>
-                </div>
-                <div class="guide-items-snippet" [title]="getOrderItemsSummary(order)">
-                  {{ getOrderItemsSummary(order) }}
-                </div>
+                <span class="guide-code-tag">GUÍA · {{ order.orderNumber }}</span>
+              </div>
+
+              <!-- 2. PEDIDO (Icono de Ojo) -->
+              <div class="ledger-cell cell-order" style="align-items: center; justify-content: center;">
+                <button
+                  type="button"
+                  class="btn-eye-order"
+                  title="Ver detalle del pedido"
+                  (click)="viewOrderDetails(order)"
+                >
+                  <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                    <circle cx="12" cy="12" r="3"></circle>
+                  </svg>
+                </button>
               </div>
 
               <!-- 2. CLIENTE & DESTINO -->
@@ -608,7 +589,10 @@
                   </span>
                 } @else {
                   <span class="status-badge-chip badge-pending">
-                    <span class="badge-icon">⏳</span>
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                      <circle cx="12" cy="12" r="10"></circle>
+                      <polyline points="12 6 12 12 16 14"></polyline>
+                    </svg>
                     <span class="badge-txt">SIN GESTIONAR</span>
                   </span>
                 }
@@ -647,17 +631,6 @@
                 }
 
                 <div class="action-icons-group">
-                  <button
-                    type="button"
-                    class="btn-icon-shortcut"
-                    title="Ver detalle del pedido"
-                    (click)="viewOrderDetails(order)"
-                  >
-                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                      <circle cx="11" cy="11" r="8"></circle>
-                      <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-                    </svg>
-                  </button>
                   @if (order.status !== 'DELIVERED') {
                     <button
                       type="button"
@@ -683,6 +656,48 @@
                     </svg>
                   </button>
                 </div>
+              </div>
+            </div>
+          }
+
+          <!-- History Pagination Bar -->
+          @if (filteredHistoryOrders().length > 0) {
+            <div class="history-pagination-bar">
+              <div class="pagination-summary">
+                Mostrando <strong>{{ historyPaginationInfo().start }}</strong> a <strong>{{ historyPaginationInfo().end }}</strong> de <strong>{{ historyPaginationInfo().total }}</strong> entregas
+              </div>
+
+              <div class="history-pagination-controls">
+                <button
+                  type="button"
+                  class="history-page-btn"
+                  [disabled]="historyCurrentPage() <= 1"
+                  (click)="setHistoryPage(historyCurrentPage() - 1)"
+                  title="Página anterior"
+                >
+                  &larr; Anterior
+                </button>
+
+                @for (p of historyPagesList(); track p) {
+                  <button
+                    type="button"
+                    class="history-page-btn page-num"
+                    [class.active]="historyCurrentPage() === p"
+                    (click)="setHistoryPage(p)"
+                  >
+                    {{ p }}
+                  </button>
+                }
+
+                <button
+                  type="button"
+                  class="history-page-btn"
+                  [disabled]="historyCurrentPage() >= historyTotalPages()"
+                  (click)="setHistoryPage(historyCurrentPage() + 1)"
+                  title="Página siguiente"
+                >
+                  Siguiente &rarr;
+                </button>
               </div>
             </div>
           }

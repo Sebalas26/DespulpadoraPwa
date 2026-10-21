@@ -17,10 +17,10 @@ import { AdminUsersComponent } from '../admin/users/users.component';
 import { AdminRolesComponent } from '../admin/roles/roles.component';
 
 const DEFAULT_CATEGORIES: InventoryCategoryConfig[] = [
-  { id: 'PULPAS', name: 'Pulpas Puras', icon: '🥭', badgeClass: 'badge-warning', isActive: true },
-  { id: 'LIMONADAS', name: 'Bases Limonadas', icon: '🥥', badgeClass: 'badge-info', isActive: true },
-  { id: 'BATIDOS', name: 'Batidos Funcionales', icon: '🌿', badgeClass: 'badge-emerald', isActive: true },
-  { id: 'ESPECIAL', name: 'Especiales / Combos', icon: '✨', badgeClass: 'badge-purple', isActive: true }
+  { id: 'PULPAS', name: 'Pulpas Puras', icon: '', badgeClass: 'badge-warning', isActive: true },
+  { id: 'LIMONADAS', name: 'Bases Limonadas', icon: '', badgeClass: 'badge-info', isActive: true },
+  { id: 'BATIDOS', name: 'Batidos Funcionales', icon: '', badgeClass: 'badge-emerald', isActive: true },
+  { id: 'ESPECIAL', name: 'Especiales / Combos', icon: '', badgeClass: 'badge-purple', isActive: true }
 ];
 
 const DEFAULT_GRAMMAGES: InventoryGrammageConfig[] = [
@@ -151,7 +151,7 @@ export class SettingsComponent {
   // New Category Form
   readonly newCategoryName = signal<string>('');
   readonly newCategoryCode = signal<string>('');
-  readonly newCategoryIcon = signal<string>('🍹');
+  readonly newCategoryIcon = signal<string>('');
   readonly newCategoryBadge = signal<string>('badge-info');
 
   // New Grammage Form
@@ -433,7 +433,7 @@ export class SettingsComponent {
     // Reset inputs
     this.newCategoryName.set('');
     this.newCategoryCode.set('');
-    this.newCategoryIcon.set('🍹');
+    this.newCategoryIcon.set('');
   }
 
   deleteCustomCategory(id: string) {
@@ -634,7 +634,8 @@ export class SettingsComponent {
   private loadCategories(): InventoryCategoryConfig[] {
     try {
       const data = localStorage.getItem('despulpadora_categories_config');
-      return data ? JSON.parse(data) : DEFAULT_CATEGORIES;
+      const list: InventoryCategoryConfig[] = data ? JSON.parse(data) : DEFAULT_CATEGORIES;
+      return list.map(c => ({ ...c, icon: '' }));
     } catch {
       return DEFAULT_CATEGORIES;
     }

@@ -738,6 +738,57 @@ Pago por Transferencia Bancolombia`);
     return list;
   });
 
+  readonly historyCurrentPage = signal<number>(1);
+  readonly historyPageSize = signal<number>(10);
+
+  readonly historyTotalPages = computed(() => {
+    const total = this.filteredHistoryOrders().length;
+    return Math.max(1, Math.ceil(total / this.historyPageSize()));
+  });
+
+  readonly paginatedHistoryOrders = computed(() => {
+    const list = this.filteredHistoryOrders();
+    const page = this.historyCurrentPage();
+    const size = this.historyPageSize();
+    const start = (page - 1) * size;
+    return list.slice(start, start + size);
+  });
+
+  readonly historyPaginationInfo = computed(() => {
+    const total = this.filteredHistoryOrders().length;
+    const page = this.historyCurrentPage();
+    const size = this.historyPageSize();
+    if (total === 0) return { start: 0, end: 0, total: 0 };
+    const start = (page - 1) * size + 1;
+    const end = Math.min(page * size, total);
+    return { start, end, total };
+  });
+
+  readonly historyPagesList = computed(() => {
+    const total = this.historyTotalPages();
+    const pages: number[] = [];
+    for (let i = 1; i <= total; i++) {
+      pages.push(i);
+    }
+    return pages;
+  });
+
+  setHistoryPage(page: number) {
+    if (page >= 1 && page <= this.historyTotalPages()) {
+      this.historyCurrentPage.set(page);
+    }
+  }
+
+  setHistoryFilter(filter: 'ALL' | 'DELIVERED' | 'DISPATCHED' | 'UNASSIGNED') {
+    this.historyFilter.set(filter);
+    this.historyCurrentPage.set(1);
+  }
+
+  setHistorySearchQuery(query: string) {
+    this.historySearchQuery.set(query);
+    this.historyCurrentPage.set(1);
+  }
+
   getCourierForOrder(order: OrderDto) {
     if (order.courierName) {
       const match = this.COURIER_CATALOG.find(c =>

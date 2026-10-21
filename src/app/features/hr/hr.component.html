@@ -174,7 +174,7 @@
 
                   <td>
                     <div style="display: flex; flex-direction: column; gap: 3px;">
-                      <span class="badge" [ngClass]="emp.area === 'PRODUCCION' ? 'badge-warning' : (emp.area === 'DOMICILIOS' ? 'badge-info' : 'badge-emerald')">
+                      <span class="badge badge-neutral" style="background: #f1f5f9; color: #334155; border: 1px solid #e2e8f0; font-weight: 700; width: fit-content;">
                         {{ emp.area || emp.department }}
                       </span>
                       <span style="font-size: 0.77rem; color: var(--text-muted);">{{ emp.position }}</span>
@@ -203,12 +203,12 @@
 
                   <td>
                     @if (isEmployeeInActiveShift(emp.employeeId)) {
-                      <span class="badge badge-emerald" style="display: inline-flex; align-items: center; gap: 5px;">
-                        <span class="pulse-dot-green"></span>
+                      <span class="badge badge-neutral" style="background: #f8fafc; color: #334155; border: 1px solid #cbd5e1; display: inline-flex; align-items: center; gap: 6px; font-weight: 700;">
+                        <span style="width: 6px; height: 6px; border-radius: 50%; background: #64748b;"></span>
                         <span>En Turno Activo</span>
                       </span>
                     } @else {
-                      <span class="badge badge-outline-gray" style="color: #64748b;">
+                      <span class="badge badge-neutral" style="background: transparent; color: #94a3b8; border: 1px solid #e2e8f0; font-weight: 600;">
                         Fuera de Turno
                       </span>
                     }
@@ -310,7 +310,7 @@
         <div class="card shift-form-card">
           <div class="card-header" style="border-bottom: 1px solid var(--border-subtle); padding-bottom: 12px;">
             <h3 class="card-title" style="display: flex; align-items: center; gap: 8px;">
-              <span>▶ Registrar Ingreso de Turno</span>
+              <span>Registrar Ingreso de Turno</span>
             </h3>
             <p class="card-subtitle">Marcación biométrica / manual de entrada para operarios y colaboradores</p>
           </div>
@@ -803,7 +803,7 @@
               @for (st of stateService.payrollSettlements(); track st.settlementId) {
                 <tr>
                   <td>
-                    <span class="badge" [ngClass]="st.periodId === 1 ? 'badge-info' : 'badge-purple'">
+                    <span class="badge badge-neutral" style="background: #f1f5f9; color: #334155; border: 1px solid #e2e8f0; font-weight: 700;">
                       {{ st.periodId === 1 ? '1ra Quincena (01-15)' : '2da Quincena (16-30)' }}
                     </span>
                   </td>

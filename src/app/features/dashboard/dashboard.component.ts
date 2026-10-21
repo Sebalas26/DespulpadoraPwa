@@ -203,7 +203,7 @@ export class DashboardComponent {
       return {
         id: f.id,
         name: f.name,
-        emoji: f.emoji || '🍎',
+        emoji: '',
         color: f.color || '#16a34a',
         category: f.category,
         freshKg,
@@ -253,7 +253,7 @@ export class DashboardComponent {
       return {
         id: f.id,
         name: f.name,
-        emoji: f.emoji || '📦',
+        emoji: '',
         color: f.color || '#16a34a',
         g140,
         g250,
@@ -301,7 +301,7 @@ export class DashboardComponent {
 
           list.push({
             fruitName: f.name,
-            emoji: f.emoji || '🟢',
+            emoji: '',
             color: f.color || '#10b981',
             presentation: presLabel,
             currentUnits: curr,

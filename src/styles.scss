@@ -119,7 +119,7 @@
 }
 
 html, body {
-  height: 100%;
+  min-height: 100%;
   font-family: var(--font-body);
   background-color: var(--bg-app);
   color: var(--text-main);
@@ -127,7 +127,7 @@ html, body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
-  overflow-x: hidden;
+  overflow-x: clip;
 }
 
 button, input, select, textarea, optgroup {
@@ -185,7 +185,7 @@ h1, h2, h3, h4, h5, h6 {
   position: sticky;
   top: 0;
   height: 100vh;
-  z-index: 40;
+  z-index: 2010;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
@@ -637,18 +637,53 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 /* Top Navigation Bar */
+app-header {
+  display: block;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  width: 100%;
+  will-change: transform, opacity;
+  transition: transform 0.32s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.28s ease, visibility 0.28s ease;
+}
+
+app-header.header-hidden,
+.topbar.header-hidden {
+  transform: translateY(-100%);
+  opacity: 0 !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+}
+
 .topbar {
-  height: 70px;
+  height: 64px;
   border-bottom: 1px solid var(--border-subtle);
-  background: var(--bg-topbar);
-  backdrop-filter: var(--backdrop-blur);
+  background: var(--bg-card-solid, #ffffff);
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 28px;
+  padding: 0 24px;
   position: sticky;
   top: 0;
-  z-index: 30;
+  z-index: 100;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  will-change: transform, opacity;
+  transition: transform 0.32s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.28s ease, visibility 0.28s ease;
+}
+
+/* Ocultar cuadro estático superior cuando un modal dialog esté abierto para que no interfiera */
+body:has(.modal-overlay) app-header,
+body:has(.modal-overlay) .topbar,
+body:has(.mobile-drawer-overlay) app-header,
+body:has(.mobile-drawer-overlay) .topbar {
+  opacity: 0 !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+  transform: translateY(-8px);
+}
+
+body:has(.modal-overlay) {
+  overflow: hidden !important;
 }
 
 .topbar-left {
@@ -1051,21 +1086,24 @@ table, .data-table {
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 100;
+  z-index: 99999; /* Por encima de cualquier barra estática o menú */
   padding: 16px;
   animation: fadeIn 0.2s ease;
 }
 
 .modal-content {
-  background: var(--bg-card-solid);
+  background: var(--bg-card-solid, #ffffff);
   border: 1px solid var(--border-highlight);
   border-radius: var(--radius-lg);
   width: 100%;
   max-width: 680px;
-  max-height: 90vh;
-  overflow-y: auto;
+  max-height: min(90vh, 90dvh);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden; /* Encabezado y botones siempre visibles, scrollea el body */
   box-shadow: var(--shadow-lg);
   animation: scaleUp 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  position: relative;
 }
 
 .modal-content.modal-lg {
@@ -1078,6 +1116,11 @@ table, .data-table {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  flex-shrink: 0;
+  background: var(--bg-card-solid, #ffffff);
+  position: sticky;
+  top: 0;
+  z-index: 2;
 }
 
 .modal-close {
@@ -1112,6 +1155,10 @@ table, .data-table {
 
 .modal-body {
   padding: 24px;
+  flex: 1 1 auto;
+  min-height: 0; /* Permite scroll vertical fluido en flex child */
+  overflow-y: auto; /* Todo el scroll se realiza aquí */
+  -webkit-overflow-scrolling: touch;
 }
 
 .modal-footer {
@@ -1121,6 +1168,11 @@ table, .data-table {
   align-items: center;
   justify-content: flex-end;
   gap: 12px;
+  flex-shrink: 0;
+  background: var(--bg-card-solid, #ffffff);
+  position: sticky;
+  bottom: 0;
+  z-index: 2;
 }
 
 @keyframes fadeIn {
