@@ -1906,6 +1906,8 @@ export const MAP_STYLES: MapStyleOption[] = [
     /* Leaflet Map Card */
     .map-canvas-card {
       position: relative;
+      isolation: isolate;
+      z-index: 1;
       background: var(--bg-card);
       border: 1px solid var(--border-subtle);
       border-radius: var(--radius-lg, 16px);
@@ -2074,7 +2076,7 @@ export const MAP_STYLES: MapStyleOption[] = [
     /* Fullscreen Map Floating Action Button (Web & Mobile PWA) */
     .map-fullscreen-fab {
       position: absolute;
-      bottom: max(76px, calc(env(safe-area-inset-bottom, 16px) + 60px));
+      bottom: 16px;
       left: 16px;
       right: auto;
       z-index: 1250;
@@ -2093,7 +2095,6 @@ export const MAP_STYLES: MapStyleOption[] = [
       font-weight: 750;
       font-family: inherit;
       cursor: pointer;
-      position: relative;
       box-shadow: 0 6px 20px rgba(16, 185, 129, 0.16),
                   0 2px 6px rgba(0, 0, 0, 0.06);
       transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
@@ -2116,16 +2117,25 @@ export const MAP_STYLES: MapStyleOption[] = [
         background: #f0fdf4;
         border-color: #047857;
         color: #047857;
+        bottom: max(76px, calc(env(safe-area-inset-bottom, 16px) + 60px));
       }
     }
 
     @media (max-width: 768px) {
+      .map-canvas-card {
+        min-height: 400px;
+      }
+
       .map-fullscreen-fab {
-        bottom: max(84px, calc(env(safe-area-inset-bottom, 16px) + 68px));
+        bottom: 14px;
         left: 12px;
         right: auto;
-        padding: 10px 14px;
+        padding: 9px 14px;
         font-size: 0.78rem;
+
+        &.is-fullscreen {
+          bottom: max(84px, calc(env(safe-area-inset-bottom, 16px) + 68px));
+        }
       }
     }
 
@@ -2801,6 +2811,125 @@ export const MAP_STYLES: MapStyleOption[] = [
     .btn-locate:hover {
       color: var(--text-main);
       border-color: var(--color-primary);
+    }
+
+    @media (max-width: 768px) {
+      .couriers-deck-card {
+        padding: 14px;
+        gap: 12px;
+        border-radius: 16px;
+      }
+
+      .deck-header {
+        gap: 8px;
+        padding-bottom: 10px;
+      }
+
+      .deck-title {
+        font-size: 0.86rem;
+        line-height: 1.25;
+      }
+
+      .deck-header .badge-pill {
+        flex-shrink: 0;
+        white-space: nowrap;
+        font-size: 0.7rem;
+        padding: 3px 9px;
+      }
+
+      .couriers-list {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 10px;
+        overflow-x: visible;
+        padding-bottom: 0;
+      }
+
+      .courier-card {
+        min-width: 0;
+        max-width: 100%;
+        width: 100%;
+        padding: 12px 14px;
+        gap: 8px;
+        border-radius: 12px;
+        border-left-width: 5px;
+        background: #ffffff;
+        box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
+      }
+
+      .courier-card-head {
+        align-items: flex-start;
+        gap: 10px;
+      }
+
+      .courier-avatar {
+        width: 36px;
+        height: 36px;
+        border-radius: 10px;
+      }
+
+      .courier-name-row {
+        flex-direction: row;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 6px;
+      }
+
+      .courier-name {
+        font-size: 0.9rem;
+      }
+
+      .courier-badges-inline {
+        gap: 5px;
+      }
+
+      .courier-vehicle-info {
+        justify-content: space-between;
+        align-items: center;
+        width: 100%;
+        margin-top: 4px;
+        font-size: 0.74rem;
+        gap: 8px;
+      }
+
+      .courier-phone-inline {
+        font-size: 0.72rem;
+        padding: 2px 8px;
+      }
+
+      .progress-track {
+        height: 4px;
+        margin: 2px 0;
+      }
+
+      .courier-card-footer {
+        padding-top: 8px;
+        margin-top: 2px;
+        border-top: 1px dashed #e2e8f0;
+        gap: 8px;
+      }
+
+      .btn-seq-link {
+        font-size: 0.76rem;
+        padding: 5px 10px;
+        background: #f0fdf4;
+        border: 1px solid #bbf7d0;
+        border-radius: 8px;
+      }
+
+      .btn-force-receive {
+        font-size: 0.74rem;
+        padding: 5px 10px;
+        border-radius: 8px;
+      }
+
+      .btn-locate {
+        font-size: 0.74rem;
+        padding: 5px 12px;
+        border-radius: 8px;
+        margin-left: auto;
+      }
     }
 
     /* Modal Backdrop & Windows */

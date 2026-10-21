@@ -27,7 +27,7 @@
   </div>
 
   <!-- Terminal de Marcación & Estado de Planta (2 Columns) -->
-  <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: 24px;">
+  <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 24px;">
 
     <!-- Left: Punch Form Card -->
     <div class="card">
@@ -141,18 +141,18 @@
           <tbody>
             @for (shift of activeShifts(); track shift.shiftId) {
               <tr>
-                <td style="font-weight: 700;">{{ shift.employeeName }}</td>
-                <td style="font-family: monospace; font-size: 0.9rem;">{{ shift.startTime }}</td>
-                <td>
+                <td data-label="Empleado" style="font-weight: 700;">{{ shift.employeeName }}</td>
+                <td data-label="Horario de Entrada" style="font-family: monospace; font-size: 0.9rem;">{{ shift.startTime }}</td>
+                <td data-label="Jornada">
                   <span class="badge badge-info">{{ shift.shiftType }}</span>
                 </td>
-                <td style="font-size: 0.85rem; color: var(--text-muted);">{{ shift.notes }}</td>
-                <td>
+                <td data-label="Observaciones" style="font-size: 0.85rem; color: var(--text-muted);">{{ shift.notes }}</td>
+                <td data-label="Estado">
                   <span class="badge" [ngClass]="shift.status === 'ACTIVE' ? 'badge-success' : 'badge-danger'">
                     {{ shift.status === 'ACTIVE' ? 'En Turno' : 'Finalizado' }}
                   </span>
                 </td>
-                <td>
+                <td data-label="Acción">
                   @if (shift.status === 'ACTIVE') {
                     <button
                       type="button"

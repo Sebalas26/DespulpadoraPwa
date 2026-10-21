@@ -70,7 +70,7 @@
   </div>
 
   <!-- Two-Column Formulation Console -->
-  <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(360px, 1fr)); gap: 24px;">
+  <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 24px;">
 
     <!-- Left Column: Inputs & Distribution -->
     <div class="card">
@@ -316,20 +316,20 @@
           <tbody>
             @for (batch of filteredBatches(); track batch.batchId) {
               <tr>
-                <td style="font-family: monospace; font-weight: 700; color: var(--color-primary);">
+                <td data-label="Código Lote" style="font-family: monospace; font-weight: 700; color: var(--color-primary);">
                   {{ batch.batchCode }}
                 </td>
-                <td style="font-weight: 600;">{{ batch.fruitName }}</td>
-                <td>{{ batch.grossFruitKg }} Kg</td>
-                <td style="font-weight: 700; color: #10b981;">{{ batch.pulpProducedKg }} Kg</td>
-                <td>
+                <td data-label="Fruta" style="font-weight: 600;">{{ batch.fruitName }}</td>
+                <td data-label="Fruta Fresca">{{ batch.grossFruitKg }} Kg</td>
+                <td data-label="Pulpa Obtenida" style="font-weight: 700; color: #10b981;">{{ batch.pulpProducedKg }} Kg</td>
+                <td data-label="Rendimiento">
                   <span class="badge badge-warning" style="font-weight: 700;">{{ batch.realYieldPercentage }}%</span>
                 </td>
-                <td>{{ batch.operatorName || 'Jefe de Planta' }}</td>
-                <td style="font-size: 0.8rem; color: var(--text-muted);">
+                <td data-label="Operario">{{ batch.operatorName || 'Jefe de Planta' }}</td>
+                <td data-label="Fecha y Hora" style="font-size: 0.8rem; color: var(--text-muted);">
                   {{ batch.productionDate | date:'medium' }}
                 </td>
-                <td>
+                <td data-label="Estado">
                   <span class="badge badge-success">Aprobado</span>
                 </td>
               </tr>
@@ -461,33 +461,33 @@
             <tbody>
               @for (audit of stateService.idealVsRealLossAudit(); track audit.fruitId) {
                 <tr>
-                  <td>
+                  <td data-label="Fruta">
                     <div style="font-weight: 700; color: var(--text-main);">{{ audit.fruitName }}</div>
                     <div style="font-size: 0.72rem; color: var(--text-dim);">Lotes del mes</div>
                   </td>
-                  <td style="text-align: right; font-weight: 600;">
+                  <td data-label="Uds Producidas" style="text-align: right; font-weight: 600;">
                     {{ audit.unitsProduced }} uds
                   </td>
-                  <td style="text-align: right; font-weight: 600;">
+                  <td data-label="Uds Facturadas" style="text-align: right; font-weight: 600;">
                     {{ audit.unitsBilled }} uds
                   </td>
-                  <td style="text-align: right; font-weight: 700;">
+                  <td data-label="Dif. Unidades" style="text-align: right; font-weight: 700;">
                     <span [style.color]="audit.unitsDifference < 0 ? '#ef4444' : '#10b981'">
                       {{ audit.unitsDifference > 0 ? '+' : '' }}{{ audit.unitsDifference }} uds
                     </span>
                   </td>
-                  <td style="text-align: right; font-weight: 600;">
+                  <td data-label="Venta Ideal ($)" style="text-align: right; font-weight: 600;">
                     {{ formatCOP(audit.idealRevenue) }}
                   </td>
-                  <td style="text-align: right; font-weight: 700; color: #10b981;">
+                  <td data-label="Venta Real ($)" style="text-align: right; font-weight: 700; color: #10b981;">
                     {{ formatCOP(audit.realRevenue) }}
                   </td>
-                  <td style="text-align: right; font-weight: 700;">
+                  <td data-label="Dif. Dinero ($)" style="text-align: right; font-weight: 700;">
                     <span [style.color]="audit.moneyDifference < 0 ? '#ef4444' : '#10b981'">
                       {{ audit.moneyDifference > 0 ? '+' : '' }}{{ formatCOP(audit.moneyDifference) }}
                     </span>
                   </td>
-                  <td style="text-align: center;">
+                  <td data-label="% Merma" style="text-align: center;">
                     <span
                       class="badge"
                       [ngClass]="audit.lossPercentage > 20 ? 'badge-danger' : (audit.lossPercentage > 5 ? 'badge-warning' : 'badge-success')"
@@ -495,7 +495,7 @@
                       {{ audit.lossPercentage }}%
                     </span>
                   </td>
-                  <td>
+                  <td data-label="Diagnóstico">
                     <span style="font-size: 0.8rem; color: var(--text-muted);">
                       {{ audit.notes }}
                     </span>

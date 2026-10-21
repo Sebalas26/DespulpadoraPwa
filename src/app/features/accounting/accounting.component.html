@@ -54,19 +54,19 @@
         <tbody>
           @for (client of filteredClients(); track client.clientId) {
             <tr>
-              <td>
+              <td data-label="Cliente / Razón Social">
                 <div class="client-name-main">{{ client.fullName }}</div>
                 @if (client.email) {
                   <div class="client-email-sub">{{ client.email }}</div>
                 }
               </td>
-              <td class="mono-text">{{ client.identificationNumber }}</td>
-              <td>{{ client.phone }}</td>
-              <td>
+              <td data-label="NIT / CC" class="mono-text">{{ client.identificationNumber }}</td>
+              <td data-label="Teléfono">{{ client.phone }}</td>
+              <td data-label="Dirección / Ciudad">
                 <div>{{ client.address || 'Sin dirección' }}</div>
                 <div class="client-city-sub">{{ client.city || 'Bogotá D.C.' }}</div>
               </td>
-              <td>
+              <td data-label="Compras realizadas">
                 <div class="client-purchases-summary">
                   <span class="purchases-count-pill">
                     {{ getClientPurchaseCount(client) }} {{ getClientPurchaseCount(client) === 1 ? 'compra' : 'compras' }}
@@ -76,43 +76,45 @@
                   }
                 </div>
               </td>
-              <td style="text-align: right; white-space: nowrap;">
-                <button
-                  type="button"
-                  class="btn-sales-detail"
-                  title="Ver histórico de compras de este cliente"
-                  (click)="openClientSalesHistory(client)"
-                >
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <line x1="18" y1="20" x2="18" y2="10"></line>
-                    <line x1="12" y1="20" x2="12" y2="4"></line>
-                    <line x1="6" y1="20" x2="6" y2="14"></line>
-                  </svg>
-                  <span>Detalle de ventas</span>
-                </button>
+              <td data-label="Acciones" style="text-align: right; white-space: nowrap;">
+                <div style="display: flex; align-items: center; justify-content: flex-end; gap: 6px; flex-wrap: wrap;">
+                  <button
+                    type="button"
+                    class="btn-sales-detail"
+                    title="Ver histórico de compras de este cliente"
+                    (click)="openClientSalesHistory(client)"
+                  >
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <line x1="18" y1="20" x2="18" y2="10"></line>
+                      <line x1="12" y1="20" x2="12" y2="4"></line>
+                      <line x1="6" y1="20" x2="6" y2="14"></line>
+                    </svg>
+                    <span>Detalle de ventas</span>
+                  </button>
 
-                <button
-                  type="button"
-                  class="action-icon-btn"
-                  title="Editar cliente"
-                  (click)="editClient(client)"
-                >
-                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
-                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
-                  </svg>
-                </button>
-                <button
-                  type="button"
-                  class="action-icon-btn danger"
-                  title="Eliminar cliente"
-                  (click)="deleteClient(client.clientId)"
-                >
-                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <polyline points="3 6 5 6 21 6"></polyline>
-                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-                  </svg>
-                </button>
+                  <button
+                    type="button"
+                    class="action-icon-btn"
+                    title="Editar cliente"
+                    (click)="editClient(client)"
+                  >
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                      <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                    </svg>
+                  </button>
+                  <button
+                    type="button"
+                    class="action-icon-btn danger"
+                    title="Eliminar cliente"
+                    (click)="deleteClient(client.clientId)"
+                  >
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <polyline points="3 6 5 6 21 6"></polyline>
+                      <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                    </svg>
+                  </button>
+                </div>
               </td>
             </tr>
           }

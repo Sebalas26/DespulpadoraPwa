@@ -228,7 +228,7 @@ import { AuthService } from '../../core/services/auth.service';
       display: flex;
       justify-content: space-around;
       align-items: center;
-      z-index: 50;
+      z-index: 9500;
       padding: 0 10px;
     }
 
@@ -290,22 +290,25 @@ import { AuthService } from '../../core/services/auth.service';
     .mobile-drawer-overlay {
       position: fixed;
       inset: 0;
-      background: rgba(0, 0, 0, 0.45);
-      backdrop-filter: blur(4px);
-      z-index: 90;
+      background: rgba(15, 23, 42, 0.55);
+      backdrop-filter: blur(6px);
+      -webkit-backdrop-filter: blur(6px);
+      z-index: 99999;
       display: flex;
       align-items: flex-end;
       animation: fadeIn 0.2s ease;
     }
 
     .mobile-drawer-content {
+      position: relative;
+      z-index: 100000;
       width: 100%;
       background: #ffffff;
       border-radius: 20px 20px 0 0;
-      padding: 20px 18px 30px;
-      max-height: 80vh;
+      padding: 20px 18px max(30px, calc(env(safe-area-inset-bottom, 16px) + 24px));
+      max-height: 82vh;
       overflow-y: auto;
-      box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.1);
+      box-shadow: 0 -8px 30px rgba(0, 0, 0, 0.18);
       animation: slideUp 0.25s ease;
     }
 

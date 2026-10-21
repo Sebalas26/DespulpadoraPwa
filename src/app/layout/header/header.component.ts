@@ -489,7 +489,50 @@ import { VoiceOrdersService } from '../../core/services/voice-orders.service';
         display: flex !important;
       }
       .topbar {
-        padding: 0 16px;
+        padding: 0 10px !important;
+        gap: 6px;
+      }
+      .mobile-only-header {
+        min-width: 0;
+        flex: 1;
+      }
+      .mobile-brand {
+        gap: 6px;
+        min-width: 0;
+      }
+      .mobile-brand img {
+        width: 28px !important;
+        height: 28px !important;
+        flex-shrink: 0;
+      }
+      .mobile-brand-title {
+        font-size: 0.9rem;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .topbar-actions {
+        gap: 5px;
+        flex-shrink: 0;
+      }
+      .online-pill {
+        padding: 3px 7px;
+        gap: 4px;
+        font-size: 0.68rem;
+        white-space: nowrap;
+        flex-shrink: 0;
+      }
+      .btn-kds-access {
+        padding: 3px 7px;
+        gap: 4px;
+        flex-shrink: 0;
+      }
+      .topbar-icon-btn,
+      .mobile-user-avatar {
+        width: 30px;
+        height: 30px;
+        font-size: 0.72rem;
+        flex-shrink: 0;
       }
     }
 

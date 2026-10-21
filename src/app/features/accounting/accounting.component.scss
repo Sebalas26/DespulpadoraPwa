@@ -114,6 +114,10 @@
 .clients-table-wrap {
   width: 100%;
   overflow-x: auto;
+
+  @media (max-width: 768px) {
+    overflow-x: visible;
+  }
 }
 
 .clients-table {

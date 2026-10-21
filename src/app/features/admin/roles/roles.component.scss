@@ -1,3 +1,26 @@
 :host {
   display: block;
 }
+
+.roles-matrix-grid {
+  display: grid;
+  grid-template-columns: 310px 1fr;
+  gap: 24px;
+  align-items: start;
+}
+
+.roles-sidebar-card {
+  position: sticky;
+  top: 16px;
+}
+
+@media (max-width: 900px) {
+  .roles-matrix-grid {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+
+  .roles-sidebar-card {
+    position: static;
+  }
+}

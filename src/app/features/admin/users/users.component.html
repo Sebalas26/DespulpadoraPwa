@@ -50,27 +50,29 @@
           <tbody>
             @for (user of users(); track user.userId) {
               <tr>
-                <td style="font-weight: 700; font-family: monospace; color: var(--color-primary);">
+                <td data-label="Usuario" style="font-weight: 700; font-family: monospace; color: var(--color-primary);">
                   {{ user.username }}
                 </td>
-                <td style="font-weight: 600;">{{ user.fullName }}</td>
-                <td style="font-size: 0.85rem; color: var(--text-muted);">{{ user.email }}</td>
-                <td>
+                <td data-label="Nombre Completo" style="font-weight: 600;">{{ user.fullName }}</td>
+                <td data-label="Correo Electrónico" style="font-size: 0.85rem; color: var(--text-muted);">{{ user.email }}</td>
+                <td data-label="Rol Asignado">
                   <span class="badge badge-purple">{{ user.roleName }}</span>
                 </td>
-                <td>
-                  @for (branch of user.branches; track branch.branchId) {
-                    <span class="badge-pill badge-emerald" style="font-size: 0.72rem; margin-right: 4px;">
-                      {{ branch.name }}
-                    </span>
-                  }
+                <td data-label="Sedes Permitidas">
+                  <div style="display: flex; flex-wrap: wrap; gap: 4px;">
+                    @for (branch of user.branches; track branch.branchId) {
+                      <span class="badge-pill badge-emerald" style="font-size: 0.72rem;">
+                        {{ branch.name }}
+                      </span>
+                    }
+                  </div>
                 </td>
-                <td>
+                <td data-label="Estado">
                   <span class="badge" [ngClass]="user.isActive ? 'badge-success' : 'badge-danger'">
                     {{ user.isActive ? 'Activo' : 'Inactivo' }}
                   </span>
                 </td>
-                <td>
+                <td data-label="Acción">
                   <div style="display: flex; gap: 6px; align-items: center;">
                     <button
                       type="button"

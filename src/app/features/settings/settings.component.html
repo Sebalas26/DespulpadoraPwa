@@ -959,14 +959,14 @@
               @for (v of paginatedVariants(); track v.variantId) {
                 <tr>
                   @if (isColumnVisible('product')) {
-                    <td>
+                    <td data-label="Producto & SKU">
                       <div style="font-weight: 700; color: var(--text-main);">{{ v.name }}</div>
                       <div style="font-size: 0.72rem; color: var(--text-dim); font-family: monospace;">{{ v.sku }}</div>
                     </td>
                   }
 
                   @if (isColumnVisible('category')) {
-                    <td>
+                    <td data-label="Línea">
                       <span class="badge" [ngClass]="v.category === 'PULPAS' ? 'badge-warning' : (v.category === 'LIMONADAS' ? 'badge-info' : (v.category === 'BATIDOS' ? 'badge-emerald' : 'badge-purple'))">
                         {{ v.category }}
                       </span>
@@ -974,25 +974,25 @@
                   }
 
                   @if (isColumnVisible('grammage')) {
-                    <td style="text-align: center; font-weight: 700;">
+                    <td data-label="Presentación" style="text-align: center; font-weight: 700;">
                       <span class="badge badge-purple">{{ v.grammage }}g</span>
                     </td>
                   }
 
                   @if (isColumnVisible('unitCost')) {
-                    <td style="text-align: right; color: var(--text-muted);">
+                    <td data-label="Costo Producción" style="text-align: right; color: var(--text-muted);">
                       {{ formatCOP(v.unitCost) }}
                     </td>
                   }
 
                   @if (isColumnVisible('basePrice')) {
-                    <td style="text-align: right; font-weight: 700; color: var(--text-main);">
+                    <td data-label="Precio Venta" style="text-align: right; font-weight: 700; color: var(--text-main);">
                       {{ formatCOP(v.basePrice) }}
                     </td>
                   }
 
                   @if (isColumnVisible('margin')) {
-                    <td style="text-align: right; font-weight: 700; color: #10b981;">
+                    <td data-label="Margen Unitario" style="text-align: right; font-weight: 700; color: #10b981;">
                       {{ formatCOP(v.basePrice - v.unitCost) }}
                       <span style="font-size: 0.72rem; color: var(--text-dim); display: block;">
                         ({{ Math.round(((v.basePrice - v.unitCost) / (v.basePrice || 1)) * 100) }}%)
@@ -1001,7 +1001,7 @@
                   }
 
                   @if (isColumnVisible('currentStock')) {
-                    <td style="text-align: center;">
+                    <td data-label="Stock en Cava" style="text-align: center;">
                       <span
                         style="font-size: 1.05rem; font-weight: 800;"
                         [style.color]="v.currentStock <= v.minStockAlert ? '#ef4444' : '#10b981'"
@@ -1012,7 +1012,7 @@
                   }
 
                   @if (isColumnVisible('status')) {
-                    <td style="text-align: center;">
+                    <td data-label="Estado" style="text-align: center;">
                       @if (v.currentStock <= v.minStockAlert) {
                         <span class="badge badge-danger" style="font-size: 0.7rem; padding: 2px 6px;">¡Stock Bajo!</span>
                       } @else {
@@ -1022,12 +1022,12 @@
                   }
 
                   @if (isColumnVisible('quickAdjust')) {
-                    <td style="text-align: center;">
-                      <div style="display: flex; gap: 4px; justify-content: center;">
+                    <td data-label="Ajuste Rápido" data-full="true" style="text-align: center;">
+                      <div style="display: flex; gap: 6px; justify-content: center; flex-wrap: wrap;">
                         <button
                           type="button"
                           class="btn btn-outline"
-                          style="padding: 2px 8px; font-size: 0.75rem;"
+                          style="padding: 4px 10px; font-size: 0.75rem;"
                           title="Restar 10 unidades"
                           (click)="adjustVariant(v.variantId, -10)"
                         >
@@ -1036,7 +1036,7 @@
                         <button
                           type="button"
                           class="btn btn-outline"
-                          style="padding: 2px 8px; font-size: 0.75rem;"
+                          style="padding: 4px 10px; font-size: 0.75rem;"
                           title="Sumar 10 unidades"
                           (click)="adjustVariant(v.variantId, 10)"
                         >
@@ -1045,7 +1045,7 @@
                         <button
                           type="button"
                           class="btn btn-outline"
-                          style="padding: 2px 8px; font-size: 0.75rem;"
+                          style="padding: 4px 10px; font-size: 0.75rem;"
                           title="Sumar 50 unidades (Lote)"
                           (click)="adjustVariant(v.variantId, 50)"
                         >
@@ -1056,7 +1056,7 @@
                   }
 
                   @if (isColumnVisible('actions')) {
-                    <td style="text-align: center;">
+                    <td data-label="Acciones" style="text-align: center;">
                       <div style="display: flex; gap: 6px; justify-content: center;">
                         <button
                           type="button"
@@ -1208,13 +1208,13 @@
             @for (fruit of stateService.fruits(); track fruit.id) {
               <tr style="border-bottom: 1px solid var(--border-subtle); transition: background 0.15s ease;">
                 <!-- 1. Fruta / Variedad -->
-                <td style="padding: 14px 18px; vertical-align: middle;">
+                <td data-label="Fruta / Variedad" style="padding: 14px 18px; vertical-align: middle;">
                   <div style="font-weight: 800; font-size: 0.95rem; color: #111827;">{{ fruit.name }}</div>
                   <div style="font-size: 0.75rem; color: #6b7280; font-style: italic; margin-top: 2px;">{{ fruit.scientificName }}</div>
                 </td>
 
                 <!-- 2. Rendimiento Pulpa -->
-                <td style="padding: 14px 16px; vertical-align: middle;">
+                <td data-label="Rendimiento Pulpa" style="padding: 14px 16px; vertical-align: middle;">
                   <div style="font-size: 0.88rem; font-weight: 700; color: #111827;">
                     {{ (fruit.yieldRate * 100).toFixed(0) }}%
                   </div>
@@ -1224,7 +1224,7 @@
                 </td>
 
                 <!-- 3. Estado (Clean neutral monochrome pill) -->
-                <td style="padding: 14px 16px; vertical-align: middle; text-align: center;">
+                <td data-label="Estado" style="padding: 14px 16px; vertical-align: middle; text-align: center;">
                   <span
                     style="display: inline-block; padding: 3px 10px; font-size: 0.74rem; font-weight: 700; border-radius: 9999px; border: 1px solid #d1d5db; background: #f3f4f6; color: #111827;"
                   >
@@ -1233,15 +1233,15 @@
                 </td>
 
                 <!-- 4. Cantidad Disponible (Kg) -->
-                <td style="padding: 14px 18px; vertical-align: middle; text-align: right;">
+                <td data-label="Cantidad Disponible" style="padding: 14px 18px; vertical-align: middle; text-align: right;">
                   <div style="font-size: 1.35rem; font-weight: 900; color: #111827; line-height: 1;">
                     {{ fruit.freshStockKg }} <span style="font-size: 0.82rem; font-weight: 700; color: #6b7280;">Kg</span>
                   </div>
                 </td>
 
                 <!-- 5. Botones de Ajuste Rápido (Neutral black outline buttons) -->
-                <td style="padding: 14px 20px; vertical-align: middle; text-align: center;">
-                  <div style="display: inline-flex; align-items: center; gap: 6px; justify-content: center;">
+                <td data-label="Ajustar Cantidad (Kg)" style="padding: 14px 20px; vertical-align: middle; text-align: center;">
+                  <div style="display: inline-flex; align-items: center; gap: 6px; justify-content: center; flex-wrap: wrap;">
                     <button
                       type="button"
                       class="btn btn-outline"

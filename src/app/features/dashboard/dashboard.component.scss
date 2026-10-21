@@ -1054,6 +1054,9 @@
 @media (max-width: 768px) {
   .dashboard-container {
     gap: 16px;
+    width: 100%;
+    max-width: 100%;
+    overflow-x: hidden;
   }
 
   .mobile-location-tag {
@@ -1061,20 +1064,59 @@
   }
 
   .dgl-greeting-title {
-    font-size: 1.5rem;
+    font-size: 1.45rem;
   }
 
   .quick-kpis-grid {
-    grid-template-columns: repeat(2, 1fr);
-    gap: 12px;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+    width: 100%;
   }
 
   .quick-kpi-card {
-    padding: 14px 14px;
+    padding: 12px;
+    min-width: 0;
+    overflow: hidden;
+    border-radius: 14px;
+  }
+
+  .kpi-icon-box {
+    width: 32px;
+    height: 32px;
+    margin-bottom: 10px;
+  }
+
+  .kpi-label {
+    font-size: 0.74rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .kpi-value-row {
+    gap: 6px;
+    min-width: 0;
   }
 
   .kpi-big-value {
-    font-size: 1.3rem;
+    font-size: 1.08rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    min-width: 0;
+  }
+
+  .kpi-sparkline {
+    width: 40px;
+    height: 22px;
+  }
+
+  .kpi-subtext {
+    font-size: 0.68rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin-top: 4px;
   }
 
   .financial-metrics-row {
@@ -1094,11 +1136,40 @@
   }
 
   .grammage-pills-row {
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .prepared-pulps-table-wrap {
+    overflow-x: hidden;
+  }
+
+  .prepared-pulps-table {
+    font-size: 0.7rem;
+
+    th,
+    td {
+      padding: 6px 4px;
+    }
+  }
+
+  .gram-qty-badge {
+    min-width: 22px;
+    padding: 2px 4px;
+    font-size: 0.68rem;
+  }
+
+  .pulp-total-cell strong {
+    font-size: 0.72rem;
+  }
+
+  .pulp-total-cell span {
+    font-size: 0.62rem;
   }
 
   .financial-card,
   .card-section-box {
-    padding: 18px 16px;
+    padding: 16px 14px;
+    min-width: 0;
+    overflow: hidden;
   }
 }
