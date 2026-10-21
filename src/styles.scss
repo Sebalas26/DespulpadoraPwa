@@ -681,7 +681,6 @@ body:has(.mobile-drawer-overlay) {
   overflow: hidden !important;
   height: 100vh !important;
   height: 100dvh !important;
-  touch-action: none !important;
   overscroll-behavior: none !important;
 }
 
@@ -1544,18 +1543,19 @@ td.mobile-tr-summary-cell {
     display: flex !important;
     align-items: center !important;
     justify-content: center !important;
-    padding: 16px 14px calc(16px + env(safe-area-inset-bottom, 0px)) !important;
+    padding: 14px 12px calc(14px + env(safe-area-inset-bottom, 0px)) !important;
     z-index: 99999 !important;
     overflow: hidden !important;
-    touch-action: none !important;
+    overscroll-behavior: contain !important;
   }
 
   .modal-content,
   .client-modal-card {
     width: 100% !important;
     max-width: 520px !important;
-    max-height: calc(100dvh - 36px) !important;
-    max-height: calc(100vh - 36px) !important;
+    height: auto !important;
+    max-height: calc(100dvh - 28px) !important;
+    max-height: calc(100vh - 28px) !important;
     background: #ffffff !important;
     border-radius: 20px !important;
     border: 1px solid rgba(226, 232, 240, 0.9) !important;
@@ -1566,12 +1566,13 @@ td.mobile-tr-summary-cell {
     margin: auto !important;
     position: relative !important;
     animation: scaleUp 0.22s cubic-bezier(0.16, 1, 0.3, 1) !important;
+    touch-action: pan-y !important;
   }
 
   .modal-header,
   .client-modal-header {
     flex-shrink: 0 !important;
-    padding: 16px 20px !important;
+    padding: 14px 18px !important;
     border-bottom: 1px solid #eef2ef !important;
     background: #ffffff !important;
     position: sticky !important;
@@ -1583,9 +1584,10 @@ td.mobile-tr-summary-cell {
   .client-modal-body {
     flex: 1 1 auto !important;
     min-height: 0 !important;
-    overflow-y: auto !important;
+    max-height: none !important;
+    overflow-y: scroll !important;
     -webkit-overflow-scrolling: touch !important;
-    padding: 16px 20px !important;
+    padding: 14px 16px 28px !important;
     overscroll-behavior: contain !important;
     touch-action: pan-y !important;
   }
@@ -1593,7 +1595,7 @@ td.mobile-tr-summary-cell {
   .modal-footer,
   .client-modal-footer {
     flex-shrink: 0 !important;
-    padding: 12px 20px calc(14px + env(safe-area-inset-bottom, 0px)) !important;
+    padding: 12px 16px calc(12px + env(safe-area-inset-bottom, 0px)) !important;
     border-top: 1px solid #eef2ef !important;
     background: #ffffff !important;
     position: sticky !important;
@@ -1602,7 +1604,7 @@ td.mobile-tr-summary-cell {
     display: flex !important;
     justify-content: flex-end !important;
     align-items: center !important;
-    gap: 10px !important;
+    gap: 8px !important;
   }
 }
 

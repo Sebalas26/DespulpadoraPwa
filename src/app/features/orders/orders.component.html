@@ -446,8 +446,7 @@
           <div class="mobile-summary-header" (click)="toggleMobileCard('hist-' + order.orderId, $event)">
             <div class="ms-left">
               <span class="ms-code-badge">{{ order.clientName }}</span>
-              <span class="ms-subtitle">#{{ order.orderNumber }} • Placa: {{ getCourierForOrder(order)?.vehiclePlate ||
-                'PATIO' }}</span>
+              <span class="ms-subtitle">#{{ order.orderNumber }}</span>
             </div>
             <div class="ms-right">
               <div class="ms-top-right">
@@ -460,8 +459,7 @@
                 </span>
               </div>
               <span class="ms-status-pill">
-                {{ order.status === 'DELIVERED' ? 'Entregada' : (order.status === 'DISPATCHED' ? 'En Camino' : 'En
-                Patio') }}
+                {{ order.status === 'DELIVERED' ? 'Entregada' : (order.status === 'DISPATCHED' ? 'En Camino' : 'Sin Gestionar') }}
               </span>
             </div>
           </div>
@@ -1310,7 +1308,7 @@
     </div>
 
     <div class="modal-body"
-      style="padding: 22px 24px; background: #f8fafc; display: flex; flex-direction: column; gap: 16px; max-height: 75vh; overflow-y: auto;">
+      style="padding: 18px 20px 24px; background: #f8fafc; display: flex; flex-direction: column; gap: 14px; flex: 1 1 auto; min-height: 0; overflow-y: auto; -webkit-overflow-scrolling: touch; touch-action: pan-y;">
       <!-- Info Cards Grid: Cliente & Domiciliario -->
       <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 14px;">
         <!-- Cliente Card -->
@@ -1395,12 +1393,12 @@
       </div>
 
       <!-- Tabla de Productos del Pedido -->
-      <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden;">
+      <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; overflow-x: auto; -webkit-overflow-scrolling: touch; touch-action: pan-y pan-x;">
         <div
           style="padding: 10px 16px; background: #f1f5f9; border-bottom: 1px solid #e2e8f0; font-size: 0.75rem; font-weight: 800; color: #475569; text-transform: uppercase;">
           Productos Solicitados ({{ viewOrder.items.length }})
         </div>
-        <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem;">
+        <table style="width: 100%; min-width: 440px; border-collapse: collapse; font-size: 0.85rem;">
           <thead>
             <tr style="border-bottom: 1px solid #f1f5f9; color: #64748b; font-size: 0.75rem; text-align: left;">
               <th style="padding: 10px 16px;">PRESENTACIÓN / FRUTA</th>
