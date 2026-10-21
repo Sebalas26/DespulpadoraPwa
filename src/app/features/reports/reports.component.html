@@ -317,8 +317,8 @@
                     <td class="mobile-tr-summary-cell">
                       <div class="mobile-summary-header">
                         <div class="ms-left">
-                          <span class="ms-code-badge">{{ getCourierName(order) | slice:0:12 }}</span>
-                          <span class="ms-subtitle">#{{ order.orderNumber }} • {{ order.clientName }}</span>
+                          <span class="ms-code-badge">{{ order.clientName }}</span>
+                          <span class="ms-subtitle">#{{ order.orderNumber }} • Domiciliario: {{ getCourierName(order) }}</span>
                         </div>
                         <div class="ms-right">
                           <div class="ms-top-right">
@@ -536,8 +536,8 @@
                     <td class="mobile-tr-summary-cell">
                       <div class="mobile-summary-header">
                         <div class="ms-left">
-                          <span class="ms-code-badge">{{ row.alertLevel }}</span>
-                          <span class="ms-subtitle">#MER-0{{ row.fruitId }} • {{ row.fruitName }}</span>
+                          <span class="ms-code-badge">{{ row.fruitName }}</span>
+                          <span class="ms-subtitle">#MER-0{{ row.fruitId }} • Alerta: {{ row.alertLevel }}</span>
                         </div>
                         <div class="ms-right">
                           <div class="ms-top-right">
@@ -817,8 +817,8 @@
                     <td class="mobile-tr-summary-cell">
                       <div class="mobile-summary-header">
                         <div class="ms-left">
-                          <span class="ms-code-badge">{{ expense.categoryName }}</span>
-                          <span class="ms-subtitle">#{{ expense.receiptNumber || ('GAS-' + expense.expenseId) }} • {{ expense.description }}</span>
+                          <span class="ms-code-badge">{{ expense.description }}</span>
+                          <span class="ms-subtitle">#{{ expense.receiptNumber || ('GAS-' + expense.expenseId) }} • {{ expense.categoryName }}</span>
                         </div>
                         <div class="ms-right">
                           <div class="ms-top-right">
@@ -952,8 +952,8 @@
                     <td class="mobile-tr-summary-cell">
                       <div class="mobile-summary-header">
                         <div class="ms-left">
-                          <span class="ms-code-badge">{{ item.area }}</span>
-                          <span class="ms-subtitle">#LIQ-{{ item.settlementId }} • {{ item.employeeName }}</span>
+                          <span class="ms-code-badge">{{ item.employeeName }}</span>
+                          <span class="ms-subtitle">#LIQ-{{ item.settlementId }} • Área: {{ item.area }}</span>
                         </div>
                         <div class="ms-right">
                           <div class="ms-top-right">

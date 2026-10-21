@@ -159,8 +159,8 @@
                   <td class="mobile-tr-summary-cell">
                     <div class="mobile-summary-header">
                       <div class="ms-left">
-                        <span class="ms-code-badge">{{ emp.area || emp.department }}</span>
-                        <span class="ms-subtitle">#CC-{{ emp.identificationNumber }} • {{ emp.fullName }}</span>
+                        <span class="ms-code-badge">{{ emp.fullName }}</span>
+                        <span class="ms-subtitle">C.C. {{ emp.identificationNumber }} • {{ emp.position || emp.area }}</span>
                       </div>
                       <div class="ms-right">
                         <div class="ms-top-right">
@@ -525,8 +525,8 @@
                     <td class="mobile-tr-summary-cell">
                       <div class="mobile-summary-header">
                         <div class="ms-left">
-                          <span class="ms-code-badge">{{ shift.shiftType }}</span>
-                          <span class="ms-subtitle">#TUR-{{ shift.shiftId }} • {{ shift.employeeName }}</span>
+                          <span class="ms-code-badge">{{ shift.employeeName }}</span>
+                          <span class="ms-subtitle">#TUR-{{ shift.shiftId }} • Jornada: {{ shift.shiftType }}</span>
                         </div>
                         <div class="ms-right">
                           <div class="ms-top-right">
@@ -843,8 +843,8 @@
                   <td class="mobile-tr-summary-cell">
                     <div class="mobile-summary-header">
                       <div class="ms-left">
-                        <span class="ms-code-badge">{{ st.area }}</span>
-                        <span class="ms-subtitle">#NOM-{{ st.settlementId }} • {{ st.employeeName }}</span>
+                        <span class="ms-code-badge">{{ st.employeeName }}</span>
+                        <span class="ms-subtitle">#NOM-{{ st.settlementId }} • {{ st.periodId === 1 ? '1ra Quincena' : '2da Quincena' }}</span>
                       </div>
                       <div class="ms-right">
                         <div class="ms-top-right">

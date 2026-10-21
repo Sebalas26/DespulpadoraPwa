@@ -961,8 +961,8 @@
                   <td class="mobile-tr-summary-cell">
                     <div class="mobile-summary-header">
                       <div class="ms-left">
-                        <span class="ms-code-badge">{{ v.sku }}</span>
-                        <span class="ms-subtitle">#{{ v.grammage }}g • {{ v.name }}</span>
+                        <span class="ms-code-badge">{{ v.name }}</span>
+                        <span class="ms-subtitle">SKU: {{ v.sku }} • {{ v.grammage }}g</span>
                       </div>
                       <div class="ms-right">
                         <div class="ms-top-right">
@@ -1229,8 +1229,8 @@
                 <td class="mobile-tr-summary-cell">
                   <div class="mobile-summary-header">
                     <div class="ms-left">
-                      <span class="ms-code-badge">REND {{ (fruit.yieldRate * 100).toFixed(0) }}%</span>
-                      <span class="ms-subtitle">#FRU-0{{ fruit.id }} • {{ fruit.name }}</span>
+                      <span class="ms-code-badge">{{ fruit.name }}</span>
+                      <span class="ms-subtitle">#FRU-0{{ fruit.id }} • Rendimiento: {{ (fruit.yieldRate * 100).toFixed(0) }}%</span>
                     </div>
                     <div class="ms-right">
                       <div class="ms-top-right">

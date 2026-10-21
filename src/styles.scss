@@ -1257,32 +1257,32 @@ td.mobile-tr-summary-cell {
     display: flex;
     flex-direction: column;
     align-items: flex-start;
-    gap: 7px;
+    gap: 3px;
     min-width: 0;
     flex: 1;
   }
 
   .ms-code-badge {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    background: #fef08a;
-    border: 1.5px solid #ca8a04;
-    color: #713f12;
-    font-size: 0.75rem;
-    font-weight: 850;
-    letter-spacing: 0.06em;
-    padding: 3px 10px;
-    border-radius: 7px;
-    line-height: 1.2;
-    text-transform: uppercase;
+    display: block;
+    background: transparent !important;
+    border: none !important;
+    padding: 0 !important;
+    color: #0f172a !important;
+    font-size: 0.98rem !important;
+    font-weight: 850 !important;
+    letter-spacing: -0.01em;
+    line-height: 1.25;
+    text-transform: none !important;
     white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
   }
 
   .ms-subtitle {
-    font-size: 0.9rem;
-    font-weight: 750;
-    color: #52637a;
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: #64748b;
     line-height: 1.25;
     white-space: nowrap;
     overflow: hidden;
@@ -1294,7 +1294,7 @@ td.mobile-tr-summary-cell {
     display: flex;
     flex-direction: column;
     align-items: flex-end;
-    gap: 6px;
+    gap: 5px;
     flex-shrink: 0;
   }
 
@@ -1307,7 +1307,7 @@ td.mobile-tr-summary-cell {
   .ms-value {
     font-size: 1rem;
     font-weight: 850;
-    color: #0f766e;
+    color: #1e5e3a;
     letter-spacing: -0.01em;
     white-space: nowrap;
   }

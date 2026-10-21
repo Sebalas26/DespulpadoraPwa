@@ -918,8 +918,8 @@ export const MAP_STYLES: MapStyleOption[] = [
                   <!-- Resumen Compacto Mobile PWA -->
                   <div class="mobile-summary-header" (click)="toggleMobileCourierCard(c.id, $event); selectCourier(c.id)">
                     <div class="ms-left">
-                      <span class="ms-code-badge">{{ c.vehiclePlate }}</span>
-                      <span class="ms-subtitle">#{{ c.routeCode || 'RUTA' }} • {{ c.vehicleType === 'moto' ? 'moto' : 'carro' }} · {{ c.name }}</span>
+                      <span class="ms-code-badge">{{ c.name }}</span>
+                      <span class="ms-subtitle">Placa: {{ c.vehiclePlate }} • #{{ c.routeCode || 'RUTA' }} · {{ c.vehicleType === 'moto' ? 'Moto' : 'Carro' }}</span>
                     </div>
                     <div class="ms-right">
                       <div class="ms-top-right">

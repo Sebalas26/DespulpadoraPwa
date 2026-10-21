@@ -80,8 +80,8 @@
           <!-- Resumen Compacto Mobile PWA -->
           <div class="mobile-summary-header" (click)="toggleMobileCard('pick-' + order.orderId, $event)">
             <div class="ms-left">
-              <span class="ms-code-badge">{{ getOrderDay(order) }}</span>
-              <span class="ms-subtitle">#{{ order.orderNumber }} • {{ order.clientName }}</span>
+              <span class="ms-code-badge">{{ order.clientName }}</span>
+              <span class="ms-subtitle">#{{ order.orderNumber }} • {{ getOrderDay(order) }}</span>
             </div>
             <div class="ms-right">
               <div class="ms-top-right">
@@ -292,8 +292,8 @@
           <!-- Resumen Compacto Mobile PWA -->
           <div class="mobile-summary-header" (click)="toggleMobileCard('bill-' + order.orderId, $event)">
             <div class="ms-left">
-              <span class="ms-code-badge">{{ getOriginCode(order) }}</span>
-              <span class="ms-subtitle">#{{ getInvoiceCode(order) }} • {{ order.clientName }}</span>
+              <span class="ms-code-badge">{{ order.clientName }}</span>
+              <span class="ms-subtitle">#{{ getInvoiceCode(order) }} • {{ getOriginCode(order) }}</span>
             </div>
             <div class="ms-right">
               <div class="ms-top-right">
@@ -525,8 +525,8 @@
               <!-- Resumen Compacto Mobile PWA -->
               <div class="mobile-summary-header" (click)="toggleMobileCard('hist-' + order.orderId, $event)">
                 <div class="ms-left">
-                  <span class="ms-code-badge">{{ getCourierForOrder(order)?.vehiclePlate || 'PATIO' }}</span>
-                  <span class="ms-subtitle">#{{ order.orderNumber }} • {{ order.clientName }}</span>
+                  <span class="ms-code-badge">{{ order.clientName }}</span>
+                  <span class="ms-subtitle">#{{ order.orderNumber }} • Placa: {{ getCourierForOrder(order)?.vehiclePlate || 'PATIO' }}</span>
                 </div>
                 <div class="ms-right">
                   <div class="ms-top-right">
