@@ -568,24 +568,8 @@ export const MAP_STYLES: MapStyleOption[] = [
             @if (mapViewMode() === 'stops') {
               <div class="zone-grouping-bar" (click)="$event.stopPropagation()">
                 <span class="zone-bar-label">⬡ Agrupar entregas:</span>
-                <button
-                  type="button"
-                  class="zone-shape-pill"
-                  [class.active]="zoneTargetPoints() === 4"
-                  (click)="setZoneTargetPoints(4)"
-                >
-                  ▢ Cuadro (4 pts)
-                </button>
-                <button
-                  type="button"
-                  class="zone-shape-pill"
-                  [class.active]="zoneTargetPoints() === 6"
-                  (click)="setZoneTargetPoints(6)"
-                >
-                  ⬡ Hexágono (6 pts)
-                </button>
                 <span class="zone-points-counter">
-                  {{ zonePolygonPoints().length }} / {{ zoneTargetPoints() }} pts
+                  {{ zonePolygonPoints().length }} / 4 pts
                 </span>
                 @if (zonePolygonPoints().length > 0) {
                   <button
@@ -930,39 +914,41 @@ export const MAP_STYLES: MapStyleOption[] = [
             </div>
           }
 
-          <!-- Left Floating Controls Container: Vertical Courier Initials Stack + Fullscreen Button (ONLY IN LIVE MODE) -->
-          @if (mapViewMode() === 'live') {
+          <!-- Left Floating Controls Container: Vertical Courier Initials Stack + Fullscreen Button -->
+          @if (mapViewMode() !== 'locked') {
             <div class="map-left-controls-container" [class.is-fullscreen]="isMapFullscreen()">
-              <!-- Vertical Courier Initials List (Directly above Fullscreen FAB) -->
-              <div class="map-couriers-vertical-fab-stack">
-                <!-- Bodega Matriz Plant Button -->
-                <button
-                  type="button"
-                  class="courier-fab-item fab-planta"
-                  [class.is-selected]="!selectedCourierId()"
-                  (click)="flyToPlantaMatriz()"
-                  title="Bodega Matriz (Cota/Calle 80) · Centrar planta"
-                >
-                  <span class="fab-initial">BM</span>
-                </button>
-
-                <!-- Courier Initials Buttons -->
-                @for (c of assignedCouriers(); track c.id) {
+              <!-- Vertical Courier Initials List (Directly above Fullscreen FAB) - only in live mode -->
+              @if (mapViewMode() === 'live') {
+                <div class="map-couriers-vertical-fab-stack">
+                  <!-- Bodega Matriz Plant Button -->
                   <button
                     type="button"
-                    class="courier-fab-item"
-                    [class.is-selected]="selectedCourierId() === c.id"
-                    [style.--courier-accent]="c.color"
-                    (click)="selectCourier(c.id)"
-                    [title]="c.name + ' (' + c.orderIds.length + ' paradas) · Clic para ver ruta'"
+                    class="courier-fab-item fab-planta"
+                    [class.is-selected]="!selectedCourierId()"
+                    (click)="flyToPlantaMatriz()"
+                    title="Bodega Matriz (Cota/Calle 80) · Centrar planta"
                   >
-                    <span class="fab-initial">{{ getCourierInitials(c.name) }}</span>
-                    @if (c.orderIds.length > 0) {
-                      <span class="fab-badge">{{ c.orderIds.length }}</span>
-                    }
+                    <span class="fab-initial">BM</span>
                   </button>
-                }
-              </div>
+
+                  <!-- Courier Initials Buttons -->
+                  @for (c of assignedCouriers(); track c.id) {
+                    <button
+                      type="button"
+                      class="courier-fab-item"
+                      [class.is-selected]="selectedCourierId() === c.id"
+                      [style.--courier-accent]="c.color"
+                      (click)="selectCourier(c.id)"
+                      [title]="c.name + ' (' + c.orderIds.length + ' paradas) · Clic para ver ruta'"
+                    >
+                      <span class="fab-initial">{{ getCourierInitials(c.name) }}</span>
+                      @if (c.orderIds.length > 0) {
+                        <span class="fab-badge">{{ c.orderIds.length }}</span>
+                      }
+                    </button>
+                  }
+                </div>
+              }
 
               <!-- Fullscreen Map Button (Web & Mobile PWA) -->
               <button
@@ -1007,10 +993,10 @@ export const MAP_STYLES: MapStyleOption[] = [
                   [style.borderLeftColor]="c.color"
                   [class.selected]="selectedCourierId() === c.id"
                   [class.mobile-card-expanded]="isMobileCourierCardExpanded(c.id)"
-                  (click)="selectCourier(c.id)"
+                  (click)="onCourierCardClick(c.id)"
                 >
                   <!-- Resumen Compacto Mobile PWA -->
-                  <div class="mobile-summary-header" (click)="toggleMobileCourierCard(c.id, $event); selectCourier(c.id)">
+                  <div class="mobile-summary-header" (click)="toggleMobileCourierCard(c.id, $event); onCourierCardClick(c.id)">
                     <div class="ms-left">
                       <span class="ms-code-badge">{{ c.name }}</span>
                       <span class="ms-subtitle">Placa: {{ c.vehiclePlate }} • #{{ c.routeCode || 'RUTA' }} · {{ c.vehicleType === 'moto' ? 'Moto' : 'Carro' }}</span>
@@ -6250,37 +6236,107 @@ export class DeliveryMapComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   // =========================================================================
-  // REAL ROAD ROUTING ENGINE (OSRM + BOGOTA URBAN CORRIDOR FALLBACK)
+  // REAL ROAD ROUTING ENGINE (STADIA MAPS VALHALLA + OSRM + OSM.DE)
   // =========================================================================
+  private decodePolyline6(encoded: string): [number, number][] {
+    const inv = 1.0 / 1e6;
+    const decoded: [number, number][] = [];
+    let prevLat = 0;
+    let prevLon = 0;
+    let i = 0;
+    const len = encoded.length;
+
+    while (i < len) {
+      let shift = 0;
+      let result = 0;
+      let byte = 0;
+      do {
+        if (i >= len) break;
+        byte = encoded.charCodeAt(i++) - 63;
+        result |= (byte & 0x1f) << shift;
+        shift += 5;
+      } while (byte >= 0x20);
+      const dLat = (result & 1) !== 0 ? ~(result >> 1) : (result >> 1);
+      prevLat += dLat;
+
+      shift = 0;
+      result = 0;
+      do {
+        if (i >= len) break;
+        byte = encoded.charCodeAt(i++) - 63;
+        result |= (byte & 0x1f) << shift;
+        shift += 5;
+      } while (byte >= 0x20);
+      const dLon = (result & 1) !== 0 ? ~(result >> 1) : (result >> 1);
+      prevLon += dLon;
+
+      decoded.push([prevLat * inv, prevLon * inv]);
+    }
+    return decoded;
+  }
+
   private async getRoadSegment(lat1: number, lng1: number, lat2: number, lng2: number): Promise<[number, number][]> {
     const key = `${lat1.toFixed(4)},${lng1.toFixed(4)}_${lat2.toFixed(4)},${lng2.toFixed(4)}`;
     if (this.roadSegmentCache.has(key)) {
       return this.roadSegmentCache.get(key)!;
     }
 
+    // 1. Primary Engine: Stadia Maps Valhalla Street Router
     try {
-      // Free Open Source Routing Machine endpoint for driving in Colombia
-      const url = `https://router.project-osrm.org/route/v1/driving/${lng1.toFixed(5)},${lat1.toFixed(5)};${lng2.toFixed(5)},${lat2.toFixed(5)}?overview=full&geometries=geojson`;
-      const res = await fetch(url, { signal: AbortSignal.timeout(3500) });
-      if (res.ok) {
-        const data = await res.json();
-        if (data.routes?.[0]?.geometry?.coordinates?.length > 1) {
-          // OSRM returns [lng, lat], convert to Leaflet [lat, lng]
-          const roadCoords: [number, number][] = data.routes[0].geometry.coordinates.map(
-            (c: [number, number]) => [c[1], c[0]]
-          );
-          this.roadSegmentCache.set(key, roadCoords);
-          return roadCoords;
+      const stadiaRes = await fetch(`https://api.stadiamaps.com/route/v1?api_key=${STADIA_API_KEY}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          locations: [
+            { lat: lat1, lon: lng1 },
+            { lat: lat2, lon: lng2 }
+          ],
+          costing: 'auto',
+          directions_options: { units: 'kilometers' }
+        }),
+        signal: AbortSignal.timeout(5000)
+      });
+      if (stadiaRes.ok) {
+        const stadiaData = await stadiaRes.json();
+        const shape = stadiaData?.trip?.legs?.[0]?.shape;
+        if (typeof shape === 'string' && shape.length > 2) {
+          const roadCoords = this.decodePolyline6(shape);
+          if (roadCoords.length > 2) {
+            this.roadSegmentCache.set(key, roadCoords);
+            return roadCoords;
+          }
         }
       }
     } catch {
-      // Fall through to urban road corridor fallback
+      // Fall through to OSRM
     }
 
-    // High-fidelity fallback that routes via actual Bogota highway corridors
-    const corridorCoords = this.generateUrbanCorridorRoute(lat1, lng1, lat2, lng2);
-    this.roadSegmentCache.set(key, corridorCoords);
-    return corridorCoords;
+    // 2. Secondary Engine: OSRM & OpenStreetMap.de Car Router
+    const osrmEndpoints = [
+      `https://router.project-osrm.org/route/v1/driving/${lng1.toFixed(5)},${lat1.toFixed(5)};${lng2.toFixed(5)},${lat2.toFixed(5)}?overview=full&geometries=geojson`,
+      `https://routing.openstreetmap.de/routed-car/route/v1/driving/${lng1.toFixed(5)},${lat1.toFixed(5)};${lng2.toFixed(5)},${lat2.toFixed(5)}?overview=full&geometries=geojson`
+    ];
+
+    for (const url of osrmEndpoints) {
+      try {
+        const res = await fetch(url, { signal: AbortSignal.timeout(5000) });
+        if (res.ok) {
+          const data = await res.json();
+          if (data.routes?.[0]?.geometry?.coordinates?.length > 1) {
+            const roadCoords: [number, number][] = data.routes[0].geometry.coordinates.map(
+              (c: [number, number]) => [c[1], c[0]]
+            );
+            this.roadSegmentCache.set(key, roadCoords);
+            return roadCoords;
+          }
+        }
+      } catch {
+        // Continue to next endpoint
+      }
+    }
+
+    // Offline fallback (do not cache so next online attempt uses real street routing)
+    return this.generateUrbanCorridorRoute(lat1, lng1, lat2, lng2);
   }
 
   /**
@@ -6542,7 +6598,7 @@ export class DeliveryMapComponent implements OnInit, AfterViewInit, OnDestroy {
       const captured = this.zoneCapturedStops();
       if (captured.length > 0) {
         this.notification.success(
-          `Zona ${target === 4 ? 'Cuadrada' : 'Hexagonal'} Creada`,
+          'Zona Creada',
           `${captured.length} entrega(s) agrupadas dentro del polígono. Selecciona el mensajero para asignarlas.`
         );
       } else {
@@ -8037,32 +8093,37 @@ export class DeliveryMapComponent implements OnInit, AfterViewInit, OnDestroy {
     }
   }
 
+  onCourierCardClick(id: string) {
+    // Seleccionar o deseleccionar la tarjeta en la lista sin abrir ni alterar el estado del mapa
+    this.selectedCourierId.update(curr => (curr === id ? '' : id));
+  }
+
   selectCourier(id: string) {
-    if (this.mapViewMode() !== 'live') {
-      this.mapViewMode.set('live');
-      this.isSimulating.set(true);
-      this.syncMapLayersForMode();
-    }
     this.selectedCourierId.set(id);
-    const courier = this.couriers().find(c => c.id === id);
-    if (courier && this.map) {
-      const courierStops = this.deliveryStops().filter(
-        s => s.assignedCourierId === id || courier.orderIds.includes(s.id)
-      );
-      if (courierStops.length > 0) {
-        const boundsCoords: [number, number][] = [
-          [courier.lat, courier.lng],
-          ...courierStops.map(s => [s.lat, s.lng] as [number, number])
-        ];
-        const bounds = L.latLngBounds(boundsCoords);
-        this.map.flyToBounds(bounds, { padding: [55, 55], maxZoom: 15, duration: 1.2 });
-      } else {
-        this.map.flyTo([courier.lat, courier.lng], 14, { duration: 1.2 });
+    if (this.mapViewMode() === 'live' && this.map) {
+      const courier = this.couriers().find(c => c.id === id);
+      if (courier) {
+        const courierStops = this.deliveryStops().filter(
+          s => s.assignedCourierId === id || courier.orderIds.includes(s.id)
+        );
+        if (courierStops.length > 0) {
+          const boundsCoords: [number, number][] = [
+            [courier.lat, courier.lng],
+            ...courierStops.map(s => [s.lat, s.lng] as [number, number])
+          ];
+          const bounds = L.latLngBounds(boundsCoords);
+          this.map.flyToBounds(bounds, { padding: [55, 55], maxZoom: 15, duration: 1.2 });
+        } else {
+          this.map.flyTo([courier.lat, courier.lng], 14, { duration: 1.2 });
+        }
       }
     }
   }
 
   flyToCourier(c: Courier) {
+    if (this.mapViewMode() !== 'live') {
+      this.enterLiveMapMode();
+    }
     this.selectCourier(c.id);
   }
 

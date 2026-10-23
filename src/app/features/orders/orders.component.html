@@ -366,52 +366,65 @@
           </div>
         </div>
 
-        <!-- KPI Summary Counters -->
+        <!-- KPI Summary Counters (Filtered Actions) -->
         <div class="history-kpis-deck">
-          <div class="kpi-mini-card total-kpi">
+          <div
+            class="kpi-mini-card total-kpi"
+            [class.active]="historyFilter() === 'ALL'"
+            (click)="setHistoryFilter('ALL')"
+            title="Ver todos los envíos"
+            role="button"
+            tabindex="0"
+          >
             <span class="kpi-num">{{ totalHistoryOrdersCount() }}</span>
             <span class="kpi-lbl">Total Envíos</span>
           </div>
-          <div class="kpi-mini-card delivered-kpi">
+
+          <div
+            class="kpi-mini-card delivered-kpi"
+            [class.active]="historyFilter() === 'DELIVERED'"
+            (click)="setHistoryFilter('DELIVERED')"
+            title="Filtrar por entregadas"
+            role="button"
+            tabindex="0"
+          >
             <span class="kpi-num text-emerald">{{ deliveredHistoryOrdersCount() }}</span>
             <span class="kpi-lbl">Entregadas</span>
           </div>
-          <div class="kpi-mini-card transit-kpi">
+
+          <div
+            class="kpi-mini-card transit-kpi"
+            [class.active]="historyFilter() === 'DISPATCHED'"
+            (click)="setHistoryFilter('DISPATCHED')"
+            title="Filtrar por en camino"
+            role="button"
+            tabindex="0"
+          >
             <span class="kpi-num text-cyan">{{ inTransitHistoryOrdersCount() }}</span>
             <span class="kpi-lbl">En Camino</span>
           </div>
-          <div class="kpi-mini-card pending-kpi">
+
+          <div
+            class="kpi-mini-card pending-kpi"
+            [class.active]="historyFilter() === 'UNASSIGNED'"
+            (click)="setHistoryFilter('UNASSIGNED')"
+            title="Filtrar por sin gestionar"
+            role="button"
+            tabindex="0"
+          >
             <span class="kpi-num text-amber">{{ unassignedHistoryOrdersCount() }}</span>
             <span class="kpi-lbl">Sin Gestionar</span>
           </div>
         </div>
       </div>
 
-      <!-- Filter Pills & Search Shell -->
+      <!-- Search Toolbar Row -->
       <div class="history-toolbar-row">
-        <div class="history-filter-pills">
-          <button type="button" class="history-pill" [class.active]="historyFilter() === 'ALL'"
-            (click)="setHistoryFilter('ALL')">
-            Todas ({{ totalHistoryOrdersCount() }})
-          </button>
-          <button type="button" class="history-pill pill-delivered" [class.active]="historyFilter() === 'DELIVERED'"
-            (click)="setHistoryFilter('DELIVERED')">
-            <span class="pill-dot dot-delivered"></span>
-            <span>Entregadas ({{ deliveredHistoryOrdersCount() }})</span>
-          </button>
-          <button type="button" class="history-pill pill-transit" [class.active]="historyFilter() === 'DISPATCHED'"
-            (click)="setHistoryFilter('DISPATCHED')">
-            <span class="pill-dot dot-transit"></span>
-            <span>En Camino ({{ inTransitHistoryOrdersCount() }})</span>
-          </button>
-          <button type="button" class="history-pill pill-pending" [class.active]="historyFilter() === 'UNASSIGNED'"
-            (click)="setHistoryFilter('UNASSIGNED')">
-            <span class="pill-dot dot-pending"></span>
-            <span>Sin Gestionar ({{ unassignedHistoryOrdersCount() }})</span>
-          </button>
-        </div>
-
         <div class="history-search-shell">
+          <svg class="search-box-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3">
+            <circle cx="11" cy="11" r="8"></circle>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+          </svg>
           <input type="text" class="history-search-input"
             placeholder="Buscar por guía, cliente, dirección o domiciliario..." [ngModel]="historySearchQuery()"
             (ngModelChange)="setHistorySearchQuery($event)" />
