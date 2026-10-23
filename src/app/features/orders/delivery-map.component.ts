@@ -564,24 +564,8 @@ export const MAP_STYLES: MapStyleOption[] = [
               </button>
             </div>
 
-            <!-- Zone Polygon Grouping Controls (Active in 'Ver Todas las Entregas') -->
+            <!-- Zone Polygon Assignment Card (Active in 'Ver Todas las Entregas') -->
             @if (mapViewMode() === 'stops') {
-              <div class="zone-grouping-bar" (click)="$event.stopPropagation()">
-                <span class="zone-bar-label">⬡ Agrupar entregas:</span>
-                <span class="zone-points-counter">
-                  {{ zonePolygonPoints().length }} / 4 pts
-                </span>
-                @if (zonePolygonPoints().length > 0) {
-                  <button
-                    type="button"
-                    class="zone-clear-btn"
-                    (click)="clearZonePolygon()"
-                  >
-                    Limpiar
-                  </button>
-                }
-              </div>
-
               @if (showZoneAssignCard()) {
                 <div class="zone-assign-card" (click)="$event.stopPropagation()">
                   <div class="zone-assign-head">
@@ -2541,11 +2525,11 @@ export const MAP_STYLES: MapStyleOption[] = [
       }
     }
 
-    /* Floating Address Search Box */
+    /* Floating Address Search Box (shifted right to accommodate top-left zoom control) */
     .map-address-search-box {
       position: absolute;
       top: 14px;
-      left: 14px;
+      left: 60px;
       z-index: 1000;
       width: clamp(280px, 34vw, 420px);
       transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
@@ -3731,7 +3715,7 @@ export const MAP_STYLES: MapStyleOption[] = [
       position: absolute;
       top: 64px;
       right: 16px;
-      bottom: 64px;
+      bottom: 14px;
       width: 415px;
       max-width: calc(100% - 24px);
       z-index: 950;
@@ -3818,9 +3802,11 @@ export const MAP_STYLES: MapStyleOption[] = [
       }
     }
 
-    .map-canvas-card.map-fullscreen-active .deliveries-drawer {
-      height: var(--drawer-height, 38vh) !important;
-      max-height: 82vh !important;
+    @media (max-width: 768px) {
+      .map-canvas-card.map-fullscreen-active .deliveries-drawer {
+        height: var(--drawer-height, 38vh) !important;
+        max-height: 82vh !important;
+      }
     }
 
     .drawer-head {
@@ -4494,63 +4480,41 @@ export const MAP_STYLES: MapStyleOption[] = [
       }
     }
 
-    /* Zone Polygon Grouping Controls */
-    .zone-grouping-bar {
-      position: absolute;
-      top: 62px;
-      left: 14px;
-      z-index: 990;
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      flex-wrap: wrap;
-      background: rgba(255, 255, 255, 0.96);
-      backdrop-filter: blur(12px);
-      padding: 5px 10px;
-      border-radius: 9999px;
-      border: 1.5px solid #dbe4de;
-      box-shadow: 0 8px 22px rgba(15, 41, 30, 0.12);
+    /* Top-Left Zoom Controls */
+    ::ng-deep .leaflet-top.leaflet-left {
+      top: 4px;
+      left: 4px;
+      z-index: 999;
     }
 
-    .zone-bar-label {
-      font-size: 0.72rem;
-      font-weight: 800;
-      color: #1e5e3a;
-    }
+    ::ng-deep .leaflet-control-zoom {
+      border: 1.5px solid #dbe4de !important;
+      border-radius: 12px !important;
+      overflow: hidden;
+      box-shadow: 0 4px 14px rgba(15, 41, 30, 0.12) !important;
+      background: rgba(255, 255, 255, 0.96) !important;
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
 
-    .zone-shape-pill {
-      border: 1px solid #cbd5e1;
-      background: #f8fafc;
-      color: #334155;
-      font-size: 0.7rem;
-      font-weight: 700;
-      padding: 3px 9px;
-      border-radius: 9999px;
-      cursor: pointer;
+      a {
+        width: 32px !important;
+        height: 32px !important;
+        line-height: 32px !important;
+        background-color: rgba(255, 255, 255, 0.96) !important;
+        color: #1e5e3a !important;
+        font-size: 16px !important;
+        font-weight: 700 !important;
+        transition: all 0.18s ease;
 
-      &.active {
-        background: #1e5e3a;
-        color: #ffffff;
-        border-color: #1e5e3a;
+        &:hover {
+          background-color: #ecfdf5 !important;
+          color: #065f46 !important;
+        }
+
+        &:first-child {
+          border-bottom: 1px solid #e2e8f0 !important;
+        }
       }
-    }
-
-    .zone-points-counter {
-      font-size: 0.7rem;
-      font-weight: 800;
-      color: #475569;
-      padding: 0 4px;
-    }
-
-    .zone-clear-btn {
-      border: 1px solid #fecaca;
-      background: #fef2f2;
-      color: #dc2626;
-      font-size: 0.68rem;
-      font-weight: 800;
-      padding: 3px 8px;
-      border-radius: 9999px;
-      cursor: pointer;
     }
 
     .zone-assign-card {
@@ -5897,7 +5861,7 @@ export class DeliveryMapComponent implements OnInit, AfterViewInit, OnDestroy {
       attributionControl: false
     });
 
-    L.control.zoom({ position: 'bottomright' }).addTo(this.map);
+    L.control.zoom({ position: 'topleft' }).addTo(this.map);
 
     // Apply Stadia Maps / configured active layer
     this.applyTileLayer(this.selectedMapStyleId());
