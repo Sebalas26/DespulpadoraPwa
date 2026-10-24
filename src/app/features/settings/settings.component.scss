@@ -1010,4 +1010,168 @@
   }
 }
 
+/* ========================================================
+   PARÁMETROS DEL SISTEMA: CATÁLOGO DE MÉTODOS DE PAGO
+   ======================================================== */
+.parameter-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 16px;
+}
+
+.pm-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: 16px 18px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.03);
+
+  &:hover {
+    transform: translateY(-2px);
+    border-color: rgba(16, 185, 129, 0.4);
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.06);
+  }
+
+  &.inactive {
+    opacity: 0.6;
+    background: rgba(0, 0, 0, 0.015);
+    border-style: dashed;
+
+    &:hover {
+      transform: none;
+      box-shadow: none;
+    }
+  }
+}
+
+.pm-card-top {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+  margin-bottom: 12px;
+}
+
+.pm-type-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+
+  &.cash {
+    background: rgba(16, 185, 129, 0.12);
+    color: #10b981;
+  }
+
+  &.transfer {
+    background: rgba(59, 130, 246, 0.12);
+    color: #3b82f6;
+  }
+
+  &.card {
+    background: rgba(168, 85, 247, 0.12);
+    color: #a855f7;
+  }
+
+  &.credit {
+    background: rgba(245, 158, 11, 0.12);
+    color: #f59e0b;
+  }
+
+  &.other {
+    background: rgba(100, 116, 139, 0.12);
+    color: #64748b;
+  }
+}
+
+.pm-name {
+  font-size: 1.02rem;
+  font-weight: 700;
+  color: var(--text-main);
+  margin: 6px 0 0 0;
+  line-height: 1.25;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.code-badge {
+  font-family: monospace;
+  font-size: 0.68rem;
+  font-weight: 700;
+  background: rgba(0, 0, 0, 0.04);
+  color: var(--text-muted);
+  padding: 2px 6px;
+  border-radius: 4px;
+  border: 1px solid var(--border-subtle);
+  letter-spacing: 0.03em;
+}
+
+.pm-desc {
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  margin: 0 0 16px 0;
+  line-height: 1.4;
+  min-height: 2.3em;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+
+  &.muted {
+    color: var(--text-dim);
+    font-style: italic;
+  }
+}
+
+.pm-card-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: 12px;
+  border-top: 1px solid var(--border-subtle);
+}
+
+.pm-status-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.status-text {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--text-dim);
+  transition: color 0.15s ease;
+
+  &.active {
+    color: var(--primary);
+  }
+}
+
+.badge-emerald {
+  background: rgba(16, 185, 129, 0.14);
+  color: #047857;
+  font-weight: 600;
+}
+
+.badge-purple {
+  background: rgba(168, 85, 247, 0.14);
+  color: #7e22ce;
+  font-weight: 600;
+}
+
+.badge-subtle {
+  background: rgba(100, 116, 139, 0.14);
+  color: #475569;
+  font-weight: 600;
+}
+
+
 

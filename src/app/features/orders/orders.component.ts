@@ -322,6 +322,7 @@ Pago por Transferencia Bancolombia`);
   private manualAddressDebounce?: any;
   readonly isManualOrderPaid = signal<boolean>(false);
   readonly manualPaymentMethod = signal<string>('Transferencia Bancolombia');
+  readonly activePaymentMethods = computed(() => this.stateService.activePaymentMethods());
   readonly manualNotes = signal<string>('');
   readonly manualItems = signal<{ fruitName: string; grammage: 140 | 250 | 500 | 1000; quantity: number; unitPrice: number }[]>([
     { fruitName: 'Maracuyá', grammage: 1000, quantity: 5, unitPrice: 11000 }

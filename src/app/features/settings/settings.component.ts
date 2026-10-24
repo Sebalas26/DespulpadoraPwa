@@ -1,7 +1,7 @@
 import { Component, computed, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { ActivatedRoute } from '@angular/router';
+import { Router, ActivatedRoute } from '@angular/router';
 import { StateService } from '../../core/services/state.service';
 import { NotificationService } from '../../core/services/notification.service';
 import { FruitConfig, INITIAL_PROMOTIONS, DEFAULT_COMPANY_CONFIG } from '../../core/data/initial-data';
@@ -11,7 +11,8 @@ import {
   InventoryGrammageConfig,
   ProductCategory,
   ProductVariantDto,
-  CompanyConfig
+  CompanyConfig,
+  PaymentMethodDto
 } from '../../core/models/business.models';
 import { AdminUsersComponent } from '../admin/users/users.component';
 import { AdminRolesComponent } from '../admin/roles/roles.component';
@@ -53,11 +54,136 @@ const DEFAULT_COLUMNS: InventoryColumnConfig[] = [
 export class SettingsComponent {
   readonly stateService = inject(StateService);
   readonly notification = inject(NotificationService);
+  private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
   readonly Math = Math;
 
-  readonly activeTab = signal<'general' | 'inventory' | 'users' | 'roles'>('general');
+  openKdsInventory() {
+    this.router.navigate(['/kds-inventory']);
+  }
+
+  readonly activeTab = signal<'general' | 'inventory' | 'users' | 'roles' | 'parameters'>('general');
   readonly inventorySubTab = signal<'variants' | 'fruits'>('variants');
+  readonly parametersSubTab = signal<'paymentMethods' | 'grammages' | 'categories'>('paymentMethods');
+
+  // ==========================================
+  // PARAMETERS CONFIGURATION: PAYMENT METHODS
+  // ==========================================
+  readonly showPaymentMethodModal = signal<boolean>(false);
+  readonly isEditingPaymentMethod = signal<boolean>(false);
+  readonly editingPaymentMethodId = signal<number | null>(null);
+
+  readonly paymentMethodForm = signal<{
+    name: string;
+    code: string;
+    type: 'cash' | 'transfer' | 'card' | 'credit' | 'other';
+    description: string;
+    isActive: boolean;
+  }>({
+    name: '',
+    code: '',
+    type: 'transfer',
+    description: '',
+    isActive: true
+  });
+
+  openCreatePaymentMethodModal() {
+    this.isEditingPaymentMethod.set(false);
+    this.editingPaymentMethodId.set(null);
+    this.paymentMethodForm.set({
+      name: '',
+      code: '',
+      type: 'transfer',
+      description: '',
+      isActive: true
+    });
+    this.showPaymentMethodModal.set(true);
+  }
+
+  openEditPaymentMethodModal(pm: PaymentMethodDto) {
+    this.isEditingPaymentMethod.set(true);
+    this.editingPaymentMethodId.set(pm.paymentMethodId);
+    this.paymentMethodForm.set({
+      name: pm.name,
+      code: pm.code || '',
+      type: pm.type || 'other',
+      description: pm.description || '',
+      isActive: pm.isActive
+    });
+    this.showPaymentMethodModal.set(true);
+  }
+
+  closePaymentMethodModal() {
+    this.showPaymentMethodModal.set(false);
+    this.editingPaymentMethodId.set(null);
+  }
+
+  updatePaymentFormField(field: string, value: any) {
+    this.paymentMethodForm.update(curr => ({ ...curr, [field]: value }));
+  }
+
+  savePaymentMethod() {
+    const form = this.paymentMethodForm();
+    if (!form.name || form.name.trim().length === 0) {
+      this.notification.warning('Dato requerido', 'Debes ingresar el nombre del método de pago.');
+      return;
+    }
+
+    if (this.isEditingPaymentMethod() && this.editingPaymentMethodId()) {
+      this.stateService.updatePaymentMethod(this.editingPaymentMethodId()!, {
+        name: form.name.trim(),
+        code: form.code.trim() || form.name.toUpperCase().replace(/[^A-Z0-9]/g, '_'),
+        type: form.type,
+        description: form.description.trim(),
+        isActive: form.isActive
+      });
+    } else {
+      this.stateService.createPaymentMethod({
+        name: form.name.trim(),
+        code: form.code.trim(),
+        type: form.type,
+        description: form.description.trim()
+      });
+    }
+
+    this.closePaymentMethodModal();
+  }
+
+  deletePaymentMethod(id: number) {
+    if (confirm('¿Estás seguro de eliminar este método de pago?')) {
+      this.stateService.deletePaymentMethod(id);
+    }
+  }
+
+  togglePaymentMethodStatus(id: number) {
+    this.stateService.togglePaymentMethodStatus(id);
+  }
+
+  resetPaymentMethodsToDefault() {
+    if (confirm('¿Deseas restaurar la lista de métodos de pago predeterminados?')) {
+      this.stateService.resetPaymentMethodsToDefault();
+    }
+  }
+
+  getPaymentTypeLabel(type?: string): string {
+    switch (type) {
+      case 'cash': return 'Efectivo';
+      case 'transfer': return 'Transferencia / Billetera';
+      case 'card': return 'Tarjeta / Datáfono';
+      case 'credit': return 'Crédito';
+      default: return 'Otro';
+    }
+  }
+
+  getPaymentTypeBadgeClass(type?: string): string {
+    switch (type) {
+      case 'cash': return 'badge-emerald';
+      case 'transfer': return 'badge-info';
+      case 'card': return 'badge-purple';
+      case 'credit': return 'badge-warning';
+      default: return 'badge-subtle';
+    }
+  }
 
   // ==========================================
   // COMPANY GENERAL & BILLING CONFIGURATION
@@ -181,6 +307,8 @@ export class SettingsComponent {
         this.activeTab.set('users');
       } else if (tab === 'roles') {
         this.activeTab.set('roles');
+      } else if (tab === 'parameters' || tab === 'parametros' || tab === 'pagos' || tab === 'metodos-pago') {
+        this.activeTab.set('parameters');
       } else if (tab === 'inventory' || tab === 'cava' || tab === 'variants' || tab === 'fruits' || tab === 'stock') {
         this.activeTab.set('inventory');
         if (tab === 'variants' || tab === 'cava' || tab === 'stock') {

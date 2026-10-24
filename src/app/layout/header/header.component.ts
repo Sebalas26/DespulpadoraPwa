@@ -70,6 +70,22 @@ import { VoiceOrdersService } from '../../core/services/voice-orders.service';
           <span class="kds-access-badge">KDS</span>
         </button>
 
+        <!-- Pantalla KDS de Inventario & Stock (Planta & Cava) -->
+        <button
+          type="button"
+          class="btn-kds-access btn-kds-inventory"
+          (click)="navigateToInventoryKds()"
+          title="Abrir pantalla KDS de control y alimentación de inventario y stock en planta/cava"
+        >
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
+            <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
+            <line x1="12" y1="22.08" x2="12" y2="12"></line>
+          </svg>
+          <span class="kds-access-label">KDS Inventario & Stock</span>
+          <span class="kds-access-badge badge-inventory">PLANTA</span>
+        </button>
+
         <!-- Status Indicator • En línea (Figma style) -->
         <div class="online-pill" [title]="stateService.isOnline() ? 'Sistema conectado a la red' : 'Sin conexión'">
           <span class="online-dot" [style.background]="stateService.isOnline() ? '#1e5e3a' : '#dc2626'"></span>
@@ -320,6 +336,30 @@ import { VoiceOrdersService } from '../../core/services/voice-orders.service';
         border-radius: 4px;
         letter-spacing: 0.03em;
         transition: all 0.2s ease;
+      }
+
+      &.btn-kds-inventory {
+        background: #eff6ff;
+        border-color: #93c5fd;
+        color: #1d4ed8;
+        box-shadow: 0 1px 3px rgba(37, 99, 235, 0.1);
+
+        &:hover {
+          background: #2563eb;
+          border-color: #2563eb;
+          color: #ffffff;
+          box-shadow: 0 4px 12px rgba(37, 99, 235, 0.28);
+
+          .badge-inventory {
+            background: rgba(255, 255, 255, 0.25);
+            color: #ffffff;
+          }
+        }
+
+        .badge-inventory {
+          background: #dbeafe;
+          color: #1e40af;
+        }
       }
     }
 
@@ -679,5 +719,9 @@ export class HeaderComponent implements OnInit, OnDestroy {
 
   navigateToKds() {
     this.router.navigate(['/kds']);
+  }
+
+  navigateToInventoryKds() {
+    this.router.navigate(['/kds-inventory']);
   }
 }

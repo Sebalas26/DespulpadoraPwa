@@ -11,6 +11,22 @@
           Control de toda la cantidad de fruta disponible en planta (Inventario) y de las pulpas hechas listas para despacho (Stock).
         </p>
       </div>
+
+      <!-- Shortcut to Dedicated KDS Screen -->
+      <button
+        type="button"
+        class="btn btn-primary"
+        (click)="openKdsInventory()"
+        style="gap: 8px; font-weight: 800; padding: 10px 18px; border-radius: 12px; background: #2563eb; border-color: #2563eb; box-shadow: 0 4px 14px rgba(37, 99, 235, 0.35); display: inline-flex; align-items: center;"
+        title="Abrir pantalla táctil KDS de Planta & Cava para alimentación rápida"
+      >
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+          <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
+          <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
+          <line x1="12" y1="22.08" x2="12" y2="12"></line>
+        </svg>
+        <span>Abrir Pantalla KDS (Planta & Cava)</span>
+      </button>
     </div>
   } @else {
     <!-- Page Header for System & Plant Configuration -->
@@ -67,6 +83,19 @@
           <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
         </svg>
         <span>Roles & Permisos (RBAC)</span>
+      </button>
+
+      <button
+        type="button"
+        class="dgl-subnav-btn"
+        [class.active]="activeTab() === 'parameters'"
+        (click)="activeTab.set('parameters')"
+      >
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="3"></circle>
+          <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+        </svg>
+        <span>Parámetros del Sistema</span>
       </button>
 
       @if (activeTab() === 'general') {
@@ -734,6 +763,360 @@
   <!-- ========================================== -->
   @else if (activeTab() === 'roles') {
     <app-admin-roles></app-admin-roles>
+  }
+
+  <!-- ========================================== -->
+  <!-- TAB 4: PARÁMETROS DEL SISTEMA              -->
+  <!-- ========================================== -->
+  @else if (activeTab() === 'parameters') {
+    <div style="display: flex; flex-direction: column; gap: 16px;">
+      
+      <!-- Sub-header & Subtabs Navigation -->
+      <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 14px;">
+        <div class="dgl-subnav-bar no-print" style="width: auto; max-width: 100%;">
+          <button
+            type="button"
+            class="dgl-subnav-btn"
+            [class.active]="parametersSubTab() === 'paymentMethods'"
+            (click)="parametersSubTab.set('paymentMethods')"
+          >
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="2" y="5" width="20" height="14" rx="2"></rect>
+              <line x1="2" y1="10" x2="22" y2="10"></line>
+            </svg>
+            <span>Métodos de Pago</span>
+            <span class="dgl-subnav-badge">{{ stateService.activePaymentMethods().length }} Activos</span>
+          </button>
+
+          <button
+            type="button"
+            class="dgl-subnav-btn"
+            [class.active]="parametersSubTab() === 'grammages'"
+            (click)="parametersSubTab.set('grammages')"
+          >
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M12 3v18"></path>
+              <path d="M6 7l6-4 6 4"></path>
+              <path d="M4 14l4-7 4 7H4z"></path>
+              <path d="M16 14l4-7 4 7h-8z"></path>
+            </svg>
+            <span>Presentaciones / Kilos</span>
+            <span class="dgl-subnav-badge">{{ grammagesConfig().length }}</span>
+          </button>
+
+          <button
+            type="button"
+            class="dgl-subnav-btn"
+            [class.active]="parametersSubTab() === 'categories'"
+            (click)="parametersSubTab.set('categories')"
+          >
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M4 6h16M4 12h16M4 18h7"></path>
+            </svg>
+            <span>Líneas & Categorías</span>
+            <span class="dgl-subnav-badge">{{ categoriesConfig().length }}</span>
+          </button>
+        </div>
+
+        @if (parametersSubTab() === 'paymentMethods') {
+          <div style="display: flex; align-items: center; gap: 10px;">
+            <button
+              type="button"
+              class="btn btn-outline"
+              style="font-size: 0.82rem;"
+              (click)="resetPaymentMethodsToDefault()"
+              title="Restaurar medios de pago originales de fábrica"
+            >
+              ↺ Restablecer Valores
+            </button>
+            <button
+              type="button"
+              class="btn btn-primary"
+              style="font-size: 0.82rem; gap: 6px;"
+              (click)="openCreatePaymentMethodModal()"
+            >
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <line x1="12" y1="5" x2="12" y2="19"></line>
+                <line x1="5" y1="12" x2="19" y2="12"></line>
+              </svg>
+              <span>+ Nuevo Método de Pago</span>
+            </button>
+          </div>
+        }
+      </div>
+
+      <!-- SUBTAB 1: MÉTODOS DE PAGO -->
+      @if (parametersSubTab() === 'paymentMethods') {
+        <div class="settings-section-card" style="margin-bottom: 0;">
+          <div class="section-card-header" style="margin-bottom: 16px;">
+            <div>
+              <h3 class="section-card-title" style="display: flex; align-items: center; gap: 8px;">
+                <span>Catálogo de Formas de Pago</span>
+              </h3>
+              <p class="section-card-subtitle">
+                Configura los medios de pago disponibles para pedidos y cobros. Los métodos activos aparecen automáticamente en la toma manual de pedidos, pedidos por voz, facturación y reportes.
+              </p>
+            </div>
+          </div>
+
+          <div class="parameter-grid">
+            @for (pm of stateService.paymentMethods(); track pm.paymentMethodId) {
+              <div class="pm-card" [class.inactive]="!pm.isActive">
+                <div class="pm-card-top">
+                  <div class="pm-type-icon" [ngClass]="pm.type || 'other'">
+                    @if (pm.type === 'cash') {
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="12" y1="1" x2="12" y2="23"></line>
+                        <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
+                      </svg>
+                    } @else if (pm.type === 'transfer') {
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="22" y1="2" x2="11" y2="13"></line>
+                        <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                      </svg>
+                    } @else if (pm.type === 'card') {
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect>
+                        <line x1="1" y1="10" x2="23" y2="10"></line>
+                      </svg>
+                    } @else if (pm.type === 'credit') {
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <polyline points="12 6 12 12 16 14"></polyline>
+                      </svg>
+                    } @else {
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+                      </svg>
+                    }
+                  </div>
+
+                  <div style="flex: 1; min-width: 0;">
+                    <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                      <span class="badge" [ngClass]="getPaymentTypeBadgeClass(pm.type)">
+                        {{ getPaymentTypeLabel(pm.type) }}
+                      </span>
+                      @if (pm.code) {
+                        <span class="code-badge">{{ pm.code }}</span>
+                      }
+                    </div>
+                    <h4 class="pm-name" [title]="pm.name">{{ pm.name }}</h4>
+                  </div>
+                </div>
+
+                @if (pm.description) {
+                  <p class="pm-desc">{{ pm.description }}</p>
+                } @else {
+                  <p class="pm-desc muted">Sin instrucciones adicionales registradas.</p>
+                }
+
+                <div class="pm-card-actions">
+                  <div class="pm-status-toggle">
+                    <label class="custom-switch" title="Activar / Desactivar">
+                      <input
+                        type="checkbox"
+                        [checked]="pm.isActive"
+                        (change)="togglePaymentMethodStatus(pm.paymentMethodId)"
+                      />
+                      <span class="slider"></span>
+                    </label>
+                    <span class="status-text" [class.active]="pm.isActive">
+                      {{ pm.isActive ? 'Activo' : 'Desactivado' }}
+                    </span>
+                  </div>
+
+                  <div style="display: flex; gap: 6px;">
+                    <button
+                      type="button"
+                      class="btn-icon"
+                      title="Editar método de pago"
+                      (click)="openEditPaymentMethodModal(pm)"
+                    >
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                      </svg>
+                    </button>
+                    <button
+                      type="button"
+                      class="btn-icon danger"
+                      title="Eliminar método de pago"
+                      (click)="deletePaymentMethod(pm.paymentMethodId)"
+                    >
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="3 6 5 6 21 6"></polyline>
+                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            }
+          </div>
+        </div>
+      }
+
+      <!-- SUBTAB 2: PRESENTACIONES Y GRAMAJES -->
+      @if (parametersSubTab() === 'grammages') {
+        <div class="settings-section-card" style="margin-bottom: 0;">
+          <div class="section-card-header" style="margin-bottom: 16px;">
+            <div>
+              <h3 class="section-card-title">Gramajes & Presentaciones del Producto</h3>
+              <p class="section-card-subtitle">
+                Define las presentaciones en gramos y kilogramos habilitadas en el sistema para calcular el stock en cava y los filtros de pulpas.
+              </p>
+            </div>
+          </div>
+
+          <div class="param-list-grid">
+            @for (g of grammagesConfig(); track g.key) {
+              <div class="param-card" [class.inactive]="!g.isActive">
+                <div class="param-info">
+                  <span class="param-icon-badge" style="color: #a855f7;">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M12 3v18"></path>
+                      <path d="M6 7l6-4 6 4"></path>
+                      <path d="M4 14l4-7 4 7H4z"></path>
+                      <path d="M16 14l4-7 4 7h-8z"></path>
+                    </svg>
+                  </span>
+                  <div>
+                    <div style="font-weight: 700; font-size: 0.95rem; color: var(--text-main);">{{ g.label }}</div>
+                    <div style="font-size: 0.74rem; color: var(--text-dim);">{{ g.value }} gramos netos ({{ (g.value / 1000) }} Kg)</div>
+                  </div>
+                </div>
+
+                <div style="display: flex; align-items: center; gap: 10px;">
+                  <label class="custom-switch" title="Activar / Desactivar">
+                    <input
+                      type="checkbox"
+                      [checked]="g.isActive"
+                      (change)="toggleGrammage(g.key)"
+                    />
+                    <span class="slider"></span>
+                  </label>
+                  <span style="font-size: 0.78rem; font-weight: 600;" [style.color]="g.isActive ? 'var(--primary)' : 'var(--text-dim)'">
+                    {{ g.isActive ? 'Habilitado' : 'Oculto' }}
+                  </span>
+                </div>
+              </div>
+            }
+          </div>
+
+          <!-- Add new grammage bar -->
+          <div style="margin-top: 20px; padding: 16px; background: rgba(0, 0, 0, 0.02); border: 1px dashed var(--border-subtle); border-radius: var(--radius-md);">
+            <div style="font-weight: 700; font-size: 0.88rem; margin-bottom: 8px;">+ Registrar Nueva Presentación (Gramaje)</div>
+            <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+              <input
+                type="text"
+                class="form-control"
+                placeholder="Etiqueta (ej: Bolsa 400g, Doypack 2 Kg)"
+                style="flex: 1; min-width: 200px;"
+                [ngModel]="newGrammageLabel()"
+                (ngModelChange)="newGrammageLabel.set($event)"
+              />
+              <input
+                type="number"
+                class="form-control"
+                placeholder="Peso en gramos (ej: 400, 2000)"
+                style="width: 220px;"
+                [ngModel]="newGrammageValue()"
+                (ngModelChange)="newGrammageValue.set($event)"
+              />
+              <button
+                type="button"
+                class="btn btn-primary"
+                style="font-size: 0.82rem;"
+                (click)="addCustomGrammage()"
+              >
+                Agregar Presentación
+              </button>
+            </div>
+          </div>
+        </div>
+      }
+
+      <!-- SUBTAB 3: LÍNEAS & CATEGORÍAS -->
+      @if (parametersSubTab() === 'categories') {
+        <div class="settings-section-card" style="margin-bottom: 0;">
+          <div class="section-card-header" style="margin-bottom: 16px;">
+            <div>
+              <h3 class="section-card-title">Familias & Categorías de Productos</h3>
+              <p class="section-card-subtitle">
+                Administra las líneas comerciales (Línea Hogar, Línea Institucional, etc.) para organizar la producción y ventas.
+              </p>
+            </div>
+          </div>
+
+          <div class="param-list-grid">
+            @for (cat of categoriesConfig(); track cat.id) {
+              <div class="param-card" [class.inactive]="!cat.isActive">
+                <div class="param-info">
+                  <span class="param-icon-badge" style="color: #3b82f6;">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <rect x="3" y="3" width="7" height="7"></rect>
+                      <rect x="14" y="3" width="7" height="7"></rect>
+                      <rect x="14" y="14" width="7" height="7"></rect>
+                      <rect x="3" y="14" width="7" height="7"></rect>
+                    </svg>
+                  </span>
+                  <div>
+                    <div style="font-weight: 700; font-size: 0.95rem; color: var(--text-main);">{{ cat.name }}</div>
+                    <div style="font-size: 0.74rem; color: var(--text-dim); font-family: monospace;">ID: {{ cat.id }}</div>
+                  </div>
+                </div>
+
+                <div style="display: flex; align-items: center; gap: 10px;">
+                  <label class="custom-switch" title="Activar / Desactivar">
+                    <input
+                      type="checkbox"
+                      [checked]="cat.isActive"
+                      (change)="toggleCategory(cat.id)"
+                    />
+                    <span class="slider"></span>
+                  </label>
+                  <span style="font-size: 0.78rem; font-weight: 600;" [style.color]="cat.isActive ? 'var(--primary)' : 'var(--text-dim)'">
+                    {{ cat.isActive ? 'Habilitada' : 'Oculta' }}
+                  </span>
+                </div>
+              </div>
+            }
+          </div>
+
+          <!-- Add new category bar -->
+          <div style="margin-top: 20px; padding: 16px; background: rgba(0, 0, 0, 0.02); border: 1px dashed var(--border-subtle); border-radius: var(--radius-md);">
+            <div style="font-weight: 700; font-size: 0.88rem; margin-bottom: 8px;">+ Registrar Nueva Categoría de Producto</div>
+            <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+              <input
+                type="text"
+                class="form-control"
+                placeholder="Nombre (ej: Línea Gourmet, Batidos Detox)"
+                style="flex: 1; min-width: 200px;"
+                [ngModel]="newCategoryName()"
+                (ngModelChange)="newCategoryName.set($event)"
+              />
+              <input
+                type="text"
+                class="form-control"
+                placeholder="Código ID (ej: GOURMET, DETOX)"
+                style="width: 220px;"
+                [ngModel]="newCategoryCode()"
+                (ngModelChange)="newCategoryCode.set($event)"
+              />
+              <button
+                type="button"
+                class="btn btn-primary"
+                style="font-size: 0.82rem;"
+                (click)="addCustomCategory()"
+              >
+                Agregar Categoría
+              </button>
+            </div>
+          </div>
+        </div>
+      }
+
+    </div>
   }
 
   <!-- ========================================== -->
@@ -2045,3 +2428,109 @@
     </div>
   </div>
 }
+
+<!-- ========================================== -->
+<!-- 5. MODAL DE MÉTODO DE PAGO (PARAMETRIZABLE) -->
+<!-- ========================================== -->
+@if (showPaymentMethodModal()) {
+  <div class="modal-overlay" (click)="closePaymentMethodModal()">
+    <div class="modal-content" style="max-width: 500px;" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <div style="width: 34px; height: 34px; border-radius: 8px; background: rgba(16, 185, 129, 0.12); color: var(--primary); display: flex; align-items: center; justify-content: center;">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="2" y="5" width="20" height="14" rx="2"></rect>
+              <line x1="2" y1="10" x2="22" y2="10"></line>
+            </svg>
+          </div>
+          <div>
+            <h3 class="modal-title" style="margin: 0;">
+              {{ isEditingPaymentMethod() ? 'Editar Método de Pago' : '+ Nuevo Método de Pago' }}
+            </h3>
+            <p style="margin: 0; font-size: 0.78rem; color: var(--text-dim);">
+              {{ isEditingPaymentMethod() ? 'Actualiza los datos del medio de pago en el sistema' : 'Crea un nuevo método disponible para cobros y facturación' }}
+            </p>
+          </div>
+        </div>
+        <button class="modal-close" (click)="closePaymentMethodModal()">&times;</button>
+      </div>
+
+      <div class="modal-body">
+        <div class="form-group">
+          <label class="form-label">Nombre del Método de Pago *</label>
+          <input
+            type="text"
+            class="form-control"
+            placeholder="Ej: Nequi / Daviplata, Bancolombia QR, Datáfono Redeban..."
+            [ngModel]="paymentMethodForm().name"
+            (ngModelChange)="updatePaymentFormField('name', $event)"
+          />
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+          <div class="form-group" style="margin: 0;">
+            <label class="form-label">Tipo de Medio *</label>
+            <select
+              class="form-control"
+              [ngModel]="paymentMethodForm().type"
+              (ngModelChange)="updatePaymentFormField('type', $event)"
+            >
+              <option value="cash">Efectivo</option>
+              <option value="transfer">Transferencia / Billetera</option>
+              <option value="card">Tarjeta / Datáfono</option>
+              <option value="credit">Crédito</option>
+              <option value="other">Otro</option>
+            </select>
+          </div>
+
+          <div class="form-group" style="margin: 0;">
+            <label class="form-label">Código Interno</label>
+            <input
+              type="text"
+              class="form-control"
+              placeholder="Ej: NEQUI, EFECTIVO, TRANSF"
+              [ngModel]="paymentMethodForm().code"
+              (ngModelChange)="updatePaymentFormField('code', $event)"
+            />
+          </div>
+        </div>
+
+        <div class="form-group" style="margin-top: 14px;">
+          <label class="form-label">Descripción o Instrucciones (Opcional)</label>
+          <textarea
+            class="form-control"
+            rows="3"
+            placeholder="Ej: Transferencia a Cuenta de Ahorros Bancolombia No. 123-456789-01 a nombre de Inversiones SAS"
+            [ngModel]="paymentMethodForm().description"
+            (ngModelChange)="updatePaymentFormField('description', $event)"
+          ></textarea>
+        </div>
+
+        <div class="switch-card" style="margin-top: 8px;">
+          <div class="switch-label-group">
+            <div class="switch-title">Habilitado para Pedidos</div>
+            <div class="switch-desc">Si está activo, aparecerá en los selectores de pedidos, facturación y reportes</div>
+          </div>
+          <label class="custom-switch">
+            <input
+              type="checkbox"
+              [checked]="paymentMethodForm().isActive"
+              (change)="updatePaymentFormField('isActive', $any($event.target).checked)"
+            />
+            <span class="slider"></span>
+          </label>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline" (click)="closePaymentMethodModal()">
+          Cancelar
+        </button>
+        <button type="button" class="btn btn-primary" (click)="savePaymentMethod()">
+          {{ isEditingPaymentMethod() ? 'Guardar Cambios' : 'Crear Método de Pago' }}
+        </button>
+      </div>
+    </div>
+  </div>
+}
+

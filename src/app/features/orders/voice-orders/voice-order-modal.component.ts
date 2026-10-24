@@ -43,6 +43,7 @@ export class VoiceOrderModalComponent {
   readonly deliveryAddress = signal<string>('');
   readonly estimatedDeliveryTime = signal<string>('Hoy antes de las 2:00 PM');
   readonly paymentMethod = signal<string>('Contra Entrega Efectivo');
+  readonly activePaymentMethods = computed(() => this.stateService.activePaymentMethods());
   readonly customNotes = signal<string>('');
   readonly items = signal<EditableOrderItem[]>([]);
   readonly isSubmitting = signal<boolean>(false);

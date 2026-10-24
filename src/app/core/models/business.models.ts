@@ -93,6 +93,8 @@ export interface PaymentMethodDto {
   name: string;
   code?: string;
   isActive: boolean;
+  type?: 'cash' | 'transfer' | 'card' | 'credit' | 'other';
+  description?: string;
 }
 
 export interface ClientDto {

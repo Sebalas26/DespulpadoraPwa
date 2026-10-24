@@ -132,6 +132,7 @@ export class ReportsComponent {
   readonly editPhone = signal<string>('');
   readonly editAddress = signal<string>('');
   readonly editPaymentMethod = signal<string>('Transferencia Bancolombia');
+  readonly activePaymentMethods = computed(() => this.stateService.activePaymentMethods());
   readonly editCourierName = signal<string>('Carlos Rodríguez');
   readonly editStatus = signal<OrderStatus>('PENDING');
   readonly editNotes = signal<string>('');

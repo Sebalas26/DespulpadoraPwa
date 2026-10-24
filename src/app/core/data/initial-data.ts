@@ -1,4 +1,4 @@
-import { ExpenseDto, PayrollSettlementDto } from '../models/business.models';
+import { ExpenseDto, PayrollSettlementDto, PaymentMethodDto } from '../models/business.models';
 
 export interface FruitConfig {
   id: string;
@@ -928,5 +928,51 @@ export const DEFAULT_COMPANY_CONFIG = {
   invoiceNextNumber: 7750,
   invoiceFooterNote: '¡Gracias por preferir DGL Despulpadora — Pulpas 100% Naturales! Consérvese congelado a -18°C'
 };
+
+// ==========================================
+// DEFAULT SYSTEM PARAMETERS: PAYMENT METHODS
+// ==========================================
+export const INITIAL_PAYMENT_METHODS: PaymentMethodDto[] = [
+  {
+    paymentMethodId: 1,
+    name: 'Transferencia Bancolombia',
+    code: 'BANCOLOMBIA',
+    isActive: true,
+    type: 'transfer',
+    description: 'Cuenta Ahorros Bancolombia # 123-456789-00'
+  },
+  {
+    paymentMethodId: 2,
+    name: 'Contra Entrega Efectivo',
+    code: 'EFECTIVO',
+    isActive: true,
+    type: 'cash',
+    description: 'Pago en efectivo recibido al momento de la entrega'
+  },
+  {
+    paymentMethodId: 3,
+    name: 'Nequi / Daviplata',
+    code: 'NEQUI',
+    isActive: true,
+    type: 'transfer',
+    description: 'Billetera digital Nequi / Daviplata'
+  },
+  {
+    paymentMethodId: 4,
+    name: 'Datáfono / Tarjeta',
+    code: 'DATAFONO',
+    isActive: true,
+    type: 'card',
+    description: 'Cobro presencial con tarjeta débito o crédito'
+  },
+  {
+    paymentMethodId: 5,
+    name: 'Crédito Corporativo 15 días',
+    code: 'CREDITO_15',
+    isActive: true,
+    type: 'credit',
+    description: 'Facturación a crédito autorizada a 15 días calendario'
+  }
+];
 
 

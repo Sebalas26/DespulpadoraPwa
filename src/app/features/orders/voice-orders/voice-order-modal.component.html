@@ -368,10 +368,9 @@
                   [ngModel]="paymentMethod()"
                   (ngModelChange)="paymentMethod.set($event)"
                 >
-                  <option value="Contra Entrega Efectivo">Contra Entrega Efectivo</option>
-                  <option value="Transferencia Bancolombia">Transferencia Bancolombia</option>
-                  <option value="Nequi / Daviplata">Nequi / Daviplata</option>
-                  <option value="Crédito Empresarial 15 días">Crédito Empresarial 15 días</option>
+                  @for (pm of activePaymentMethods(); track pm.paymentMethodId) {
+                    <option [value]="pm.name">{{ pm.name }}</option>
+                  }
                 </select>
               </div>
             </div>

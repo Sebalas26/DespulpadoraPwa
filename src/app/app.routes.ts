@@ -25,6 +25,11 @@ export const routes: Routes = [
     canActivate: [authGuard]
   },
   {
+    path: 'kds-inventory',
+    loadComponent: () => import('./features/inventory/kds/kds-inventory.component').then(m => m.KdsInventoryComponent),
+    canActivate: [authGuard]
+  },
+  {
     path: '',
     component: MainLayoutComponent,
     canActivate: [authGuard],

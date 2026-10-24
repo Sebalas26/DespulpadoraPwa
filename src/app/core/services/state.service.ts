@@ -26,7 +26,8 @@ import {
   SalesTargetDto,
   UpsertSalesTargetDto,
   WorkShiftDto,
-  CompanyConfig
+  CompanyConfig,
+  PaymentMethodDto
 } from '../models/business.models';
 import {
   FruitConfig,
@@ -41,7 +42,8 @@ import {
   INITIAL_PRODUCT_VARIANTS,
   INITIAL_SALES_TARGETS_SAMPLE,
   INITIAL_SHIFTS_SAMPLE,
-  DEFAULT_COMPANY_CONFIG
+  DEFAULT_COMPANY_CONFIG,
+  INITIAL_PAYMENT_METHODS
 } from '../data/initial-data';
 import { forkJoin } from 'rxjs';
 
@@ -68,6 +70,8 @@ export class StateService {
   readonly payrollPeriods = signal<PayrollPeriodDto[]>(this.loadPayrollPeriodsFromStorage());
   readonly payrollSettlements = signal<PayrollSettlementDto[]>(this.loadPayrollSettlementsFromStorage());
   readonly companyInfo = signal<CompanyConfig>(this.loadCompanyInfoFromStorage());
+  readonly paymentMethods = signal<PaymentMethodDto[]>(this.loadPaymentMethodsFromStorage());
+  readonly activePaymentMethods = computed(() => this.paymentMethods().filter(p => p.isActive));
 
   readonly isLoading = signal<boolean>(false);
   readonly isOnline = signal<boolean>(navigator.onLine);
@@ -355,6 +359,64 @@ export class StateService {
     this.notification.success('Configuración Guardada', 'Información de la empresa actualizada exitosamente.');
   }
 
+  // ==========================================
+  // PAYMENT METHODS (MÉTODOS DE PAGO) CRUD
+  // ==========================================
+  private loadPaymentMethodsFromStorage(): PaymentMethodDto[] {
+    try {
+      const data = localStorage.getItem('despulpadora_payment_methods');
+      if (data) {
+        const parsed = JSON.parse(data);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          return parsed;
+        }
+      }
+    } catch {}
+    return INITIAL_PAYMENT_METHODS;
+  }
+
+  createPaymentMethod(dto: { name: string; code?: string; type?: 'cash' | 'transfer' | 'card' | 'credit' | 'other'; description?: string }): PaymentMethodDto {
+    const nextId = Math.max(0, ...this.paymentMethods().map(p => p.paymentMethodId)) + 1;
+    const item: PaymentMethodDto = {
+      paymentMethodId: nextId,
+      name: dto.name.trim(),
+      code: (dto.code || dto.name.toUpperCase().replace(/[^A-Z0-9]/g, '_')).trim(),
+      isActive: true,
+      type: dto.type || 'other',
+      description: dto.description?.trim() || ''
+    };
+    this.paymentMethods.update(list => [...list, item]);
+    this.saveAllToStorage();
+    this.notification.success('Método de Pago Creado', `${item.name} se encuentra disponible para todos los pedidos.`);
+    return item;
+  }
+
+  updatePaymentMethod(id: number, changes: Partial<PaymentMethodDto>) {
+    this.paymentMethods.update(list => list.map(p => p.paymentMethodId === id ? { ...p, ...changes } : p));
+    this.saveAllToStorage();
+    this.notification.success('Método de Pago Actualizado', 'Los cambios han sido guardados.');
+  }
+
+  deletePaymentMethod(id: number) {
+    const target = this.paymentMethods().find(p => p.paymentMethodId === id);
+    this.paymentMethods.update(list => list.filter(p => p.paymentMethodId !== id));
+    this.saveAllToStorage();
+    if (target) {
+      this.notification.info('Método de Pago Eliminado', `${target.name} fue retirado de las opciones.`);
+    }
+  }
+
+  togglePaymentMethodStatus(id: number) {
+    this.paymentMethods.update(list => list.map(p => p.paymentMethodId === id ? { ...p, isActive: !p.isActive } : p));
+    this.saveAllToStorage();
+  }
+
+  resetPaymentMethodsToDefault() {
+    this.paymentMethods.set(INITIAL_PAYMENT_METHODS);
+    this.saveAllToStorage();
+    this.notification.info('Métodos de Pago Restablecidos', 'Se han restaurado los medios de pago predeterminados.');
+  }
+
   private saveAllToStorage() {
     localStorage.setItem('despulpadora_fruits', JSON.stringify(this.fruits()));
     localStorage.setItem('despulpadora_batches', JSON.stringify(this.batches()));
@@ -368,6 +430,7 @@ export class StateService {
     localStorage.setItem('despulpadora_payroll_settlements', JSON.stringify(this.payrollSettlements()));
     localStorage.setItem('despulpadora_shifts', JSON.stringify(this.shifts()));
     localStorage.setItem('despulpadora_company_info', JSON.stringify(this.companyInfo()));
+    localStorage.setItem('despulpadora_payment_methods', JSON.stringify(this.paymentMethods()));
   }
 
   // ==========================================
