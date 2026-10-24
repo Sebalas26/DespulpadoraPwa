@@ -86,6 +86,22 @@ import { VoiceOrdersService } from '../../core/services/voice-orders.service';
           <span class="kds-access-badge badge-inventory">PLANTA</span>
         </button>
 
+        <!-- Portal de Autopedido para Clientes (Catálogo Digital) -->
+        <button
+          type="button"
+          class="btn-kds-access btn-kds-portal"
+          (click)="navigateToClientPortal()"
+          title="Abrir portal de autopedido y catálogo digital para clientes"
+        >
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="9" cy="21" r="1"></circle>
+            <circle cx="20" cy="21" r="1"></circle>
+            <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path>
+          </svg>
+          <span class="kds-access-label">Portal Clientes</span>
+          <span class="kds-access-badge badge-portal">PEDIDOS</span>
+        </button>
+
         <!-- Status Indicator • En línea (Figma style) -->
         <div class="online-pill" [title]="stateService.isOnline() ? 'Sistema conectado a la red' : 'Sin conexión'">
           <span class="online-dot" [style.background]="stateService.isOnline() ? '#1e5e3a' : '#dc2626'"></span>
@@ -359,6 +375,30 @@ import { VoiceOrdersService } from '../../core/services/voice-orders.service';
         .badge-inventory {
           background: #dbeafe;
           color: #1e40af;
+        }
+      }
+
+      &.btn-kds-portal {
+        background: #fffbeb;
+        border-color: #fde68a;
+        color: #b45309;
+        box-shadow: 0 1px 3px rgba(217, 119, 6, 0.1);
+
+        &:hover {
+          background: #d97706;
+          border-color: #d97706;
+          color: #ffffff;
+          box-shadow: 0 4px 12px rgba(217, 119, 6, 0.28);
+
+          .badge-portal {
+            background: rgba(255, 255, 255, 0.25);
+            color: #ffffff;
+          }
+        }
+
+        .badge-portal {
+          background: #fef3c7;
+          color: #92400e;
         }
       }
     }
@@ -723,5 +763,9 @@ export class HeaderComponent implements OnInit, OnDestroy {
 
   navigateToInventoryKds() {
     this.router.navigate(['/kds-inventory']);
+  }
+
+  navigateToClientPortal() {
+    this.router.navigate(['/portal-clientes']);
   }
 }

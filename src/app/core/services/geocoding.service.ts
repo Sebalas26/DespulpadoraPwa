@@ -8,7 +8,7 @@ export interface GeocodedLocation {
   lng: number;
   zone: string;
   locality: string;
-  source: 'coords' | 'arcgis' | 'stadia' | 'nominatim' | 'bogota-grid';
+  source: 'coords' | 'arcgis' | 'photon' | 'nominatim' | 'bogota-grid';
   confidence: number;
 }
 
@@ -25,8 +25,6 @@ export interface ParsedColombianAddress {
   crossRoadIsEste: boolean;
   plaqueMeters: number | null;
 }
-
-const STADIA_API_KEY = '28312715-2030-4d54-ad98-458156a468d2';
 
 const CUNDINAMARCA_MUNICIPALITIES: Record<string, { name: string; lat: number; lng: number }> = {
   chia: { name: 'Chía', lat: 4.8616, lng: -74.0587 },
@@ -57,7 +55,7 @@ export class GeocodingService {
    *  1. Detector directo de coordenadas / URLs de Google Maps / Waze
    *  2. Normalizador de nomenclatura vial colombiana (Cra, Cl, Dg, Tv, # X-Y)
    *  3. Esri ArcGIS World Geocoder (interpolación catastral exacta de placas en Colombia)
-   *  4. Stadia Maps Pelias & OpenStreetMap Nominatim (con búsqueda de intersección)
+   *  4. Photon Komoot OSM & OpenStreetMap Nominatim (con búsqueda de intersección)
    *  5. Estimador matemático de la cuadrícula urbana de Bogotá (0% fallos en nomenclatura)
    */
   async searchAddress(rawQuery: string): Promise<GeocodedLocation[]> {
@@ -95,14 +93,14 @@ export class GeocodingService {
     const parsed = this.parseColombianAddress(trimmed);
     const results: GeocodedLocation[] = [];
 
-    // 3. Consultar en paralelo Esri ArcGIS (excelente para placas # en Colombia) y Stadia Maps
-    const [arcgisResults, stadiaResults] = await Promise.all([
+    // 3. Consultar en paralelo Esri ArcGIS (excelente para placas # en Colombia) y Photon Komoot OSM (100% gratis)
+    const [arcgisResults, photonResults] = await Promise.all([
       this.queryArcGisColombia(parsed),
-      this.queryStadiaPelias(parsed)
+      this.queryPhotonKomoot(parsed)
     ]);
 
     this.mergeUniqueResults(results, arcgisResults);
-    this.mergeUniqueResults(results, stadiaResults);
+    this.mergeUniqueResults(results, photonResults);
 
     // 4. Si aún hay pocos resultados o no hubo match exacto, consultar Nominatim (dirección + intersección)
     if (results.length < 2) {
@@ -333,12 +331,12 @@ export class GeocodingService {
   }
 
   /**
-   * Consulta Stadia Maps Pelias Autocomplete con la dirección limpia
+   * Consulta Photon Komoot OpenStreetMap Autocomplete (100% gratuito sin API Key) con la dirección limpia
    */
-  private async queryStadiaPelias(parsed: ParsedColombianAddress): Promise<GeocodedLocation[]> {
+  private async queryPhotonKomoot(parsed: ParsedColombianAddress): Promise<GeocodedLocation[]> {
     try {
-      const encoded = encodeURIComponent(parsed.cleaned);
-      const url = `https://api.stadiamaps.com/geocoding/v1/autocomplete?api_key=${STADIA_API_KEY}&focus.point.lat=4.6850&focus.point.lon=-74.0950&boundary.country=COL&text=${encoded}`;
+      const encoded = encodeURIComponent(parsed.normalizedFull);
+      const url = `https://photon.komoot.io/api/?q=${encoded}&lat=4.6850&lon=-74.0950&limit=5`;
 
       const res = await fetch(url, { signal: AbortSignal.timeout(3500) });
       if (!res.ok) return [];
@@ -356,16 +354,19 @@ export class GeocodingService {
 
         const props = feat.properties || {};
         const zone = this.detectBogotaZone(lat, lng);
+        const streetPart = [props.street, props.housenumber].filter(Boolean).join(' ');
+        const displayName = props.name || streetPart || parsed.cleaned;
+        const displayCity = props.city || props.county || parsed.municipality;
 
         locations.push({
-          id: props.id || props.gid || `stadia_${lat.toFixed(5)}_${lng.toFixed(5)}`,
-          name: props.name || props.street || parsed.cleaned,
-          label: props.label || props.name || parsed.cleaned,
+          id: props.osm_id ? `photon_${props.osm_id}` : `photon_${lat.toFixed(5)}_${lng.toFixed(5)}`,
+          name: displayName,
+          label: `${displayName}, ${displayCity}`,
           lat,
           lng,
           zone,
-          locality: props.locality || props.county || parsed.municipality,
-          source: 'stadia',
+          locality: displayCity,
+          source: 'photon',
           confidence: 0.86
         });
       }

@@ -30,6 +30,20 @@ export const routes: Routes = [
     canActivate: [authGuard]
   },
   {
+    path: 'portal-clientes',
+    loadComponent: () => import('./features/client-portal/client-portal.component').then(m => m.ClientPortalComponent)
+  },
+  {
+    path: 'pedidos-cliente',
+    redirectTo: 'portal-clientes',
+    pathMatch: 'full'
+  },
+  {
+    path: 'catalogo',
+    redirectTo: 'portal-clientes',
+    pathMatch: 'full'
+  },
+  {
     path: '',
     component: MainLayoutComponent,
     canActivate: [authGuard],

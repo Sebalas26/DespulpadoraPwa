@@ -478,10 +478,11 @@ Pago por Transferencia Bancolombia`);
       zoomControl: true
     });
 
-    const stadiaKey = '28312715-2030-4d54-ad98-458156a468d2';
-    L.tileLayer(`https://tiles.stadiamaps.com/tiles/alidade_smooth/{z}/{x}/{y}{r}.png?api_key=${stadiaKey}`, {
+    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
       maxZoom: 20,
-      attribution: '&copy; <a href="https://stadiamaps.com/">Stadia Maps</a> &copy; <a href="https://openmaptiles.org/">OpenMapTiles</a>'
+      maxNativeZoom: 19,
+      className: 'osm-tile-white-smooth',
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
     }).addTo(this.pickerMap);
 
     const customIcon = L.divIcon({

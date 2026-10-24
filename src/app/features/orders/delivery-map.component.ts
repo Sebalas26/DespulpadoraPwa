@@ -222,28 +222,28 @@ export interface MapStyleOption {
   isDark?: boolean;
 }
 
-export const STADIA_API_KEY = '28312715-2030-4d54-ad98-458156a468d2';
-
 export const MAP_STYLES: MapStyleOption[] = [
   {
-    id: 'stadia-smooth',
-    name: 'Stadia Maps Alidade Smooth',
-    shortName: 'Stadia Smooth',
-    badge: 'VECTOR RETINA',
+    id: 'osm-white',
+    name: 'OpenStreetMap White Smooth',
+    shortName: 'White Smooth',
+    badge: '100% GRATIS',
     icon: '',
-    description: 'Cartografía vectorial de alta definición en escala de grises con soporte Retina @2x.',
-    url: `https://tiles.stadiamaps.com/tiles/alidade_smooth/{z}/{x}/{y}{r}.png?api_key=${STADIA_API_KEY}`,
-    maxZoom: 20
+    description: 'Cartografía blanca minimalista 100% gratuita y sin API Key con todas las vías y barrios de Colombia.',
+    url: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+    maxZoom: 20,
+    maxNativeZoom: 19
   },
   {
-    id: 'stadia-dark',
-    name: 'Stadia Maps Alidade Smooth Dark',
-    shortName: 'Stadia Dark',
+    id: 'osm-dark',
+    name: 'OpenStreetMap Dark Smooth',
+    shortName: 'Dark Smooth',
     badge: 'MODO NOCHE',
     icon: '',
-    description: 'Modo oscuro elegante de alto contraste para visibilidad nocturna.',
-    url: `https://tiles.stadiamaps.com/tiles/alidade_smooth_dark/{z}/{x}/{y}{r}.png?api_key=${STADIA_API_KEY}`,
+    description: 'Modo oscuro elegante de alto contraste 100% gratuito y sin API Key para visibilidad nocturna.',
+    url: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
     maxZoom: 20,
+    maxNativeZoom: 19,
     isDark: true
   },
   {
@@ -5608,13 +5608,16 @@ export class DeliveryMapComponent implements OnInit, AfterViewInit, OnDestroy {
   private zoneVertexMarkers: L.Marker[] = [];
   private zonePolygonLayer?: L.Polygon | L.Polyline;
 
-  // Active Map Tile Style Signal (Defaults to Stadia Maps Alidade Smooth)
+  // Active Map Tile Style Signal (Defaults to OpenStreetMap White Smooth)
   readonly selectedMapStyleId = signal<string>(
     (() => {
       try {
-        return localStorage.getItem('despulpadora_map_style') || 'stadia-smooth';
+        const stored = localStorage.getItem('despulpadora_map_style');
+        if (!stored || stored === 'stadia-smooth' || stored === 'carto-positron') return 'osm-white';
+        if (stored === 'stadia-dark' || stored === 'carto-dark') return 'osm-dark';
+        return stored;
       } catch {
-        return 'stadia-smooth';
+        return 'osm-white';
       }
     })()
   );
@@ -5916,14 +5919,20 @@ export class DeliveryMapComponent implements OnInit, AfterViewInit, OnDestroy {
       this.currentRefLayer = undefined;
     }
 
+    const tileClassName =
+      style.id === 'osm-white'
+        ? 'osm-tile-white-smooth'
+        : style.id === 'osm-dark'
+          ? 'osm-tile-dark-smooth'
+          : '';
+
     const options: L.TileLayerOptions = {
       maxZoom: style.maxZoom,
       maxNativeZoom: style.maxNativeZoom,
-      attribution: style.id.startsWith('stadia')
-        ? '&copy; <a href="https://stadiamaps.com/" target="_blank">Stadia Maps</a> &copy; <a href="https://openmaptiles.org/" target="_blank">OpenMapTiles</a> &copy; <a href="https://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap</a>'
-        : (style.id === 'esri-gray'
-          ? 'Tiles &copy; Esri &mdash; Esri, DeLorme, NAVTEQ'
-          : '&copy; OpenStreetMap contributors')
+      className: tileClassName,
+      attribution: style.id === 'esri-gray'
+        ? 'Tiles &copy; Esri &mdash; Esri, DeLorme, NAVTEQ'
+        : '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap</a> contributors'
     };
 
     this.currentTileLayer = L.tileLayer(style.url, options).addTo(this.map);
@@ -5945,7 +5954,7 @@ export class DeliveryMapComponent implements OnInit, AfterViewInit, OnDestroy {
 
   private updatePolylineStylesForActiveMap() {
     if (!this.map) return;
-    const isDark = this.selectedMapStyleId() === 'stadia-dark';
+    const isDark = this.selectedMapStyleId() === 'osm-dark';
     const casingColor = isDark ? '#020617' : '#ffffff';
     const casingOpacity = isDark ? 0.9 : 0.85;
 
@@ -6245,9 +6254,9 @@ export class DeliveryMapComponent implements OnInit, AfterViewInit, OnDestroy {
       return this.roadSegmentCache.get(key)!;
     }
 
-    // 1. Primary Engine: Stadia Maps Valhalla Street Router
+    // 1. Primary Engine: Valhalla OpenStreetMap Free Street Router
     try {
-      const stadiaRes = await fetch(`https://api.stadiamaps.com/route/v1?api_key=${STADIA_API_KEY}`, {
+      const valhallaRes = await fetch('https://valhalla1.openstreetmap.de/route', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -6260,9 +6269,9 @@ export class DeliveryMapComponent implements OnInit, AfterViewInit, OnDestroy {
         }),
         signal: AbortSignal.timeout(5000)
       });
-      if (stadiaRes.ok) {
-        const stadiaData = await stadiaRes.json();
-        const shape = stadiaData?.trip?.legs?.[0]?.shape;
+      if (valhallaRes.ok) {
+        const valhallaData = await valhallaRes.json();
+        const shape = valhallaData?.trip?.legs?.[0]?.shape;
         if (typeof shape === 'string' && shape.length > 2) {
           const roadCoords = this.decodePolyline6(shape);
           if (roadCoords.length > 2) {
@@ -6385,7 +6394,7 @@ export class DeliveryMapComponent implements OnInit, AfterViewInit, OnDestroy {
 
       // Render glowing real road polyline on map with crisp casing
       if (this.map && fullRoadPath.length > 1) {
-        const isDark = this.selectedMapStyleId() === 'stadia-dark';
+        const isDark = this.selectedMapStyleId() === 'osm-dark';
         const casingColor = isDark ? '#020617' : '#ffffff';
         const casingOpacity = isDark ? 0.9 : 0.85;
         const showRoutes = this.mapViewMode() !== 'stops';

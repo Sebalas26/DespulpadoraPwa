@@ -270,7 +270,10 @@ export class StateService {
     if (!data) return INITIAL_FRUITS;
     try {
       const list: FruitConfig[] = JSON.parse(data);
-      return list.map(f => ({ ...f, emoji: '' }));
+      const existingIds = new Set(list.map(f => f.id));
+      const missing = INITIAL_FRUITS.filter(f => !existingIds.has(f.id));
+      const merged = [...list, ...missing];
+      return merged.map(f => ({ ...f, emoji: '' }));
     } catch {
       return INITIAL_FRUITS;
     }

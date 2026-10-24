@@ -2290,4 +2290,14 @@ td.mobile-tr-summary-cell {
   box-shadow: var(--shadow-sm);
 }
 
+/* OpenStreetMap White Smooth & Dark Smooth Free Basemap Filters (Only applied to map tiles, keeping pins & polylines full color) */
+.leaflet-tile.osm-tile-white-smooth {
+  filter: grayscale(100%) brightness(107%) contrast(88%);
+}
+
+.leaflet-tile.osm-tile-dark-smooth {
+  filter: invert(100%) hue-rotate(180deg) grayscale(80%) brightness(92%) contrast(95%);
+}
+
+
 
