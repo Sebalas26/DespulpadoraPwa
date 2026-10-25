@@ -14,6 +14,7 @@ import {
   OrderStatus,
   PayrollSettlementDto
 } from '../../core/models/business.models';
+import { CopCurrencyInputDirective } from '../../shared/directives/cop-currency-input.directive';
 
 /**
  * Available report tab identifiers.
@@ -50,7 +51,7 @@ export interface ReportEditOrderItem {
 @Component({
   selector: 'app-reports',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, CopCurrencyInputDirective],
   templateUrl: './reports.component.html',
   styleUrls: ['./reports.component.scss']
 })
@@ -87,34 +88,54 @@ export class ReportsComponent {
   readonly rangeEndDate = signal<string>(new Date().toISOString().substring(0, 10));
 
   readonly availableYears = computed<string[]>(() => {
-    const currentYear = new Date().getFullYear();
-    const yearsSet = new Set<string>([
-      String(currentYear),
-      String(currentYear - 1),
-      String(currentYear - 2)
-    ]);
-    this.stateService.orders().forEach((o: OrderDto) => {
-      const y = (o.createdAt || o.orderDate || '').substring(0, 4);
-      if (/^\d{4}$/.test(y)) {
-        yearsSet.add(y);
-      }
-    });
-    return Array.from(yearsSet).sort((a: string, b: string) => Number(b) - Number(a));
+    try {
+      const currentYear = new Date().getFullYear();
+      const yearsSet = new Set<string>([
+        String(currentYear),
+        String(currentYear - 1),
+        String(currentYear - 2)
+      ]);
+      this.stateService.orders().forEach((o: OrderDto) => {
+        const y = (o.createdAt || o.orderDate || '').substring(0, 4);
+        if (/^\d{4}$/.test(y)) {
+          yearsSet.add(y);
+        }
+      });
+      return Array.from(yearsSet).sort((a: string, b: string) => Number(b) - Number(a));
+    } catch (error: unknown) {
+      console.error('Error computing available years:', error);
+      return [];
+    }
   });
 
   readonly todayFormattedDisplay = computed<string>(() => {
-    const todayStr = new Date().toISOString().substring(0, 10);
-    return this.formatHumanDateES(todayStr);
+    try {
+      const todayStr = new Date().toISOString().substring(0, 10);
+      return this.formatHumanDateES(todayStr);
+    } catch (error: unknown) {
+      console.error('Error computing today formatted display:', error);
+      return '';
+    }
   });
 
   readonly yesterdayFormattedDisplay = computed<string>(() => {
-    const yesterdayStr = new Date(Date.now() - 86400000).toISOString().substring(0, 10);
-    return this.formatHumanDateES(yesterdayStr);
+    try {
+      const yesterdayStr = new Date(Date.now() - 86400000).toISOString().substring(0, 10);
+      return this.formatHumanDateES(yesterdayStr);
+    } catch (error: unknown) {
+      console.error('Error computing yesterday formatted display:', error);
+      return '';
+    }
   });
 
   readonly selectedMonthLabel = computed<string>(() => {
-    const found = this.monthsList.find((m: MonthOption) => m.value === this.selectedMonthNumber());
-    return found ? found.label : '';
+    try {
+      const found = this.monthsList.find((m: MonthOption) => m.value === this.selectedMonthNumber());
+      return found ? found.label : '';
+    } catch (error: unknown) {
+      console.error('Error computing selected month label:', error);
+      return '';
+    }
   });
 
   readonly openActionOrderId = signal<number | null>(null);
@@ -137,250 +158,431 @@ export class ReportsComponent {
   readonly editPhone = signal<string>('');
   readonly editAddress = signal<string>('');
   readonly editPaymentMethod = signal<string>('');
-  readonly activePaymentMethods = computed(() => this.stateService.activePaymentMethods());
+  readonly activePaymentMethods = computed(() => {
+    try {
+      return this.stateService.activePaymentMethods();
+    } catch (error: unknown) {
+      console.error('Error computing active payment methods:', error);
+      return [];
+    }
+  });
   readonly editCourierName = signal<string>('');
   readonly editStatus = signal<OrderStatus>('PENDING');
   readonly editNotes = signal<string>('');
   readonly editItems = signal<ReportEditOrderItem[]>([]);
 
-  readonly editOrderTotal = computed<number>(() =>
-    this.editItems().reduce(
-      (sum: number, item: ReportEditOrderItem) => sum + (Number(item.quantity) || 0) * (Number(item.unitPrice) || 0),
-      0
-    )
-  );
-
-  readonly filteredOrders = computed<OrderDto[]>(() => {
-    const orders = this.stateService.orders().filter((o: OrderDto) => o.status !== 'CANCELLED');
-    const filter = this.selectedDateFilter();
-    const todayStr = new Date().toISOString().substring(0, 10);
-    const yesterdayStr = new Date(Date.now() - 86400000).toISOString().substring(0, 10);
-
-    if (filter === 'today') {
-      return orders.filter((o: OrderDto) => (o.createdAt || o.orderDate || '').substring(0, 10) === todayStr);
+  readonly editOrderTotal = computed<number>(() => {
+    try {
+      return this.editItems().reduce(
+        (sum: number, item: ReportEditOrderItem) => sum + (Number(item.quantity) || 0) * (Number(item.unitPrice) || 0),
+        0
+      );
+    } catch (error: unknown) {
+      console.error('Error computing edit order total:', error);
+      return 0;
     }
-
-    if (filter === 'yesterday') {
-      return orders.filter((o: OrderDto) => (o.createdAt || o.orderDate || '').substring(0, 10) === yesterdayStr);
-    }
-
-    if (filter === 'month') {
-      const targetMonth = `${this.selectedYear()}-${this.selectedMonthNumber()}`;
-      return orders.filter((o: OrderDto) => (o.createdAt || o.orderDate || '').substring(0, 7) === targetMonth);
-    }
-
-    if (filter === 'year') {
-      const targetYear = this.selectedYear() || todayStr.substring(0, 4);
-      return orders.filter((o: OrderDto) => (o.createdAt || o.orderDate || '').substring(0, 4) === targetYear);
-    }
-
-    if (filter === 'range') {
-      const start = this.rangeStartDate() || '0000-01-01';
-      const end = this.rangeEndDate() || '9999-12-31';
-      const [minDate, maxDate] = start <= end ? [start, end] : [end, start];
-      return orders.filter((o: OrderDto) => {
-        const d = (o.createdAt || o.orderDate || '').substring(0, 10);
-        return d >= minDate && d <= maxDate;
-      });
-    }
-
-    this.ordersCurrentPage.set(1);
-    return orders;
   });
 
-  readonly totalOrdersPages = computed<number>(() => Math.ceil(this.filteredOrders().length / this.ordersPageSize) || 1);
+  readonly filteredOrders = computed<OrderDto[]>(() => {
+    try {
+      const orders = this.stateService.orders().filter((o: OrderDto) => o.status !== 'CANCELLED');
+      const filter = this.selectedDateFilter();
+      const todayStr = new Date().toISOString().substring(0, 10);
+      const yesterdayStr = new Date(Date.now() - 86400000).toISOString().substring(0, 10);
+
+      if (filter === 'today') {
+        return orders.filter((o: OrderDto) => (o.createdAt || o.orderDate || '').substring(0, 10) === todayStr);
+      }
+
+      if (filter === 'yesterday') {
+        return orders.filter((o: OrderDto) => (o.createdAt || o.orderDate || '').substring(0, 10) === yesterdayStr);
+      }
+
+      if (filter === 'month') {
+        const targetMonth = `${this.selectedYear()}-${this.selectedMonthNumber()}`;
+        return orders.filter((o: OrderDto) => (o.createdAt || o.orderDate || '').substring(0, 7) === targetMonth);
+      }
+
+      if (filter === 'year') {
+        const targetYear = this.selectedYear() || todayStr.substring(0, 4);
+        return orders.filter((o: OrderDto) => (o.createdAt || o.orderDate || '').substring(0, 4) === targetYear);
+      }
+
+      if (filter === 'range') {
+        const start = this.rangeStartDate() || '0000-01-01';
+        const end = this.rangeEndDate() || '9999-12-31';
+        const [minDate, maxDate] = start <= end ? [start, end] : [end, start];
+        return orders.filter((o: OrderDto) => {
+          const d = (o.createdAt || o.orderDate || '').substring(0, 10);
+          return d >= minDate && d <= maxDate;
+        });
+      }
+
+      this.ordersCurrentPage.set(1);
+      return orders;
+    } catch (error: unknown) {
+      console.error('Error computing filtered orders:', error);
+      return [];
+    }
+  });
+
+  readonly totalOrdersPages = computed<number>(() => {
+    try {
+      return Math.ceil(this.filteredOrders().length / this.ordersPageSize) || 1;
+    } catch (error: unknown) {
+      console.error('Error computing total orders pages:', error);
+      return 1;
+    }
+  });
 
   readonly paginatedOrders = computed<OrderDto[]>(() => {
-    const all = this.filteredOrders();
-    const page = this.ordersCurrentPage();
-    const start = (page - 1) * this.ordersPageSize;
-    return all.slice(start, start + this.ordersPageSize);
+    try {
+      const all = this.filteredOrders();
+      const page = this.ordersCurrentPage();
+      const start = (page - 1) * this.ordersPageSize;
+      return all.slice(start, start + this.ordersPageSize);
+    } catch (error: unknown) {
+      console.error('Error computing paginated orders:', error);
+      return [];
+    }
   });
 
   readonly activeFilterSummaryLabel = computed<string>(() => {
-    const filter = this.selectedDateFilter();
-    if (filter === 'today') return `Hoy (${this.todayFormattedDisplay()})`;
-    if (filter === 'yesterday') return `Ayer (${this.yesterdayFormattedDisplay()})`;
-    if (filter === 'month') return `${this.selectedMonthLabel()} ${this.selectedYear()}`;
-    if (filter === 'year') return `Año ${this.selectedYear()}`;
-    if (filter === 'range') {
-      return `${this.formatHumanDateES(this.rangeStartDate())} – ${this.formatHumanDateES(this.rangeEndDate())}`;
+    try {
+      const filter = this.selectedDateFilter();
+      if (filter === 'today') return `Hoy (${this.todayFormattedDisplay()})`;
+      if (filter === 'yesterday') return `Ayer (${this.yesterdayFormattedDisplay()})`;
+      if (filter === 'month') return `${this.selectedMonthLabel()} ${this.selectedYear()}`;
+      if (filter === 'year') return `Año ${this.selectedYear()}`;
+      if (filter === 'range') {
+        return `${this.formatHumanDateES(this.rangeStartDate())} – ${this.formatHumanDateES(this.rangeEndDate())}`;
+      }
+      return 'Período';
+    } catch (error: unknown) {
+      console.error('Error computing active filter summary label:', error);
+      return 'Período';
     }
-    return 'Período';
   });
 
   readonly totalSalesRevenue = computed<number>(() => {
-    return this.filteredOrders().reduce((sum: number, o: OrderDto) => sum + o.totalAmount, 0);
+    try {
+      return this.filteredOrders().reduce((sum: number, o: OrderDto) => sum + o.totalAmount, 0);
+    } catch (error: unknown) {
+      console.error('Error computing total sales revenue:', error);
+      return 0;
+    }
   });
 
   readonly filteredExpenses = computed<ExpenseDto[]>(() => {
-    const expenses = this.stateService.expenses();
-    const filter = this.selectedDateFilter();
-    const todayStr = new Date().toISOString().substring(0, 10);
-    const yesterdayStr = new Date(Date.now() - 86400000).toISOString().substring(0, 10);
+    try {
+      const expenses = this.stateService.expenses();
+      const filter = this.selectedDateFilter();
+      const todayStr = new Date().toISOString().substring(0, 10);
+      const yesterdayStr = new Date(Date.now() - 86400000).toISOString().substring(0, 10);
 
-    if (filter === 'today') {
-      return expenses.filter((e: ExpenseDto) => (e.expenseDate || e.createdAt || '').substring(0, 10) === todayStr);
+      if (filter === 'today') {
+        return expenses.filter((e: ExpenseDto) => (e.expenseDate || e.createdAt || '').substring(0, 10) === todayStr);
+      }
+      if (filter === 'yesterday') {
+        return expenses.filter((e: ExpenseDto) => (e.expenseDate || e.createdAt || '').substring(0, 10) === yesterdayStr);
+      }
+      if (filter === 'month') {
+        const targetMonth = `${this.selectedYear()}-${this.selectedMonthNumber()}`;
+        return expenses.filter((e: ExpenseDto) => (e.expenseDate || e.createdAt || '').substring(0, 7) === targetMonth);
+      }
+      if (filter === 'year') {
+        const targetYear = this.selectedYear() || todayStr.substring(0, 4);
+        return expenses.filter((e: ExpenseDto) => (e.expenseDate || e.createdAt || '').substring(0, 4) === targetYear);
+      }
+      if (filter === 'range') {
+        const start = this.rangeStartDate() || '0000-01-01';
+        const end = this.rangeEndDate() || '9999-12-31';
+        const [minDate, maxDate] = start <= end ? [start, end] : [end, start];
+        return expenses.filter((e: ExpenseDto) => {
+          const d = (e.expenseDate || e.createdAt || '').substring(0, 10);
+          return d >= minDate && d <= maxDate;
+        });
+      }
+      return expenses;
+    } catch (error: unknown) {
+      console.error('Error computing filtered expenses:', error);
+      return [];
     }
-    if (filter === 'yesterday') {
-      return expenses.filter((e: ExpenseDto) => (e.expenseDate || e.createdAt || '').substring(0, 10) === yesterdayStr);
-    }
-    if (filter === 'month') {
-      const targetMonth = `${this.selectedYear()}-${this.selectedMonthNumber()}`;
-      return expenses.filter((e: ExpenseDto) => (e.expenseDate || e.createdAt || '').substring(0, 7) === targetMonth);
-    }
-    if (filter === 'year') {
-      const targetYear = this.selectedYear() || todayStr.substring(0, 4);
-      return expenses.filter((e: ExpenseDto) => (e.expenseDate || e.createdAt || '').substring(0, 4) === targetYear);
-    }
-    if (filter === 'range') {
-      const start = this.rangeStartDate() || '0000-01-01';
-      const end = this.rangeEndDate() || '9999-12-31';
-      const [minDate, maxDate] = start <= end ? [start, end] : [end, start];
-      return expenses.filter((e: ExpenseDto) => {
-        const d = (e.expenseDate || e.createdAt || '').substring(0, 10);
-        return d >= minDate && d <= maxDate;
-      });
-    }
-    return expenses;
   });
 
   readonly totalExpensesAmount = computed<number>(() => {
-    return this.filteredExpenses().reduce((sum: number, e: ExpenseDto) => sum + e.amount, 0);
+    try {
+      return this.filteredExpenses().reduce((sum: number, e: ExpenseDto) => sum + e.amount, 0);
+    } catch (error: unknown) {
+      console.error('Error computing total expenses amount:', error);
+      return 0;
+    }
   });
 
   readonly filteredGrossProfit = computed<number>(() => {
-    const rev = this.totalSalesRevenue();
-    const expenses = this.totalExpensesAmount();
-    return Math.max(0, Math.round(rev - expenses));
+    try {
+      const rev = this.totalSalesRevenue();
+      const expenses = this.totalExpensesAmount();
+      return Math.max(0, Math.round(rev - expenses));
+    } catch (error: unknown) {
+      console.error('Error computing filtered gross profit:', error);
+      return 0;
+    }
   });
 
   readonly filteredGrossMarginPct = computed<number>(() => {
-    const rev = this.totalSalesRevenue();
-    if (rev <= 0) return 0;
-    return Number(((this.filteredGrossProfit() / rev) * 100).toFixed(1));
+    try {
+      const rev = this.totalSalesRevenue();
+      if (rev <= 0) return 0;
+      return Number(((this.filteredGrossProfit() / rev) * 100).toFixed(1));
+    } catch (error: unknown) {
+      console.error('Error computing filtered gross margin pct:', error);
+      return 0;
+    }
   });
 
   readonly filteredCompliancePct = computed<number>(() => {
-    const target = this.stateService.salesPerformance().monthTargetRevenue || 0;
-    if (target <= 0) return 0;
-    return Number(((this.totalSalesRevenue() / target) * 100).toFixed(1));
+    try {
+      const target = this.stateService.salesPerformance().monthTargetRevenue || 0;
+      if (target <= 0) return 0;
+      return Number(((this.totalSalesRevenue() / target) * 100).toFixed(1));
+    } catch (error: unknown) {
+      console.error('Error computing filtered compliance pct:', error);
+      return 0;
+    }
   });
 
   readonly totalUnitsSold = computed<number>(() => {
-    return this.filteredOrders().reduce((sum: number, o: OrderDto) => {
-      const itemsCount = o.items.reduce((iSum: number, it: OrderItemDto) => iSum + it.quantity, 0);
-      return sum + itemsCount;
-    }, 0);
+    try {
+      return this.filteredOrders().reduce((sum: number, o: OrderDto) => {
+        const itemsCount = o.items.reduce((iSum: number, it: OrderItemDto) => iSum + it.quantity, 0);
+        return sum + itemsCount;
+      }, 0);
+    } catch (error: unknown) {
+      console.error('Error computing total units sold:', error);
+      return 0;
+    }
   });
 
   readonly averageTicket = computed<number>(() => {
-    const count = this.filteredOrders().length;
-    return count > 0 ? Math.round(this.totalSalesRevenue() / count) : 0;
+    try {
+      const count = this.filteredOrders().length;
+      return count > 0 ? Math.round(this.totalSalesRevenue() / count) : 0;
+    } catch (error: unknown) {
+      console.error('Error computing average ticket:', error);
+      return 0;
+    }
   });
 
   readonly idealVsRealAudit = computed<IdealVsRealAuditDto[]>(() => {
-    return this.stateService.idealVsRealLossAudit();
+    try {
+      return this.stateService.idealVsRealLossAudit();
+    } catch (error: unknown) {
+      console.error('Error computing ideal vs real audit:', error);
+      return [];
+    }
   });
 
   readonly lossTotalPulpKg = computed<number>(() => {
-    return this.idealVsRealAudit().reduce((sum: number, r: IdealVsRealAuditDto) => sum + (r.totalPulpKgProduced || 0), 0);
+    try {
+      return this.idealVsRealAudit().reduce((sum: number, r: IdealVsRealAuditDto) => sum + (r.totalPulpKgProduced || 0), 0);
+    } catch (error: unknown) {
+      console.error('Error computing loss total pulp kg:', error);
+      return 0;
+    }
   });
 
   readonly lossTotalIdealRevenue = computed<number>(() => {
-    return this.idealVsRealAudit().reduce((sum: number, r: IdealVsRealAuditDto) => sum + (r.idealRevenue || 0), 0);
+    try {
+      return this.idealVsRealAudit().reduce((sum: number, r: IdealVsRealAuditDto) => sum + (r.idealRevenue || 0), 0);
+    } catch (error: unknown) {
+      console.error('Error computing loss total ideal revenue:', error);
+      return 0;
+    }
   });
 
   readonly lossTotalRealRevenue = computed<number>(() => {
-    return this.idealVsRealAudit().reduce((sum: number, r: IdealVsRealAuditDto) => sum + (r.realRevenue || 0), 0);
+    try {
+      return this.idealVsRealAudit().reduce((sum: number, r: IdealVsRealAuditDto) => sum + (r.realRevenue || 0), 0);
+    } catch (error: unknown) {
+      console.error('Error computing loss total real revenue:', error);
+      return 0;
+    }
   });
 
   readonly lossTotalGapRevenue = computed<number>(() => {
-    return this.lossTotalIdealRevenue() - this.lossTotalRealRevenue();
+    try {
+      return this.lossTotalIdealRevenue() - this.lossTotalRealRevenue();
+    } catch (error: unknown) {
+      console.error('Error computing loss total gap revenue:', error);
+      return 0;
+    }
   });
 
   readonly lossGlobalPercentage = computed<number>(() => {
-    const ideal = this.lossTotalIdealRevenue();
-    if (ideal <= 0) return 0;
-    return Number(((this.lossTotalGapRevenue() / ideal) * 100).toFixed(1));
+    try {
+      const ideal = this.lossTotalIdealRevenue();
+      if (ideal <= 0) return 0;
+      return Number(((this.lossTotalGapRevenue() / ideal) * 100).toFixed(1));
+    } catch (error: unknown) {
+      console.error('Error computing loss global percentage:', error);
+      return 0;
+    }
   });
 
-  readonly cavaTotalStockKg = computed<number>(() => this.stateService.totalStockKg());
-  readonly cavaFreshStockKg = computed<number>(() => this.stateService.totalFreshStockKg());
+  readonly cavaTotalStockKg = computed<number>(() => {
+    try {
+      return this.stateService.totalStockKg();
+    } catch (error: unknown) {
+      console.error('Error computing cava total stock kg:', error);
+      return 0;
+    }
+  });
+
+  readonly cavaFreshStockKg = computed<number>(() => {
+    try {
+      return this.stateService.totalFreshStockKg();
+    } catch (error: unknown) {
+      console.error('Error computing cava fresh stock kg:', error);
+      return 0;
+    }
+  });
 
   readonly cavaCommercialValue = computed<number>(() => {
-    return this.stateService.fruits().reduce((sum: number, f: FruitConfig) => {
-      return sum + this.getFruitCommercialValue(f);
-    }, 0);
+    try {
+      return this.stateService.fruits().reduce((sum: number, f: FruitConfig) => {
+        return sum + this.getFruitCommercialValue(f);
+      }, 0);
+    } catch (error: unknown) {
+      console.error('Error computing cava commercial value:', error);
+      return 0;
+    }
   });
 
   readonly cavaEstimatedCost = computed<number>(() => {
-    return Math.round(
-      this.stateService.fruits().reduce((sum: number, f: FruitConfig) => {
-        const totalKg = this.getFruitTotalPulpKg(f) + (f.freshStockKg || 0);
-        return sum + totalKg * (f.costPerKg || 0);
-      }, 0)
-    );
+    try {
+      return Math.round(
+        this.stateService.fruits().reduce((sum: number, f: FruitConfig) => {
+          const totalKg = this.getFruitTotalPulpKg(f) + (f.freshStockKg || 0);
+          return sum + totalKg * (f.costPerKg || 0);
+        }, 0)
+      );
+    } catch (error: unknown) {
+      console.error('Error computing cava estimated cost:', error);
+      return 0;
+    }
   });
 
-  readonly cavaLowStockCount = computed<number>(() => this.stateService.lowStockFruitsCount());
+  readonly cavaLowStockCount = computed<number>(() => {
+    try {
+      return this.stateService.lowStockFruitsCount();
+    } catch (error: unknown) {
+      console.error('Error computing cava low stock count:', error);
+      return 0;
+    }
+  });
 
   readonly logisticsExpensesAmount = computed<number>(() => {
-    return this.filteredExpenses()
-      .filter(
-        (e: ExpenseDto) =>
-          (e.categoryName || '').toLowerCase().includes('combustible') ||
-          (e.categoryName || '').toLowerCase().includes('logística')
-      )
-      .reduce((sum: number, e: ExpenseDto) => sum + e.amount, 0);
+    try {
+      return this.filteredExpenses()
+        .filter(
+          (e: ExpenseDto) =>
+            (e.categoryName || '').toLowerCase().includes('combustible') ||
+            (e.categoryName || '').toLowerCase().includes('logística')
+        )
+        .reduce((sum: number, e: ExpenseDto) => sum + e.amount, 0);
+    } catch (error: unknown) {
+      console.error('Error computing logistics expenses amount:', error);
+      return 0;
+    }
   });
 
   readonly packagingExpensesAmount = computed<number>(() => {
-    return this.filteredExpenses()
-      .filter(
-        (e: ExpenseDto) =>
-          (e.categoryName || '').toLowerCase().includes('empaque') ||
-          (e.categoryName || '').toLowerCase().includes('inocuidad')
-      )
-      .reduce((sum: number, e: ExpenseDto) => sum + e.amount, 0);
+    try {
+      return this.filteredExpenses()
+        .filter(
+          (e: ExpenseDto) =>
+            (e.categoryName || '').toLowerCase().includes('empaque') ||
+            (e.categoryName || '').toLowerCase().includes('inocuidad')
+        )
+        .reduce((sum: number, e: ExpenseDto) => sum + e.amount, 0);
+    } catch (error: unknown) {
+      console.error('Error computing packaging expenses amount:', error);
+      return 0;
+    }
   });
 
   readonly facilityExpensesAmount = computed<number>(() => {
-    return this.filteredExpenses()
-      .filter(
-        (e: ExpenseDto) =>
-          (e.categoryName || '').toLowerCase().includes('mantenimiento') ||
-          (e.categoryName || '').toLowerCase().includes('servicios')
-      )
-      .reduce((sum: number, e: ExpenseDto) => sum + e.amount, 0);
+    try {
+      return this.filteredExpenses()
+        .filter(
+          (e: ExpenseDto) =>
+            (e.categoryName || '').toLowerCase().includes('mantenimiento') ||
+            (e.categoryName || '').toLowerCase().includes('servicios')
+        )
+        .reduce((sum: number, e: ExpenseDto) => sum + e.amount, 0);
+    } catch (error: unknown) {
+      console.error('Error computing facility expenses amount:', error);
+      return 0;
+    }
   });
 
   readonly payrollSettlements = computed<PayrollSettlementDto[]>(() => {
-    return this.stateService.payrollSettlements();
+    try {
+      return this.stateService.payrollSettlements();
+    } catch (error: unknown) {
+      console.error('Error computing payroll settlements:', error);
+      return [];
+    }
   });
 
   readonly totalPayrollNet = computed<number>(() => {
-    return this.payrollSettlements().reduce((sum: number, s: PayrollSettlementDto) => sum + s.netPayable, 0);
+    try {
+      return this.payrollSettlements().reduce((sum: number, s: PayrollSettlementDto) => sum + s.netPayable, 0);
+    } catch (error: unknown) {
+      console.error('Error computing total payroll net:', error);
+      return 0;
+    }
   });
 
   readonly totalPayrollEarnings = computed<number>(() => {
-    return this.payrollSettlements().reduce((sum: number, s: PayrollSettlementDto) => sum + s.totalEarnings, 0);
+    try {
+      return this.payrollSettlements().reduce((sum: number, s: PayrollSettlementDto) => sum + s.totalEarnings, 0);
+    } catch (error: unknown) {
+      console.error('Error computing total payroll earnings:', error);
+      return 0;
+    }
   });
 
   readonly totalPayrollDeductions = computed<number>(() => {
-    return this.payrollSettlements().reduce((sum: number, s: PayrollSettlementDto) => sum + s.totalDeductions, 0);
+    try {
+      return this.payrollSettlements().reduce((sum: number, s: PayrollSettlementDto) => sum + s.totalDeductions, 0);
+    } catch (error: unknown) {
+      console.error('Error computing total payroll deductions:', error);
+      return 0;
+    }
   });
 
   readonly productionPayrollNet = computed<number>(() => {
-    return this.payrollSettlements()
-      .filter((s: PayrollSettlementDto) => s.area === 'PRODUCCION')
-      .reduce((sum: number, s: PayrollSettlementDto) => sum + s.netPayable, 0);
+    try {
+      return this.payrollSettlements()
+        .filter((s: PayrollSettlementDto) => s.area === 'PRODUCCION')
+        .reduce((sum: number, s: PayrollSettlementDto) => sum + s.netPayable, 0);
+    } catch (error: unknown) {
+      console.error('Error computing production payroll net:', error);
+      return 0;
+    }
   });
 
   readonly deliveryPayrollNet = computed<number>(() => {
-    return this.payrollSettlements()
-      .filter((s: PayrollSettlementDto) => s.area === 'DOMICILIOS')
-      .reduce((sum: number, s: PayrollSettlementDto) => sum + s.netPayable, 0);
+    try {
+      return this.payrollSettlements()
+        .filter((s: PayrollSettlementDto) => s.area === 'DOMICILIOS')
+        .reduce((sum: number, s: PayrollSettlementDto) => sum + s.netPayable, 0);
+    } catch (error: unknown) {
+      console.error('Error computing delivery payroll net:', error);
+      return 0;
+    }
   });
 
   /**

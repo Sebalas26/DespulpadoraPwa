@@ -46,6 +46,9 @@ export class VoiceOrdersService {
 
   readonly pendingCount = computed<number>(() => this.pendingVoiceOrders().length);
 
+  /**
+   * Initializes the VoiceOrdersService, sets up the SignalR hub, and syncs existing voice orders.
+   */
   constructor() {
     this.initSignalR();
     void this.syncFromBackend();

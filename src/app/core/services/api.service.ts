@@ -472,6 +472,35 @@ export class ApiService {
   }
 
   /**
+   * Toggles the priority flag of an order via `PATCH /api/orders/{id}/priority`.
+   */
+  toggleOrderPriority(orderId: number, isPriority: boolean): Observable<OrderDto> {
+    try {
+      return this.http
+        .patch<Record<string, unknown>>(`${this.baseUrl}/orders/${orderId}/priority`, { isPriority })
+        .pipe(
+          map((item: Record<string, unknown>) => this.mapOrderFromApi(item)),
+          catchError((error: unknown) => throwError(() => error))
+        );
+    } catch (error: unknown) {
+      return throwError(() => error);
+    }
+  }
+
+  /**
+   * Dispatches a batch of orders on a delivery route via `POST /api/orders/dispatch-route`.
+   */
+  dispatchOrdersRoute(payload: Record<string, unknown>): Observable<unknown> {
+    try {
+      return this.http
+        .post<unknown>(`${this.baseUrl}/orders/dispatch-route`, payload)
+        .pipe(catchError((error: unknown) => throwError(() => error)));
+    } catch (error: unknown) {
+      return throwError(() => error);
+    }
+  }
+
+  /**
    * Updates the picked quantity of an order item via `PATCH /api/orders/{orderId}/items/{itemId}/picked`.
    */
   updateOrderItemPicking(orderId: number, itemId: number, pickedQuantity: number): Observable<OrderDto> {
@@ -753,6 +782,19 @@ export class ApiService {
     try {
       return this.http
         .patch<WorkShiftDto>(`${this.baseUrl}/employees/time-logs/${dto.shiftId}/clock-out`, dto)
+        .pipe(catchError((error: unknown) => throwError(() => error)));
+    } catch (error: unknown) {
+      return throwError(() => error);
+    }
+  }
+
+  /**
+   * Settles an employee payroll payment via `POST /api/employees/payroll-settlements`.
+   */
+  createPayrollSettlement(dto: Record<string, unknown>): Observable<unknown> {
+    try {
+      return this.http
+        .post<unknown>(`${this.baseUrl}/employees/payroll-settlements`, dto)
         .pipe(catchError((error: unknown) => throwError(() => error)));
     } catch (error: unknown) {
       return throwError(() => error);
@@ -1605,29 +1647,33 @@ export class ApiService {
    * Normalizes backend order status strings into canonical `OrderStatus` values.
    */
   private normalizeOrderStatus(rawStatus: unknown): OrderStatus {
-    const upper = String(rawStatus ?? 'PENDING').trim().toUpperCase().replace(/\s+/g, '');
-    switch (upper) {
-      case 'RECIBIDO':
-      case 'PENDING':
-        return 'PENDING';
-      case 'ENALISTAMIENTO':
-      case 'ALISTANDO':
-      case 'PICKING':
-        return 'PICKING';
-      case 'FACTURADO':
-      case 'BILLED':
-        return 'BILLED';
-      case 'ENRUTA':
-      case 'DISPATCHED':
-        return 'DISPATCHED';
-      case 'ENTREGADO':
-      case 'DELIVERED':
-        return 'DELIVERED';
-      case 'CANCELADO':
-      case 'CANCELLED':
-        return 'CANCELLED';
-      default:
-        return 'PENDING';
+    try {
+      const upper = String(rawStatus ?? 'PENDING').trim().toUpperCase().replace(/\s+/g, '');
+      switch (upper) {
+        case 'RECIBIDO':
+        case 'PENDING':
+          return 'PENDING';
+        case 'ENALISTAMIENTO':
+        case 'ALISTANDO':
+        case 'PICKING':
+          return 'PICKING';
+        case 'FACTURADO':
+        case 'BILLED':
+          return 'BILLED';
+        case 'ENRUTA':
+        case 'DISPATCHED':
+          return 'DISPATCHED';
+        case 'ENTREGADO':
+        case 'DELIVERED':
+          return 'DELIVERED';
+        case 'CANCELADO':
+        case 'CANCELLED':
+          return 'CANCELLED';
+        default:
+          return 'PENDING';
+      }
+    } catch {
+      return 'PENDING';
     }
   }
 

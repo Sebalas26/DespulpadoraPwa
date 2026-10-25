@@ -1,11 +1,14 @@
 /**
- * Fruit master catalog configuration for plant and inventory state.
+ * Fruit master catalog configuration for plant, inventory, and client portal state.
  */
 export interface FruitConfig {
   id: string;
   fruitId?: number;
   name: string;
   scientificName: string;
+  description?: string;
+  imageUrl?: string;
+  isVisibleInPortal?: boolean;
   color: string;
   bgColor: string;
   borderColor?: string;
@@ -23,7 +26,33 @@ export interface FruitConfig {
   minStock: { g100?: number; g140: number; g250: number; g500: number; g1000: number };
   prices: { g100?: number; g140: number; g250: number; g500: number; g1000: number };
   costPerKg?: number;
-  category: 'PULPAS' | 'CONSERVAS' | 'MERMELADAS' | 'INFUSIONES';
+  category: 'PULPAS' | 'CONSERVAS' | 'MERMELADAS' | 'INFUSIONES' | string;
+}
+
+/**
+ * Commercial promotion configuration.
+ */
+export interface PromotionConfig {
+  id: string;
+  name: string;
+  description: string;
+  discountPercent: number;
+  freeItemName: string;
+  badge: string;
+}
+
+/**
+ * Client portal CMS header and hero banner configuration.
+ */
+export interface PortalCmsConfig {
+  brandTagline: string;
+  heroBadge: string;
+  heroTitle: string;
+  heroDescription: string;
+  chip1Text: string;
+  chip2Text: string;
+  chip3Text: string;
+  whatsappPhone: string;
 }
 
 /**

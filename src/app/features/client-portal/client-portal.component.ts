@@ -43,12 +43,12 @@ export interface CartItem {
                 <span class="brand-name">DGL Despulpadora</span>
                 <span class="portal-badge">PORTAL CLIENTES</span>
               </div>
-              <p class="brand-tagline">Pulpas 100% Puras de Fruta Natural · Pedidos Directos de Fábrica</p>
+              <p class="brand-tagline">{{ stateService.portalCmsConfig().brandTagline }}</p>
             </div>
           </div>
 
           <div class="header-actions">
-                        <a
+            <a
               [href]="getCompanyWhatsAppLink()"
               target="_blank"
               class="contact-pill"
@@ -79,25 +79,25 @@ export interface CartItem {
             <div class="hero-main-info">
               <span class="hero-badge">
                 <img src="/logo-dgl.png" alt="DGL" class="hero-logo-mini" />
-                CALIDAD CERTIFICADA DGL · 100% NATURAL
+                {{ stateService.portalCmsConfig().heroBadge }}
               </span>
-              <h2 class="hero-title">Pulpas Pasteurizadas de Fruta Seleccionada</h2>
+              <h2 class="hero-title">{{ stateService.portalCmsConfig().heroTitle }}</h2>
               <p class="hero-desc">
-                Explora nuestras 16 variedades en 4 presentaciones (140g, 250g, 500g y 1000g). Sin agua añadida ni conservantes artificiales.
+                {{ stateService.portalCmsConfig().heroDescription }}
               </p>
             </div>
             <div class="hero-features-chips">
               <div class="feature-chip">
                 <span class="chip-icon">✨</span>
-                <span>Pura Fruta</span>
+                <span>{{ stateService.portalCmsConfig().chip1Text }}</span>
               </div>
               <div class="feature-chip">
                 <span class="chip-icon">🧊</span>
-                <span>Congelación Rápida</span>
+                <span>{{ stateService.portalCmsConfig().chip2Text }}</span>
               </div>
               <div class="feature-chip">
                 <span class="chip-icon">⚡</span>
-                <span>Despacho el Mismo Día</span>
+                <span>{{ stateService.portalCmsConfig().chip3Text }}</span>
               </div>
             </div>
           </div>
@@ -154,7 +154,7 @@ export interface CartItem {
               >
                                 <div class="product-media-container">
                   <img
-                    [src]="'/fruits/' + fruit.id + '.jpg'"
+                    [src]="fruit.imageUrl || ('/fruits/' + fruit.id + '.jpg')"
                     [alt]="fruit.name"
                     class="fruit-main-img"
                     loading="lazy"
@@ -165,8 +165,8 @@ export interface CartItem {
                     <img src="/logo-dgl.png" alt="DGL" />
                   </div>
 
-                                    <span class="media-category-badge" [style.background]="fruit.color || '#10b981'">
-                    {{ fruit.category || '100% Natural' }}
+                  <span class="media-category-badge" [style.background]="fruit.color || '#1e5e3a'">
+                    {{ fruit.category || '' }}
                   </span>
 
                                     @if (getFruitTotalQuantityInCart(fruit.fruitId || 0) > 0) {
@@ -183,7 +183,7 @@ export interface CartItem {
 
                                 <div class="card-body">
                   <p class="fruit-desc">
-                    100% pulpa natural pura pasteurizada, sin agua añadida ni conservantes artificiales.
+                    {{ fruit.description || '' }}
                   </p>
 
                                     <div class="grammage-selector-box">
@@ -436,7 +436,7 @@ export interface CartItem {
                   >
                     @for (c of stateService.clients(); track c.clientId) {
                       <option [ngValue]="c.clientId">
-                        {{ c.fullName }} ({{ c.city || 'Principal' }})
+                        {{ c.fullName }} ({{ c.city || '' }})
                       </option>
                     }
                     <option value="new">+ Registrar otro negocio o cliente</option>
@@ -694,8 +694,8 @@ export interface CartItem {
           font-size: 0.65rem;
           font-weight: 900;
           background: #ecfdf5;
-          color: #059669;
-          border: 1px solid #a7f3d0;
+          color: #164a2d;
+          border: 1px solid #d1e7d8;
           padding: 2px 7px;
           border-radius: 9999px;
           letter-spacing: 0.05em;
@@ -774,19 +774,19 @@ export interface CartItem {
       align-items: center;
       gap: 12px;
       padding: 11px 22px;
-      background: #10b981;
+      background: #1e5e3a;
       border: 2px solid rgba(255, 255, 255, 0.45);
       border-radius: 9999px;
       color: #ffffff;
       font-weight: 800;
       cursor: pointer;
-      box-shadow: 0 8px 24px rgba(16, 185, 129, 0.45), 0 2px 8px rgba(0, 0, 0, 0.15);
+      box-shadow: 0 8px 24px rgba(30, 94, 58, 0.45), 0 2px 8px rgba(0, 0, 0, 0.15);
       transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
 
       &:hover {
-        background: #059669;
+        background: #164a2d;
         transform: translateY(-2px) scale(1.04);
-        box-shadow: 0 12px 30px rgba(16, 185, 129, 0.55);
+        box-shadow: 0 12px 30px rgba(30, 94, 58, 0.55);
       }
 
       &:active {
@@ -825,7 +825,7 @@ export interface CartItem {
     }
 
     .hero-card {
-      background: linear-gradient(135deg, #064e3b 0%, #065f46 50%, #047857 100%);
+      background: linear-gradient(135deg, #064e3b 0%, #164a2d 50%, #1e5e3a 100%);
       border-radius: 14px;
       padding: 12px 22px;
       color: #ffffff;
@@ -950,7 +950,7 @@ export interface CartItem {
           box-sizing: border-box;
 
           &:focus {
-            border-color: #10b981;
+            border-color: #1e5e3a;
           }
         }
 
@@ -988,15 +988,15 @@ export interface CartItem {
         transition: all 0.15s ease;
 
         &:hover {
-          border-color: #10b981;
+          border-color: #1e5e3a;
           color: #0f172a;
         }
 
         &.active {
-          background: #10b981;
-          border-color: #10b981;
+          background: #1e5e3a;
+          border-color: #1e5e3a;
           color: #ffffff;
-          box-shadow: 0 2px 8px rgba(16, 185, 129, 0.35);
+          box-shadow: 0 2px 8px rgba(30, 94, 58, 0.35);
         }
       }
     }
@@ -1021,13 +1021,13 @@ export interface CartItem {
 
       &:hover {
         transform: translateY(-3px);
-        border-color: #10b981;
-        box-shadow: 0 8px 24px rgba(16, 185, 129, 0.12);
+        border-color: #1e5e3a;
+        box-shadow: 0 8px 24px rgba(30, 94, 58, 0.12);
       }
 
       &.in-cart {
-        border-color: #10b981;
-        box-shadow: 0 4px 18px rgba(16, 185, 129, 0.16);
+        border-color: #1e5e3a;
+        box-shadow: 0 4px 18px rgba(30, 94, 58, 0.16);
       }
     }
 
@@ -1095,13 +1095,13 @@ export interface CartItem {
         position: absolute;
         bottom: 12px;
         right: 12px;
-        background: #10b981;
+        background: #1e5e3a;
         color: #ffffff;
         font-size: 0.72rem;
         font-weight: 800;
         padding: 4px 10px;
         border-radius: 9999px;
-        box-shadow: 0 2px 8px rgba(16, 185, 129, 0.4);
+        box-shadow: 0 2px 8px rgba(30, 94, 58, 0.4);
         z-index: 2;
       }
     }
@@ -1183,15 +1183,15 @@ export interface CartItem {
           transition: all 0.15s ease;
 
           &:hover {
-            border-color: #10b981;
+            border-color: #1e5e3a;
             color: #0f172a;
           }
 
           &.active {
-            background: #10b981;
-            border-color: #10b981;
+            background: #1e5e3a;
+            border-color: #1e5e3a;
             color: #ffffff;
-            box-shadow: 0 2px 6px rgba(16, 185, 129, 0.35);
+            box-shadow: 0 2px 6px rgba(30, 94, 58, 0.35);
           }
         }
       }
@@ -1217,7 +1217,7 @@ export interface CartItem {
       .stock-pill {
         font-size: 0.72rem;
         font-weight: 800;
-        color: #059669;
+        color: #164a2d;
         background: #ecfdf5;
         padding: 2px 8px;
         border-radius: 9999px;
@@ -1286,8 +1286,8 @@ export interface CartItem {
 
           &:hover {
             background: #f0fdf4;
-            border-color: #10b981;
-            color: #059669;
+            border-color: #1e5e3a;
+            color: #164a2d;
           }
         }
       }
@@ -1467,7 +1467,7 @@ export interface CartItem {
           .price-subtotal {
             font-size: 0.95rem;
             font-weight: 800;
-            color: #059669;
+            color: #164a2d;
           }
         }
       }
@@ -1572,8 +1572,8 @@ export interface CartItem {
           box-sizing: border-box;
 
           &:focus {
-            border-color: #10b981;
-            box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.15);
+            border-color: #1e5e3a;
+            box-shadow: 0 0 0 3px rgba(30, 94, 58, 0.15);
           }
         }
       }
@@ -1623,7 +1623,7 @@ export interface CartItem {
         .total-highlight {
           font-size: 1.35rem;
           font-weight: 900;
-          color: #059669;
+          color: #164a2d;
         }
       }
     }
@@ -1631,20 +1631,20 @@ export interface CartItem {
     .btn-submit-order {
       width: 100%;
       padding: 14px;
-      background: #10b981;
+      background: #1e5e3a;
       border: none;
       border-radius: 12px;
       color: #ffffff;
       font-size: 1rem;
       font-weight: 900;
       cursor: pointer;
-      box-shadow: 0 4px 16px rgba(16, 185, 129, 0.4);
+      box-shadow: 0 4px 16px rgba(30, 94, 58, 0.4);
       transition: all 0.2s ease;
 
       &:hover:not(:disabled) {
-        background: #059669;
+        background: #164a2d;
         transform: translateY(-2px);
-        box-shadow: 0 6px 20px rgba(16, 185, 129, 0.5);
+        box-shadow: 0 6px 20px rgba(30, 94, 58, 0.5);
       }
 
       &:disabled {
@@ -1720,21 +1720,21 @@ export interface CartItem {
         justify-content: space-between;
         align-items: center;
         background: #ecfdf5;
-        border: 1px solid #a7f3d0;
+        border: 1px solid #d1e7d8;
         padding: 8px 12px;
         border-radius: 8px;
 
         .code-lbl {
           font-size: 0.78rem;
           font-weight: 700;
-          color: #047857;
+          color: #1e5e3a;
         }
 
         .code-val {
           font-family: monospace;
           font-size: 1rem;
           font-weight: 900;
-          color: #065f46;
+          color: #164a2d;
         }
       }
 
@@ -1782,7 +1782,7 @@ export interface CartItem {
             border-top: 1px solid #e2e8f0;
             font-size: 0.95rem;
             font-weight: 900;
-            color: #059669;
+            color: #164a2d;
           }
         }
       }
@@ -1881,39 +1881,66 @@ export class ClientPortalComponent implements OnInit {
   readonly submittedOrder = signal<OrderDto | null>(null);
 
   readonly categories = computed<string[]>(() => {
-    const set = new Set<string>();
-    for (const f of this.stateService.fruits()) {
-      if (f.category) set.add(f.category);
+    try {
+      const set = new Set<string>();
+      for (const f of this.stateService.fruits()) {
+        if (f.isVisibleInPortal === false) continue;
+        if (f.category) set.add(f.category);
+      }
+      return Array.from(set);
+    } catch (error: unknown) {
+      console.error('Error computing categories:', error);
+      return [];
     }
-    return Array.from(set);
   });
 
   readonly filteredFruits = computed<FruitConfig[]>(() => {
-    let list = this.stateService.fruits();
-    const cat = this.selectedCategory();
-    if (cat !== 'ALL') {
-      list = list.filter((f: FruitConfig) => f.category === cat);
+    try {
+      let list = this.stateService.fruits().filter((f: FruitConfig) => f.isVisibleInPortal !== false);
+      const cat = this.selectedCategory();
+      if (cat !== 'ALL') {
+        list = list.filter((f: FruitConfig) => f.category === cat);
+      }
+      const q = this.searchQuery().trim().toLowerCase();
+      if (q) {
+        list = list.filter((f: FruitConfig) =>
+          f.name.toLowerCase().includes(q) ||
+          Boolean(f.scientificName && f.scientificName.toLowerCase().includes(q)) ||
+          Boolean(f.description && f.description.toLowerCase().includes(q))
+        );
+      }
+      return list;
+    } catch (error: unknown) {
+      console.error('Error computing filtered fruits:', error);
+      return [];
     }
-    const q = this.searchQuery().trim().toLowerCase();
-    if (q) {
-      list = list.filter((f: FruitConfig) =>
-        f.name.toLowerCase().includes(q) ||
-        Boolean(f.scientificName && f.scientificName.toLowerCase().includes(q))
-      );
-    }
-    return list;
   });
 
   readonly totalCartItems = computed<number>(() => {
-    return this.cart().reduce((sum: number, item: CartItem) => sum + item.quantity, 0);
+    try {
+      return this.cart().reduce((sum: number, item: CartItem) => sum + item.quantity, 0);
+    } catch (error: unknown) {
+      console.error('Error computing total cart items:', error);
+      return 0;
+    }
   });
 
   readonly totalCartAmount = computed<number>(() => {
-    return this.cart().reduce((sum: number, item: CartItem) => sum + (item.quantity * item.unitPrice), 0);
+    try {
+      return this.cart().reduce((sum: number, item: CartItem) => sum + (item.quantity * item.unitPrice), 0);
+    } catch (error: unknown) {
+      console.error('Error computing total cart amount:', error);
+      return 0;
+    }
   });
 
   readonly totalCartKg = computed<number>(() => {
-    return this.cart().reduce((sum: number, item: CartItem) => sum + ((item.quantity * item.grammage) / 1000), 0);
+    try {
+      return this.cart().reduce((sum: number, item: CartItem) => sum + ((item.quantity * item.grammage) / 1000), 0);
+    } catch (error: unknown) {
+      console.error('Error computing total cart kg:', error);
+      return 0;
+    }
   });
 
   /**
@@ -1944,7 +1971,11 @@ export class ClientPortalComponent implements OnInit {
    */
   getCompanyWhatsAppLink(): string {
     try {
-      const phone = (this.stateService.companyInfo().whatsapp || '').replace(/\D/g, '');
+      const phone = (
+        this.stateService.companyInfo().whatsapp ||
+        this.stateService.portalCmsConfig?.()?.whatsappPhone ||
+        ''
+      ).replace(/\D/g, '');
       return `https://wa.me/${phone}?text=Hola%20DGL%20Despulpadora,%20tengo%20una%20consulta%20sobre%20mi%20pedido`;
     } catch (error: unknown) {
       console.error('Error building company WhatsApp link:', error);

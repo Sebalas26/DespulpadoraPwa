@@ -89,6 +89,7 @@ describe('SettingsComponent', () => {
       fruits: mockFruits,
       productVariants: mockVariants,
       paymentMethods: mockPaymentMethods,
+      activePaymentMethods: mockPaymentMethods,
       totalFreshStockKg: signal<number>(100) as unknown as StateService['totalFreshStockKg'],
       addProductVariant: addVariantSpy,
       updateProductVariant: jasmine.createSpy('updateProductVariant'),
@@ -201,5 +202,15 @@ describe('SettingsComponent', () => {
     component.setSort('basePrice');
     expect(component.sortField()).toBe('basePrice');
     expect(component.filteredVariants().length).toBe(1);
+  });
+
+  it('should navigate between mobile configuration hub and modules', () => {
+    component.openMobileConfigModule('parameters', 'paymentMethods');
+    expect(component.activeTab()).toBe('parameters');
+    expect(component.parametersSubTab()).toBe('paymentMethods');
+    expect(component.mobileConfigModuleSelected()).toBeTrue();
+
+    component.backToMobileConfigHub();
+    expect(component.mobileConfigModuleSelected()).toBeFalse();
   });
 });

@@ -18,6 +18,7 @@ import { AuthService } from '../../core/services/auth.service';
 import { AdminUsersComponent } from '../admin/users/users.component';
 import { AdminRolesComponent } from '../admin/roles/roles.component';
 import { SystemCatalogComponent } from '../admin/system-catalog/system-catalog.component';
+import { CopCurrencyInputDirective } from '../../shared/directives/cop-currency-input.directive';
 
 const DEFAULT_CATEGORIES: InventoryCategoryConfig[] = [
   { id: 'PULPAS', name: 'Pulpas Puras', icon: '', badgeClass: 'badge-warning', isActive: true },
@@ -46,6 +47,9 @@ const DEFAULT_COLUMNS: InventoryColumnConfig[] = [
   { key: 'actions', label: 'Acciones', description: 'Opciones de edición rápida y retiro de presentaciones', visible: true }
 ];
 
+/**
+ * Pagination range summary for inventory tables.
+ */
 export interface PaginationSummary {
   start: number;
   end: number;
@@ -58,7 +62,14 @@ export interface PaginationSummary {
 @Component({
   selector: 'app-settings',
   standalone: true,
-  imports: [CommonModule, FormsModule, AdminUsersComponent, AdminRolesComponent, SystemCatalogComponent],
+  imports: [
+    CommonModule,
+    FormsModule,
+    AdminUsersComponent,
+    AdminRolesComponent,
+    SystemCatalogComponent,
+    CopCurrencyInputDirective
+  ],
   templateUrl: './settings.component.html',
   styleUrls: ['./settings.component.scss']
 })
@@ -73,6 +84,7 @@ export class SettingsComponent {
   readonly activeTab = signal<'general' | 'inventory' | 'users' | 'roles' | 'catalog' | 'parameters'>('general');
   readonly inventorySubTab = signal<'variants' | 'fruits'>('variants');
   readonly parametersSubTab = signal<'paymentMethods' | 'grammages' | 'categories'>('paymentMethods');
+  readonly mobileConfigModuleSelected = signal<boolean>(false);
 
   readonly showPaymentMethodModal = signal<boolean>(false);
   readonly isEditingPaymentMethod = signal<boolean>(false);
@@ -297,25 +309,75 @@ export class SettingsComponent {
     try {
       this.route.queryParams.subscribe(params => {
         const tab = params['tab'];
-        if (tab === 'general' || tab === 'empresa') {
-          this.activeTab.set('general');
-        } else if (tab === 'users' || tab === 'usuarios') {
-          this.activeTab.set('users');
-        } else if (tab === 'roles') {
-          this.activeTab.set('roles');
-        } else if (tab === 'catalog' || tab === 'modulos') {
-          this.activeTab.set('catalog');
-        } else if (tab === 'parameters' || tab === 'parametros' || tab === 'pagos' || tab === 'metodos-pago') {
-          this.activeTab.set('parameters');
-        } else if (tab === 'inventory' || tab === 'cava' || tab === 'variants' || tab === 'fruits' || tab === 'stock') {
+        const view = params['view'];
+        if (tab === 'inventory' || tab === 'cava' || tab === 'variants' || tab === 'fruits' || tab === 'stock') {
           this.activeTab.set('inventory');
+          this.mobileConfigModuleSelected.set(false);
           if (tab === 'variants' || tab === 'cava' || tab === 'stock') {
             this.inventorySubTab.set('variants');
           } else {
             this.inventorySubTab.set('fruits');
           }
+        } else {
+          if (tab === 'general' || tab === 'empresa') {
+            this.activeTab.set('general');
+          } else if (tab === 'users' || tab === 'usuarios') {
+            this.activeTab.set('users');
+          } else if (tab === 'roles') {
+            this.activeTab.set('roles');
+          } else if (tab === 'catalog' || tab === 'modulos') {
+            this.activeTab.set('catalog');
+          } else if (tab === 'parameters' || tab === 'parametros' || tab === 'pagos' || tab === 'metodos-pago') {
+            this.activeTab.set('parameters');
+            if (tab === 'pagos' || tab === 'metodos-pago') {
+              this.parametersSubTab.set('paymentMethods');
+            }
+          } else {
+            this.activeTab.set('general');
+          }
+          this.mobileConfigModuleSelected.set(view === 'module');
         }
       });
+    } catch {
+      return;
+    }
+  }
+
+  /**
+   * Opens a configuration module in mobile view and updates route query parameters.
+   */
+  openMobileConfigModule(
+    tab: 'general' | 'users' | 'roles' | 'catalog' | 'parameters',
+    subTab?: 'paymentMethods' | 'grammages' | 'categories'
+  ): void {
+    try {
+      this.activeTab.set(tab);
+      if (subTab) {
+        this.parametersSubTab.set(subTab);
+      }
+      this.mobileConfigModuleSelected.set(true);
+      this.router.navigate(['/settings'], {
+        queryParams: {
+          tab: subTab === 'paymentMethods' ? 'pagos' : tab,
+          view: 'module'
+        }
+      });
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    } catch {
+      return;
+    }
+  }
+
+  /**
+   * Returns to the main mobile configuration hub view.
+   */
+  backToMobileConfigHub(): void {
+    try {
+      this.mobileConfigModuleSelected.set(false);
+      this.router.navigate(['/settings'], {
+        queryParams: { tab: 'general' }
+      });
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     } catch {
       return;
     }

@@ -110,7 +110,11 @@ import { VoiceOrdersService } from '../../core/services/voice-orders.service';
           <span class="kds-access-badge badge-portal">PEDIDOS</span>
         </button>
 
-        <div class="online-pill" [title]="stateService.isOnline() ? 'Sistema conectado a la red' : 'Sin conexión'">
+        <div
+          class="online-pill"
+          [class.offline]="!stateService.isOnline()"
+          [title]="stateService.isOnline() ? 'Sistema conectado a la red' : 'Sin conexión'"
+        >
           <span class="online-dot" [style.background]="stateService.isOnline() ? '#1e5e3a' : '#dc2626'"></span>
           <span class="online-text">{{ stateService.isOnline() ? 'En línea' : 'Desconectado' }}</span>
         </div>
@@ -171,6 +175,9 @@ import { VoiceOrdersService } from '../../core/services/voice-orders.service';
     .topbar {
       height: 64px;
       border-bottom: 1px solid var(--border-subtle);
+      border-left: 1px solid var(--border-subtle);
+      border-top-left-radius: 20px;
+      border-bottom-left-radius: 20px;
       background: #ffffff !important;
       display: flex;
       align-items: center;
@@ -185,6 +192,14 @@ import { VoiceOrdersService } from '../../core/services/voice-orders.service';
       transition: transform 0.32s cubic-bezier(0.16, 1, 0.3, 1),
                   opacity 0.28s ease,
                   visibility 0.28s ease;
+    }
+
+    @media (max-width: 1024px) {
+      .topbar {
+        border-left: none;
+        border-top-left-radius: 0;
+        border-bottom-left-radius: 0;
+      }
     }
 
     .topbar.header-hidden {
@@ -320,22 +335,22 @@ import { VoiceOrdersService } from '../../core/services/voice-orders.service';
       align-items: center;
       gap: 7px;
       padding: 5px 12px;
-      background: #f0fdf4;
-      border: 1.5px solid #86efac;
+      background: #eaf5ee;
+      border: 1.5px solid #bbf7d0;
       border-radius: 9999px;
-      color: #15803d;
+      color: #1e5e3a;
       font-size: 0.78rem;
       font-weight: 700;
       cursor: pointer;
       transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-      box-shadow: 0 1px 3px rgba(22, 163, 74, 0.1);
+      box-shadow: 0 1px 3px rgba(30, 94, 58, 0.1);
 
       &:hover {
-        background: #16a34a;
-        border-color: #16a34a;
+        background: #1e5e3a;
+        border-color: #1e5e3a;
         color: #ffffff;
         transform: translateY(-1px);
-        box-shadow: 0 4px 12px rgba(22, 163, 74, 0.28);
+        box-shadow: 0 4px 12px rgba(30, 94, 58, 0.28);
 
         .kds-access-badge {
           background: rgba(255, 255, 255, 0.25);
@@ -419,10 +434,23 @@ import { VoiceOrdersService } from '../../core/services/voice-orders.service';
       gap: 6px;
       padding: 4px 10px;
       background: #f0f7f2;
+      border: 1px solid #d1e7d8;
       border-radius: 9999px;
       font-size: 0.78rem;
       color: #1e5e3a;
       font-weight: 600;
+      transition: all 0.2s ease;
+
+      &.offline {
+        background: #fef2f2;
+        border-color: #fecaca;
+        color: #dc2626;
+        font-weight: 700;
+
+        .online-dot {
+          background: #dc2626;
+        }
+      }
     }
 
     .online-dot {
@@ -607,9 +635,18 @@ import { VoiceOrdersService } from '../../core/services/voice-orders.service';
         flex-shrink: 0;
       }
       .btn-kds-access {
-        padding: 3px 7px;
-        gap: 4px;
+        width: 30px;
+        height: 30px;
+        padding: 0;
+        gap: 0;
+        border-radius: 50%;
+        justify-content: center;
         flex-shrink: 0;
+
+        .kds-access-label,
+        .kds-access-badge {
+          display: none !important;
+        }
       }
       .topbar-icon-btn,
       .mobile-user-avatar {
@@ -771,10 +808,14 @@ export class HeaderComponent implements OnInit, OnDestroy {
 
   private readonly urlSignal = toSignal(this.navEnd$, { initialValue: this.router.url });
 
+  /**
+   * Resolves the human-readable title for the active route.
+   */
   readonly currentRouteTitle = computed<string>(() => {
     try {
       const url = this.urlSignal() || '';
       if (url.startsWith('/dashboard')) return 'Panel general';
+      if (url.startsWith('/portal-admin')) return 'Portal Clientes · Administración';
       if (url.startsWith('/orders')) {
         if (url.includes('tab=facturacion')) return 'Facturación & POS';
         if (url.includes('tab=despachos')) return 'Despachos & Rutas';

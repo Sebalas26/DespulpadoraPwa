@@ -4,54 +4,19 @@ import {
   CompanyConfig,
   EmployeeDto,
   ExpenseDto,
+  FruitConfig,
   OrderDto,
   PaymentMethodDto,
   PayrollPeriodDto,
   PayrollSettlementDto,
+  PortalCmsConfig,
   ProductVariantDto,
+  PromotionConfig,
   SalesTargetDto,
   WorkShiftDto
 } from '../models/business.models';
 
-/**
- * Fruit master catalog configuration for plant and inventory state.
- */
-export interface FruitConfig {
-  id: string;
-  fruitId?: number;
-  name: string;
-  scientificName: string;
-  color: string;
-  bgColor: string;
-  borderColor?: string;
-  emoji: string;
-  yieldRate: number;
-  waterAdditionDefault: number;
-  freshStockKg: number;
-  stock: {
-    g100?: number;
-    g140: number;
-    g250: number;
-    g500: number;
-    g1000: number;
-  };
-  minStock: { g100?: number; g140: number; g250: number; g500: number; g1000: number };
-  prices: { g100?: number; g140: number; g250: number; g500: number; g1000: number };
-  costPerKg?: number;
-  category: 'PULPAS' | 'CONSERVAS' | 'MERMELADAS' | 'INFUSIONES';
-}
-
-/**
- * Commercial promotion configuration.
- */
-export interface PromotionConfig {
-  id: string;
-  name: string;
-  description: string;
-  discountPercent: number;
-  freeItemName: string;
-  badge: string;
-}
+export type { FruitConfig, PromotionConfig, PortalCmsConfig };
 
 /**
  * Alias for production batch record.
@@ -155,3 +120,17 @@ export const DEFAULT_COMPANY_CONFIG: CompanyConfig = {
  * Empty initial payment methods array populated strictly from the backend API.
  */
 export const INITIAL_PAYMENT_METHODS: PaymentMethodDto[] = [];
+
+/**
+ * Default unpopulated client portal CMS configuration state.
+ */
+export const DEFAULT_PORTAL_CMS_CONFIG: PortalCmsConfig = {
+  brandTagline: '',
+  heroBadge: '',
+  heroTitle: '',
+  heroDescription: '',
+  chip1Text: '',
+  chip2Text: '',
+  chip3Text: '',
+  whatsappPhone: ''
+};

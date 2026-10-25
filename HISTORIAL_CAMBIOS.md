@@ -186,3 +186,46 @@ Este documento registra de manera cronológica y estructurada todas las interven
 ### ✅ Verificación, Build y Tests Unitarios
 - **Build de Producción (`npm run build`)**: **0 Errores** (`dist/despulpadora-pwa` generado exitosamente).
 - **Pruebas Unitarias (`npx ng test --watch=false --browsers=ChromeHeadless`)**: **Executed 162 of 162 SUCCESS (TOTAL: 162 SUCCESS, 0 FAILED)** cubriendo el 100% de los 32 componentes, servicios, guards, interceptor y directiva.
+
+---
+
+## [2026-10-25] - Integración de Merge (`ClientPortalAdminComponent`, `CopCurrencyInputDirective`, `PortalCmsConfig`) y Certificación de 34 Suites de Pruebas Unitarias (`174/174 PASS`)
+
+### 💬 Prompt Original del Usuario
+> "en el de la pwa veo unos cambios de la otra rama no se si los viste si los revisaste si tiene todo y no hay información quemada o demas ?"
+
+### 🤖 Resumen Técnico para la IA
+- **1. Resolución de Conflictos de Merge y Unificación de Contratos (`FruitConfig`, `PortalCmsConfig`, `PromotionConfig`)**:
+  - Se resolvieron los 16 archivos con conflictos de merge preservando las nuevas capacidades traídas de `origin/main` y eliminando el 100% de la data quemada que venía en los bloques `>>>>>>> origin/main`.
+  - Se unificaron `FruitConfig`, `PortalCmsConfig` y `PromotionConfig` en `src/app/core/models/business.models.ts` y se re-exportaron desde `src/app/core/data/initial-data.ts` (`DEFAULT_PORTAL_CMS_CONFIG` inicializado con strings vacíos `''`).
+- **2. Auditoría y Estandarización de Artefactos Nuevos (`ClientPortalAdminComponent` y `CopCurrencyInputDirective`)**:
+  - `src/app/features/client-portal/client-portal-admin.component.ts`: Se eliminaron valores quemados de frutas y precios (`13500`, `2300`, `4000`, `7200`, `'100% pulpa natural pura seleccionada.'`, `'PULPAS'`, `'#10b981'`, `'#ecfdf5'`, `0.70`, `50`), se agregaron bloques `try-catch` y JSDoc superior a todos los métodos, se eliminaron los comentarios `//` y `<!-- -->`, y se integró `CopCurrencyInputDirective`.
+  - `src/app/shared/directives/cop-currency-input.directive.ts`: Se documentaron todos los métodos y handlers con JSDoc superior, se envolvió cada método en `try-catch` y se eliminaron los comentarios internos `//`.
+  - Se integró `CopCurrencyInputDirective` en los formularios monetarios de `calculator.component`, `orders.component`, `settings.component`, `kds-inventory.component`, `reports.component` y `client-portal-admin.component`.
+- **3. Nuevas Suites de Pruebas Unitarias (`.spec.ts`) — Total 34 Suites (`174/174 PASS`)**:
+  - `src/app/features/client-portal/client-portal-admin.component.spec.ts` [NUEVO]
+  - `src/app/shared/directives/cop-currency-input.directive.spec.ts` [NUEVO]
+  - Se actualizaron `state.service.spec.ts` y `client-portal.component.spec.ts` para cubrir `portalCmsConfig` y `updatePortalCmsConfig`.
+
+### 📦 Componentes Creados y Modificados
+- `src/app/core/models/business.models.ts` [MODIFICADO]
+- `src/app/core/data/initial-data.ts` [MODIFICADO]
+- `src/app/core/services/state.service.ts` & `state.service.spec.ts` [MODIFICADO]
+- `src/app/features/client-portal/client-portal-admin.component.ts` & `client-portal-admin.component.spec.ts` [MODIFICADO / NUEVO]
+- `src/app/features/client-portal/client-portal.component.ts` & `client-portal.component.spec.ts` [MODIFICADO]
+- `src/app/shared/directives/cop-currency-input.directive.ts` & `cop-currency-input.directive.spec.ts` [MODIFICADO / NUEVO]
+- `src/app/features/calculator/calculator.component.ts` & `.html` [MODIFICADO]
+- `src/app/features/dashboard/dashboard.component.ts` & `.html` [MODIFICADO]
+- `src/app/features/orders/orders.component.ts` & `.html` [MODIFICADO]
+- `src/app/features/orders/kds/kds.component.ts` [MODIFICADO]
+- `src/app/features/orders/delivery-map.component.ts` [MODIFICADO]
+- `src/app/features/orders/voice-orders/voice-order-modal.component.ts` & `.html` [MODIFICADO]
+- `src/app/features/inventory/kds/kds-inventory.component.ts` [MODIFICADO]
+- `src/app/features/reports/reports.component.ts` & `.html` [MODIFICADO]
+- `src/app/features/settings/settings.component.ts` & `.html` [MODIFICADO]
+- `src/app/layout/header/header.component.ts`, `sidebar.component.ts` & `mobile-nav.component.ts` [MODIFICADO]
+- `src/app/app.routes.ts` & `src/app/app.ts` [MODIFICADO]
+
+### ✅ Verificación, Build y Tests Unitarios
+- **Build de Producción (`npm run build`)**: **0 Errores** (`dist/despulpadora-pwa` generado exitosamente).
+- **Pruebas Unitarias (`npx ng test --watch=false --browsers=ChromeHeadless`)**: **Executed 174 of 174 SUCCESS (TOTAL: 174 SUCCESS, 0 FAILED)** cubriendo el 100% de los 34 archivos `.spec.ts`.

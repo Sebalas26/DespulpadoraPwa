@@ -4,7 +4,8 @@ import { FormsModule } from '@angular/forms';
 import { VoiceOrdersService } from '../../../core/services/voice-orders.service';
 import { StateService } from '../../../core/services/state.service';
 import { ConfirmVoiceOrderPayload, VoiceOrderItemDto, VoiceOrderMessageDto } from '../../../core/models/voice-order.models';
-import { FruitConfig } from '../../../core/models/business.models';
+import { FruitConfig, PaymentMethodDto } from '../../../core/models/business.models';
+import { CopCurrencyInputDirective } from '../../../shared/directives/cop-currency-input.directive';
 import confetti from 'canvas-confetti';
 
 /**
@@ -23,7 +24,7 @@ export interface EditableOrderItem {
 @Component({
   selector: 'app-voice-order-modal',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, CopCurrencyInputDirective],
   templateUrl: './voice-order-modal.component.html',
   styleUrls: ['./voice-order-modal.component.scss']
 })
@@ -47,51 +48,78 @@ export class VoiceOrderModalComponent {
   readonly deliveryAddress = signal<string>('');
   readonly estimatedDeliveryTime = signal<string>('');
   readonly paymentMethod = signal<string>('');
-  readonly activePaymentMethods = computed(() => this.stateService.activePaymentMethods());
+  readonly activePaymentMethods = computed<PaymentMethodDto[]>(() => {
+    try {
+      return this.stateService.activePaymentMethods();
+    } catch (error: unknown) {
+      console.error('Error computing active payment methods:', error);
+      return [];
+    }
+  });
   readonly customNotes = signal<string>('');
   readonly items = signal<EditableOrderItem[]>([]);
   readonly isSubmitting = signal<boolean>(false);
 
-  readonly totalUnits = computed<number>(() =>
-    this.items().reduce((sum: number, item: EditableOrderItem) => sum + (Number(item.quantity) || 0), 0)
-  );
+  readonly totalUnits = computed<number>(() => {
+    try {
+      return this.items().reduce((sum: number, item: EditableOrderItem) => sum + (Number(item.quantity) || 0), 0);
+    } catch (error: unknown) {
+      console.error('Error computing total units:', error);
+      return 0;
+    }
+  });
 
-  readonly totalKg = computed<number>(() =>
-    this.items().reduce((sum: number, item: EditableOrderItem) => {
-      const kgPerUnit = (item.grammage || 1000) / 1000;
-      return sum + ((Number(item.quantity) || 0) * kgPerUnit);
-    }, 0)
-  );
+  readonly totalKg = computed<number>(() => {
+    try {
+      return this.items().reduce((sum: number, item: EditableOrderItem) => {
+        const kgPerUnit = (item.grammage || 1000) / 1000;
+        return sum + ((Number(item.quantity) || 0) * kgPerUnit);
+      }, 0);
+    } catch (error: unknown) {
+      console.error('Error computing total kg:', error);
+      return 0;
+    }
+  });
 
-  readonly totalAmount = computed<number>(() =>
-    this.items().reduce(
-      (sum: number, item: EditableOrderItem) => sum + ((Number(item.quantity) || 0) * (Number(item.unitPrice) || 0)),
-      0
-    )
-  );
+  readonly totalAmount = computed<number>(() => {
+    try {
+      return this.items().reduce(
+        (sum: number, item: EditableOrderItem) => sum + ((Number(item.quantity) || 0) * (Number(item.unitPrice) || 0)),
+        0
+      );
+    } catch (error: unknown) {
+      console.error('Error computing total amount:', error);
+      return 0;
+    }
+  });
 
   readonly whatsAppMessagePreview = computed<string>(() => {
-    const name = this.clientName().trim() || 'Cliente';
-    const itemsList = this.items()
-      .filter((i: EditableOrderItem) => i.quantity > 0)
-      .map(
-        (i: EditableOrderItem) =>
-          `• ${i.quantity}x Pulpa de ${i.fruitName} (${i.grammage}g) - $${((i.quantity * i.unitPrice) || 0).toLocaleString('es-CO')}`
-      )
-      .join('\n');
+    try {
+      const name = this.clientName().trim() || 'Cliente';
+      const itemsList = this.items()
+        .filter((i: EditableOrderItem) => i.quantity > 0)
+        .map(
+          (i: EditableOrderItem) =>
+            `• ${i.quantity}x Pulpa de ${i.fruitName} (${i.grammage}g) - $${((i.quantity * i.unitPrice) || 0).toLocaleString('es-CO')}`
+        )
+        .join('\n');
 
-    const totalStr = `$${this.totalAmount().toLocaleString('es-CO')} COP`;
-    const addressStr = this.deliveryAddress().trim() || 'Dirección registrada';
-    const timeStr = this.estimatedDeliveryTime().trim() || 'Horario coordinado';
-    const paymentStr = this.paymentMethod();
+      const totalStr = `$${this.totalAmount().toLocaleString('es-CO')} COP`;
+      const addressStr = this.deliveryAddress().trim() || 'Dirección registrada';
+      const timeStr = this.estimatedDeliveryTime().trim() || 'Horario coordinado';
+      const paymentStr = this.paymentMethod();
 
-    return `✅ *Confirmación de Pedido - Pulpas DGL*\n\n` +
-      `Hola *${name}*, recibimos tu nota de voz y confirmamos tu pedido:\n\n` +
-      (itemsList || '• [Sin productos digitados]') + `\n\n` +
-      `💰 *Total:* ${totalStr}\n` +
-      `📍 *Entrega:* ${addressStr} (${timeStr})\n` +
-      `💳 *Pago:* ${paymentStr}\n\n` +
-      `¡Tu pedido ya está en preparación en cava! Muchas gracias por confiar en DGL.`;
+      return `✅ *Confirmación de Pedido - Pulpas DGL*\n\n` +
+        `Hola *${name}*, recibimos tu nota de voz y confirmamos tu pedido:\n\n` +
+        (itemsList || '• [Sin productos digitados]') + `\n\n` +
+        `💰 *Total:* ${totalStr}\n` +
+        `📍 *Entrega:* ${addressStr} (${timeStr})\n` +
+        `💳 *Pago:* ${paymentStr}\n\n` +
+        `¡Tu pedido ya está en preparación en cava! Muchas gracias por confiar en DGL.`;
+    } catch (error: unknown) {
+      console.error('Error computing WhatsApp message preview:', error);
+      return '';
+    }
   });
 
   /**

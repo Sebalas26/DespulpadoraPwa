@@ -43,10 +43,19 @@ export interface PermissionModule {
  */
 export type SystemModuleCatalog = PermissionModule;
 
+/**
+ * Empty initial system roles list populated from the backend RBAC API.
+ */
 export const SYSTEM_ROLES: UserRoleDto[] = [];
 
+/**
+ * Empty initial system modules list populated from the backend RBAC API.
+ */
 export const SYSTEM_MODULES: PermissionModule[] = [];
 
+/**
+ * Empty initial role-permissions mapping populated from the backend RBAC API.
+ */
 export const DEFAULT_ROLE_PERMISSIONS: Record<number, number[]> = {};
 
 const STORAGE_ROLES_KEY = 'dgl_roles_v2';

@@ -6,7 +6,11 @@ import { StateService } from '../../core/services/state.service';
 import { ApiService } from '../../core/services/api.service';
 import { NotificationService } from '../../core/services/notification.service';
 import { EmployeeArea, EmployeeDto, EmployeeGender, PayrollSettlementDto, WorkShiftDto } from '../../core/models/business.models';
+import { CopCurrencyInputDirective } from '../../shared/directives/cop-currency-input.directive';
 
+/**
+ * Active navigation tab type within the Human Resources module.
+ */
 export type HrTabType = 'employees' | 'shifts' | 'certificates' | 'payroll';
 
 /**
@@ -15,7 +19,7 @@ export type HrTabType = 'employees' | 'shifts' | 'certificates' | 'payroll';
 @Component({
   selector: 'app-hr',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, CopCurrencyInputDirective],
   templateUrl: './hr.component.html',
   styleUrls: ['./hr.component.scss']
 })

@@ -9,7 +9,7 @@ import { FruitConfig } from '../../core/data/initial-data';
 import { OrderDto, SalesPerformanceKpiDto } from '../../core/models/business.models';
 
 /**
- * Unit tests for DashboardComponent verifying zeroed defaults, financial metrics, and inventory reports.
+ * Unit tests for DashboardComponent verifying zeroed defaults, financial metrics, KPI modals, and inventory reports.
  */
 describe('DashboardComponent', () => {
   let component: DashboardComponent;
@@ -79,6 +79,7 @@ describe('DashboardComponent', () => {
     upsertTargetSpy = jasmine.createSpy('upsertSalesTarget');
 
     const stateServiceMock: Partial<StateService> = {
+      isOnline: signal<boolean>(true) as unknown as StateService['isOnline'],
       fruits: mockFruits,
       orders: mockOrders,
       salesPerformance: mockSalesPerformance,
@@ -128,10 +129,25 @@ describe('DashboardComponent', () => {
     expect(component.showEditTargetModal()).toBeFalse();
   });
 
-  it('should open target modal and populate current monthTargetRevenue', () => {
+  it('should open target modal, handle target amount input, and populate current monthTargetRevenue', () => {
     component.openTargetModal();
     expect(component.showEditTargetModal()).toBeTrue();
     expect(component.editTargetAmount()).toBe(5000000);
+
+    const inputEl = document.createElement('input');
+    inputEl.value = '$ 12.500.000';
+    component.onTargetAmountInput({ target: inputEl } as unknown as Event);
+    expect(component.editTargetAmount()).toBe(12500000);
+  });
+
+  it('should open and close KPI detail modals and compute todayOrdersList and todaySoldPulpsBreakdown', () => {
+    component.openKpiDetail('billing');
+    expect(component.selectedKpiCard()).toBe('billing');
+    expect(component.todayOrdersList().length).toBe(1);
+    expect(component.todaySoldPulpsBreakdown().totalUnits).toBe(10);
+
+    component.closeKpiDetail();
+    expect(component.selectedKpiCard()).toBeNull();
   });
 
   it('should compute ordersByStatus, todayBillingStats, and soldPulpsSummary accurately', () => {

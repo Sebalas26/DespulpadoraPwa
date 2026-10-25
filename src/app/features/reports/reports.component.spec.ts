@@ -3,7 +3,7 @@ import { provideRouter } from '@angular/router';
 import { signal } from '@angular/core';
 import { ReportsComponent } from './reports.component';
 import { StateService } from '../../core/services/state.service';
-import { DEFAULT_COMPANY_CONFIG, FruitConfig } from '../../core/data/initial-data';
+import { DEFAULT_COMPANY_CONFIG } from '../../core/data/initial-data';
 import { NotificationService } from '../../core/services/notification.service';
 import { AuthService } from '../../core/services/auth.service';
 import {
@@ -12,6 +12,7 @@ import {
   CompanyConfig,
   EmployeeDto,
   ExpenseDto,
+  FruitConfig,
   IdealVsRealAuditDto,
   OrderDto,
   PaymentMethodDto,

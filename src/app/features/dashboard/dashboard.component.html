@@ -4,33 +4,14 @@
       <h1 class="dgl-greeting-title">Dashboard general</h1>
 
       <div class="mobile-location-tag">
-        <span class="dot-indicator"></span>
-        <span>Bodega principal • En línea</span>
+        <span class="dot-indicator" [style.background]="stateService.isOnline() ? '#1e5e3a' : '#dc2626'"></span>
+        <span>Bodega principal • <span [style.color]="stateService.isOnline() ? 'inherit' : '#dc2626'" [style.font-weight]="stateService.isOnline() ? 'inherit' : '700'">{{ stateService.isOnline() ? 'En línea' : 'Desconectado' }}</span></span>
       </div>
-    </div>
-
-    <div class="time-toggle-capsule">
-      <button
-        type="button"
-        class="time-capsule-btn"
-        [class.active]="timeFilter() === 'today'"
-        (click)="timeFilter.set('today')"
-      >
-        Hoy
-      </button>
-      <button
-        type="button"
-        class="time-capsule-btn"
-        [class.active]="timeFilter() === 'month'"
-        (click)="timeFilter.set('month')"
-      >
-        Este mes
-      </button>
     </div>
   </div>
 
   <div class="quick-kpis-grid">
-    <div class="quick-kpi-card">
+    <div class="quick-kpi-card clickable-kpi-card" role="button" tabindex="0" (click)="openKpiDetail('billing')">
       <div class="kpi-icon-box icon-green">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <rect x="2" y="6" width="20" height="12" rx="2"></rect>
@@ -52,12 +33,9 @@
           <path d="M2 22 C 16 22, 24 20, 34 11 C 42 4, 52 8, 65 20" stroke="#22c55e" stroke-width="1.8" stroke-linecap="round" />
         </svg>
       </div>
-      <span class="kpi-subtext">
-        {{ todayBillingStats().ordersCount > 0 ? todayBillingStats().ordersCount + ' pedido(s) · ' + todayBillingStats().unitsSold + ' pulpas hoy' : 'Sin facturación registrada hoy' }}
-      </span>
     </div>
 
-    <div class="quick-kpi-card">
+    <div class="quick-kpi-card clickable-kpi-card" role="button" tabindex="0" (click)="openKpiDetail('pulpStock')">
       <div class="kpi-icon-box icon-green">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z"></path>
@@ -79,46 +57,44 @@
           <circle cx="63" cy="9" r="2.6" fill="#15803d" />
         </svg>
       </div>
-      <span class="kpi-subtext">{{ totalPreparedPulpUnits() }} pulpas · {{ stateService.fruits().length }} frutas en bodega</span>
     </div>
 
-    <div class="quick-kpi-card">
+    <div class="quick-kpi-card clickable-kpi-card" role="button" tabindex="0" (click)="openKpiDetail('pulpsSoldToday')">
       <div class="kpi-icon-box icon-amber">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <circle cx="12" cy="12" r="10"></circle>
-          <polyline points="12 6 12 12 16 14"></polyline>
+          <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"></path>
+          <path d="M3 6h18"></path>
+          <path d="M16 10a4 4 0 0 1-8 0"></path>
         </svg>
       </div>
-      <span class="kpi-label">En alistamiento</span>
+      <span class="kpi-label">Pulpas vendidas hoy</span>
       <div class="kpi-value-row">
-        <span class="kpi-big-value">{{ ordersByStatus().picking + ordersByStatus().pending }} {{ (ordersByStatus().picking + ordersByStatus().pending) === 1 ? 'pedido' : 'pedidos' }}</span>
+        <span class="kpi-big-value">{{ todayBillingStats().unitsSold }} pulpas</span>
         <svg class="kpi-sparkline" viewBox="0 0 68 34" fill="none" aria-hidden="true">
           <defs>
-            <linearGradient id="sparkRed3" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stop-color="#ef4444" stop-opacity="0.28" />
-              <stop offset="100%" stop-color="#ef4444" stop-opacity="0.0" />
+            <linearGradient id="sparkAmber3" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#f59e0b" stop-opacity="0.28" />
+              <stop offset="100%" stop-color="#f59e0b" stop-opacity="0.0" />
             </linearGradient>
           </defs>
-          <path d="M2 10 C 10 6, 18 18, 28 14 C 38 10, 45 12, 52 15 C 57 18, 60 23, 63 26 L 63 32 L 2 32 Z" fill="url(#sparkRed3)" />
-          <path d="M2 10 C 10 6, 18 18, 28 14 C 38 10, 45 12, 52 15 C 57 18, 60 23, 63 26" stroke="#dc2626" stroke-width="1.8" stroke-linecap="round" />
-          <circle cx="63" cy="26" r="2.6" fill="#991b1b" />
+          <path d="M2 22 C 12 18, 20 20, 30 14 C 40 8, 50 12, 63 7 L 63 32 L 2 32 Z" fill="url(#sparkAmber3)" />
+          <path d="M2 22 C 12 18, 20 20, 30 14 C 40 8, 50 12, 63 7" stroke="#d97706" stroke-width="1.8" stroke-linecap="round" />
+          <circle cx="63" cy="7" r="2.6" fill="#b45309" />
         </svg>
       </div>
-      <span class="kpi-subtext">Prioridad de despacho</span>
     </div>
 
-    <div class="quick-kpi-card">
+    <div class="quick-kpi-card clickable-kpi-card" role="button" tabindex="0" (click)="openKpiDetail('freshFruit')">
       <div class="kpi-icon-box icon-purple">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <rect x="1" y="3" width="15" height="13"></rect>
-          <polygon points="16 8 20 8 23 11 23 16 16 16 16 8"></polygon>
-          <circle cx="5.5" cy="18.5" r="2.5"></circle>
-          <circle cx="18.5" cy="18.5" r="2.5"></circle>
+          <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
+          <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
+          <line x1="12" y1="22.08" x2="12" y2="12"></line>
         </svg>
       </div>
-      <span class="kpi-label">En ruta</span>
+      <span class="kpi-label">Fruta total en bodega</span>
       <div class="kpi-value-row">
-        <span class="kpi-big-value">{{ ordersByStatus().dispatched }} {{ ordersByStatus().dispatched === 1 ? 'despacho' : 'despachos' }}</span>
+        <span class="kpi-big-value">{{ stateService.totalFreshStockKg() }} kg</span>
         <svg class="kpi-sparkline" viewBox="0 0 68 34" fill="none" aria-hidden="true">
           <defs>
             <linearGradient id="sparkPurple4" x1="0" y1="0" x2="0" y2="1">
@@ -126,12 +102,11 @@
               <stop offset="100%" stop-color="#8b5cf6" stop-opacity="0.0" />
             </linearGradient>
           </defs>
-          <path d="M2 14 C 14 10, 26 12, 36 20 C 44 26, 52 21, 63 16 L 63 32 L 2 32 Z" fill="url(#sparkPurple4)" />
-          <path d="M2 14 C 14 10, 26 12, 36 20 C 44 26, 52 21, 63 16" stroke="#7c3aed" stroke-width="1.8" stroke-linecap="round" />
-          <circle cx="63" cy="16" r="2.6" fill="#4c1d95" />
+          <path d="M2 18 C 14 14, 26 16, 36 12 C 44 9, 52 14, 63 10 L 63 32 L 2 32 Z" fill="url(#sparkPurple4)" />
+          <path d="M2 18 C 14 14, 26 16, 36 12 C 44 9, 52 14, 63 10" stroke="#7c3aed" stroke-width="1.8" stroke-linecap="round" />
+          <circle cx="63" cy="10" r="2.6" fill="#4c1d95" />
         </svg>
       </div>
-      <span class="kpi-subtext">Seguimiento de entrega</span>
     </div>
   </div>
 
@@ -196,7 +171,7 @@
 
       <div class="fin-metric-box white-card">
         <div class="fin-box-header">
-          <span>Pulpas vendidas</span>
+          <span>Pulpas vendidas en el mes</span>
           <span class="fin-badge-green">{{ soldPulpsSummary().totalKg }} kg</span>
         </div>
         <div class="fin-box-value">{{ soldPulpsSummary().totalUnits }} uds</div>
@@ -491,7 +466,7 @@
             </div>
             <div>
               <div class="status-title">En alistamiento</div>
-              <div class="status-subtitle">Picking en bodega • Prioridad de despacho</div>
+              <div class="status-subtitle">Alistamiento en bodega • Prioridad de despacho</div>
             </div>
           </div>
           <span class="status-count">{{ ordersByStatus().picking }}</span>
@@ -586,7 +561,7 @@
     <div class="modal-content" style="max-width: 440px;" (click)="$event.stopPropagation()">
       <div class="modal-header">
         <div style="display: flex; align-items: center; gap: 8px;">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#1e5e3a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <circle cx="12" cy="12" r="10"></circle>
             <circle cx="12" cy="12" r="6"></circle>
             <circle cx="12" cy="12" r="2"></circle>
@@ -604,12 +579,13 @@
         <div class="form-group">
           <label class="form-label">Meta de Ventas del Mes (COP)</label>
           <input
-            type="number"
-            min="1000000"
-            step="500000"
+            type="text"
+            inputmode="numeric"
             class="form-control"
-            [ngModel]="editTargetAmount()"
-            (ngModelChange)="editTargetAmount.set($event)"
+            style="font-weight: 800; font-size: 1.05rem; letter-spacing: 0.01em;"
+            placeholder="$ 18.000.000"
+            [value]="editTargetAmount() > 0 ? formatCOP(editTargetAmount()) : ''"
+            (input)="onTargetAmountInput($event)"
           />
         </div>
       </div>
@@ -622,6 +598,337 @@
           Guardar Meta
         </button>
       </div>
+    </div>
+  </div>
+}
+
+@if (selectedKpiCard(); as activeCard) {
+  <div class="modal-overlay" (click)="closeKpiDetail()">
+    <div class="modal-content kpi-detail-modal" (click)="$event.stopPropagation()">
+
+      @if (activeCard === 'billing') {
+        <div class="modal-header">
+          <div class="kpi-modal-header-title">
+            <div class="kpi-icon-box icon-green" style="margin: 0; width: 34px; height: 34px;">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="2" y="6" width="20" height="12" rx="2"></rect>
+                <circle cx="12" cy="12" r="3"></circle>
+                <path d="M6 12h.01M18 12h.01"></path>
+              </svg>
+            </div>
+            <div>
+              <h3 class="modal-title" style="margin: 0;">Detalle de Facturación Hoy</h3>
+              <p class="kpi-modal-sub">Resumen de pedidos y ventas facturadas en la jornada</p>
+            </div>
+          </div>
+          <button class="modal-close" (click)="closeKpiDetail()">&times;</button>
+        </div>
+
+        <div class="modal-body kpi-modal-body">
+          <div class="report-summary-strip kpi-modal-summary">
+            <div class="summary-mini-stat">
+              <span class="mini-stat-label">Total facturado hoy</span>
+              <span class="mini-stat-value text-green">{{ formatCOP(todayBillingStats().revenue) }}</span>
+            </div>
+            <div class="summary-mini-stat">
+              <span class="mini-stat-label">Pedidos del día</span>
+              <span class="mini-stat-value">{{ todayBillingStats().ordersCount }} pedidos</span>
+            </div>
+            <div class="summary-mini-stat">
+              <span class="mini-stat-label">Pulpas vendidas hoy</span>
+              <span class="mini-stat-value">{{ todayBillingStats().unitsSold }} pulpas</span>
+            </div>
+          </div>
+
+          <div class="kpi-detail-list">
+            @for (order of todayOrdersList(); track order.id) {
+              <div class="kpi-detail-item-card">
+                <div class="kpi-detail-item-top">
+                  <div>
+                    <div class="kpi-detail-item-title">{{ order.clientName }}</div>
+                    <div class="kpi-detail-item-meta">
+                      <span>{{ order.orderNumber }}</span>
+                      <span>•</span>
+                      <span>{{ order.paymentMethod }}</span>
+                    </div>
+                  </div>
+                  <div class="kpi-detail-item-right">
+                    <span class="kpi-detail-amount">{{ formatCOP(order.totalAmount) }}</span>
+                    <span class="kpi-detail-badge">{{ order.statusLabel }}</span>
+                  </div>
+                </div>
+                <div class="kpi-detail-item-sub">
+                  {{ order.totalUnits }} pulpas ({{ order.totalKg }} kg) · {{ order.itemsSummary }}
+                </div>
+              </div>
+            } @empty {
+              <div class="kpi-empty-state">No hay pedidos registrados en la jornada de hoy.</div>
+            }
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline" (click)="closeKpiDetail()">Cerrar</button>
+          <a routerLink="/orders" [queryParams]="{ tab: 'facturacion' }" class="btn btn-dgl-green-pill" (click)="closeKpiDetail()">
+            Ir a Facturación & POS &rarr;
+          </a>
+        </div>
+      }
+
+      @if (activeCard === 'pulpStock') {
+        <div class="modal-header">
+          <div class="kpi-modal-header-title">
+            <div class="kpi-icon-box icon-green" style="margin: 0; width: 34px; height: 34px;">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z"></path>
+                <path d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12"></path>
+              </svg>
+            </div>
+            <div>
+              <h3 class="modal-title" style="margin: 0;">Detalle de Pulpa Total en Bodega</h3>
+              <p class="kpi-modal-sub">Existencias empacadas listas en cava por fruta y gramaje</p>
+            </div>
+          </div>
+          <button class="modal-close" (click)="closeKpiDetail()">&times;</button>
+        </div>
+
+        <div class="modal-body kpi-modal-body">
+          <div class="report-summary-strip kpi-modal-summary">
+            <div class="summary-mini-stat">
+              <span class="mini-stat-label">Peso neto en bodega</span>
+              <span class="mini-stat-value text-green">{{ stateService.totalStockKg().toFixed(1) }} kg</span>
+            </div>
+            <div class="summary-mini-stat">
+              <span class="mini-stat-label">Total pulpas hechas</span>
+              <span class="mini-stat-value">{{ preparedPulpsReport().totalUnits }} uds</span>
+            </div>
+            <div class="summary-mini-stat">
+              <span class="mini-stat-label">Valor en bodega</span>
+              <span class="mini-stat-value">{{ formatCOP(preparedPulpsReport().totalRetailValue) }}</span>
+            </div>
+          </div>
+
+          <div class="grammage-pills-row" style="margin-bottom: 12px;">
+            <div class="gram-pill">
+              <span class="gram-pill-tag">140g</span>
+              <strong>{{ preparedPulpsReport().byGrammage.g140 }} uds</strong>
+            </div>
+            <div class="gram-pill">
+              <span class="gram-pill-tag">250g</span>
+              <strong>{{ preparedPulpsReport().byGrammage.g250 }} uds</strong>
+            </div>
+            <div class="gram-pill">
+              <span class="gram-pill-tag">500g</span>
+              <strong>{{ preparedPulpsReport().byGrammage.g500 }} uds</strong>
+            </div>
+            <div class="gram-pill">
+              <span class="gram-pill-tag">1000g</span>
+              <strong>{{ preparedPulpsReport().byGrammage.g1000 }} uds</strong>
+            </div>
+          </div>
+
+          <div class="kpi-detail-list">
+            @for (row of preparedPulpsReport().items; track row.id) {
+              <div class="kpi-detail-item-card">
+                <div class="kpi-detail-item-top">
+                  <div style="display: flex; align-items: center; gap: 8px;">
+                    <span class="pulp-fruit-dot" [style.background]="row.color"></span>
+                    <div>
+                      <div class="kpi-detail-item-title">{{ row.name }}</div>
+                      <div class="kpi-detail-item-meta">Valor: {{ formatCOP(row.retailValue) }}</div>
+                    </div>
+                  </div>
+                  <div class="kpi-detail-item-right">
+                    <span class="kpi-detail-amount">{{ row.totalKg }} kg</span>
+                    <span class="kpi-detail-badge">{{ row.units }} uds</span>
+                  </div>
+                </div>
+                <div class="kpi-gram-chips">
+                  <span>140g: <strong>{{ row.g140 }}</strong></span>
+                  <span>250g: <strong>{{ row.g250 }}</strong></span>
+                  <span>500g: <strong>{{ row.g500 }}</strong></span>
+                  <span>1000g: <strong>{{ row.g1000 }}</strong></span>
+                </div>
+              </div>
+            }
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline" (click)="closeKpiDetail()">Cerrar</button>
+          <a routerLink="/settings" [queryParams]="{ tab: 'variants' }" class="btn btn-dgl-green-pill" (click)="closeKpiDetail()">
+            Gestionar Stock &rarr;
+          </a>
+        </div>
+      }
+
+      @if (activeCard === 'pulpsSoldToday') {
+        <div class="modal-header">
+          <div class="kpi-modal-header-title">
+            <div class="kpi-icon-box icon-amber" style="margin: 0; width: 34px; height: 34px;">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"></path>
+                <path d="M3 6h18"></path>
+                <path d="M16 10a4 4 0 0 1-8 0"></path>
+              </svg>
+            </div>
+            <div>
+              <h3 class="modal-title" style="margin: 0;">Detalle de Pulpas Vendidas Hoy</h3>
+              <p class="kpi-modal-sub">Desglose por sabor y presentación vendidos hoy</p>
+            </div>
+          </div>
+          <button class="modal-close" (click)="closeKpiDetail()">&times;</button>
+        </div>
+
+        <div class="modal-body kpi-modal-body">
+          <div class="report-summary-strip kpi-modal-summary">
+            <div class="summary-mini-stat">
+              <span class="mini-stat-label">Pulpas vendidas hoy</span>
+              <span class="mini-stat-value text-green">{{ todaySoldPulpsBreakdown().totalUnits }} pulpas</span>
+            </div>
+            <div class="summary-mini-stat">
+              <span class="mini-stat-label">Peso total vendido</span>
+              <span class="mini-stat-value">{{ todaySoldPulpsBreakdown().totalKg }} kg</span>
+            </div>
+            <div class="summary-mini-stat">
+              <span class="mini-stat-label">Total facturado hoy</span>
+              <span class="mini-stat-value">{{ formatCOP(todayBillingStats().revenue) }}</span>
+            </div>
+          </div>
+
+          <div class="grammage-pills-row" style="margin-bottom: 12px;">
+            <div class="gram-pill">
+              <span class="gram-pill-tag">140g</span>
+              <strong>{{ todaySoldPulpsBreakdown().byGrammage.g140 }} uds</strong>
+            </div>
+            <div class="gram-pill">
+              <span class="gram-pill-tag">250g</span>
+              <strong>{{ todaySoldPulpsBreakdown().byGrammage.g250 }} uds</strong>
+            </div>
+            <div class="gram-pill">
+              <span class="gram-pill-tag">500g</span>
+              <strong>{{ todaySoldPulpsBreakdown().byGrammage.g500 }} uds</strong>
+            </div>
+            <div class="gram-pill">
+              <span class="gram-pill-tag">1000g</span>
+              <strong>{{ todaySoldPulpsBreakdown().byGrammage.g1000 }} uds</strong>
+            </div>
+          </div>
+
+          <div class="kpi-detail-list">
+            @for (item of todaySoldPulpsBreakdown().items; track item.name) {
+              <div class="kpi-detail-item-card">
+                <div class="kpi-detail-item-top">
+                  <div style="display: flex; align-items: center; gap: 8px;">
+                    <span class="pulp-fruit-dot" [style.background]="item.color"></span>
+                    <div>
+                      <div class="kpi-detail-item-title">{{ item.name }}</div>
+                      <div class="kpi-detail-item-meta">{{ item.totalKg }} kg vendidos hoy</div>
+                    </div>
+                  </div>
+                  <div class="kpi-detail-item-right">
+                    <span class="kpi-detail-amount">{{ formatCOP(item.revenue) }}</span>
+                    <span class="kpi-detail-badge">{{ item.units }} pulpas</span>
+                  </div>
+                </div>
+                <div class="kpi-gram-chips">
+                  <span>140g: <strong>{{ item.g140 }}</strong></span>
+                  <span>250g: <strong>{{ item.g250 }}</strong></span>
+                  <span>500g: <strong>{{ item.g500 }}</strong></span>
+                  <span>1000g: <strong>{{ item.g1000 }}</strong></span>
+                </div>
+              </div>
+            } @empty {
+              <div class="kpi-empty-state">No se han registrado pulpas vendidas hoy.</div>
+            }
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline" (click)="closeKpiDetail()">Cerrar</button>
+          <a routerLink="/reports" class="btn btn-dgl-green-pill" (click)="closeKpiDetail()">
+            Ver Reporte de Ventas &rarr;
+          </a>
+        </div>
+      }
+
+      @if (activeCard === 'freshFruit') {
+        <div class="modal-header">
+          <div class="kpi-modal-header-title">
+            <div class="kpi-icon-box icon-purple" style="margin: 0; width: 34px; height: 34px;">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
+                <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
+                <line x1="12" y1="22.08" x2="12" y2="12"></line>
+              </svg>
+            </div>
+            <div>
+              <h3 class="modal-title" style="margin: 0;">Detalle de Fruta Total en Bodega</h3>
+              <p class="kpi-modal-sub">Fruta fresca disponible en bodega para despulpado</p>
+            </div>
+          </div>
+          <button class="modal-close" (click)="closeKpiDetail()">&times;</button>
+        </div>
+
+        <div class="modal-body kpi-modal-body">
+          <div class="report-summary-strip kpi-modal-summary">
+            <div class="summary-mini-stat">
+              <span class="mini-stat-label">Fruta total en bodega</span>
+              <span class="mini-stat-value text-green">{{ stateService.totalFreshStockKg() }} kg</span>
+            </div>
+            <div class="summary-mini-stat">
+              <span class="mini-stat-label">Pulpa estimada (rend.)</span>
+              <span class="mini-stat-value">~{{ estimatedPulpFromFreshFruitKg() }} kg</span>
+            </div>
+            <div class="summary-mini-stat">
+              <span class="mini-stat-label">Variedades activas</span>
+              <span class="mini-stat-value">{{ stateService.fruits().length }} frutas</span>
+            </div>
+          </div>
+
+          <div class="kpi-detail-list">
+            @for (item of fruitInventoryReport(); track item.id) {
+              <div class="kpi-detail-item-card">
+                <div class="kpi-detail-item-top">
+                  <div style="display: flex; align-items: center; gap: 8px;">
+                    <span class="pulp-fruit-dot" [style.background]="item.color"></span>
+                    <div>
+                      <div class="kpi-detail-item-title">{{ item.name }}</div>
+                      <div class="kpi-detail-item-meta">Rendimiento {{ item.yieldPct }}% · ~{{ item.estimatedPulpKg }} kg pulpa</div>
+                    </div>
+                  </div>
+                  <div class="kpi-detail-item-right">
+                    <span class="kpi-detail-amount">{{ item.freshKg }} kg</span>
+                    <span
+                      class="fruit-status-pill"
+                      [class.status-optimo]="item.status === 'OPTIMO'"
+                      [class.status-medio]="item.status === 'MEDIO'"
+                      [class.status-bajo]="item.status === 'BAJO'"
+                    >
+                      {{ item.status === 'OPTIMO' ? 'Óptimo' : item.status === 'MEDIO' ? 'Medio' : 'Bajo' }}
+                    </span>
+                  </div>
+                </div>
+                <div class="fruit-progress-track" style="margin-top: 8px;">
+                  <div
+                    class="fruit-progress-fill"
+                    [style.width.%]="item.barPct"
+                    [style.background]="item.color"
+                  ></div>
+                </div>
+              </div>
+            }
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline" (click)="closeKpiDetail()">Cerrar</button>
+          <a routerLink="/settings" [queryParams]="{ tab: 'fruits' }" class="btn btn-dgl-green-pill" (click)="closeKpiDetail()">
+            Ajustar Kg en Bodega &rarr;
+          </a>
+        </div>
+      }
+
     </div>
   </div>
 }

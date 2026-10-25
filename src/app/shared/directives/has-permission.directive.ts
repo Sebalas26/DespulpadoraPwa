@@ -36,6 +36,9 @@ export class HasPermissionDirective {
     }
   }
 
+  /**
+   * Initializes the directive and registers a reactive effect to update the host view on permission changes.
+   */
   constructor() {
     effect(() => {
       this.evaluatePermissionView();

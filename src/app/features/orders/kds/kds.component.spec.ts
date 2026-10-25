@@ -3,9 +3,8 @@ import { provideRouter } from '@angular/router';
 import { signal } from '@angular/core';
 import { KdsComponent } from './kds.component';
 import { StateService } from '../../../core/services/state.service';
-import { FruitConfig } from '../../../core/data/initial-data';
 import { NotificationService } from '../../../core/services/notification.service';
-import { ClientDto, OrderDto } from '../../../core/models/business.models';
+import { ClientDto, FruitConfig, OrderDto } from '../../../core/models/business.models';
 
 /**
  * Unit tests for KdsComponent verifying dynamic order simulation, ticket filtering, and picking progress.

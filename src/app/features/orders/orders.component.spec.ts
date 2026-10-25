@@ -3,12 +3,12 @@ import { provideRouter } from '@angular/router';
 import { signal } from '@angular/core';
 import { OrdersComponent } from './orders.component';
 import { StateService } from '../../core/services/state.service';
-import { DEFAULT_COMPANY_CONFIG, FruitConfig } from '../../core/data/initial-data';
+import { DEFAULT_COMPANY_CONFIG } from '../../core/data/initial-data';
 import { NotificationService } from '../../core/services/notification.service';
 import { AuthService } from '../../core/services/auth.service';
 import { VoiceOrdersService } from '../../core/services/voice-orders.service';
 import { GeocodingService } from '../../core/services/geocoding.service';
-import { ClientDto, CompanyConfig, EmployeeDto, OrderDto, PaymentMethodDto } from '../../core/models/business.models';
+import { ClientDto, CompanyConfig, EmployeeDto, FruitConfig, OrderDto, PaymentMethodDto } from '../../core/models/business.models';
 import { VoiceOrderMessageDto } from '../../core/models/voice-order.models';
 
 /**

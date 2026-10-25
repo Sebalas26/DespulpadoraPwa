@@ -658,8 +658,9 @@ export class GeocodingService {
           };
         };
         if (data.address?.Match_addr || data.address?.Address) {
+          const region = data.address.Neighborhood || data.address.City || '';
           return data.address.Address
-            ? `${data.address.Address}, ${data.address.Neighborhood || data.address.City || 'Bogotá'}`
+            ? (region ? `${data.address.Address}, ${region}` : data.address.Address)
             : data.address.Match_addr || null;
         }
       }

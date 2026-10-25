@@ -32,7 +32,7 @@ import { environment } from '../../../environments/environment';
             <line x1="16" y1="13" x2="8" y2="13"></line>
             <line x1="16" y1="17" x2="8" y2="17"></line>
           </svg>
-          <span>Picking</span>
+          <span>Alistamiento</span>
           @if (stateService.pendingOrdersCount() > 0) {
             <span class="dgl-mobile-badge">{{ stateService.pendingOrdersCount() }}</span>
           }
@@ -75,6 +75,36 @@ import { environment } from '../../../environments/environment';
           </div>
 
           <div class="mobile-drawer-body">
+            <a routerLink="/portal-clientes" class="drawer-link-item" (click)="closeDrawer()">
+              <span class="drawer-icon" style="background: rgba(30, 94, 58, 0.12); color: #1e5e3a;">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="9" cy="21" r="1"></circle>
+                  <circle cx="20" cy="21" r="1"></circle>
+                  <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path>
+                </svg>
+              </span>
+              <div>
+                <div class="drawer-title">Portal Clientes</div>
+                <div class="drawer-desc">Catálogo digital y autopedido</div>
+              </div>
+            </a>
+
+            @if (authService.hasModuleAccess('/portal-admin')) {
+              <a routerLink="/portal-admin" class="drawer-link-item" (click)="closeDrawer()">
+                <span class="drawer-icon" style="background: rgba(30, 94, 58, 0.12); color: #1e5e3a;">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                    <circle cx="8.5" cy="8.5" r="1.5"></circle>
+                    <polyline points="21 15 16 10 5 21"></polyline>
+                  </svg>
+                </span>
+                <div>
+                  <div class="drawer-title" style="color: #164a2d; font-weight: 800;">Admin. Portal Clientes</div>
+                  <div class="drawer-desc">Editar fotos, precios y textos de las cards</div>
+                </div>
+              </a>
+            }
+
             @for (section of authService.groupedNavigationSections(); track section.sectionName) {
               <div style="font-size: 0.68rem; font-weight: 800; color: #9ca3af; letter-spacing: 0.05em; padding: 8px 12px 4px 12px; text-transform: uppercase;">
                 {{ section.sectionName }}
@@ -97,16 +127,15 @@ import { environment } from '../../../environments/environment';
               }
             }
 
-            <div style="margin-top: 14px; padding-top: 14px; border-top: 1px solid #eef2ef;">
+            <div class="mobile-drawer-footer">
               <button
                 type="button"
-                class="btn btn-outline"
-                style="width: 100%; justify-content: center; color: #dc2626; border-color: #fecaca;"
+                class="btn btn-outline drawer-logout-btn"
                 (click)="onLogoutClick()"
               >
                 Cerrar Sesión
               </button>
-              <div style="font-size: 0.68rem; font-weight: 600; color: #9ca3af; text-align: center; margin-top: 10px; letter-spacing: 0.04em;">
+              <div class="drawer-version-text">
                 V. {{ environment.version }}
               </div>
             </div>
@@ -205,8 +234,8 @@ import { environment } from '../../../environments/environment';
       width: 100%;
       background: #ffffff;
       border-radius: 20px 20px 0 0;
-      padding: 20px 18px max(30px, calc(env(safe-area-inset-bottom, 16px) + 24px));
-      max-height: 82vh;
+      padding: 16px 18px max(20px, env(safe-area-inset-bottom, 16px));
+      max-height: 94dvh;
       overflow-y: auto;
       box-shadow: 0 -8px 30px rgba(0, 0, 0, 0.18);
       animation: slideUp 0.25s ease;
@@ -216,7 +245,7 @@ import { environment } from '../../../environments/environment';
       display: flex;
       align-items: center;
       justify-content: space-between;
-      margin-bottom: 16px;
+      margin-bottom: 10px;
       padding-bottom: 12px;
       border-bottom: 1px solid #eef2ef;
     }
@@ -225,7 +254,7 @@ import { environment } from '../../../environments/environment';
       display: flex;
       align-items: center;
       gap: 12px;
-      padding: 11px 12px;
+      padding: 10px 12px;
       border-radius: 12px;
       text-decoration: none;
       transition: background 0.15s ease;
@@ -237,7 +266,7 @@ import { environment } from '../../../environments/environment';
     }
 
     .drawer-icon {
-      font-size: 1.3rem;
+      font-size: 1.25rem;
       width: 36px;
       height: 36px;
       border-radius: 10px;
@@ -245,17 +274,45 @@ import { environment } from '../../../environments/environment';
       display: flex;
       align-items: center;
       justify-content: center;
+      flex-shrink: 0;
     }
 
     .drawer-title {
-      font-size: 0.88rem;
+      font-size: 0.87rem;
       font-weight: 700;
       color: #111827;
+      line-height: 1.25;
     }
 
     .drawer-desc {
-      font-size: 0.74rem;
+      font-size: 0.73rem;
       color: #6b7280;
+      line-height: 1.25;
+      margin-top: 2px;
+    }
+
+    .mobile-drawer-footer {
+      margin-top: 12px;
+      padding-top: 12px;
+      border-top: 1px solid #eef2ef;
+    }
+
+    .drawer-logout-btn {
+      width: 100%;
+      justify-content: center;
+      color: #dc2626 !important;
+      border-color: #fecaca !important;
+      padding: 10px 14px !important;
+      font-size: 0.86rem !important;
+    }
+
+    .drawer-version-text {
+      font-size: 0.68rem;
+      font-weight: 600;
+      color: #9ca3af;
+      text-align: center;
+      margin-top: 8px;
+      letter-spacing: 0.04em;
     }
 
     @keyframes slideUp {

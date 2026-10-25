@@ -3,9 +3,8 @@ import { provideRouter } from '@angular/router';
 import { signal } from '@angular/core';
 import { KdsInventoryComponent } from './kds-inventory.component';
 import { StateService } from '../../../core/services/state.service';
-import { FruitConfig } from '../../../core/data/initial-data';
 import { NotificationService } from '../../../core/services/notification.service';
-import { ProductVariantDto } from '../../../core/models/business.models';
+import { FruitConfig, ProductVariantDto } from '../../../core/models/business.models';
 
 /**
  * Unit tests for KdsInventoryComponent verifying real yieldRate pulp estimation and stock adjustments.

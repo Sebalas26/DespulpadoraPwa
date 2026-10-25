@@ -327,7 +327,7 @@ export class AuthService {
       }
 
       const modules = this.navigationModules();
-      return modules.some((mod: NavigationModuleDto) => {
+      const hasDirectMatch = modules.some((mod: NavigationModuleDto) => {
         const modRoute = this.normalizeRouteKey(mod.frontendRoute);
         const modSlug = (mod.slug || '').trim().toLowerCase();
         return (
@@ -337,6 +337,20 @@ export class AuthService {
           modSlug === normalizedTarget
         );
       });
+
+      if (hasDirectMatch) {
+        return true;
+      }
+
+      if (normalizedTarget === 'portal-admin') {
+        return this.hasModuleAccess('settings') || this.hasModuleAccess('orders');
+      }
+
+      if (normalizedTarget === 'reports') {
+        return this.hasModuleAccess('accounting') || this.hasModuleAccess('orders');
+      }
+
+      return false;
     } catch {
       return false;
     }

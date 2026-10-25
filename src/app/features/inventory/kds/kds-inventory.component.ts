@@ -592,8 +592,8 @@ interface AudioContextWindow extends Window {
           color: #475569;
 
           &.active {
-            background: #10b981;
-            border-color: #10b981;
+            background: #1e5e3a;
+            border-color: #1e5e3a;
             color: #ffffff;
           }
         }
@@ -614,7 +614,7 @@ interface AudioContextWindow extends Window {
           box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
 
           &:hover {
-            border-color: #10b981;
+            border-color: #1e5e3a;
             box-shadow: 0 6px 18px rgba(0, 0, 0, 0.08);
           }
         }
@@ -672,7 +672,7 @@ interface AudioContextWindow extends Window {
         font-weight: 900;
         letter-spacing: -0.03em;
         line-height: 1;
-        color: #10b981;
+        color: #1e5e3a;
       }
 
       .clock-date {
@@ -732,8 +732,8 @@ interface AudioContextWindow extends Window {
       }
 
       &.metric-fruit .metric-icon {
-        background: rgba(16, 185, 129, 0.15);
-        color: #10b981;
+        background: rgba(30, 94, 58, 0.15);
+        color: #1e5e3a;
       }
 
       &.metric-pulp .metric-icon {
@@ -801,9 +801,9 @@ interface AudioContextWindow extends Window {
         transition: all 0.15s ease;
 
         &.active {
-          background: #10b981;
+          background: #1e5e3a;
           color: #ffffff;
-          box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
+          box-shadow: 0 2px 8px rgba(30, 94, 58, 0.3);
         }
       }
     }
@@ -890,7 +890,7 @@ interface AudioContextWindow extends Window {
         outline: none;
 
         &:focus {
-          border-color: #10b981;
+          border-color: #1e5e3a;
         }
       }
 
@@ -936,10 +936,10 @@ interface AudioContextWindow extends Window {
       }
 
       &.active {
-        background: #10b981;
-        border-color: #10b981;
+        background: #1e5e3a;
+        border-color: #1e5e3a;
         color: #ffffff;
-        box-shadow: 0 2px 8px rgba(16, 185, 129, 0.35);
+        box-shadow: 0 2px 8px rgba(30, 94, 58, 0.35);
 
         .chip-badge {
           background: rgba(255, 255, 255, 0.25);
@@ -997,8 +997,8 @@ interface AudioContextWindow extends Window {
         flex-shrink: 0;
 
         &.fruit-color {
-          background: rgba(16, 185, 129, 0.15);
-          color: #10b981;
+          background: rgba(30, 94, 58, 0.15);
+          color: #1e5e3a;
         }
 
         &.pulp-color {
@@ -1048,7 +1048,7 @@ interface AudioContextWindow extends Window {
       transition: all 0.2s ease;
 
       &:hover {
-        border-color: #10b981;
+        border-color: #1e5e3a;
         transform: translateY(-2px);
         box-shadow: 0 6px 20px rgba(0, 0, 0, 0.35);
       }
@@ -1084,9 +1084,9 @@ interface AudioContextWindow extends Window {
         font-weight: 800;
         padding: 3px 8px;
         border-radius: 9999px;
-        background: rgba(16, 185, 129, 0.15);
-        color: #10b981;
-        border: 1px solid rgba(16, 185, 129, 0.3);
+        background: rgba(30, 94, 58, 0.15);
+        color: #1e5e3a;
+        border: 1px solid rgba(30, 94, 58, 0.3);
         white-space: nowrap;
 
         &.low-stock {
@@ -1157,7 +1157,7 @@ interface AudioContextWindow extends Window {
       }
 
       &.positive-row .keypad-row-lbl {
-        color: #10b981;
+        color: #1e5e3a;
       }
 
       &.negative-row .keypad-row-lbl {
@@ -1182,17 +1182,17 @@ interface AudioContextWindow extends Window {
       }
 
       &.btn-pos {
-        background: rgba(16, 185, 129, 0.15);
-        color: #34d399;
-        border-color: rgba(16, 185, 129, 0.35);
+        background: rgba(30, 94, 58, 0.15);
+        color: #1e5e3a;
+        border-color: rgba(30, 94, 58, 0.35);
 
         &:hover {
-          background: #10b981;
+          background: #1e5e3a;
           color: #ffffff;
         }
 
         &.btn-bold {
-          background: rgba(16, 185, 129, 0.28);
+          background: rgba(30, 94, 58, 0.28);
           font-weight: 900;
         }
       }
@@ -1256,8 +1256,8 @@ interface AudioContextWindow extends Window {
         width: 8px;
         height: 8px;
         border-radius: 50%;
-        background: #10b981;
-        box-shadow: 0 0 10px #10b981;
+        background: #1e5e3a;
+        box-shadow: 0 0 10px #1e5e3a;
       }
 
       .audit-title {
@@ -1304,7 +1304,7 @@ interface AudioContextWindow extends Window {
       }
 
       &.pos .tx-delta {
-        color: #10b981;
+        color: #1e5e3a;
       }
 
       &.neg .tx-delta {
@@ -1399,15 +1399,15 @@ interface AudioContextWindow extends Window {
         transition: all 0.15s ease;
 
         &.op-add {
-          background: rgba(16, 185, 129, 0.12);
-          color: #34d399;
-          border-color: rgba(16, 185, 129, 0.3);
+          background: rgba(30, 94, 58, 0.12);
+          color: #1e5e3a;
+          border-color: rgba(30, 94, 58, 0.3);
 
           &.selected {
-            background: #10b981;
+            background: #1e5e3a;
             color: #ffffff;
-            border-color: #10b981;
-            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.35);
+            border-color: #1e5e3a;
+            box-shadow: 0 4px 12px rgba(30, 94, 58, 0.35);
           }
         }
 
@@ -1541,17 +1541,17 @@ interface AudioContextWindow extends Window {
         flex: 2;
         padding: 12px;
         border-radius: 10px;
-        background: #10b981;
+        background: #1e5e3a;
         border: none;
         color: #ffffff;
         font-size: 0.95rem;
         font-weight: 900;
         cursor: pointer;
-        box-shadow: 0 4px 16px rgba(16, 185, 129, 0.4);
+        box-shadow: 0 4px 16px rgba(30, 94, 58, 0.4);
         transition: all 0.15s ease;
 
         &:hover {
-          background: #059669;
+          background: #164a2d;
         }
 
         &.confirm-neg {
@@ -1592,60 +1592,85 @@ export class KdsInventoryComponent implements OnInit, OnDestroy {
   readonly numpadTarget = signal<NumpadTargetItem | null>(null);
 
   readonly totalPulpUnits = computed<number>(() => {
-    return this.stateService.productVariants().reduce(
-      (acc: number, v: ProductVariantDto) => acc + (v.currentStock || 0),
-      0
-    );
+    try {
+      return this.stateService.productVariants().reduce(
+        (acc: number, v: ProductVariantDto) => acc + (v.currentStock || 0),
+        0
+      );
+    } catch (error: unknown) {
+      console.error('Error computing total pulp units:', error);
+      return 0;
+    }
   });
 
   readonly estimatedPulpKg = computed<number>(() => {
-    return Math.round(
-      this.stateService.fruits().reduce(
-        (acc: number, f: FruitConfig) => acc + (f.freshStockKg || 0) * (f.yieldRate ?? 0),
-        0
-      )
-    );
+    try {
+      return Math.round(
+        this.stateService.fruits().reduce(
+          (acc: number, f: FruitConfig) => acc + (f.freshStockKg || 0) * (f.yieldRate ?? 0),
+          0
+        )
+      );
+    } catch (error: unknown) {
+      console.error('Error computing estimated pulp kg:', error);
+      return 0;
+    }
   });
 
   readonly lowStockFruitsCount = computed<number>(() => {
-    return this.stateService.fruits().filter((f: FruitConfig) => (f.freshStockKg || 0) <= 50).length;
+    try {
+      return this.stateService.fruits().filter((f: FruitConfig) => (f.freshStockKg || 0) <= 50).length;
+    } catch (error: unknown) {
+      console.error('Error computing low stock fruits count:', error);
+      return 0;
+    }
   });
 
   readonly filteredFruits = computed<FruitConfig[]>(() => {
-    let list = this.stateService.fruits();
-    const sel = this.selectedFruitFilter();
-    if (sel !== 'ALL') {
-      list = list.filter((f: FruitConfig) => String(f.id) === String(sel));
+    try {
+      let list = this.stateService.fruits();
+      const sel = this.selectedFruitFilter();
+      if (sel !== 'ALL') {
+        list = list.filter((f: FruitConfig) => String(f.id) === String(sel));
+      }
+      const q = this.searchQuery().trim().toLowerCase();
+      if (q) {
+        list = list.filter((f: FruitConfig) =>
+          f.name.toLowerCase().includes(q) ||
+          Boolean(f.scientificName && f.scientificName.toLowerCase().includes(q))
+        );
+      }
+      return list;
+    } catch (error: unknown) {
+      console.error('Error computing filtered fruits:', error);
+      return [];
     }
-    const q = this.searchQuery().trim().toLowerCase();
-    if (q) {
-      list = list.filter((f: FruitConfig) =>
-        f.name.toLowerCase().includes(q) ||
-        Boolean(f.scientificName && f.scientificName.toLowerCase().includes(q))
-      );
-    }
-    return list;
   });
 
   readonly filteredVariants = computed<ProductVariantDto[]>(() => {
-    let list = this.stateService.productVariants();
-    const sel = this.selectedFruitFilter();
-    if (sel !== 'ALL') {
-      const fruitObj = this.stateService.fruits().find((f: FruitConfig) => String(f.id) === String(sel));
-      if (fruitObj) {
-        list = list.filter((v: ProductVariantDto) => v.fruitName.toLowerCase() === fruitObj.name.toLowerCase());
+    try {
+      let list = this.stateService.productVariants();
+      const sel = this.selectedFruitFilter();
+      if (sel !== 'ALL') {
+        const fruitObj = this.stateService.fruits().find((f: FruitConfig) => String(f.id) === String(sel));
+        if (fruitObj) {
+          list = list.filter((v: ProductVariantDto) => v.fruitName.toLowerCase() === fruitObj.name.toLowerCase());
+        }
       }
+      const q = this.searchQuery().trim().toLowerCase();
+      if (q) {
+        list = list.filter((v: ProductVariantDto) =>
+          v.name.toLowerCase().includes(q) ||
+          v.fruitName.toLowerCase().includes(q) ||
+          v.sku.toLowerCase().includes(q) ||
+          String(v.grammage).includes(q)
+        );
+      }
+      return list;
+    } catch (error: unknown) {
+      console.error('Error computing filtered variants:', error);
+      return [];
     }
-    const q = this.searchQuery().trim().toLowerCase();
-    if (q) {
-      list = list.filter((v: ProductVariantDto) =>
-        v.name.toLowerCase().includes(q) ||
-        v.fruitName.toLowerCase().includes(q) ||
-        v.sku.toLowerCase().includes(q) ||
-        String(v.grammage).includes(q)
-      );
-    }
-    return list;
   });
 
   /**

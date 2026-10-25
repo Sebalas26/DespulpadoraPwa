@@ -2,10 +2,10 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { signal } from '@angular/core';
 import { DeliveryMapComponent } from './delivery-map.component';
 import { StateService } from '../../core/services/state.service';
-import { DEFAULT_COMPANY_CONFIG, FruitConfig } from '../../core/data/initial-data';
+import { DEFAULT_COMPANY_CONFIG } from '../../core/data/initial-data';
 import { NotificationService } from '../../core/services/notification.service';
 import { GeocodingService } from '../../core/services/geocoding.service';
-import { CompanyConfig, EmployeeDto, OrderDto } from '../../core/models/business.models';
+import { CompanyConfig, EmployeeDto, FruitConfig, OrderDto } from '../../core/models/business.models';
 
 /**
  * Unit tests for DeliveryMapComponent verifying empty initial stops, dynamic couriers, and zeroed form defaults.

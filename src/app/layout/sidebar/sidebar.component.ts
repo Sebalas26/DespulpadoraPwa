@@ -40,8 +40,34 @@ import { environment } from '../../../environments/environment';
       </div>
 
       <nav class="sidebar-nav">
+        <a routerLink="/portal-clientes" routerLinkActive="active" class="dgl-nav-item" title="Ver catálogo digital de clientes y autopedido">
+          <span class="dgl-nav-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="9" cy="21" r="1"></circle>
+              <circle cx="20" cy="21" r="1"></circle>
+              <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path>
+            </svg>
+          </span>
+          <span class="dgl-nav-text">Portal Clientes</span>
+          <span class="dgl-nav-badge" style="background: #1e5e3a; color: white; font-weight: 800;">CATÁLOGO</span>
+        </a>
+
+        @if (authService.hasModuleAccess('/portal-admin')) {
+          <a routerLink="/portal-admin" routerLinkActive="active" class="dgl-nav-item" title="Administrar fotos, precios y textos de las cards del Portal Clientes">
+            <span class="dgl-nav-icon">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                <circle cx="8.5" cy="8.5" r="1.5"></circle>
+                <polyline points="21 15 16 10 5 21"></polyline>
+              </svg>
+            </span>
+            <span class="dgl-nav-text">Admin Catálogo</span>
+            <span class="dgl-nav-badge" style="background: #0284c7; color: white; font-weight: 700;">CMS</span>
+          </a>
+        }
+
         @for (section of authService.groupedNavigationSections(); track section.sectionName; let secIdx = $index) {
-          <div class="nav-section-title" [style.marginTop]="secIdx > 0 ? '14px' : '0'">
+          <div class="nav-section-title" [style.marginTop]="secIdx >= 0 ? '14px' : '0'">
             {{ section.sectionName | uppercase }}
           </div>
 
@@ -207,7 +233,7 @@ import { environment } from '../../../environments/environment';
 
         <div class="dgl-callout-card">
           <div class="callout-header">
-            <span class="callout-icon" style="display: inline-flex; align-items: center; justify-content: center; color: #10b981;">
+            <span class="callout-icon" style="display: inline-flex; align-items: center; justify-content: center; color: #1e5e3a;">
               <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor">
                 <path d="M12 2l2.4 7.4h7.6l-6.1 4.5 2.3 7.1-6.2-4.6-6.2 4.6 2.3-7.1-6.1-4.5h7.6z"/>
               </svg>
@@ -252,6 +278,8 @@ import { environment } from '../../../environments/environment';
       max-width: 240px;
       background: #ffffff;
       border-right: 1px solid #eef2ef;
+      border-top-right-radius: 20px;
+      border-bottom-right-radius: 20px;
       height: 100vh;
       display: flex;
       flex-direction: column;

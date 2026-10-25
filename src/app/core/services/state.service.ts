@@ -26,6 +26,7 @@ import {
 } from '../models/business.models';
 import {
   DEFAULT_COMPANY_CONFIG,
+  DEFAULT_PORTAL_CMS_CONFIG,
   FruitConfig,
   INITIAL_BATCHES_SAMPLE,
   INITIAL_CLIENTS_SAMPLE,
@@ -38,7 +39,8 @@ import {
   INITIAL_PAYROLL_SETTLEMENTS_SAMPLE,
   INITIAL_PRODUCT_VARIANTS,
   INITIAL_SALES_TARGETS_SAMPLE,
-  INITIAL_SHIFTS_SAMPLE
+  INITIAL_SHIFTS_SAMPLE,
+  PortalCmsConfig
 } from '../data/initial-data';
 import { Observable, forkJoin, of } from 'rxjs';
 import { catchError, tap } from 'rxjs/operators';
@@ -67,10 +69,16 @@ export class StateService {
   readonly payrollPeriods = signal<PayrollPeriodDto[]>(this.loadPayrollPeriodsFromStorage());
   readonly payrollSettlements = signal<PayrollSettlementDto[]>(this.loadPayrollSettlementsFromStorage());
   readonly companyInfo = signal<CompanyConfig>(this.loadCompanyInfoFromStorage());
+  readonly portalCmsConfig = signal<PortalCmsConfig>(this.loadPortalCmsConfigFromStorage());
   readonly paymentMethods = signal<PaymentMethodDto[]>(this.loadPaymentMethodsFromStorage());
-  readonly activePaymentMethods = computed<PaymentMethodDto[]>(() =>
-    this.paymentMethods().filter(p => p.isActive)
-  );
+
+  readonly activePaymentMethods = computed<PaymentMethodDto[]>(() => {
+    try {
+      return this.paymentMethods().filter(p => p.isActive);
+    } catch {
+      return [];
+    }
+  });
 
   readonly isLoading = signal<boolean>(false);
   readonly isOnline = signal<boolean>(typeof navigator !== 'undefined' ? navigator.onLine : true);
@@ -94,199 +102,254 @@ export class StateService {
   }
 
   readonly totalStockKg = computed<number>(() => {
-    return this.fruits().reduce((sum, f) => {
-      const kg = f.stock.g140 * 0.14 + f.stock.g250 * 0.25 + f.stock.g500 * 0.5 + f.stock.g1000 * 1.0;
-      return sum + kg;
-    }, 0);
+    try {
+      return this.fruits().reduce((sum, f) => {
+        const kg = f.stock.g140 * 0.14 + f.stock.g250 * 0.25 + f.stock.g500 * 0.5 + f.stock.g1000 * 1.0;
+        return sum + kg;
+      }, 0);
+    } catch {
+      return 0;
+    }
   });
 
   readonly totalFreshStockKg = computed<number>(() => {
-    return this.fruits().reduce((sum, f) => sum + (f.freshStockKg || 0), 0);
+    try {
+      return this.fruits().reduce((sum, f) => sum + (f.freshStockKg || 0), 0);
+    } catch {
+      return 0;
+    }
   });
 
   readonly pendingOrdersCount = computed<number>(() => {
-    return this.orders().filter(o => o.status === 'PENDING' || o.status === 'PICKING').length;
+    try {
+      return this.orders().filter(o => o.status === 'PENDING' || o.status === 'PICKING').length;
+    } catch {
+      return 0;
+    }
   });
 
   readonly todayBatchesCount = computed<number>(() => {
-    const todayStr = new Date().toISOString().substring(0, 10);
-    return this.batches().filter(b => (b.productionDate || b.createdAt).startsWith(todayStr)).length;
+    try {
+      const todayStr = new Date().toISOString().substring(0, 10);
+      return this.batches().filter(b => (b.productionDate || b.createdAt).startsWith(todayStr)).length;
+    } catch {
+      return 0;
+    }
   });
 
   readonly activeShiftsCount = computed<number>(() => {
-    return this.shifts().filter(s => s.status === 'ACTIVE').length;
+    try {
+      return this.shifts().filter(s => s.status === 'ACTIVE').length;
+    } catch {
+      return 0;
+    }
   });
 
   readonly todayRevenue = computed<number>(() => {
-    const todayStr = new Date().toISOString().substring(0, 10);
-    return this.orders()
-      .filter(o => o.createdAt.startsWith(todayStr) && o.status !== 'CANCELLED')
-      .reduce((sum, o) => sum + o.totalAmount, 0);
+    try {
+      const todayStr = new Date().toISOString().substring(0, 10);
+      return this.orders()
+        .filter(o => o.createdAt.startsWith(todayStr) && o.status !== 'CANCELLED')
+        .reduce((sum, o) => sum + o.totalAmount, 0);
+    } catch {
+      return 0;
+    }
   });
 
   readonly lowStockFruitsCount = computed<number>(() => {
-    return this.fruits().filter(f => {
-      return (
-        f.stock.g140 <= f.minStock.g140 ||
-        f.stock.g250 <= f.minStock.g250 ||
-        f.stock.g500 <= f.minStock.g500 ||
-        f.stock.g1000 <= f.minStock.g1000
-      );
-    }).length;
+    try {
+      return this.fruits().filter(f => {
+        return (
+          f.stock.g140 <= f.minStock.g140 ||
+          f.stock.g250 <= f.minStock.g250 ||
+          f.stock.g500 <= f.minStock.g500 ||
+          f.stock.g1000 <= f.minStock.g1000
+        );
+      }).length;
+    } catch {
+      return 0;
+    }
   });
 
   readonly salesPerformance = computed<SalesPerformanceKpiDto>(() => {
-    const orders = this.orders().filter(o => o.status !== 'CANCELLED');
-    const now = new Date();
-    const currentYear = now.getFullYear();
-    const currentMonth = now.getMonth() + 1;
-    const currentMonthStr = `${currentYear}-${String(currentMonth).padStart(2, '0')}`;
+    try {
+      const orders = this.orders().filter(o => o.status !== 'CANCELLED');
+      const now = new Date();
+      const currentYear = now.getFullYear();
+      const currentMonth = now.getMonth() + 1;
+      const currentMonthStr = `${currentYear}-${String(currentMonth).padStart(2, '0')}`;
 
-    const defaultTargetRevenue = this.companyInfo().monthlySalesTarget || 0;
-    const targetObj = this.salesTargets().find(t => t.year === currentYear && t.month === currentMonth) ||
-      this.salesTargets()[0] || { targetRevenue: defaultTargetRevenue, workingDays: 26 };
+      const defaultTargetRevenue = this.companyInfo().monthlySalesTarget || 0;
+      const targetObj = this.salesTargets().find(t => t.year === currentYear && t.month === currentMonth) ||
+        this.salesTargets()[0] || { targetRevenue: defaultTargetRevenue, workingDays: 26 };
 
-    let currentMonthOrders = orders.filter(o => (o.orderDate || o.createdAt).startsWith(currentMonthStr));
-    if (currentMonthOrders.length === 0) {
-      currentMonthOrders = orders;
-    }
+      let currentMonthOrders = orders.filter(o => (o.orderDate || o.createdAt).startsWith(currentMonthStr));
+      if (currentMonthOrders.length === 0) {
+        currentMonthOrders = orders;
+      }
 
-    const currentMonthRevenue = currentMonthOrders.reduce((sum, o) => sum + o.totalAmount, 0);
+      const currentMonthRevenue = currentMonthOrders.reduce((sum, o) => sum + o.totalAmount, 0);
 
-    const variants = this.productVariants();
-    const batches = this.batches();
-    const cogs = currentMonthOrders.reduce((sum, o) => {
-      const orderCogs = o.items.reduce((iSum, item) => {
-        const variant = variants.find(
-          v =>
-            (v.fruitId === item.fruitId ||
-              v.fruitName.toLowerCase() === (item.fruitName || '').toLowerCase()) &&
-            v.grammage === item.grammage
-        );
-        if (variant && variant.unitCost > 0) {
-          return iSum + variant.unitCost * item.quantity;
-        }
-        const batch = batches.find(
-          b =>
-            b.fruitId === item.fruitId ||
-            b.fruitName?.toLowerCase() === (item.fruitName || '').toLowerCase()
-        );
-        if (batch && batch.costPerKg > 0) {
-          return iSum + batch.costPerKg * (item.grammage / 1000) * item.quantity;
-        }
-        return iSum;
+      const variants = this.productVariants();
+      const batches = this.batches();
+      const cogs = currentMonthOrders.reduce((sum, o) => {
+        const orderCogs = o.items.reduce((iSum, item) => {
+          const variant = variants.find(
+            v =>
+              (v.fruitId === item.fruitId ||
+                v.fruitName.toLowerCase() === (item.fruitName || '').toLowerCase()) &&
+              v.grammage === item.grammage
+          );
+          if (variant && variant.unitCost > 0) {
+            return iSum + variant.unitCost * item.quantity;
+          }
+          const batch = batches.find(
+            b =>
+              b.fruitId === item.fruitId ||
+              b.fruitName?.toLowerCase() === (item.fruitName || '').toLowerCase()
+          );
+          if (batch && batch.costPerKg > 0) {
+            return iSum + batch.costPerKg * (item.grammage / 1000) * item.quantity;
+          }
+          return iSum;
+        }, 0);
+        return sum + orderCogs;
       }, 0);
-      return sum + orderCogs;
-    }, 0);
 
-    const grossProfit = currentMonthRevenue - cogs;
-    const grossMarginPercentage =
-      currentMonthRevenue > 0 ? Number(((grossProfit / currentMonthRevenue) * 100).toFixed(1)) : 0;
+      const grossProfit = currentMonthRevenue - cogs;
+      const grossMarginPercentage =
+        currentMonthRevenue > 0 ? Number(((grossProfit / currentMonthRevenue) * 100).toFixed(1)) : 0;
 
-    const prevDate = new Date(currentYear, currentMonth - 2, 1);
-    const prevYear = prevDate.getFullYear();
-    const prevMonth = prevDate.getMonth() + 1;
-    const prevMonthStr = `${prevYear}-${String(prevMonth).padStart(2, '0')}`;
-    const previousMonthOrders = orders.filter(o => (o.orderDate || o.createdAt).startsWith(prevMonthStr));
-    const previousMonthRevenue = previousMonthOrders.reduce((sum, o) => sum + o.totalAmount, 0);
+      const prevDate = new Date(currentYear, currentMonth - 2, 1);
+      const prevYear = prevDate.getFullYear();
+      const prevMonth = prevDate.getMonth() + 1;
+      const prevMonthStr = `${prevYear}-${String(prevMonth).padStart(2, '0')}`;
+      const previousMonthOrders = orders.filter(o => (o.orderDate || o.createdAt).startsWith(prevMonthStr));
+      const previousMonthRevenue = previousMonthOrders.reduce((sum, o) => sum + o.totalAmount, 0);
 
-    const growthPercentage =
-      previousMonthRevenue > 0
-        ? Number((((currentMonthRevenue - previousMonthRevenue) / previousMonthRevenue) * 100).toFixed(1))
-        : 0;
+      const growthPercentage =
+        previousMonthRevenue > 0
+          ? Number((((currentMonthRevenue - previousMonthRevenue) / previousMonthRevenue) * 100).toFixed(1))
+          : 0;
 
-    const monthTargetRevenue = targetObj.targetRevenue || 0;
-    const workingDays = targetObj.workingDays || 26;
-    const currentDay = Math.min(workingDays, Math.max(1, now.getDate()));
-    const targetAccumulatedProrated =
-      workingDays > 0 ? Math.round((monthTargetRevenue / workingDays) * currentDay) : 0;
+      const monthTargetRevenue = targetObj.targetRevenue || 0;
+      const workingDays = targetObj.workingDays || 26;
+      const currentDay = Math.min(workingDays, Math.max(1, now.getDate()));
+      const targetAccumulatedProrated =
+        workingDays > 0 ? Math.round((monthTargetRevenue / workingDays) * currentDay) : 0;
 
-    const compliancePercentage =
-      monthTargetRevenue > 0 ? Number(((currentMonthRevenue / monthTargetRevenue) * 100).toFixed(1)) : 0;
+      const compliancePercentage =
+        monthTargetRevenue > 0 ? Number(((currentMonthRevenue / monthTargetRevenue) * 100).toFixed(1)) : 0;
 
-    const projectedClosingRevenue =
-      currentDay > 0 ? Math.round((currentMonthRevenue / currentDay) * workingDays) : monthTargetRevenue;
+      const projectedClosingRevenue =
+        currentDay > 0 ? Math.round((currentMonthRevenue / currentDay) * workingDays) : monthTargetRevenue;
 
-    return {
-      currentMonthRevenue,
-      previousMonthRevenue,
-      growthPercentage,
-      grossProfit,
-      grossMarginPercentage,
-      monthTargetRevenue,
-      targetAccumulatedProrated,
-      compliancePercentage,
-      projectedClosingRevenue,
-      totalOrdersCount: currentMonthOrders.length,
-      averageTicketValue:
-        currentMonthOrders.length > 0 ? Math.round(currentMonthRevenue / currentMonthOrders.length) : 0
-    };
+      return {
+        currentMonthRevenue,
+        previousMonthRevenue,
+        growthPercentage,
+        grossProfit,
+        grossMarginPercentage,
+        monthTargetRevenue,
+        targetAccumulatedProrated,
+        compliancePercentage,
+        projectedClosingRevenue,
+        totalOrdersCount: currentMonthOrders.length,
+        averageTicketValue:
+          currentMonthOrders.length > 0 ? Math.round(currentMonthRevenue / currentMonthOrders.length) : 0
+      };
+    } catch {
+      return {
+        currentMonthRevenue: 0,
+        previousMonthRevenue: 0,
+        growthPercentage: 0,
+        grossProfit: 0,
+        grossMarginPercentage: 0,
+        monthTargetRevenue: 0,
+        targetAccumulatedProrated: 0,
+        compliancePercentage: 0,
+        projectedClosingRevenue: 0,
+        totalOrdersCount: 0,
+        averageTicketValue: 0
+      };
+    }
   });
 
   readonly idealVsRealLossAudit = computed<IdealVsRealAuditDto[]>(() => {
-    const batches = this.batches();
-    const orders = this.orders().filter(
-      o => o.status === 'BILLED' || o.status === 'DISPATCHED' || o.status === 'DELIVERED'
-    );
-    const fruits = this.fruits();
-
-    return fruits.map(f => {
-      const fruitBatches = batches.filter(
-        b => b.fruitName?.toLowerCase() === f.name.toLowerCase() || b.fruitId === f.fruitId
+    try {
+      const batches = this.batches();
+      const orders = this.orders().filter(
+        o => o.status === 'BILLED' || o.status === 'DISPATCHED' || o.status === 'DELIVERED'
       );
-      const totalPulpKgProduced = fruitBatches.reduce((sum, b) => sum + (b.pulpProducedKg || 0), 0);
-      const unitsProduced =
-        totalPulpKgProduced > 0
-          ? Math.floor(totalPulpKgProduced / 0.25)
-          : f.stock.g140 + f.stock.g250 + f.stock.g500 + f.stock.g1000;
+      const fruits = this.fruits();
 
-      let unitsBilled = 0;
-      let realRevenue = 0;
-      orders.forEach(o => {
-        o.items.forEach(i => {
-          if (i.fruitName?.toLowerCase() === f.name.toLowerCase() || i.fruitId === f.fruitId) {
-            unitsBilled += i.quantity;
-            realRevenue += i.subtotal;
-          }
+      return fruits.map(f => {
+        const fruitBatches = batches.filter(
+          b => b.fruitName?.toLowerCase() === f.name.toLowerCase() || b.fruitId === f.fruitId
+        );
+        const totalPulpKgProduced = fruitBatches.reduce((sum, b) => sum + (b.pulpProducedKg || 0), 0);
+        const unitsProduced =
+          totalPulpKgProduced > 0
+            ? Math.floor(totalPulpKgProduced / 0.25)
+            : f.stock.g140 + f.stock.g250 + f.stock.g500 + f.stock.g1000;
+
+        let unitsBilled = 0;
+        let realRevenue = 0;
+        orders.forEach(o => {
+          o.items.forEach(i => {
+            if (i.fruitName?.toLowerCase() === f.name.toLowerCase() || i.fruitId === f.fruitId) {
+              unitsBilled += i.quantity;
+              realRevenue += i.subtotal;
+            }
+          });
         });
+
+        const avgPrice = f.prices?.g250 || 0;
+        const idealRevenue = unitsProduced * avgPrice;
+        const unitsDifference = unitsBilled - unitsProduced;
+        const moneyDifference = realRevenue - idealRevenue;
+        const lossPercentage =
+          unitsProduced > 0 ? Number(((Math.max(0, -unitsDifference) / unitsProduced) * 100).toFixed(1)) : 0;
+
+        return {
+          auditId: f.fruitId || Date.now(),
+          fruitId: f.fruitId,
+          fruitName: f.name,
+          periodLabel: 'Mes en Curso',
+          startDate: new Date().toISOString().substring(0, 7) + '-01',
+          endDate: new Date().toISOString().substring(0, 10),
+          totalPulpKgProduced,
+          unitsProduced,
+          unitsBilled,
+          unitsDifference,
+          differenceUnits: unitsDifference,
+          idealRevenue,
+          realRevenue,
+          moneyDifference,
+          differenceRevenue: Math.abs(moneyDifference),
+          lossPercentage,
+          alertLevel: lossPercentage > 15 ? 'CRITICA' : lossPercentage > 5 ? 'MODERADA' : 'NORMAL',
+          notes: unitsDifference < 0 ? 'Merma operativa o producto en maduración/bodega' : 'Inventario cuadrado',
+          createdAt: new Date().toISOString()
+        };
       });
-
-      const avgPrice = f.prices?.g250 || 0;
-      const idealRevenue = unitsProduced * avgPrice;
-      const unitsDifference = unitsBilled - unitsProduced;
-      const moneyDifference = realRevenue - idealRevenue;
-      const lossPercentage =
-        unitsProduced > 0 ? Number(((Math.max(0, -unitsDifference) / unitsProduced) * 100).toFixed(1)) : 0;
-
-      return {
-        auditId: f.fruitId || Date.now(),
-        fruitId: f.fruitId,
-        fruitName: f.name,
-        periodLabel: 'Mes en Curso',
-        startDate: new Date().toISOString().substring(0, 7) + '-01',
-        endDate: new Date().toISOString().substring(0, 10),
-        totalPulpKgProduced,
-        unitsProduced,
-        unitsBilled,
-        unitsDifference,
-        differenceUnits: unitsDifference,
-        idealRevenue,
-        realRevenue,
-        moneyDifference,
-        differenceRevenue: Math.abs(moneyDifference),
-        lossPercentage,
-        alertLevel: lossPercentage > 15 ? 'CRITICA' : lossPercentage > 5 ? 'MODERADA' : 'NORMAL',
-        notes: unitsDifference < 0 ? 'Merma operativa o producto en maduración/bodega' : 'Inventario cuadrado',
-        createdAt: new Date().toISOString()
-      };
-    });
+    } catch {
+      return [];
+    }
   });
 
+  /**
+   * Initializes theme attributes and online/offline event listeners.
+   */
   constructor() {
-    this.applyTheme(this.activeTheme());
-    if (typeof window !== 'undefined') {
-      window.addEventListener('online', () => this.isOnline.set(true));
-      window.addEventListener('offline', () => this.isOnline.set(false));
+    try {
+      this.applyTheme(this.activeTheme());
+      if (typeof window !== 'undefined') {
+        window.addEventListener('online', () => this.isOnline.set(true));
+        window.addEventListener('offline', () => this.isOnline.set(false));
+      }
+    } catch {
+      return;
     }
   }
 
@@ -606,6 +669,7 @@ export class StateService {
       localStorage.setItem('despulpadora_payroll_settlements', JSON.stringify(this.payrollSettlements()));
       localStorage.setItem('despulpadora_shifts', JSON.stringify(this.shifts()));
       localStorage.setItem('despulpadora_company_info', JSON.stringify(this.companyInfo()));
+      localStorage.setItem('despulpadora_portal_cms_config', JSON.stringify(this.portalCmsConfig()));
       localStorage.setItem('despulpadora_payment_methods', JSON.stringify(this.paymentMethods()));
     } catch {
       return;
@@ -659,7 +723,10 @@ export class StateService {
         employees: this.api.getEmployees(branchId).pipe(catchError(() => of([] as EmployeeDto[]))),
         expenses: this.api.getExpenses(branchId).pipe(catchError(() => of([] as ExpenseDto[]))),
         companySettings: this.api.getCompanySettings().pipe(catchError(() => of(null))),
-        paymentMethods: this.api.getPaymentMethods().pipe(catchError(() => of([] as PaymentMethodDto[])))
+        paymentMethods: this.api.getPaymentMethods().pipe(catchError(() => of([] as PaymentMethodDto[]))),
+        shifts: (this.api.getShifts
+          ? this.api.getShifts(branchId).pipe(catchError(() => of(null as WorkShiftDto[] | null)))
+          : of(null as WorkShiftDto[] | null))
       }).subscribe({
         next: res => {
           this.isLoading.set(false);
@@ -679,6 +746,9 @@ export class StateService {
               fruitId: apiFruit.fruitId,
               name: apiFruit.name,
               scientificName: existing?.scientificName || '',
+              description: existing?.description || '',
+              imageUrl: existing?.imageUrl || '',
+              isVisibleInPortal: existing?.isVisibleInPortal ?? true,
               color,
               bgColor: existing?.bgColor || '',
               borderColor: existing?.borderColor || color,
@@ -699,7 +769,7 @@ export class StateService {
                 g500: apiFruit.price500g ?? existing?.prices.g500 ?? 0,
                 g1000: apiFruit.price1000g ?? existing?.prices.g1000 ?? 0
               },
-              category: (apiFruit.category as FruitConfig['category']) || existing?.category || 'PULPAS'
+              category: apiFruit.category || existing?.category || ''
             };
           });
           this.fruits.set(mappedFruits);
@@ -709,6 +779,10 @@ export class StateService {
           this.clients.set(res.clients || []);
           this.employees.set(res.employees || []);
           this.expenses.set(res.expenses || []);
+
+          if (res.shifts) {
+            this.shifts.set(res.shifts);
+          }
 
           if (res.companySettings) {
             this.companyInfo.set(res.companySettings);
@@ -1167,13 +1241,11 @@ export class StateService {
    */
   toggleOrderPriority(orderId: number, isPriority?: boolean): void {
     try {
-      let resolvedStatus: OrderStatus = 'PENDING';
       let resolvedPriority = false;
       this.orders.update(list =>
         list.map(o => {
           if (o.orderId === orderId) {
             const nextVal = isPriority !== undefined ? isPriority : !o.isPriority;
-            resolvedStatus = o.status;
             resolvedPriority = nextVal;
             return { ...o, isPriority: nextVal };
           }
@@ -1181,9 +1253,9 @@ export class StateService {
         })
       );
       this.saveAllToStorage();
-      this.api
-        .updateOrderStatus({ orderId, status: resolvedStatus, isPriority: resolvedPriority })
-        .subscribe({ error: () => {} });
+      if (this.api.toggleOrderPriority) {
+        this.api.toggleOrderPriority(orderId, resolvedPriority).subscribe({ error: () => {} });
+      }
     } catch {
       return;
     }
@@ -1355,6 +1427,16 @@ export class StateService {
       });
 
       this.saveAllToStorage();
+      if (this.api.createPayrollSettlement) {
+        this.api
+          .createPayrollSettlement({
+            employeeId: employee.employeeId,
+            periodLabel: String(dto.periodId),
+            netAmountPaid: netPayable
+          })
+          .pipe(catchError(() => of(null)))
+          .subscribe();
+      }
       this.notification.success(
         'Nómina Quincenal Liquidada',
         `${employee.fullName}: Neto a pagar $${netPayable.toLocaleString('es-CO')}`
@@ -1643,6 +1725,211 @@ export class StateService {
       if (target) {
         this.notification.info('Personal Eliminado', `${target.fullName} fue retirado del personal de la empresa.`);
       }
+    } catch {
+      return;
+    }
+  }
+
+  /**
+   * Loads client portal CMS configuration from localStorage.
+   */
+  private loadPortalCmsConfigFromStorage(): PortalCmsConfig {
+    try {
+      const data = localStorage.getItem('despulpadora_portal_cms_config');
+      if (data) {
+        const parsed = JSON.parse(data) as Partial<PortalCmsConfig>;
+        return { ...DEFAULT_PORTAL_CMS_CONFIG, ...parsed };
+      }
+    } catch {
+      return DEFAULT_PORTAL_CMS_CONFIG;
+    }
+    return DEFAULT_PORTAL_CMS_CONFIG;
+  }
+
+  /**
+   * Updates client portal CMS header and banner texts.
+   */
+  updatePortalCmsConfig(updates: Partial<PortalCmsConfig>): void {
+    try {
+      this.portalCmsConfig.update(prev => ({ ...prev, ...updates }));
+      this.saveAllToStorage();
+      this.notification.success(
+        'Portal Clientes Actualizado',
+        'Los textos del encabezado y banner han sido guardados.'
+      );
+    } catch {
+      return;
+    }
+  }
+
+  /**
+   * Updates a fruit catalog card in state, synchronizes variants, and persists to `PUT /api/fruits/{id}`.
+   */
+  updateFruitCatalogCard(idOrFruitId: string | number, updates: Partial<FruitConfig>, silent: boolean = false): void {
+    try {
+      let updatedFruit: FruitConfig | undefined;
+
+      this.fruits.update(list =>
+        list.map(f => {
+          if (f.id === idOrFruitId || f.fruitId === idOrFruitId) {
+            updatedFruit = {
+              ...f,
+              ...updates,
+              prices: updates.prices ? { ...f.prices, ...updates.prices } : f.prices
+            };
+            return updatedFruit;
+          }
+          return f;
+        })
+      );
+
+      if (updatedFruit && updatedFruit.fruitId) {
+        const fId = updatedFruit.fruitId;
+        const newPrices = updatedFruit.prices;
+        const newName = updatedFruit.name;
+        this.productVariants.update(variants =>
+          variants.map(v => {
+            if (v.fruitId === fId) {
+              const gKey = ('g' + v.grammage) as 'g140' | 'g250' | 'g500' | 'g1000';
+              const nextPrice = newPrices && newPrices[gKey] !== undefined ? newPrices[gKey] : v.basePrice;
+              return {
+                ...v,
+                fruitName: newName,
+                name: `Pulpa de ${newName} ${v.grammage}g`,
+                basePrice: nextPrice
+              };
+            }
+            return v;
+          })
+        );
+
+        this.api
+          .updateFruit(fId, {
+            name: updatedFruit.name,
+            code: updatedFruit.id.toUpperCase(),
+            category: updatedFruit.category,
+            colorHex: updatedFruit.color,
+            yieldPercentage: Math.round((updatedFruit.yieldRate || 0) * 100),
+            unitPrice: updatedFruit.prices.g140,
+            price140g: updatedFruit.prices.g140,
+            price250g: updatedFruit.prices.g250,
+            price500g: updatedFruit.prices.g500,
+            price1000g: updatedFruit.prices.g1000
+          })
+          .subscribe({ error: () => {} });
+      }
+
+      this.saveAllToStorage();
+      if (!silent && updatedFruit) {
+        this.notification.success(
+          'Card Actualizada',
+          `Se guardaron los cambios de "${updatedFruit.name}" en el Portal Clientes.`
+        );
+      }
+    } catch {
+      return;
+    }
+  }
+
+  /**
+   * Creates a new fruit catalog card locally and persists to `POST /api/fruits`.
+   */
+  createFruitCatalogCard(payload: {
+    name: string;
+    scientificName: string;
+    description: string;
+    category: string;
+    color: string;
+    imageUrl?: string;
+    prices: { g140: number; g250: number; g500: number; g1000: number };
+  }): FruitConfig {
+    try {
+      const nextFruitId = Math.max(0, ...this.fruits().map(f => f.fruitId || 0)) + 1;
+      const slug =
+        payload.name
+          .toLowerCase()
+          .normalize('NFD')
+          .replace(/[\u0300-\u036f]/g, '')
+          .replace(/[^a-z0-9]+/g, '_')
+          .replace(/^_|_$/g, '') || `fruit_${nextFruitId}`;
+
+      const newCard: FruitConfig = {
+        id: `${slug}_${nextFruitId}`,
+        fruitId: nextFruitId,
+        name: payload.name.trim(),
+        scientificName: payload.scientificName.trim(),
+        description: payload.description.trim(),
+        imageUrl: payload.imageUrl || '',
+        isVisibleInPortal: true,
+        color: payload.color || '',
+        bgColor: '',
+        borderColor: payload.color || '',
+        emoji: '',
+        yieldRate: 0,
+        waterAdditionDefault: 0,
+        freshStockKg: 0,
+        stock: { g140: 0, g250: 0, g500: 0, g1000: 0 },
+        minStock: { g140: 0, g250: 0, g500: 0, g1000: 0 },
+        prices: { ...payload.prices },
+        category: payload.category.trim()
+      };
+
+      this.fruits.update(list => [newCard, ...list]);
+      this.saveAllToStorage();
+      this.api
+        .createFruit({
+          name: newCard.name,
+          code: slug.toUpperCase(),
+          category: newCard.category,
+          colorHex: newCard.color,
+          yieldPercentage: 0,
+          rawStockKg: 0,
+          unitPrice: newCard.prices.g140,
+          price140g: newCard.prices.g140,
+          price250g: newCard.prices.g250,
+          price500g: newCard.prices.g500,
+          price1000g: newCard.prices.g1000
+        })
+        .subscribe({ error: () => {} });
+      this.notification.success('Nueva Card Creada', `"${newCard.name}" ya está publicada en el Portal Clientes.`);
+      return newCard;
+    } catch (error: unknown) {
+      throw error;
+    }
+  }
+
+  /**
+   * Deletes a fruit catalog card locally and syncs to `DELETE /api/fruits/{id}`.
+   */
+  deleteFruitCatalogCard(id: string): void {
+    try {
+      const target = this.fruits().find(f => f.id === id);
+      this.fruits.update(list => list.filter(f => f.id !== id));
+      this.saveAllToStorage();
+      if (target?.fruitId) {
+        this.api.deleteFruit(target.fruitId).subscribe({ error: () => {} });
+      }
+      if (target) {
+        this.notification.info('Card Eliminada', `"${target.name}" fue retirada del catálogo.`);
+      }
+    } catch {
+      return;
+    }
+  }
+
+  /**
+   * Resets client portal catalog and CMS configuration to default empty state.
+   */
+  resetPortalCatalogToDefault(): void {
+    try {
+      this.fruits.set(INITIAL_FRUITS);
+      this.productVariants.set(INITIAL_PRODUCT_VARIANTS);
+      this.portalCmsConfig.set(DEFAULT_PORTAL_CMS_CONFIG);
+      this.saveAllToStorage();
+      this.notification.info(
+        'Portal Restablecido',
+        'Se restauraron todas las fotos, textos y precios predeterminados del catálogo.'
+      );
     } catch {
       return;
     }

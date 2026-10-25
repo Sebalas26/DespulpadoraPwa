@@ -87,7 +87,7 @@
   --bg-table-hover: rgba(255, 255, 255, 0.02);
 
   --border-subtle: rgba(255, 255, 255, 0.08);
-  --border-focus: rgba(16, 185, 129, 0.5);
+  --border-focus: rgba(30, 94, 58, 0.5);
   --border-highlight: rgba(255, 255, 255, 0.14);
 
   --text-main: #f8fafc;
@@ -95,12 +95,12 @@
   --text-dim: #64748b;
   --text-inverse: #0b0f19;
 
-  --color-primary: #10b981;
-  --color-primary-hover: #059669;
-  --color-primary-light: rgba(16, 185, 129, 0.08);
-  --color-primary-text: #10b981;
+  --color-primary: #1e5e3a;
+  --color-primary-hover: #164a2d;
+  --color-primary-light: rgba(30, 94, 58, 0.08);
+  --color-primary-text: #1e5e3a;
 
-  --status-success: #10b981;
+  --status-success: #1e5e3a;
   --status-warning: #f59e0b;
   --status-danger: #ef4444;
   --status-info: #64748b;
@@ -206,7 +206,7 @@ h1, h2, h3, h4, h5, h6 {
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.2);
+  box-shadow: 0 2px 8px rgba(30, 94, 58, 0.2);
   flex-shrink: 0;
   color: #ffffff;
 }
@@ -426,13 +426,13 @@ h1, h2, h3, h4, h5, h6 {
 
     .nav-subicon {
       color: var(--color-primary);
-      background: rgba(16, 185, 129, 0.15);
+      background: rgba(30, 94, 58, 0.15);
     }
   }
 
   &.active {
-    color: #10b981;
-    background: rgba(16, 185, 129, 0.12);
+    color: #1e5e3a;
+    background: rgba(30, 94, 58, 0.12);
     font-weight: 600;
 
     .nav-subicon {
@@ -443,12 +443,12 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 [data-theme="light"] .nav-subitem.active {
-  color: #047857;
-  background: rgba(5, 150, 105, 0.1);
+  color: #1e5e3a;
+  background: rgba(22, 74, 45, 0.1);
 
   .nav-subicon {
     color: #ffffff;
-    background: #059669;
+    background: #164a2d;
   }
 }
 
@@ -887,13 +887,13 @@ body:has(.mobile-drawer-overlay) .map-canvas-card {
 .btn-primary {
   background: var(--color-primary);
   color: #ffffff;
-  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.2);
+  box-shadow: 0 2px 8px rgba(30, 94, 58, 0.2);
 }
 
 .btn-primary:hover {
   background: var(--color-primary-hover);
   transform: translateY(-1px);
-  box-shadow: 0 4px 14px rgba(16, 185, 129, 0.3);
+  box-shadow: 0 4px 14px rgba(30, 94, 58, 0.3);
 }
 
 .btn-secondary {
@@ -985,7 +985,7 @@ input[type="text"], input[type="number"], input[type="email"], input[type="passw
   &:focus {
     border-color: var(--color-primary);
     background: var(--bg-input-focus);
-    box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.15);
+    box-shadow: 0 0 0 3px rgba(30, 94, 58, 0.15);
   }
 
   &:disabled {
@@ -1278,6 +1278,214 @@ td.mobile-tr-summary-cell {
 }
 
 @media (max-width: 768px) {
+  .order-detail-lupa-icon {
+    display: none !important;
+  }
+
+  /* Vista previa compacta de Factura Corporativa en Mobile (Settings, Orders, Reports) */
+  .pro-invoice-sheet {
+    padding: 14px 12px !important;
+    border-radius: 12px !important;
+    min-height: auto !important;
+
+    .pro-invoice-header {
+      gap: 8px !important;
+      padding-bottom: 10px !important;
+    }
+
+    .pro-brand-block {
+      gap: 8px !important;
+    }
+
+    .pro-brand-logo {
+      width: 42px !important;
+      height: 42px !important;
+    }
+
+    .pro-company-name {
+      font-size: 0.88rem !important;
+    }
+
+    .pro-company-legal {
+      font-size: 0.66rem !important;
+    }
+
+    .pro-company-tagline {
+      font-size: 0.62rem !important;
+    }
+
+    .pro-nit-pill {
+      font-size: 0.68rem !important;
+      padding: 3px 7px !important;
+    }
+
+    .pro-fiscal-country,
+    .pro-fiscal-regime {
+      font-size: 0.62rem !important;
+    }
+
+    .pro-recipient-row {
+      margin: 10px 0 12px !important;
+      gap: 10px !important;
+      flex-direction: column !important;
+    }
+
+    .pro-sender-meta {
+      .sender-label {
+        font-size: 0.6rem !important;
+      }
+      .sender-val {
+        font-size: 0.74rem !important;
+      }
+      .sender-sub {
+        font-size: 0.68rem !important;
+      }
+    }
+
+    .pro-client-box {
+      min-width: 0 !important;
+      max-width: 100% !important;
+      width: 100% !important;
+      padding: 8px 11px !important;
+
+      .client-box-label {
+        font-size: 0.58rem !important;
+      }
+      .client-box-name {
+        font-size: 0.82rem !important;
+      }
+      .client-box-line,
+      .client-box-country {
+        font-size: 0.68rem !important;
+      }
+    }
+
+    .pro-invoice-title-bar {
+      margin-bottom: 10px !important;
+      gap: 6px !important;
+    }
+
+    .pro-invoice-title {
+      font-size: 1.05rem !important;
+    }
+
+    .pro-invoice-status-stamp {
+      font-size: 0.58rem !important;
+      padding: 3px 8px !important;
+    }
+
+    .pro-meta-grid {
+      grid-template-columns: repeat(2, 1fr) !important;
+      gap: 8px !important;
+      padding: 8px 10px !important;
+      margin-bottom: 10px !important;
+    }
+
+    .pro-meta-cell {
+      border-right: none !important;
+      padding-right: 0 !important;
+      gap: 1px !important;
+
+      .meta-label {
+        font-size: 0.64rem !important;
+      }
+      .meta-value {
+        font-size: 0.74rem !important;
+      }
+    }
+
+    .pro-table-wrapper {
+      overflow-x: hidden !important;
+    }
+
+    .pro-invoice-table {
+      font-size: 0.62rem !important;
+      table-layout: fixed !important;
+      width: 100% !important;
+
+      th {
+        padding: 5px 4px !important;
+        font-size: 0.56rem !important;
+        letter-spacing: 0 !important;
+      }
+
+      td {
+        padding: 6px 4px !important;
+        word-break: break-word !important;
+      }
+
+      .col-desc {
+        min-width: 0 !important;
+        width: 40% !important;
+      }
+
+      .col-qty {
+        width: 16% !important;
+        white-space: normal !important;
+      }
+
+      .col-price {
+        width: 20% !important;
+      }
+
+      .col-disc,
+      .col-tax {
+        display: none !important;
+      }
+
+      .col-total {
+        width: 24% !important;
+      }
+    }
+
+    .pro-lower-split {
+      flex-direction: column !important;
+      gap: 10px !important;
+    }
+
+    .pro-payment-comm {
+      padding-top: 10px !important;
+      min-width: 0 !important;
+      width: 100% !important;
+    }
+
+    .comm-main-line {
+      font-size: 0.72rem !important;
+      margin-bottom: 6px !important;
+    }
+
+    .comm-sub-box {
+      font-size: 0.66rem !important;
+      padding: 8px 10px !important;
+      max-width: 100% !important;
+    }
+
+    .pro-totals-box {
+      width: 100% !important;
+      border-top: 1.5px solid #334155 !important;
+    }
+
+    .totals-row {
+      padding: 6px 10px !important;
+      font-size: 0.72rem !important;
+    }
+
+    .totals-grand-row {
+      padding: 8px 10px !important;
+      font-size: 0.8rem !important;
+    }
+
+    .pro-invoice-footer {
+      margin-top: 14px !important;
+      padding-top: 8px !important;
+    }
+
+    .footer-contact-line {
+      font-size: 0.64rem !important;
+      gap: 4px !important;
+    }
+  }
+
   .mobile-summary-header {
     display: flex;
     align-items: center;
@@ -2109,9 +2317,9 @@ td.mobile-tr-summary-cell {
   color: var(--text-muted);
 
   &.badge-emerald {
-    background: rgba(16, 185, 129, 0.1);
+    background: rgba(30, 94, 58, 0.1);
     color: var(--color-primary-text);
-    border: 1px solid rgba(16, 185, 129, 0.2);
+    border: 1px solid rgba(30, 94, 58, 0.2);
   }
   &.badge-amber {
     background: rgba(245, 158, 11, 0.1);
@@ -2269,13 +2477,13 @@ td.mobile-tr-summary-cell {
 
 /* Themed Specialized Cards */
 .mass-balance-card {
-  background: linear-gradient(135deg, rgba(15, 23, 42, 0.9) 0%, rgba(16, 185, 129, 0.08) 100%);
+  background: linear-gradient(135deg, rgba(15, 23, 42, 0.9) 0%, rgba(30, 94, 58, 0.08) 100%);
   border: 1px solid var(--border-subtle);
 }
 
 [data-theme="light"] .mass-balance-card {
   background: linear-gradient(135deg, #ffffff 0%, #f0fdf4 100%);
-  border-color: #a7f3d0;
+  border-color: #d1e7d8;
   box-shadow: var(--shadow-sm);
 }
 
@@ -2291,12 +2499,18 @@ td.mobile-tr-summary-cell {
 }
 
 /* OpenStreetMap White Smooth & Dark Smooth Free Basemap Filters (Only applied to map tiles, keeping pins & polylines full color) */
+.leaflet-layer.osm-tile-white-smooth,
+.osm-tile-white-smooth .leaflet-tile,
 .leaflet-tile.osm-tile-white-smooth {
-  filter: grayscale(100%) brightness(107%) contrast(88%);
+  filter: grayscale(100%) brightness(109%) contrast(86%) !important;
+  -webkit-filter: grayscale(100%) brightness(109%) contrast(86%) !important;
 }
 
+.leaflet-layer.osm-tile-dark-smooth,
+.osm-tile-dark-smooth .leaflet-tile,
 .leaflet-tile.osm-tile-dark-smooth {
-  filter: invert(100%) hue-rotate(180deg) grayscale(80%) brightness(92%) contrast(95%);
+  filter: invert(100%) hue-rotate(180deg) grayscale(80%) brightness(92%) contrast(95%) !important;
+  -webkit-filter: invert(100%) hue-rotate(180deg) grayscale(80%) brightness(92%) contrast(95%) !important;
 }
 
 

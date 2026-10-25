@@ -29,7 +29,9 @@ export const permissionGuard: CanActivateFn = (
     if (requiresDeveloper) {
       const hasCatalogPermission =
         authService.hasModuleAccess('/admin/catalog') ||
+        authService.hasModuleAccess('/admin/backups') ||
         authService.hasPermission('system.catalog') ||
+        authService.hasPermission('system.backups.manage') ||
         authService.hasPermission('roles.manage');
       if (!hasCatalogPermission) {
         notification.warning('Acceso Restringido', 'Esta sección requiere permisos del Catálogo Maestro del Sistema.');

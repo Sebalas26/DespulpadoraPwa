@@ -19,7 +19,7 @@ import { BranchDto } from '../models/auth.models';
 
 /**
  * Unit test suite for `StateService` verifying empty initial state, `refreshAll()` API synchronization,
- * order status transitions, payroll calculations, and shift elapsed hours.
+ * order status transitions, payroll calculations, shift elapsed hours, and client portal CMS administration.
  */
 describe('StateService', () => {
   let service: StateService;
@@ -35,6 +35,9 @@ describe('StateService', () => {
 
     apiSpy = jasmine.createSpyObj<ApiService>('ApiService', [
       'getFruits',
+      'createFruit',
+      'updateFruit',
+      'deleteFruit',
       'getBatches',
       'getOrders',
       'getClients',
@@ -67,6 +70,9 @@ describe('StateService', () => {
     ]);
 
     apiSpy.getFruits.and.returnValue(of([] as FruitDto[]));
+    apiSpy.createFruit.and.returnValue(of({} as FruitDto));
+    apiSpy.updateFruit.and.returnValue(of({} as FruitDto));
+    apiSpy.deleteFruit.and.returnValue(of({}));
     apiSpy.getBatches.and.returnValue(of([] as BatchDto[]));
     apiSpy.getOrders.and.returnValue(of([] as OrderDto[]));
     apiSpy.getClients.and.returnValue(of([] as ClientDto[]));
@@ -208,6 +214,7 @@ describe('StateService', () => {
     expect(service.expenses().length).toBe(0);
     expect(service.paymentMethods().length).toBe(0);
     expect(service.companyInfo().companyName).toBe('');
+    expect(service.portalCmsConfig().heroTitle).toBe('');
   });
 
   it('should synchronize all collections and companySettings on refreshAll even when arrays are empty', () => {
@@ -301,5 +308,33 @@ describe('StateService', () => {
 
     service.updateEmployee(77, { fullName: 'Ana Lopez Updated', baseSalary: 1600000 }).subscribe();
     expect(service.employees()[0].fullName).toBe('Ana Lopez Updated');
+  });
+
+  it('should create, update, delete, and reset client portal catalog cards and CMS config', () => {
+    service.updatePortalCmsConfig({ heroTitle: 'Custom Hero Title' });
+    expect(service.portalCmsConfig().heroTitle).toBe('Custom Hero Title');
+
+    const created = service.createFruitCatalogCard({
+      name: 'Curuba',
+      scientificName: 'Passiflora',
+      description: 'Natural pulp',
+      category: 'Acida',
+      color: '#1e5e3a',
+      imageUrl: '/curuba.jpg',
+      prices: { g140: 1500, g250: 2800, g500: 5000, g1000: 9500 }
+    });
+    expect(service.fruits().length).toBe(1);
+    expect(apiSpy.createFruit).toHaveBeenCalled();
+
+    service.updateFruitCatalogCard(created.id, { name: 'Curuba Especial' }, false);
+    expect(service.fruits()[0].name).toBe('Curuba Especial');
+    expect(apiSpy.updateFruit).toHaveBeenCalled();
+
+    service.deleteFruitCatalogCard(created.id);
+    expect(service.fruits().length).toBe(0);
+    expect(apiSpy.deleteFruit).toHaveBeenCalled();
+
+    service.resetPortalCatalogToDefault();
+    expect(service.portalCmsConfig().heroTitle).toBe('');
   });
 });

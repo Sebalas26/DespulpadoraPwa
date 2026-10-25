@@ -44,7 +44,7 @@ export class AppComponent implements OnInit {
         return;
       }
       const collapsibleEl: HTMLElement | null = target.closest(
-        '.table-responsive tbody tr, .table-container tbody tr, .clients-table tbody tr, .dgl-table tbody tr, .data-table tbody tr, .active-shift-card'
+        '.table-responsive tbody tr, .table-container tbody tr, .clients-table tbody tr, .dgl-table tbody tr, .data-table tbody tr, .active-shift-card, .pm-card, .param-card'
       ) as HTMLElement | null;
       if (
         collapsibleEl &&

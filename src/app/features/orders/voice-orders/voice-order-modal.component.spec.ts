@@ -2,10 +2,9 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { signal } from '@angular/core';
 import { VoiceOrderModalComponent } from './voice-order-modal.component';
 import { StateService } from '../../../core/services/state.service';
-import { FruitConfig } from '../../../core/data/initial-data';
 import { VoiceOrdersService } from '../../../core/services/voice-orders.service';
 import { VoiceOrderMessageDto } from '../../../core/models/voice-order.models';
-import { ClientDto, OrderDto, PaymentMethodDto } from '../../../core/models/business.models';
+import { ClientDto, FruitConfig, OrderDto, PaymentMethodDto } from '../../../core/models/business.models';
 
 /**
  * Unit tests for VoiceOrderModalComponent verifying zeroed defaults, dynamic fruit price lookup, and order submission.

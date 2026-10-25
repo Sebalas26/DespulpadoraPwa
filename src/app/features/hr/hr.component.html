@@ -923,7 +923,7 @@
       <div style="display: grid; grid-template-columns: 1.2fr 1fr; gap: 12px;">
         <div class="form-group">
           <label class="form-label">Salario Básico Mensual (COP) *</label>
-          <input type="number" step="50000" class="form-control" [ngModel]="newSalary()" (ngModelChange)="newSalary.set($event)" />
+          <input type="text" appCopInput class="form-control" style="font-weight: 800; color: #0f172a;" [ngModel]="newSalary()" (ngModelChange)="newSalary.set($event)" />
         </div>
         <div class="form-group">
           <label class="form-label">Teléfono Móvil</label>
@@ -1007,18 +1007,18 @@
         </div>
         <div class="form-group">
           <label class="form-label">Horas Extras / Recargos ($)</label>
-          <input type="number" step="10000" class="form-control" [ngModel]="settleOvertime()" (ngModelChange)="settleOvertime.set($event)" />
+          <input type="text" appCopInput class="form-control" [ngModel]="settleOvertime()" (ngModelChange)="settleOvertime.set($event)" />
         </div>
       </div>
 
       <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
         <div class="form-group">
           <label class="form-label">Otras Bonificaciones ($)</label>
-          <input type="number" step="10000" class="form-control" [ngModel]="settleBonuses()" (ngModelChange)="settleBonuses.set($event)" />
+          <input type="text" appCopInput class="form-control" [ngModel]="settleBonuses()" (ngModelChange)="settleBonuses.set($event)" />
         </div>
         <div class="form-group">
           <label class="form-label">Deducciones / Anticipos ($)</label>
-          <input type="number" step="10000" class="form-control" [ngModel]="settleDeductions()" (ngModelChange)="settleDeductions.set($event)" />
+          <input type="text" appCopInput class="form-control" [ngModel]="settleDeductions()" (ngModelChange)="settleDeductions.set($event)" />
         </div>
       </div>
     </div>

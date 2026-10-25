@@ -8,6 +8,7 @@ import { VoiceOrdersService } from '../../core/services/voice-orders.service';
 import { GeocodingService, GeocodedLocation } from '../../core/services/geocoding.service';
 import { EmployeeDto, FruitConfig, OrderDto, OrderItemDto, OrderStatus } from '../../core/models/business.models';
 import { DeliveryMapComponent } from './delivery-map.component';
+import { CopCurrencyInputDirective } from '../../shared/directives/cop-currency-input.directive';
 import confetti from 'canvas-confetti';
 import * as L from 'leaflet';
 
@@ -51,7 +52,7 @@ export interface ClientSuggestionEntry {
 @Component({
   selector: 'app-orders',
   standalone: true,
-  imports: [CommonModule, FormsModule, DeliveryMapComponent],
+  imports: [CommonModule, FormsModule, DeliveryMapComponent, CopCurrencyInputDirective],
   templateUrl: './orders.component.html',
   styleUrls: ['./orders.component.scss']
 })
@@ -106,7 +107,14 @@ export class OrdersComponent {
   private manualAddressDebounce?: ReturnType<typeof setTimeout>;
   readonly isManualOrderPaid = signal<boolean>(false);
   readonly manualPaymentMethod = signal<string>('');
-  readonly activePaymentMethods = computed(() => this.stateService.activePaymentMethods());
+  readonly activePaymentMethods = computed(() => {
+    try {
+      return this.stateService.activePaymentMethods();
+    } catch (error: unknown) {
+      console.error('Error computing active payment methods:', error);
+      return [];
+    }
+  });
   readonly manualNotes = signal<string>('');
   readonly manualItems = signal<ManualOrderFormItem[]>([]);
 
@@ -134,238 +142,345 @@ export class OrdersComponent {
   readonly editingOrderNumber = signal<string>('');
 
   readonly weekDays = computed(() => {
-    const pickingOrders = this.stateService
-      .orders()
-      .filter((o: OrderDto) => o.status === 'PENDING' || o.status === 'PICKING');
-    const activeDay = this.selectedDay();
+    try {
+      const pickingOrders = this.stateService
+        .orders()
+        .filter((o: OrderDto) => o.status === 'PENDING' || o.status === 'PICKING');
+      const activeDay = this.selectedDay();
 
-    return this.weekDayConfigs.map(cfg => {
-      const count = pickingOrders.filter((o: OrderDto) => this.getOrderDay(o) === cfg.name).length;
-      const active = activeDay === cfg.name;
-      return {
-        name: cfg.name,
-        count,
-        color: cfg.color,
-        active,
-        hasIndicator: count > 0
-      };
-    });
+      return this.weekDayConfigs.map(cfg => {
+        const count = pickingOrders.filter((o: OrderDto) => this.getOrderDay(o) === cfg.name).length;
+        const active = activeDay === cfg.name;
+        return {
+          name: cfg.name,
+          count,
+          color: cfg.color,
+          active,
+          hasIndicator: count > 0
+        };
+      });
+    } catch (error: unknown) {
+      console.error('Error computing week days:', error);
+      return [];
+    }
   });
 
-  readonly pickingOrdersCount = computed(() =>
-    this.stateService.orders().filter((o: OrderDto) => o.status === 'PENDING' || o.status === 'PICKING').length
-  );
-
-  readonly billedOrdersCount = computed(() =>
-    this.stateService.orders().filter((o: OrderDto) => o.status === 'BILLED').length
-  );
-
-  readonly dispatchedOrdersCount = computed(() =>
-    this.stateService.orders().filter((o: OrderDto) => o.status === 'DISPATCHED').length
-  );
-
-  readonly pulpSummaryText = computed(() => {
-    const activeDay = this.selectedDay();
-    const pickingOrders = this.stateService
-      .orders()
-      .filter(
-        (o: OrderDto) =>
-          (o.status === 'PENDING' || o.status === 'PICKING') &&
-          this.getOrderDay(o) === activeDay
-      );
-
-    const totalsMap = new Map<string, number>();
-    pickingOrders.forEach((order: OrderDto) => {
-      order.items.forEach((item: OrderItemDto) => {
-        const key = `${item.fruitName} (${item.grammage}g)`;
-        totalsMap.set(key, (totalsMap.get(key) || 0) + item.quantity);
-      });
-    });
-
-    if (totalsMap.size === 0) {
-      return `0 unidades pendientes para ${activeDay}`;
+  readonly pickingOrdersCount = computed<number>(() => {
+    try {
+      return this.stateService.orders().filter((o: OrderDto) => o.status === 'PENDING' || o.status === 'PICKING').length;
+    } catch (error: unknown) {
+      console.error('Error computing picking orders count:', error);
+      return 0;
     }
+  });
 
-    const parts: string[] = [];
-    totalsMap.forEach((qty: number, label: string) => {
-      parts.push(`${qty}x ${label}`);
-    });
+  readonly billedOrdersCount = computed<number>(() => {
+    try {
+      return this.stateService.orders().filter((o: OrderDto) => o.status === 'BILLED').length;
+    } catch (error: unknown) {
+      console.error('Error computing billed orders count:', error);
+      return 0;
+    }
+  });
 
-    return parts.join(', ') + '...';
+  readonly dispatchedOrdersCount = computed<number>(() => {
+    try {
+      return this.stateService.orders().filter((o: OrderDto) => o.status === 'DISPATCHED').length;
+    } catch (error: unknown) {
+      console.error('Error computing dispatched orders count:', error);
+      return 0;
+    }
+  });
+
+  readonly pulpSummaryText = computed<string>(() => {
+    try {
+      const activeDay = this.selectedDay();
+      const pickingOrders = this.stateService
+        .orders()
+        .filter(
+          (o: OrderDto) =>
+            (o.status === 'PENDING' || o.status === 'PICKING') &&
+            this.getOrderDay(o) === activeDay
+        );
+
+      const totalsMap = new Map<string, number>();
+      pickingOrders.forEach((order: OrderDto) => {
+        order.items.forEach((item: OrderItemDto) => {
+          const key = `${item.fruitName} (${item.grammage}g)`;
+          totalsMap.set(key, (totalsMap.get(key) || 0) + item.quantity);
+        });
+      });
+
+      if (totalsMap.size === 0) {
+        return `0 unidades pendientes para ${activeDay}`;
+      }
+
+      const parts: string[] = [];
+      totalsMap.forEach((qty: number, label: string) => {
+        parts.push(`${qty}x ${label}`);
+      });
+
+      return parts.join(', ') + '...';
+    } catch (error: unknown) {
+      console.error('Error computing pulp summary text:', error);
+      return '';
+    }
   });
 
   readonly activeBillingOrder = computed<OrderDto | null>(() => {
-    const explicit = this.selectedOrderForInvoice();
-    const list = this.tabOrders();
-    if (explicit && list.some((o: OrderDto) => o.orderId === explicit.orderId)) {
-      return explicit;
+    try {
+      const explicit = this.selectedOrderForInvoice();
+      const list = this.tabOrders();
+      if (explicit && list.some((o: OrderDto) => o.orderId === explicit.orderId)) {
+        return explicit;
+      }
+      return list[0] || this.stateService.orders()[0] || null;
+    } catch (error: unknown) {
+      console.error('Error computing active billing order:', error);
+      return null;
     }
-    return list[0] || this.stateService.orders()[0] || null;
   });
 
   readonly allKnownClients = computed<ClientSuggestionEntry[]>(() => {
-    const map = new Map<string, ClientSuggestionEntry>();
-    this.stateService.clients().forEach(c => {
-      if (c.fullName) {
-        map.set(c.fullName.toLowerCase().trim(), {
-          fullName: c.fullName,
-          phone: c.phone || '',
-          address: c.address || ''
-        });
-      }
-    });
-    this.stateService.orders().forEach((o: OrderDto) => {
-      if (o.clientName) {
-        const key = o.clientName.toLowerCase().trim();
-        if (!map.has(key)) {
-          map.set(key, {
-            fullName: o.clientName,
-            phone: o.clientPhone || '',
-            address: o.clientAddress || ''
+    try {
+      const map = new Map<string, ClientSuggestionEntry>();
+      this.stateService.clients().forEach(c => {
+        if (c.fullName) {
+          map.set(c.fullName.toLowerCase().trim(), {
+            fullName: c.fullName,
+            phone: c.phone || '',
+            address: c.address || ''
           });
         }
-      }
-    });
-    return Array.from(map.values());
+      });
+      this.stateService.orders().forEach((o: OrderDto) => {
+        if (o.clientName) {
+          const key = o.clientName.toLowerCase().trim();
+          if (!map.has(key)) {
+            map.set(key, {
+              fullName: o.clientName,
+              phone: o.clientPhone || '',
+              address: o.clientAddress || ''
+            });
+          }
+        }
+      });
+      return Array.from(map.values());
+    } catch (error: unknown) {
+      console.error('Error computing all known clients:', error);
+      return [];
+    }
   });
 
   readonly filteredClientSuggestions = computed<ClientSuggestionEntry[]>(() => {
-    const query = this.manualClientName().trim().toLowerCase();
-    if (!query) return [];
-    return this.allKnownClients().filter((c: ClientSuggestionEntry) =>
-      c.fullName.toLowerCase().includes(query) ||
-      c.phone.toLowerCase().includes(query) ||
-      c.address.toLowerCase().includes(query)
-    );
+    try {
+      const query = this.manualClientName().trim().toLowerCase();
+      if (!query) return [];
+      return this.allKnownClients().filter((c: ClientSuggestionEntry) =>
+        c.fullName.toLowerCase().includes(query) ||
+        c.phone.toLowerCase().includes(query) ||
+        c.address.toLowerCase().includes(query)
+      );
+    } catch (error: unknown) {
+      console.error('Error computing filtered client suggestions:', error);
+      return [];
+    }
   });
 
   readonly isManualOrderValid = computed<boolean>(() => {
-    const nameOk = this.manualClientName().trim().length >= 2;
-    const phoneOk = this.manualPhone().trim().length >= 7;
-    const addrOk = this.manualAddress().trim().length >= 3;
-    const items = this.manualItems();
-    const itemsOk = items.length > 0 && items.every((it: ManualOrderFormItem) => Number(it.quantity) > 0 && Number(it.unitPrice) > 0);
-    const paidOk = !this.isManualOrderPaid() || (this.manualPaymentMethod().trim().length > 0);
-    return nameOk && phoneOk && addrOk && itemsOk && paidOk;
+    try {
+      const nameOk = this.manualClientName().trim().length >= 2;
+      const phoneOk = this.manualPhone().trim().length >= 7;
+      const addrOk = this.manualAddress().trim().length >= 3;
+      const items = this.manualItems();
+      const itemsOk = items.length > 0 && items.every((it: ManualOrderFormItem) => Number(it.quantity) > 0 && Number(it.unitPrice) > 0);
+      const paidOk = !this.isManualOrderPaid() || (this.manualPaymentMethod().trim().length > 0);
+      return nameOk && phoneOk && addrOk && itemsOk && paidOk;
+    } catch (error: unknown) {
+      console.error('Error computing manual order validity:', error);
+      return false;
+    }
   });
 
   readonly tabOrders = computed<OrderDto[]>(() => {
-    const tab = this.activeSubTab();
-    const search = this.searchTerm().toLowerCase();
-    const activeDay = this.selectedDay();
-    let list = this.stateService.orders();
+    try {
+      const tab = this.activeSubTab();
+      const search = this.searchTerm().toLowerCase();
+      const activeDay = this.selectedDay();
+      let list = this.stateService.orders();
 
-    if (tab === 'picking') {
-      list = list.filter(
-        (o: OrderDto) =>
-          (o.status === 'PENDING' || o.status === 'PICKING') &&
-          this.getOrderDay(o) === activeDay
-      );
-    } else if (tab === 'facturacion') {
-      const billedOrPicking = list.filter((o: OrderDto) => o.status === 'BILLED' || o.status === 'PICKING');
-      list = billedOrPicking.length > 0 ? billedOrPicking : list.filter((o: OrderDto) => o.status !== 'CANCELLED');
-    } else if (tab === 'despachos') {
-      list = list.filter((o: OrderDto) => o.status === 'DISPATCHED' || o.status === 'DELIVERED');
+      if (tab === 'picking') {
+        list = list.filter(
+          (o: OrderDto) =>
+            (o.status === 'PENDING' || o.status === 'PICKING') &&
+            this.getOrderDay(o) === activeDay
+        );
+      } else if (tab === 'facturacion') {
+        const billedOrPicking = list.filter((o: OrderDto) => o.status === 'BILLED' || o.status === 'PICKING');
+        list = billedOrPicking.length > 0 ? billedOrPicking : list.filter((o: OrderDto) => o.status !== 'CANCELLED');
+      } else if (tab === 'despachos') {
+        list = list.filter((o: OrderDto) => o.status === 'DISPATCHED' || o.status === 'DELIVERED');
+      }
+
+      if (search) {
+        list = list.filter((o: OrderDto) =>
+          o.orderNumber.toLowerCase().includes(search) ||
+          o.clientName.toLowerCase().includes(search) ||
+          o.clientPhone?.toLowerCase().includes(search)
+        );
+      }
+
+      return list;
+    } catch (error: unknown) {
+      console.error('Error computing tab orders:', error);
+      return [];
     }
-
-    if (search) {
-      list = list.filter((o: OrderDto) =>
-        o.orderNumber.toLowerCase().includes(search) ||
-        o.clientName.toLowerCase().includes(search) ||
-        o.clientPhone?.toLowerCase().includes(search)
-      );
-    }
-
-    return list;
   });
 
   readonly allHistoryOrders = computed<OrderDto[]>(() => {
-    return this.stateService.orders().filter((o: OrderDto) => o.status !== 'CANCELLED');
+    try {
+      return this.stateService.orders().filter((o: OrderDto) => o.status !== 'CANCELLED');
+    } catch (error: unknown) {
+      console.error('Error computing all history orders:', error);
+      return [];
+    }
   });
 
-  readonly totalHistoryOrdersCount = computed<number>(() => this.allHistoryOrders().length);
+  readonly totalHistoryOrdersCount = computed<number>(() => {
+    try {
+      return this.allHistoryOrders().length;
+    } catch (error: unknown) {
+      console.error('Error computing total history orders count:', error);
+      return 0;
+    }
+  });
 
-  readonly deliveredHistoryOrdersCount = computed<number>(() =>
-    this.allHistoryOrders().filter((o: OrderDto) => o.status === 'DELIVERED').length
-  );
+  readonly deliveredHistoryOrdersCount = computed<number>(() => {
+    try {
+      return this.allHistoryOrders().filter((o: OrderDto) => o.status === 'DELIVERED').length;
+    } catch (error: unknown) {
+      console.error('Error computing delivered history orders count:', error);
+      return 0;
+    }
+  });
 
-  readonly inTransitHistoryOrdersCount = computed<number>(() =>
-    this.allHistoryOrders().filter((o: OrderDto) => o.status === 'DISPATCHED').length
-  );
+  readonly inTransitHistoryOrdersCount = computed<number>(() => {
+    try {
+      return this.allHistoryOrders().filter((o: OrderDto) => o.status === 'DISPATCHED').length;
+    } catch (error: unknown) {
+      console.error('Error computing in-transit history orders count:', error);
+      return 0;
+    }
+  });
 
-  readonly unassignedHistoryOrdersCount = computed<number>(() =>
-    this.allHistoryOrders().filter((o: OrderDto) => o.status !== 'DELIVERED' && o.status !== 'DISPATCHED').length
-  );
+  readonly unassignedHistoryOrdersCount = computed<number>(() => {
+    try {
+      return this.allHistoryOrders().filter((o: OrderDto) => o.status !== 'DELIVERED' && o.status !== 'DISPATCHED').length;
+    } catch (error: unknown) {
+      console.error('Error computing unassigned history orders count:', error);
+      return 0;
+    }
+  });
 
-  readonly totalDeliveredCash = computed<number>(() =>
-    this.allHistoryOrders()
-      .filter((o: OrderDto) => o.status === 'DELIVERED')
-      .reduce((sum: number, o: OrderDto) => sum + (o.totalAmount || 0), 0)
-  );
+  readonly totalDeliveredCash = computed<number>(() => {
+    try {
+      return this.allHistoryOrders()
+        .filter((o: OrderDto) => o.status === 'DELIVERED')
+        .reduce((sum: number, o: OrderDto) => sum + (o.totalAmount || 0), 0);
+    } catch (error: unknown) {
+      console.error('Error computing total delivered cash:', error);
+      return 0;
+    }
+  });
 
-  readonly totalDayExpectedCash = computed<number>(() =>
-    this.allHistoryOrders().reduce((sum: number, o: OrderDto) => sum + (o.totalAmount || 0), 0)
-  );
+  readonly totalDayExpectedCash = computed<number>(() => {
+    try {
+      return this.allHistoryOrders().reduce((sum: number, o: OrderDto) => sum + (o.totalAmount || 0), 0);
+    } catch (error: unknown) {
+      console.error('Error computing total day expected cash:', error);
+      return 0;
+    }
+  });
 
   readonly filteredHistoryOrders = computed<OrderDto[]>(() => {
-    const filter = this.historyFilter();
-    const query = this.historySearchQuery().trim().toLowerCase();
-    let list = this.allHistoryOrders();
+    try {
+      const filter = this.historyFilter();
+      const query = this.historySearchQuery().trim().toLowerCase();
+      let list = this.allHistoryOrders();
 
-    if (filter === 'DELIVERED') {
-      list = list.filter((o: OrderDto) => o.status === 'DELIVERED');
-    } else if (filter === 'DISPATCHED') {
-      list = list.filter((o: OrderDto) => o.status === 'DISPATCHED');
-    } else if (filter === 'UNASSIGNED') {
-      list = list.filter((o: OrderDto) => o.status !== 'DELIVERED' && o.status !== 'DISPATCHED');
+      if (filter === 'DELIVERED') {
+        list = list.filter((o: OrderDto) => o.status === 'DELIVERED');
+      } else if (filter === 'DISPATCHED') {
+        list = list.filter((o: OrderDto) => o.status === 'DISPATCHED');
+      } else if (filter === 'UNASSIGNED') {
+        list = list.filter((o: OrderDto) => o.status !== 'DELIVERED' && o.status !== 'DISPATCHED');
+      }
+
+      if (query) {
+        list = list.filter((o: OrderDto) => {
+          const courier = this.getCourierForOrder(o);
+          const orderNum = o.orderNumber ? o.orderNumber.toLowerCase() : '';
+          const client = o.clientName ? o.clientName.toLowerCase() : '';
+          const addr = o.clientAddress ? o.clientAddress.toLowerCase() : '';
+          const phone = o.clientPhone ? o.clientPhone.toLowerCase() : '';
+          const courierName = courier?.name?.toLowerCase() || '';
+          const routeCode = courier?.routeCode?.toLowerCase() || '';
+          const plate = courier?.vehiclePlate?.toLowerCase() || '';
+          return (
+            orderNum.includes(query) ||
+            client.includes(query) ||
+            addr.includes(query) ||
+            phone.includes(query) ||
+            courierName.includes(query) ||
+            routeCode.includes(query) ||
+            plate.includes(query)
+          );
+        });
+      }
+
+      return list;
+    } catch (error: unknown) {
+      console.error('Error computing filtered history orders:', error);
+      return [];
     }
-
-    if (query) {
-      list = list.filter((o: OrderDto) => {
-        const courier = this.getCourierForOrder(o);
-        const orderNum = o.orderNumber ? o.orderNumber.toLowerCase() : '';
-        const client = o.clientName ? o.clientName.toLowerCase() : '';
-        const addr = o.clientAddress ? o.clientAddress.toLowerCase() : '';
-        const phone = o.clientPhone ? o.clientPhone.toLowerCase() : '';
-        const courierName = courier?.name?.toLowerCase() || '';
-        const routeCode = courier?.routeCode?.toLowerCase() || '';
-        const plate = courier?.vehiclePlate?.toLowerCase() || '';
-        return (
-          orderNum.includes(query) ||
-          client.includes(query) ||
-          addr.includes(query) ||
-          phone.includes(query) ||
-          courierName.includes(query) ||
-          routeCode.includes(query) ||
-          plate.includes(query)
-        );
-      });
-    }
-
-    return list;
   });
 
   readonly historyTotalPages = computed<number>(() => {
-    const total = this.filteredHistoryOrders().length;
-    return Math.max(1, Math.ceil(total / this.historyPageSize()));
+    try {
+      const total = this.filteredHistoryOrders().length;
+      return Math.max(1, Math.ceil(total / this.historyPageSize()));
+    } catch (error: unknown) {
+      console.error('Error computing history total pages:', error);
+      return 1;
+    }
   });
 
   readonly paginatedHistoryOrders = computed<OrderDto[]>(() => {
-    const list = this.filteredHistoryOrders();
-    const page = this.historyCurrentPage();
-    const size = this.historyPageSize();
-    const start = (page - 1) * size;
-    return list.slice(start, start + size);
+    try {
+      const list = this.filteredHistoryOrders();
+      const page = this.historyCurrentPage();
+      const size = this.historyPageSize();
+      const start = (page - 1) * size;
+      return list.slice(start, start + size);
+    } catch (error: unknown) {
+      console.error('Error computing paginated history orders:', error);
+      return [];
+    }
   });
 
   readonly historyPaginationInfo = computed<{ start: number; end: number; total: number }>(() => {
-    const total = this.filteredHistoryOrders().length;
-    const page = this.historyCurrentPage();
-    const size = this.historyPageSize();
-    if (total === 0) return { start: 0, end: 0, total: 0 };
-    const start = (page - 1) * size + 1;
-    const end = Math.min(page * size, total);
-    return { start, end, total };
+    try {
+      const total = this.filteredHistoryOrders().length;
+      const page = this.historyCurrentPage();
+      const size = this.historyPageSize();
+      if (total === 0) return { start: 0, end: 0, total: 0 };
+      const start = (page - 1) * size + 1;
+      const end = Math.min(page * size, total);
+      return { start, end, total };
+    } catch (error: unknown) {
+      console.error('Error computing history pagination info:', error);
+      return { start: 0, end: 0, total: 0 };
+    }
   });
 
   readonly historyPagesList = computed<number[]>(() => {
@@ -500,10 +615,10 @@ export class OrdersComponent {
    */
   getOrderDay(order: OrderDto): string {
     try {
-      return order.scheduledDay || 'Jueves';
+      return order.scheduledDay || '';
     } catch (error: unknown) {
       console.error('Error getting order day:', error);
-      return 'Jueves';
+      return '';
     }
   }
 
@@ -813,12 +928,12 @@ export class OrdersComponent {
         zoomControl: true
       });
 
-      L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}', {
         maxZoom: 20,
         maxNativeZoom: 19,
-        className: 'osm-tile-white-smooth',
-        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        attribution: 'Tiles &copy; Esri &mdash; Esri, HERE, Garmin, OpenStreetMap'
       }).addTo(this.pickerMap);
+      this.pickerMap.getContainer().style.backgroundColor = '#f4f6f8';
 
       const customIcon = L.divIcon({
         className: 'picker-pin-wrapper',

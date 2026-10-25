@@ -3,9 +3,9 @@ import { provideRouter } from '@angular/router';
 import { signal } from '@angular/core';
 import { ClientPortalComponent } from './client-portal.component';
 import { StateService } from '../../core/services/state.service';
-import { DEFAULT_COMPANY_CONFIG, FruitConfig } from '../../core/data/initial-data';
+import { DEFAULT_COMPANY_CONFIG, DEFAULT_PORTAL_CMS_CONFIG } from '../../core/data/initial-data';
 import { NotificationService } from '../../core/services/notification.service';
-import { ClientDto, CompanyConfig, OrderDto, PaymentMethodDto, ProductVariantDto } from '../../core/models/business.models';
+import { ClientDto, CompanyConfig, FruitConfig, OrderDto, PaymentMethodDto, PortalCmsConfig, ProductVariantDto } from '../../core/models/business.models';
 
 /**
  * Unit tests for ClientPortalComponent verifying empty client defaults, dynamic WhatsApp link, and real pricing.
@@ -83,6 +83,7 @@ describe('ClientPortalComponent', () => {
       paymentMethods: mockPaymentMethods,
       activePaymentMethods: mockPaymentMethods,
       companyInfo: mockCompanyInfo,
+      portalCmsConfig: signal<PortalCmsConfig>(DEFAULT_PORTAL_CMS_CONFIG) as unknown as StateService['portalCmsConfig'],
       createOrder: createOrderSpy
     };
 

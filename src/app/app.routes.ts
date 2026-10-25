@@ -42,6 +42,11 @@ export const routes: Routes = [
     loadComponent: () => import('./features/client-portal/client-portal.component').then(m => m.ClientPortalComponent)
   },
   {
+    path: 'portal-cliente',
+    redirectTo: 'portal-clientes',
+    pathMatch: 'full'
+  },
+  {
     path: 'pedidos-cliente',
     redirectTo: 'portal-clientes',
     pathMatch: 'full'
@@ -58,6 +63,14 @@ export const routes: Routes = [
     children: [
       { path: '', redirectTo: 'dashboard', pathMatch: 'full' },
       { path: 'dashboard', component: DashboardComponent, canActivate: [permissionGuard] },
+      {
+        path: 'portal-admin',
+        loadComponent: () =>
+          import('./features/client-portal/client-portal-admin.component').then(
+            m => m.ClientPortalAdminComponent
+          ),
+        canActivate: [permissionGuard]
+      },
       { path: 'calculator', component: CalculatorComponent, canActivate: [permissionGuard] },
       { path: 'orders', component: OrdersComponent, canActivate: [permissionGuard] },
       { path: 'shifts', component: ShiftsComponent, canActivate: [permissionGuard] },

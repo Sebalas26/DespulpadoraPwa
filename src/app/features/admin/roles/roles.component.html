@@ -31,7 +31,7 @@
             (click)="selectRole(role.roleId)"
             style="display: flex; align-items: center; justify-content: space-between; padding: 12px 14px; border-radius: var(--radius-sm); border: 1.5px solid; cursor: pointer; text-align: left; transition: all 0.2s;"
             [style.borderColor]="selectedRoleId() === role.roleId ? 'var(--color-primary)' : 'var(--border-subtle)'"
-            [style.background]="selectedRoleId() === role.roleId ? 'rgba(16, 185, 129, 0.1)' : 'transparent'"
+            [style.background]="selectedRoleId() === role.roleId ? 'rgba(30, 94, 58, 0.1)' : 'transparent'"
           >
             <div style="flex: 1; min-width: 0; padding-right: 8px;">
               <div style="display: flex; align-items: center; gap: 6px;">
@@ -218,7 +218,7 @@
                   <label
                     style="display: flex; align-items: flex-start; gap: 10px; padding: 10px 12px; border-radius: var(--radius-sm); border: 1px solid; transition: all 0.15s; cursor: pointer;"
                     [style.borderColor]="assignedActionIds().has(action.actionId) ? 'var(--color-primary)' : 'var(--border-subtle)'"
-                    [style.background]="assignedActionIds().has(action.actionId) ? 'rgba(16, 185, 129, 0.05)' : 'transparent'"
+                    [style.background]="assignedActionIds().has(action.actionId) ? 'rgba(30, 94, 58, 0.05)' : 'transparent'"
                   >
                     <input
                       type="checkbox"

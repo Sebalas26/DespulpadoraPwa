@@ -1,4 +1,9 @@
-<div style="display: flex; flex-direction: column; gap: 20px;">
+<div
+  class="settings-root-container"
+  [class.mobile-config-hub-active]="activeTab() !== 'inventory' && !mobileConfigModuleSelected()"
+  [class.mobile-config-module-active]="activeTab() !== 'inventory' && mobileConfigModuleSelected()"
+  style="display: flex; flex-direction: column; gap: 20px;"
+>
 
   @if (activeTab() === 'inventory') {
     
@@ -29,106 +34,270 @@
       </button>
     </div>
   } @else {
-    
-    <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 16px;">
-      <div>
-        <h1 style="font-size: 1.85rem; font-weight: 800; margin-bottom: 4px; display: flex; align-items: center; gap: 10px;">
-          <span>Configuración de la Planta & Sistema</span>
-        </h1>
-        <p style="color: var(--text-muted); font-size: 0.92rem; margin: 0;">
-          Información general de la empresa para facturación, cuentas de usuarios y roles de seguridad.
-        </p>
+    <div class="desktop-config-header-nav">
+      <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 16px; margin-bottom: 16px;">
+        <div>
+          <h1 style="font-size: 1.85rem; font-weight: 800; margin-bottom: 4px; display: flex; align-items: center; gap: 10px;">
+            <span>Configuración de la Planta & Sistema</span>
+          </h1>
+          <p style="color: var(--text-muted); font-size: 0.92rem; margin: 0;">
+            Información general de la empresa para facturación, cuentas de usuarios y roles de seguridad.
+          </p>
+        </div>
       </div>
-    </div>
 
-    
-    <div class="dgl-subnav-bar no-print" style="margin-bottom: 8px;">
-      <button
-        type="button"
-        class="dgl-subnav-btn"
-        [class.active]="activeTab() === 'general'"
-        (click)="activeTab.set('general')"
-      >
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
-          <line x1="8" y1="21" x2="16" y2="21"></line>
-          <line x1="12" y1="17" x2="12" y2="21"></line>
-        </svg>
-        <span>General (Empresa & Facturación)</span>
-      </button>
-
-      <button
-        type="button"
-        class="dgl-subnav-btn"
-        [class.active]="activeTab() === 'users'"
-        (click)="activeTab.set('users')"
-      >
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
-          <circle cx="9" cy="7" r="4"></circle>
-          <path d="M22 21v-2a4 4 0 0 0-3-3.87"></path>
-          <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
-        </svg>
-        <span>Usuarios del Sistema</span>
-      </button>
-
-      <button
-        type="button"
-        class="dgl-subnav-btn"
-        [class.active]="activeTab() === 'roles'"
-        (click)="activeTab.set('roles')"
-      >
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
-          <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
-        </svg>
-        <span>Roles & Permisos (RBAC)</span>
-      </button>
-
-      <button
-        type="button"
-        class="dgl-subnav-btn"
-        [class.active]="activeTab() === 'parameters'"
-        (click)="activeTab.set('parameters')"
-      >
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <circle cx="12" cy="12" r="3"></circle>
-          <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
-        </svg>
-        <span>Parámetros del Sistema</span>
-      </button>
-
-      @if (authService.isSystemDeveloper()) {
+      <div class="dgl-subnav-bar no-print" style="margin-bottom: 8px;">
         <button
           type="button"
           class="dgl-subnav-btn"
-          [class.active]="activeTab() === 'catalog'"
-          (click)="activeTab.set('catalog')"
+          [class.active]="activeTab() === 'general'"
+          (click)="activeTab.set('general')"
         >
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <rect x="4" y="4" width="16" height="16" rx="2" ry="2"></rect>
-            <rect x="9" y="9" width="6" height="6"></rect>
+            <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
+            <line x1="8" y1="21" x2="16" y2="21"></line>
+            <line x1="12" y1="17" x2="12" y2="21"></line>
           </svg>
-          <span>Catálogo Maestro (Módulos & Acciones)</span>
+          <span>General (Empresa & Facturación)</span>
         </button>
-      }
 
-      @if (activeTab() === 'general') {
         <button
           type="button"
-          class="btn btn-outline"
-          (click)="showInvoicePreviewModal.set(true)"
-          style="margin-left: auto; gap: 8px; font-size: 0.85rem; border-color: #10b981; color: #047857; background: #ecfdf5; font-weight: 700; flex-shrink: 0;"
-          title="Ver cómo queda la Factura de Venta con estos datos"
+          class="dgl-subnav-btn"
+          [class.active]="activeTab() === 'users'"
+          (click)="activeTab.set('users')"
         >
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
-            <circle cx="12" cy="12" r="3"></circle>
+            <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
+            <circle cx="9" cy="7" r="4"></circle>
+            <path d="M22 21v-2a4 4 0 0 0-3-3.87"></path>
+            <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
           </svg>
-          <span>Ver Vista Previa de Factura</span>
+          <span>Usuarios del Sistema</span>
         </button>
-      }
+
+        <button
+          type="button"
+          class="dgl-subnav-btn"
+          [class.active]="activeTab() === 'roles'"
+          (click)="activeTab.set('roles')"
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+            <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+          </svg>
+          <span>Roles & Permisos (RBAC)</span>
+        </button>
+
+        @if (authService.isSystemDeveloper()) {
+          <button
+            type="button"
+            class="dgl-subnav-btn"
+            [class.active]="activeTab() === 'catalog'"
+            (click)="activeTab.set('catalog')"
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="4" y="4" width="16" height="16" rx="2" ry="2"></rect>
+              <rect x="9" y="9" width="6" height="6"></rect>
+            </svg>
+            <span>Catálogo Maestro (Módulos & Acciones)</span>
+          </button>
+        }
+
+        <button
+          type="button"
+          class="dgl-subnav-btn"
+          [class.active]="activeTab() === 'parameters'"
+          (click)="activeTab.set('parameters')"
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="3"></circle>
+            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+          </svg>
+          <span>Parámetros del Sistema</span>
+        </button>
+
+        @if (activeTab() === 'general') {
+          <button
+            type="button"
+            class="btn btn-outline"
+            (click)="showInvoicePreviewModal.set(true)"
+            style="margin-left: auto; gap: 8px; font-size: 0.85rem; border-color: #1e5e3a; color: #1e5e3a; background: #ecfdf5; font-weight: 700; flex-shrink: 0;"
+            title="Ver cómo queda la Factura de Venta con estos datos"
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+              <circle cx="12" cy="12" r="3"></circle>
+            </svg>
+            <span>Ver Vista Previa de Factura</span>
+          </button>
+        }
+      </div>
     </div>
+
+    @if (!mobileConfigModuleSelected()) {
+      <div class="mobile-config-hub-view no-print">
+        <div class="mobile-config-hub-header">
+          <h1 class="mobile-config-hub-title">Configuración de la Planta & Sistema</h1>
+          <p class="mobile-config-hub-subtitle">
+            Información general de la empresa para facturación, cuentas de usuarios y roles de seguridad.
+          </p>
+        </div>
+
+        <div class="mobile-config-hub-list">
+          <button
+            type="button"
+            class="mobile-config-hub-item"
+            (click)="openMobileConfigModule('general')"
+          >
+            <span class="hub-item-left">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
+                <line x1="8" y1="21" x2="16" y2="21"></line>
+                <line x1="12" y1="17" x2="12" y2="21"></line>
+              </svg>
+              <span class="hub-item-title">General (Empresa & Facturación)</span>
+            </span>
+            <span class="hub-item-chevron">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="9 18 15 12 9 6"></polyline>
+              </svg>
+            </span>
+          </button>
+
+          <button
+            type="button"
+            class="mobile-config-hub-item"
+            (click)="openMobileConfigModule('users')"
+          >
+            <span class="hub-item-left">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
+                <circle cx="9" cy="7" r="4"></circle>
+                <path d="M22 21v-2a4 4 0 0 0-3-3.87"></path>
+                <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+              </svg>
+              <span class="hub-item-title">Usuarios del Sistema</span>
+            </span>
+            <span class="hub-item-chevron">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="9 18 15 12 9 6"></polyline>
+              </svg>
+            </span>
+          </button>
+
+          <button
+            type="button"
+            class="mobile-config-hub-item"
+            (click)="openMobileConfigModule('roles')"
+          >
+            <span class="hub-item-left">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+              </svg>
+              <span class="hub-item-title">Roles & Permisos (RBAC)</span>
+            </span>
+            <span class="hub-item-chevron">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="9 18 15 12 9 6"></polyline>
+              </svg>
+            </span>
+          </button>
+
+          @if (authService.isSystemDeveloper()) {
+            <button
+              type="button"
+              class="mobile-config-hub-item"
+              (click)="openMobileConfigModule('catalog')"
+            >
+              <span class="hub-item-left">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="4" y="4" width="16" height="16" rx="2" ry="2"></rect>
+                  <rect x="9" y="9" width="6" height="6"></rect>
+                </svg>
+                <span class="hub-item-title">Catálogo Maestro (Módulos & Acciones)</span>
+              </span>
+              <span class="hub-item-chevron">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="9 18 15 12 9 6"></polyline>
+                </svg>
+              </span>
+            </button>
+          }
+
+          <button
+            type="button"
+            class="mobile-config-hub-item"
+            (click)="openMobileConfigModule('parameters', 'grammages')"
+          >
+            <span class="hub-item-left">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="3"></circle>
+                <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+              </svg>
+              <span class="hub-item-title">Parámetros del Sistema</span>
+            </span>
+            <span class="hub-item-chevron">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="9 18 15 12 9 6"></polyline>
+              </svg>
+            </span>
+          </button>
+
+          <button
+            type="button"
+            class="mobile-config-hub-item"
+            (click)="openMobileConfigModule('parameters', 'paymentMethods')"
+          >
+            <span class="hub-item-left">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="2" y="5" width="20" height="14" rx="2"></rect>
+                <line x1="2" y1="10" x2="22" y2="10"></line>
+              </svg>
+              <span class="hub-item-title">Catálogo de Formas de Pago</span>
+            </span>
+            <span class="hub-item-chevron">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="9 18 15 12 9 6"></polyline>
+              </svg>
+            </span>
+          </button>
+        </div>
+      </div>
+    } @else {
+      <div class="mobile-config-module-topbar no-print">
+        <button type="button" class="mobile-config-back-btn" (click)="backToMobileConfigHub()">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="15 18 9 12 15 6"></polyline>
+          </svg>
+          <span>Volver a Configuración</span>
+        </button>
+
+        @if (activeTab() === 'general') {
+          <div class="mobile-general-module-header">
+            <div>
+              <h1 class="mobile-config-hub-title">Empresa & Facturación</h1>
+              <p class="mobile-config-hub-subtitle">
+                Identificación comercial, razón social, logo y numeración de factura.
+              </p>
+            </div>
+            <button
+              type="button"
+              class="btn btn-outline"
+              (click)="showInvoicePreviewModal.set(true)"
+              style="gap: 8px; font-size: 0.82rem; border-color: #1e5e3a; color: #1e5e3a; background: #ecfdf5; font-weight: 700; width: 100%; justify-content: center;"
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                <circle cx="12" cy="12" r="3"></circle>
+              </svg>
+              <span>Ver Vista Previa de Factura</span>
+            </button>
+          </div>
+        }
+      </div>
+    }
   }
 
   
@@ -415,7 +584,7 @@
             <button
               type="button"
               class="btn btn-outline"
-              style="gap: 6px; font-size: 0.8rem; font-weight: 600; padding: 6px 12px; border-color: #10b981; color: #047857;"
+              style="gap: 6px; font-size: 0.8rem; font-weight: 600; padding: 6px 12px; border-color: #1e5e3a; color: #1e5e3a;"
               (click)="showInvoicePreviewModal.set(true)"
             >
               <span>Previsualizar Factura</span>
@@ -496,7 +665,7 @@
           <button
             type="button"
             class="btn btn-outline"
-            style="gap: 8px; font-weight: 600; padding: 12px 18px; border-color: #10b981; color: #047857;"
+            style="gap: 8px; font-weight: 600; padding: 12px 18px; border-color: #1e5e3a; color: #1e5e3a;"
             (click)="showInvoicePreviewModal.set(true)"
           >
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -522,9 +691,9 @@
     @if (showInvoicePreviewModal()) {
       <div class="modal-overlay" (click)="showInvoicePreviewModal.set(false)">
         <div class="modal-content modal-lg invoice-preview-modal-dialog" (click)="$event.stopPropagation()">
-          <div class="modal-header">
-            <div style="display: flex; align-items: center; gap: 12px;">
-              <div style="background: #eaf5ee; color: #1e5e3a; width: 38px; height: 38px; border-radius: 10px; display: flex; align-items: center; justify-content: center;">
+          <div class="modal-header invoice-preview-modal-header">
+            <div style="display: flex; align-items: center; gap: 12px; min-width: 0; flex: 1;">
+              <div class="invoice-preview-header-icon" style="background: #eaf5ee; color: #1e5e3a; width: 38px; height: 38px; border-radius: 10px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                   <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
                   <polyline points="14 2 14 8 20 8"></polyline>
@@ -533,17 +702,17 @@
                   <polyline points="10 9 9 9 8 9"></polyline>
                 </svg>
               </div>
-              <div>
-                <h3 class="modal-title" style="margin: 0; font-size: 1.15rem; font-weight: 700; color: #111827;">
+              <div style="min-width: 0; flex: 1;">
+                <h3 class="modal-title invoice-preview-header-title" style="margin: 0; font-size: 1.15rem; font-weight: 700; color: #111827;">
                   Visualización de Factura Corporativa
                 </h3>
-                <p style="margin: 2px 0 0 0; font-size: 0.8rem; color: #6b7280;">
+                <p class="invoice-preview-header-sub" style="margin: 2px 0 0 0; font-size: 0.8rem; color: #6b7280;">
                   Vista previa en tiempo real según los datos comerciales y tributarios configurados
                 </p>
               </div>
             </div>
-            <div style="display: flex; align-items: center; gap: 10px;">
-              <button type="button" class="btn btn-outline" style="gap: 6px; font-size: 0.82rem; padding: 6px 14px;" (click)="printInvoicePreview()">
+            <div style="display: flex; align-items: center; gap: 8px; flex-shrink: 0;">
+              <button type="button" class="btn btn-outline invoice-preview-print-btn" style="gap: 6px; font-size: 0.82rem; padding: 6px 14px;" (click)="printInvoicePreview()">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <polyline points="6 9 6 2 18 2 18 9"></polyline>
                   <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path>
@@ -555,7 +724,7 @@
             </div>
           </div>
 
-          <div class="modal-body" style="background: #f1f5f9; padding: 24px; max-height: calc(88vh - 120px); overflow-y: auto;">
+          <div class="modal-body invoice-preview-modal-body" style="background: #f1f5f9; padding: 24px; max-height: calc(88vh - 120px); overflow-y: auto;">
             <div class="invoice-modal-sheet-holder">
               <div class="pro-invoice-sheet settings-invoice-preview">
                 <div class="pro-invoice-top-accent"></div>
@@ -880,6 +1049,24 @@
           <div class="parameter-grid">
             @for (pm of stateService.paymentMethods(); track pm.paymentMethodId) {
               <div class="pm-card" [class.inactive]="!pm.isActive">
+                <div class="mobile-summary-header">
+                  <div class="ms-left">
+                    <span class="ms-code-badge">{{ pm.name }}</span>
+                    <span class="ms-subtitle">{{ pm.code || 'MÉTODO' }} • {{ getPaymentTypeLabel(pm.type) }}</span>
+                  </div>
+                  <div class="ms-right">
+                    <div class="ms-top-right">
+                      <span class="ms-value">{{ getPaymentTypeLabel(pm.type) }}</span>
+                      <span class="ms-chevron">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+                          <polyline points="6 9 12 15 18 9"></polyline>
+                        </svg>
+                      </span>
+                    </div>
+                    <span class="ms-status-pill">{{ pm.isActive ? 'Activo' : 'Desactivado' }}</span>
+                  </div>
+                </div>
+
                 <div class="pm-card-top">
                   <div class="pm-type-icon" [ngClass]="pm.type || 'other'">
                     @if (pm.type === 'cash') {
@@ -989,6 +1176,24 @@
           <div class="param-list-grid">
             @for (g of grammagesConfig(); track g.key) {
               <div class="param-card" [class.inactive]="!g.isActive">
+                <div class="mobile-summary-header">
+                  <div class="ms-left">
+                    <span class="ms-code-badge">{{ g.label }}</span>
+                    <span class="ms-subtitle">{{ g.value }} gramos netos ({{ (g.value / 1000) }} Kg)</span>
+                  </div>
+                  <div class="ms-right">
+                    <div class="ms-top-right">
+                      <span class="ms-value">{{ g.value }}g</span>
+                      <span class="ms-chevron">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+                          <polyline points="6 9 12 15 18 9"></polyline>
+                        </svg>
+                      </span>
+                    </div>
+                    <span class="ms-status-pill">{{ g.isActive ? 'Habilitado' : 'Oculto' }}</span>
+                  </div>
+                </div>
+
                 <div class="param-info">
                   <span class="param-icon-badge" style="color: #a855f7;">
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -1069,6 +1274,24 @@
           <div class="param-list-grid">
             @for (cat of categoriesConfig(); track cat.id) {
               <div class="param-card" [class.inactive]="!cat.isActive">
+                <div class="mobile-summary-header">
+                  <div class="ms-left">
+                    <span class="ms-code-badge">{{ cat.name }}</span>
+                    <span class="ms-subtitle">ID: {{ cat.id }}</span>
+                  </div>
+                  <div class="ms-right">
+                    <div class="ms-top-right">
+                      <span class="ms-value">{{ cat.id }}</span>
+                      <span class="ms-chevron">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+                          <polyline points="6 9 12 15 18 9"></polyline>
+                        </svg>
+                      </span>
+                    </div>
+                    <span class="ms-status-pill">{{ cat.isActive ? 'Habilitada' : 'Oculta' }}</span>
+                  </div>
+                </div>
+
                 <div class="param-info">
                   <span class="param-icon-badge" style="color: #3b82f6;">
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -1409,7 +1632,7 @@
                   }
 
                   @if (isColumnVisible('margin')) {
-                    <td data-label="Margen Unitario" style="text-align: right; font-weight: 700; color: #10b981;">
+                    <td data-label="Margen Unitario" style="text-align: right; font-weight: 700; color: #1e5e3a;">
                       {{ formatCOP(v.basePrice - v.unitCost) }}
                       <span style="font-size: 0.72rem; color: var(--text-dim); display: block;">
                         ({{ Math.round(((v.basePrice - v.unitCost) / (v.basePrice || 1)) * 100) }}%)
@@ -1421,7 +1644,7 @@
                     <td data-label="Stock en Cava" style="text-align: center;">
                       <span
                         style="font-size: 1.05rem; font-weight: 800;"
-                        [style.color]="v.currentStock <= v.minStockAlert ? '#ef4444' : '#10b981'"
+                        [style.color]="v.currentStock <= v.minStockAlert ? '#ef4444' : '#1e5e3a'"
                       >
                         {{ v.currentStock }} uds
                       </span>
@@ -1736,7 +1959,7 @@
     <div class="modal-content modal-lg" (click)="$event.stopPropagation()">
       <div class="modal-header">
         <div style="display: flex; align-items: center; gap: 10px;">
-          <div style="width: 32px; height: 32px; border-radius: 8px; background: rgba(16, 185, 129, 0.12); color: var(--primary); display: flex; align-items: center; justify-content: center;">
+          <div style="width: 32px; height: 32px; border-radius: 8px; background: rgba(30, 94, 58, 0.12); color: var(--primary); display: flex; align-items: center; justify-content: center;">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <circle cx="12" cy="12" r="3"></circle>
               <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
@@ -2224,8 +2447,8 @@
           <div class="form-group" style="margin: 0;">
             <label class="form-label">Costo Unitario (COP) *</label>
             <input
-              type="number"
-              min="0"
+              type="text"
+              appCopInput
               class="form-control"
               [ngModel]="newVariantUnitCost()"
               (ngModelChange)="newVariantUnitCost.set($event)"
@@ -2235,8 +2458,8 @@
           <div class="form-group" style="margin: 0;">
             <label class="form-label">Precio de Venta (COP) *</label>
             <input
-              type="number"
-              min="0"
+              type="text"
+              appCopInput
               class="form-control"
               [ngModel]="newVariantBasePrice()"
               (ngModelChange)="newVariantBasePrice.set($event)"
@@ -2342,7 +2565,8 @@
           <div class="form-group" style="margin: 0;">
             <label class="form-label">Costo Producción (COP)</label>
             <input
-              type="number"
+              type="text"
+              appCopInput
               class="form-control"
               [(ngModel)]="editItem.unitCost"
             />
@@ -2351,7 +2575,8 @@
           <div class="form-group" style="margin: 0;">
             <label class="form-label">Precio de Venta (COP)</label>
             <input
-              type="number"
+              type="text"
+              appCopInput
               class="form-control"
               [(ngModel)]="editItem.basePrice"
             />
@@ -2455,7 +2680,7 @@
     <div class="modal-content" style="max-width: 500px;" (click)="$event.stopPropagation()">
       <div class="modal-header">
         <div style="display: flex; align-items: center; gap: 10px;">
-          <div style="width: 34px; height: 34px; border-radius: 8px; background: rgba(16, 185, 129, 0.12); color: var(--primary); display: flex; align-items: center; justify-content: center;">
+          <div style="width: 34px; height: 34px; border-radius: 8px; background: rgba(30, 94, 58, 0.12); color: var(--primary); display: flex; align-items: center; justify-content: center;">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <rect x="2" y="5" width="20" height="14" rx="2"></rect>
               <line x1="2" y1="10" x2="22" y2="10"></line>

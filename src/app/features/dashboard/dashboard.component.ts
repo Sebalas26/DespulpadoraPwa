@@ -5,7 +5,16 @@ import { ActivatedRoute, RouterLink } from '@angular/router';
 import { StateService } from '../../core/services/state.service';
 import { AuthService } from '../../core/services/auth.service';
 import { VoiceOrdersService } from '../../core/services/voice-orders.service';
+import { OrderDto } from '../../core/models/business.models';
 
+/**
+ * Identifier for interactive KPI detail cards on the operational dashboard.
+ */
+export type KpiCardType = 'billing' | 'pulpStock' | 'pulpsSoldToday' | 'freshFruit';
+
+/**
+ * Counts of orders grouped by operational status.
+ */
 export interface OrdersByStatusCounts {
   pending: number;
   picking: number;
@@ -14,24 +23,79 @@ export interface OrdersByStatusCounts {
   delivered: number;
 }
 
+/**
+ * Daily billing statistics and matching order records.
+ */
 export interface TodayBillingStats {
   revenue: number;
   ordersCount: number;
   unitsSold: number;
+  orders: OrderDto[];
 }
 
+/**
+ * Summary item representing an order in the daily billing detail modal.
+ */
+export interface TodayOrderDetailItem {
+  id: number;
+  orderNumber: string;
+  clientName: string;
+  status: string;
+  statusLabel: string;
+  paymentMethod: string;
+  totalUnits: number;
+  totalKg: number;
+  itemsCount: number;
+  itemsSummary: string;
+  totalAmount: number;
+}
+
+/**
+ * Breakdown item for a fruit's sold pulps on the current day.
+ */
+export interface TodaySoldPulpItem {
+  name: string;
+  color: string;
+  g140: number;
+  g250: number;
+  g500: number;
+  g1000: number;
+  units: number;
+  totalKg: number;
+  revenue: number;
+}
+
+/**
+ * Aggregated summary of pulps sold today by grammage and fruit.
+ */
+export interface TodaySoldPulpsBreakdown {
+  totalUnits: number;
+  totalKg: number;
+  byGrammage: { g140: number; g250: number; g500: number; g1000: number };
+  items: TodaySoldPulpItem[];
+}
+
+/**
+ * Summary of total pulps sold across active orders.
+ */
 export interface SoldPulpsSummary {
   totalUnits: number;
   totalKg: number;
   topFruitLabel: string;
 }
 
+/**
+ * Top client summary for the current month.
+ */
 export interface TopClientSummary {
   name: string;
   total: number;
   orders: number;
 }
 
+/**
+ * Fresh fruit inventory report item.
+ */
 export interface FruitInventoryReportItem {
   id: string;
   name: string;
@@ -46,6 +110,9 @@ export interface FruitInventoryReportItem {
   status: 'OPTIMO' | 'MEDIO' | 'BAJO';
 }
 
+/**
+ * Prepared pulps inventory report item by fruit.
+ */
 export interface PreparedPulpsReportItem {
   id: string;
   name: string;
@@ -65,6 +132,9 @@ export interface PreparedPulpsReportItem {
   hasLowAlert: boolean;
 }
 
+/**
+ * Aggregated report of prepared pulps in storage.
+ */
 export interface PreparedPulpsReport {
   totalUnits: number;
   totalRetailValue: number;
@@ -72,6 +142,9 @@ export interface PreparedPulpsReport {
   items: PreparedPulpsReportItem[];
 }
 
+/**
+ * Low stock alert item for warehouse attention.
+ */
 export interface LowStockAlertItem {
   fruitName: string;
   emoji: string;
@@ -97,9 +170,10 @@ export class DashboardComponent {
   readonly voiceOrdersService = inject(VoiceOrdersService);
   private readonly route = inject(ActivatedRoute);
 
-  readonly timeFilter = signal<'today' | 'month'>('month');
+  readonly timeFilter = signal<'today' | 'month'>('today');
   readonly showEditTargetModal = signal<boolean>(false);
   readonly editTargetAmount = signal<number>(0);
+  readonly selectedKpiCard = signal<KpiCardType | null>(null);
 
   readonly ordersByStatus = computed<OrdersByStatusCounts>(() => {
     try {
@@ -146,10 +220,115 @@ export class DashboardComponent {
       return {
         revenue,
         ordersCount: todayOrders.length,
-        unitsSold: units
+        unitsSold: units,
+        orders: todayOrders
       };
     } catch {
-      return { revenue: 0, ordersCount: 0, unitsSold: 0 };
+      return { revenue: 0, ordersCount: 0, unitsSold: 0, orders: [] };
+    }
+  });
+
+  readonly todayOrdersList = computed<TodayOrderDetailItem[]>(() => {
+    try {
+      const orders = this.todayBillingStats().orders;
+      const statusLabels: Record<string, string> = {
+        PENDING: 'Pendiente',
+        PICKING: 'En Alistamiento',
+        BILLED: 'Facturado',
+        DISPATCHED: 'En Ruta',
+        DELIVERED: 'Entregado',
+        CANCELLED: 'Cancelado'
+      };
+
+      return orders.map(o => {
+        const totalUnits = o.items.reduce((sum, i) => sum + (i.quantity || 0), 0);
+        const totalKg = Number(
+          o.items.reduce((sum, i) => sum + ((i.quantity || 0) * (i.grammage || 0)) / 1000, 0).toFixed(1)
+        );
+        return {
+          id: o.orderId,
+          orderNumber: o.orderNumber || '',
+          clientName: o.clientName || '',
+          status: o.status,
+          statusLabel: statusLabels[o.status] || o.status,
+          paymentMethod: o.paymentMethodName || '',
+          totalUnits,
+          totalKg,
+          itemsCount: o.items.length,
+          itemsSummary: o.items.map(i => `${i.quantity}x ${i.fruitName} (${i.grammage}g)`).join(', '),
+          totalAmount: o.totalAmount || 0
+        };
+      });
+    } catch {
+      return [];
+    }
+  });
+
+  readonly todaySoldPulpsBreakdown = computed<TodaySoldPulpsBreakdown>(() => {
+    try {
+      const orders = this.todayBillingStats().orders;
+      const fruitsConfig = this.stateService.fruits();
+      const byGrammage = { g140: 0, g250: 0, g500: 0, g1000: 0 };
+      let totalUnits = 0;
+      let totalKg = 0;
+
+      const fruitMap = new Map<string, TodaySoldPulpItem>();
+
+      orders.forEach(order => {
+        order.items.forEach(item => {
+          const qty = item.quantity || 0;
+          const gram = item.grammage || 0;
+          const price = item.unitPrice || 0;
+          const fruitName = item.fruitName || '';
+          const fruitMeta = fruitsConfig.find(f => f.name.toLowerCase() === fruitName.toLowerCase());
+
+          totalUnits += qty;
+          totalKg += (qty * gram) / 1000;
+
+          if (gram === 140) byGrammage.g140 += qty;
+          else if (gram === 250) byGrammage.g250 += qty;
+          else if (gram === 500) byGrammage.g500 += qty;
+          else if (gram === 1000) byGrammage.g1000 += qty;
+
+          const existing: TodaySoldPulpItem = fruitMap.get(fruitName) || {
+            name: fruitName,
+            color: fruitMeta?.color || '#1e5e3a',
+            g140: 0,
+            g250: 0,
+            g500: 0,
+            g1000: 0,
+            units: 0,
+            totalKg: 0,
+            revenue: 0
+          };
+
+          if (gram === 140) existing.g140 += qty;
+          else if (gram === 250) existing.g250 += qty;
+          else if (gram === 500) existing.g500 += qty;
+          else if (gram === 1000) existing.g1000 += qty;
+
+          existing.units += qty;
+          existing.totalKg = Number((existing.totalKg + (qty * gram) / 1000).toFixed(1));
+          existing.revenue += qty * price;
+          fruitMap.set(fruitName, existing);
+        });
+      });
+
+      const items = Array.from(fruitMap.values()).sort((a, b) => b.units - a.units);
+
+      return {
+        totalUnits,
+        totalKg: Number(totalKg.toFixed(1)),
+        byGrammage,
+        items
+      };
+    } catch {
+      return {
+        totalUnits: 0,
+        totalKg: 0,
+        byGrammage: { g140: 0, g250: 0, g500: 0, g1000: 0 },
+        items: []
+      };
     }
   });
 
@@ -368,7 +547,7 @@ export class DashboardComponent {
             list.push({
               fruitName: f.name,
               emoji: f.emoji || '',
-              color: f.color || '#10b981',
+              color: f.color || '#1e5e3a',
               presentation: presLabel,
               currentUnits: curr,
               minUnits: min
@@ -402,6 +581,28 @@ export class DashboardComponent {
   }
 
   /**
+   * Opens the detail modal for the selected quick KPI card.
+   */
+  openKpiDetail(card: KpiCardType): void {
+    try {
+      this.selectedKpiCard.set(card);
+    } catch {
+      this.selectedKpiCard.set(null);
+    }
+  }
+
+  /**
+   * Closes the active quick KPI card detail modal.
+   */
+  closeKpiDetail(): void {
+    try {
+      this.selectedKpiCard.set(null);
+    } catch {
+      return;
+    }
+  }
+
+  /**
    * Opens the modal to edit the monthly sales revenue target.
    */
   openTargetModal(): void {
@@ -410,6 +611,21 @@ export class DashboardComponent {
       this.showEditTargetModal.set(true);
     } catch {
       this.showEditTargetModal.set(false);
+    }
+  }
+
+  /**
+   * Parses and formats COP currency input while typing the monthly sales target.
+   */
+  onTargetAmountInput(event: Event): void {
+    try {
+      const input = event.target as HTMLInputElement;
+      const digitsOnly = (input.value || '').replace(/\D/g, '');
+      const numericVal = digitsOnly ? parseInt(digitsOnly, 10) : 0;
+      this.editTargetAmount.set(numericVal);
+      input.value = numericVal > 0 ? this.formatCOP(numericVal) : '';
+    } catch {
+      return;
     }
   }
 

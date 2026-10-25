@@ -227,10 +227,6 @@ interface AudioContextWindow extends Window {
                       </div>
                       <div class="priority-msg">Alistamiento prioritario solicitado desde Despacho / Entregas</div>
                     </div>
-                  } @else if (order.notes && !order.notes.includes('simulado') && !order.notes.includes('URGENTE')) {
-                    <div class="ticket-note">
-                      {{ order.notes }}
-                    </div>
                   }
 
                   <footer class="ticket-footer">
@@ -1180,32 +1176,57 @@ export class KdsComponent implements OnInit, OnDestroy {
   private readonly orderTimers: Map<number, number> = new Map<number, number>();
 
   readonly pendingOrders = computed<OrderDto[]>(() => {
-    return this.stateService.orders().filter((o: OrderDto) => o.status === 'PENDING');
+    try {
+      return this.stateService.orders().filter((o: OrderDto) => o.status === 'PENDING');
+    } catch (error: unknown) {
+      console.error('Error computing pending orders:', error);
+      return [];
+    }
   });
 
   readonly pickingOrders = computed<OrderDto[]>(() => {
-    return this.stateService.orders().filter((o: OrderDto) => o.status === 'PICKING');
+    try {
+      return this.stateService.orders().filter((o: OrderDto) => o.status === 'PICKING');
+    } catch (error: unknown) {
+      console.error('Error computing picking orders:', error);
+      return [];
+    }
   });
 
   readonly readyOrders = computed<OrderDto[]>(() => {
-    return this.stateService.orders().filter(
-      (o: OrderDto) => o.status === 'BILLED' || o.status === 'DISPATCHED' || o.status === 'DELIVERED'
-    );
+    try {
+      return this.stateService.orders().filter(
+        (o: OrderDto) => o.status === 'BILLED' || o.status === 'DISPATCHED' || o.status === 'DELIVERED'
+      );
+    } catch (error: unknown) {
+      console.error('Error computing ready orders:', error);
+      return [];
+    }
   });
 
   readonly allActiveOrders = computed<OrderDto[]>(() => {
-    return this.stateService.orders();
+    try {
+      return this.stateService.orders();
+    } catch (error: unknown) {
+      console.error('Error computing all active orders:', error);
+      return [];
+    }
   });
 
   readonly totalPendingKg = computed<string>(() => {
-    const orders = [...this.pendingOrders(), ...this.pickingOrders()];
-    let kg = 0;
-    for (const o of orders) {
-      for (const it of o.items) {
-        kg += (it.quantity * it.grammage) / 1000;
+    try {
+      const orders = [...this.pendingOrders(), ...this.pickingOrders()];
+      let kg = 0;
+      for (const o of orders) {
+        for (const it of o.items) {
+          kg += (it.quantity * it.grammage) / 1000;
+        }
       }
+      return kg.toFixed(1);
+    } catch (error: unknown) {
+      console.error('Error computing total pending kg:', error);
+      return '0.0';
     }
-    return kg.toFixed(1);
   });
 
   /**

@@ -17,6 +17,9 @@ import {
 
 const STORAGE_SYSTEM_MODULES_KEY = 'dgl_system_catalog_modules_v1';
 
+/**
+ * Empty initial system modules catalog populated from the backend API.
+ */
 export const DEFAULT_SYSTEM_MODULES_CATALOG: SystemModuleCatalogDto[] = [];
 
 /**

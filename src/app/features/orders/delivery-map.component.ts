@@ -13,10 +13,10 @@ import {
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { StateService } from '../../core/services/state.service';
-import { FruitConfig } from '../../core/data/initial-data';
 import { NotificationService } from '../../core/services/notification.service';
 import { GeocodingService } from '../../core/services/geocoding.service';
-import { EmployeeDto, OrderDto } from '../../core/models/business.models';
+import { EmployeeDto, FruitConfig, OrderDto } from '../../core/models/business.models';
+import { CopCurrencyInputDirective } from '../../shared/directives/cop-currency-input.directive';
 import confetti from 'canvas-confetti';
 import * as L from 'leaflet';
 
@@ -106,26 +106,26 @@ export interface MapStyleOption {
 
 export const MAP_STYLES: MapStyleOption[] = [
   {
-    id: 'osm-white',
-    name: 'OpenStreetMap White Smooth',
-    shortName: 'White Smooth',
+    id: 'arcgis-white',
+    name: 'ArcGIS White Minimalist',
+    shortName: 'ArcGIS White',
     badge: '100% GRATIS',
     icon: '',
-    description: 'Cartografía blanca minimalista 100% gratuita y sin API Key con todas las vías y barrios de Colombia.',
-    url: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+    description: 'Cartografía blanca minimalista nativa de Esri ArcGIS con calles, sentidos viales y edificios hasta zoom 19 (sin cuenta ni API Key).',
+    url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}',
     maxZoom: 20,
     maxNativeZoom: 19
   },
   {
     id: 'osm-dark',
-    name: 'OpenStreetMap Dark Smooth',
+    name: 'Dark Smooth Mode',
     shortName: 'Dark Smooth',
     badge: 'MODO NOCHE',
     icon: '',
     description: 'Modo oscuro elegante de alto contraste 100% gratuito y sin API Key para visibilidad nocturna.',
-    url: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-    maxZoom: 20,
-    maxNativeZoom: 19,
+    url: 'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}',
+    maxZoom: 19,
+    maxNativeZoom: 16,
     isDark: true
   },
   {
@@ -157,7 +157,7 @@ export const MAP_STYLES: MapStyleOption[] = [
 @Component({
   selector: 'app-delivery-map',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, CopCurrencyInputDirective],
   template: `
     <div class="delivery-map-container">
       
@@ -166,7 +166,7 @@ export const MAP_STYLES: MapStyleOption[] = [
         
         <div class="telemetry-bar">
           <div class="telemetry-item">
-            <div class="telemetry-icon" style="background: rgba(16, 185, 129, 0.12); color: var(--color-primary-text); display: flex; align-items: center; justify-content: center;">
+            <div class="telemetry-icon" style="background: rgba(30, 94, 58, 0.12); color: var(--color-primary-text); display: flex; align-items: center; justify-content: center;">
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <rect x="1" y="3" width="15" height="13"></rect>
                 <polygon points="16 8 20 8 23 11 23 16 16 16 8"></polygon>
@@ -252,7 +252,7 @@ export const MAP_STYLES: MapStyleOption[] = [
             <div
               class="map-address-search-box"
               [class.has-dropdown]="showSearchResults() && searchResults().length > 0"
-              [class.mobile-hidden]="(mapViewMode() === 'stops' || showDeliveriesDrawer()) && !isMobileAddressSearchOpen()"
+              [class.mobile-hidden]="!isMobileAddressSearchOpen()"
               [class.mobile-expanded-active]="isMobileAddressSearchOpen()"
             >
               <div class="search-input-shell">
@@ -377,7 +377,7 @@ export const MAP_STYLES: MapStyleOption[] = [
             
             <div
               class="map-unlocked-mode-bar"
-              [class.search-collapsed]="(mapViewMode() === 'stops' || showDeliveriesDrawer()) && !isMobileAddressSearchOpen()"
+              [class.search-collapsed]="!isMobileAddressSearchOpen()"
             >
               <button
                 type="button"
@@ -398,8 +398,7 @@ export const MAP_STYLES: MapStyleOption[] = [
                 <span>Ver Todas las Entregas ({{ deliveryStops().length }})</span>
               </button>
 
-              
-              @if ((mapViewMode() === 'stops' || showDeliveriesDrawer()) && !isMobileAddressSearchOpen()) {
+              @if (!isMobileAddressSearchOpen()) {
                 <button
                   type="button"
                   class="unlocked-mode-search-icon-btn"
@@ -1013,7 +1012,7 @@ export const MAP_STYLES: MapStyleOption[] = [
           <div class="modal-card" (click)="$event.stopPropagation()" style="max-width: 580px;">
             <div class="modal-header">
               <div class="modal-title-group">
-                <div class="modal-icon-badge" style="background: rgba(16, 185, 129, 0.15); color: #10b981; display: flex; align-items: center; justify-content: center;">
+                <div class="modal-icon-badge" style="background: rgba(30, 94, 58, 0.15); color: #1e5e3a; display: flex; align-items: center; justify-content: center;">
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
                     <circle cx="12" cy="10" r="3"></circle>
@@ -1087,10 +1086,11 @@ export const MAP_STYLES: MapStyleOption[] = [
                 <div class="form-group half-col">
                   <label class="form-label">Total a Cobrar ($ COP)</label>
                   <input
-                    type="number"
+                    type="text"
+                    appCopInput
                     class="form-input"
                     [(ngModel)]="newOrderAmount"
-                    placeholder="150000"
+                    placeholder="$ 150.000"
                   />
                 </div>
 
@@ -1340,7 +1340,7 @@ export const MAP_STYLES: MapStyleOption[] = [
             
             <div class="modal-header" style="background: linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 100%); border-bottom: 1px solid #bbf7d0;">
               <div class="modal-title-group">
-                <div class="modal-icon-badge" style="background: #10b981; color: #ffffff; box-shadow: 0 4px 12px rgba(16, 185, 129, 0.35); display: flex; align-items: center; justify-content: center;">
+                <div class="modal-icon-badge" style="background: #1e5e3a; color: #ffffff; box-shadow: 0 4px 12px rgba(30, 94, 58, 0.35); display: flex; align-items: center; justify-content: center;">
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
                     <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
                     <polyline points="7 10 12 15 17 10"></polyline>
@@ -1350,9 +1350,9 @@ export const MAP_STYLES: MapStyleOption[] = [
                 <div>
                   <div style="display: flex; align-items: center; gap: 8px;">
                     <h2 class="modal-title" style="color: #064e3b;">Recibir Domiciliario · Liquidación de Caja</h2>
-                    <span class="badge-route-pill">{{ receivingCourier()?.routeCode || 'RUTA-BOGOTA' }}</span>
+                    <span class="badge-route-pill">{{ receivingCourier()?.routeCode || '' }}</span>
                   </div>
-                  <p class="modal-subtitle" style="color: #047857;">
+                  <p class="modal-subtitle" style="color: #1e5e3a;">
                     Arqueo de dinero recaudado, verificación de entregas y paz y salvo de recorrido
                   </p>
                 </div>
@@ -1503,12 +1503,12 @@ export const MAP_STYLES: MapStyleOption[] = [
                     <div class="cash-input-shell">
                       <span class="currency-prefix">$</span>
                       <input
-                        type="number"
+                        type="text"
+                        appCopInput
+                        [appCopPrefix]="false"
                         class="cash-input-field"
                         [ngModel]="physicalCashReceived()"
                         (ngModelChange)="physicalCashReceived.set(+$event)"
-                        step="1000"
-                        min="0"
                       />
                       <button
                         type="button"
@@ -1523,7 +1523,7 @@ export const MAP_STYLES: MapStyleOption[] = [
                     
                     @if (cashDifference() === 0) {
                       <div class="caja-diff-badge diff-ok">
-                        <span class="diff-icon" style="display: flex; align-items: center; justify-content: center; color: #10b981;">
+                        <span class="diff-icon" style="display: flex; align-items: center; justify-content: center; color: #1e5e3a;">
                           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                             <polyline points="20 6 9 17 4 12"></polyline>
                           </svg>
@@ -1650,7 +1650,7 @@ export const MAP_STYLES: MapStyleOption[] = [
                   type="button"
                   class="btn btn-primary"
                   (click)="confirmSettlementAndReceive()"
-                  style="gap: 8px; font-weight: 800; background: #059669; border-color: #047857;"
+                  style="gap: 8px; font-weight: 800; background: #164a2d; border-color: #1e5e3a;"
                 >
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
                     <polyline points="20 6 9 17 4 12"></polyline>
@@ -1706,9 +1706,9 @@ export const MAP_STYLES: MapStyleOption[] = [
       font-size: 0.76rem;
       font-weight: 800;
       letter-spacing: 0.6px;
-      color: #10b981;
-      background: rgba(16, 185, 129, 0.12);
-      border: 1px solid rgba(16, 185, 129, 0.25);
+      color: #1e5e3a;
+      background: rgba(30, 94, 58, 0.12);
+      border: 1px solid rgba(30, 94, 58, 0.25);
       padding: 4px 10px;
       border-radius: 9999px;
     }
@@ -1716,9 +1716,9 @@ export const MAP_STYLES: MapStyleOption[] = [
     .pulse-dot {
       width: 8px;
       height: 8px;
-      background: #10b981;
+      background: #1e5e3a;
       border-radius: 50%;
-      box-shadow: 0 0 8px #10b981;
+      box-shadow: 0 0 8px #1e5e3a;
       animation: pulseAnim 1.5s infinite;
     }
 
@@ -1736,9 +1736,9 @@ export const MAP_STYLES: MapStyleOption[] = [
     }
 
     .badge-emerald {
-      background: rgba(16, 185, 129, 0.12);
-      color: #10b981;
-      border: 1px solid rgba(16, 185, 129, 0.2);
+      background: rgba(30, 94, 58, 0.12);
+      color: #1e5e3a;
+      border: 1px solid rgba(30, 94, 58, 0.2);
     }
 
     .badge-info {
@@ -1784,9 +1784,9 @@ export const MAP_STYLES: MapStyleOption[] = [
     }
 
     .btn-active {
-      background: rgba(16, 185, 129, 0.15) !important;
-      color: #10b981 !important;
-      border-color: #10b981 !important;
+      background: rgba(30, 94, 58, 0.15) !important;
+      color: #1e5e3a !important;
+      border-color: #1e5e3a !important;
     }
 
     .speed-toggle-group {
@@ -1828,6 +1828,28 @@ export const MAP_STYLES: MapStyleOption[] = [
       padding: 8px 12px;
       border-radius: var(--radius-sm, 8px);
       background: var(--bg-subtle);
+    }
+
+    @media (max-width: 768px) {
+      .map-header-card {
+        background: transparent;
+        border: none;
+        padding: 0;
+        box-shadow: none;
+      }
+
+      .telemetry-bar {
+        grid-template-columns: 1fr;
+        gap: 10px;
+      }
+
+      .telemetry-item {
+        background: #ffffff;
+        border: 1.5px solid #e2e8f0;
+        border-radius: 14px;
+        padding: 12px 14px;
+        box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
+      }
     }
 
     .telemetry-icon {
@@ -1949,7 +1971,7 @@ export const MAP_STYLES: MapStyleOption[] = [
         border-radius: 50%;
         background: rgba(255, 255, 255, 0.95);
         border: 1.5px solid #dbe4de;
-        color: #065f46;
+        color: #164a2d;
         cursor: pointer;
         box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
         flex-shrink: 0;
@@ -2081,18 +2103,18 @@ export const MAP_STYLES: MapStyleOption[] = [
       background: rgba(255, 255, 255, 0.95);
       backdrop-filter: blur(12px);
       -webkit-backdrop-filter: blur(12px);
-      color: #065f46;
-      border: 2px solid #10b981;
-      box-shadow: 0 8px 24px rgba(16, 185, 129, 0.16),
+      color: #164a2d;
+      border: 2px solid #1e5e3a;
+      box-shadow: 0 8px 24px rgba(30, 94, 58, 0.16),
                   0 2px 6px rgba(0, 0, 0, 0.06);
       letter-spacing: 0.2px;
 
       &:hover {
         background: #f0fdf4;
-        border-color: #059669;
-        color: #047857;
+        border-color: #164a2d;
+        color: #1e5e3a;
         transform: translateY(-2px) scale(1.02);
-        box-shadow: 0 12px 30px rgba(16, 185, 129, 0.28),
+        box-shadow: 0 12px 30px rgba(30, 94, 58, 0.28),
                     0 4px 10px rgba(0, 0, 0, 0.08);
       }
 
@@ -2117,7 +2139,7 @@ export const MAP_STYLES: MapStyleOption[] = [
       width: 18px;
       height: 18px;
       border-radius: 50%;
-      background: rgba(16, 185, 129, 0.45);
+      background: rgba(30, 94, 58, 0.45);
       animation: beaconRipple 1.8s cubic-bezier(0, 0.2, 0.8, 1) infinite;
     }
 
@@ -2126,8 +2148,8 @@ export const MAP_STYLES: MapStyleOption[] = [
       width: 8px;
       height: 8px;
       border-radius: 50%;
-      background: #10b981;
-      box-shadow: 0 0 6px #10b981;
+      background: #1e5e3a;
+      box-shadow: 0 0 6px #1e5e3a;
     }
 
     @keyframes beaconRipple {
@@ -2137,12 +2159,12 @@ export const MAP_STYLES: MapStyleOption[] = [
 
     .btn-counter-badge {
       background: #ecfdf5;
-      color: #047857;
+      color: #1e5e3a;
       font-size: 0.74rem;
       font-weight: 800;
       padding: 2px 8px;
       border-radius: 9999px;
-      border: 1px solid #a7f3d0;
+      border: 1px solid #d1e7d8;
       margin-left: 2px;
     }
 
@@ -2150,8 +2172,8 @@ export const MAP_STYLES: MapStyleOption[] = [
       width: 9px;
       height: 9px;
       border-radius: 50%;
-      background: #10b981;
-      box-shadow: 0 0 8px #10b981;
+      background: #1e5e3a;
+      box-shadow: 0 0 8px #1e5e3a;
       animation: pulseAnim 1.4s infinite;
       flex-shrink: 0;
     }
@@ -2191,8 +2213,8 @@ export const MAP_STYLES: MapStyleOption[] = [
       background: rgba(255, 255, 255, 0.96);
       backdrop-filter: blur(10px);
       -webkit-backdrop-filter: blur(10px);
-      border: 2.5px solid var(--courier-accent, #10b981);
-      color: var(--courier-accent, #10b981);
+      border: 2.5px solid var(--courier-accent, #1e5e3a);
+      color: var(--courier-accent, #1e5e3a);
       display: flex;
       align-items: center;
       justify-content: center;
@@ -2213,7 +2235,7 @@ export const MAP_STYLES: MapStyleOption[] = [
         position: absolute;
         top: -4px;
         right: -4px;
-        background: var(--courier-accent, #10b981);
+        background: var(--courier-accent, #1e5e3a);
         color: #ffffff;
         font-size: 0.6rem;
         font-weight: 800;
@@ -2232,7 +2254,7 @@ export const MAP_STYLES: MapStyleOption[] = [
       &:hover {
         transform: scale(1.08) translateY(-2px);
         box-shadow: 0 6px 16px rgba(0, 0, 0, 0.22);
-        background: var(--courier-accent, #10b981);
+        background: var(--courier-accent, #1e5e3a);
         color: #ffffff;
       }
 
@@ -2241,7 +2263,7 @@ export const MAP_STYLES: MapStyleOption[] = [
       }
 
       &.is-selected {
-        background: var(--courier-accent, #10b981);
+        background: var(--courier-accent, #1e5e3a);
         color: #ffffff;
         box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.95), 0 4px 16px rgba(0, 0, 0, 0.3);
         transform: scale(1.08);
@@ -2253,12 +2275,12 @@ export const MAP_STYLES: MapStyleOption[] = [
       }
 
       &.fab-planta {
-        border-color: #10b981;
-        color: #059669;
+        border-color: #1e5e3a;
+        color: #164a2d;
         background: #ecfdf5;
 
         &:hover, &.is-selected {
-          background: #10b981;
+          background: #1e5e3a;
           color: #ffffff;
         }
       }
@@ -2276,16 +2298,16 @@ export const MAP_STYLES: MapStyleOption[] = [
       background: rgba(255, 255, 255, 0.95);
       backdrop-filter: blur(12px);
       -webkit-backdrop-filter: blur(12px);
-      color: #065f46;
-      border: 2px solid #10b981;
+      color: #164a2d;
+      border: 2px solid #1e5e3a;
       cursor: pointer;
-      box-shadow: 0 4px 12px rgba(16, 185, 129, 0.18), 0 1px 3px rgba(0, 0, 0, 0.08);
+      box-shadow: 0 4px 12px rgba(30, 94, 58, 0.18), 0 1px 3px rgba(0, 0, 0, 0.08);
       transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
 
       &:hover {
         background: #f0fdf4;
-        border-color: #059669;
-        color: #047857;
+        border-color: #164a2d;
+        color: #1e5e3a;
         transform: scale(1.06);
       }
 
@@ -2295,8 +2317,8 @@ export const MAP_STYLES: MapStyleOption[] = [
 
       &.is-fullscreen {
         background: #f0fdf4;
-        border-color: #047857;
-        color: #047857;
+        border-color: #1e5e3a;
+        color: #1e5e3a;
       }
     }
 
@@ -2864,8 +2886,8 @@ export const MAP_STYLES: MapStyleOption[] = [
     }
 
     .courier-status-badge.en-ruta {
-      background: rgba(16, 185, 129, 0.15);
-      color: #10b981;
+      background: rgba(30, 94, 58, 0.15);
+      color: #1e5e3a;
     }
 
     .courier-vehicle-info {
@@ -2928,7 +2950,7 @@ export const MAP_STYLES: MapStyleOption[] = [
     }
 
     .btn-seq-link:hover {
-      background: rgba(16, 185, 129, 0.1);
+      background: rgba(30, 94, 58, 0.1);
     }
 
     .btn-locate {
@@ -3194,8 +3216,8 @@ export const MAP_STYLES: MapStyleOption[] = [
 
     
     .location-preview-card {
-      background: linear-gradient(135deg, rgba(16, 185, 129, 0.12), rgba(14, 165, 233, 0.08));
-      border: 1px solid rgba(16, 185, 129, 0.25);
+      background: linear-gradient(135deg, rgba(30, 94, 58, 0.12), rgba(14, 165, 233, 0.08));
+      border: 1px solid rgba(30, 94, 58, 0.25);
       border-radius: var(--radius-md, 12px);
       padding: 12px 16px;
       display: flex;
@@ -3207,7 +3229,7 @@ export const MAP_STYLES: MapStyleOption[] = [
       font-size: 0.68rem;
       font-weight: 800;
       letter-spacing: 0.5px;
-      color: #10b981;
+      color: #1e5e3a;
     }
 
     .loc-title {
@@ -3291,9 +3313,9 @@ export const MAP_STYLES: MapStyleOption[] = [
     }
 
     .pulp-chip.selected {
-      background: rgba(16, 185, 129, 0.15);
-      border-color: #10b981;
-      color: #10b981;
+      background: rgba(30, 94, 58, 0.15);
+      border-color: #1e5e3a;
+      color: #1e5e3a;
     }
 
     .chip-price {
@@ -3377,7 +3399,7 @@ export const MAP_STYLES: MapStyleOption[] = [
       font-weight: 800;
     }
 
-    .text-emerald { color: #10b981; }
+    .text-emerald { color: #1e5e3a; }
     .text-blue { color: #3b82f6; }
     .text-purple { color: #8b5cf6; }
     .text-amber { color: #f59e0b; }
@@ -3402,8 +3424,8 @@ export const MAP_STYLES: MapStyleOption[] = [
     }
 
     .sequence-route-origin {
-      background: rgba(16, 185, 129, 0.08);
-      border: 1px dashed rgba(16, 185, 129, 0.3);
+      background: rgba(30, 94, 58, 0.08);
+      border: 1px dashed rgba(30, 94, 58, 0.3);
       border-radius: var(--radius-sm, 8px);
       padding: 10px 14px;
     }
@@ -3421,7 +3443,7 @@ export const MAP_STYLES: MapStyleOption[] = [
     .node-title {
       font-size: 0.88rem;
       font-weight: 800;
-      color: #10b981;
+      color: #1e5e3a;
     }
 
     .node-desc {
@@ -4075,7 +4097,7 @@ export const MAP_STYLES: MapStyleOption[] = [
     .drawer-stop-amount {
       font-size: 0.85rem;
       font-weight: 800;
-      color: #059669;
+      color: #164a2d;
       white-space: nowrap;
       flex-shrink: 0;
     }
@@ -4129,8 +4151,8 @@ export const MAP_STYLES: MapStyleOption[] = [
 
       &.is-billed {
         background: #ecfdf5;
-        color: #047857;
-        border-color: #a7f3d0;
+        color: #1e5e3a;
+        border-color: #d1e7d8;
       }
     }
 
@@ -4393,7 +4415,7 @@ export const MAP_STYLES: MapStyleOption[] = [
 
         &:hover {
           background-color: #ecfdf5 !important;
-          color: #065f46 !important;
+          color: #164a2d !important;
         }
 
         &:first-child {
@@ -4536,7 +4558,7 @@ export const MAP_STYLES: MapStyleOption[] = [
     .courier-ready-banner {
       background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%);
       border: 1px solid #86efac;
-      color: #065f46;
+      color: #164a2d;
       border-radius: 5px;
       padding: 4px 7px;
       font-size: 0.68rem;
@@ -4553,8 +4575,8 @@ export const MAP_STYLES: MapStyleOption[] = [
       width: 7px;
       height: 7px;
       border-radius: 50%;
-      background: #10b981;
-      box-shadow: 0 0 6px #10b981;
+      background: #1e5e3a;
+      box-shadow: 0 0 6px #1e5e3a;
       flex-shrink: 0;
     }
 
@@ -4569,21 +4591,21 @@ export const MAP_STYLES: MapStyleOption[] = [
       align-items: center;
       justify-content: center;
       gap: 6px;
-      background: linear-gradient(135deg, #059669 0%, #047857 100%);
+      background: linear-gradient(135deg, #164a2d 0%, #1e5e3a 100%);
       color: #ffffff;
-      border: 1px solid #10b981;
+      border: 1px solid #1e5e3a;
       border-radius: 8px;
       padding: 6px 12px;
       font-size: 0.78rem;
       font-weight: 800;
       cursor: pointer;
-      box-shadow: 0 4px 12px rgba(16, 185, 129, 0.35);
+      box-shadow: 0 4px 12px rgba(30, 94, 58, 0.35);
       transition: all 0.2s ease;
 
       &:hover {
-        background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+        background: linear-gradient(135deg, #1e5e3a 0%, #164a2d 100%);
         transform: translateY(-1px);
-        box-shadow: 0 6px 16px rgba(16, 185, 129, 0.45);
+        box-shadow: 0 6px 16px rgba(30, 94, 58, 0.45);
       }
     }
 
@@ -4811,7 +4833,7 @@ export const MAP_STYLES: MapStyleOption[] = [
       cursor: pointer;
 
       &:focus {
-        border-color: #10b981;
+        border-color: #1e5e3a;
       }
     }
 
@@ -4842,20 +4864,20 @@ export const MAP_STYLES: MapStyleOption[] = [
     .cash-summary-label {
       font-size: 0.75rem;
       font-weight: 700;
-      color: #065f46;
+      color: #164a2d;
       text-transform: uppercase;
     }
 
     .cash-summary-amount {
       font-size: 1.6rem;
       font-weight: 900;
-      color: #047857;
+      color: #1e5e3a;
       line-height: 1.1;
     }
 
     .cash-summary-hint {
       font-size: 0.72rem;
-      color: #059669;
+      color: #164a2d;
     }
 
     .digital-summary-card {
@@ -4911,7 +4933,7 @@ export const MAP_STYLES: MapStyleOption[] = [
       display: flex;
       align-items: center;
       background: #f8fafc;
-      border: 2px solid #059669;
+      border: 2px solid #164a2d;
       border-radius: 10px;
       padding: 4px 10px;
       gap: 8px;
@@ -4921,7 +4943,7 @@ export const MAP_STYLES: MapStyleOption[] = [
     .currency-prefix {
       font-size: 1.2rem;
       font-weight: 800;
-      color: #059669;
+      color: #164a2d;
     }
 
     .cash-input-field {
@@ -4971,7 +4993,7 @@ export const MAP_STYLES: MapStyleOption[] = [
       &.diff-ok {
         background: #ecfdf5;
         border: 1px solid #86efac;
-        color: #065f46;
+        color: #164a2d;
       }
       &.diff-short {
         background: #fef2f2;
@@ -5281,13 +5303,18 @@ export class DeliveryMapComponent implements OnInit, AfterViewInit, OnDestroy {
     }
   }
 
-  readonly receivingCourierStops = computed(() => {
-    const courier = this.receivingCourier();
-    if (!courier) return [];
-    const stopMap = new Map(this.deliveryStops().map((s: DeliveryWaypoint) => [s.id, s]));
-    return courier.orderIds
-      .map((id: number) => stopMap.get(id))
-      .filter((s): s is DeliveryWaypoint => !!s);
+  readonly receivingCourierStops = computed<DeliveryWaypoint[]>(() => {
+    try {
+      const courier = this.receivingCourier();
+      if (!courier) return [];
+      const stopMap = new Map(this.deliveryStops().map((s: DeliveryWaypoint) => [s.id, s]));
+      return courier.orderIds
+        .map((id: number) => stopMap.get(id))
+        .filter((s): s is DeliveryWaypoint => !!s);
+    } catch (error: unknown) {
+      console.error('Error computing receiving courier stops:', error);
+      return [];
+    }
   });
 
   /**
@@ -5353,39 +5380,64 @@ export class DeliveryMapComponent implements OnInit, AfterViewInit, OnDestroy {
     }
   }
 
-  readonly receivingExpectedCash = computed(() => {
-    const stops = this.receivingCourierStops();
-    return stops
-      .filter((s: DeliveryWaypoint) => this.getEffectiveStopDelivered(s))
-      .filter((s: DeliveryWaypoint) => this.getEffectiveStopPaymentMethod(s) === 'EFECTIVO')
-      .reduce((sum: number, s: DeliveryWaypoint) => sum + s.totalAmount, 0);
+  readonly receivingExpectedCash = computed<number>(() => {
+    try {
+      const stops = this.receivingCourierStops();
+      return stops
+        .filter((s: DeliveryWaypoint) => this.getEffectiveStopDelivered(s))
+        .filter((s: DeliveryWaypoint) => this.getEffectiveStopPaymentMethod(s) === 'EFECTIVO')
+        .reduce((sum: number, s: DeliveryWaypoint) => sum + s.totalAmount, 0);
+    } catch (error: unknown) {
+      console.error('Error computing receiving expected cash:', error);
+      return 0;
+    }
   });
 
-  readonly receivingExpectedDigital = computed(() => {
-    const stops = this.receivingCourierStops();
-    return stops
-      .filter((s: DeliveryWaypoint) => this.getEffectiveStopDelivered(s))
-      .filter((s: DeliveryWaypoint) => {
-        const m = this.getEffectiveStopPaymentMethod(s);
-        return m === 'NEQUI' || m === 'BANCOLOMBIA';
-      })
-      .reduce((sum: number, s: DeliveryWaypoint) => sum + s.totalAmount, 0);
+  readonly receivingExpectedDigital = computed<number>(() => {
+    try {
+      const stops = this.receivingCourierStops();
+      return stops
+        .filter((s: DeliveryWaypoint) => this.getEffectiveStopDelivered(s))
+        .filter((s: DeliveryWaypoint) => {
+          const m = this.getEffectiveStopPaymentMethod(s);
+          return m === 'NEQUI' || m === 'BANCOLOMBIA';
+        })
+        .reduce((sum: number, s: DeliveryWaypoint) => sum + s.totalAmount, 0);
+    } catch (error: unknown) {
+      console.error('Error computing receiving expected digital:', error);
+      return 0;
+    }
   });
 
-  readonly receivingExpectedCredit = computed(() => {
-    const stops = this.receivingCourierStops();
-    return stops
-      .filter((s: DeliveryWaypoint) => this.getEffectiveStopDelivered(s))
-      .filter((s: DeliveryWaypoint) => this.getEffectiveStopPaymentMethod(s) === 'CREDITO')
-      .reduce((sum: number, s: DeliveryWaypoint) => sum + s.totalAmount, 0);
+  readonly receivingExpectedCredit = computed<number>(() => {
+    try {
+      const stops = this.receivingCourierStops();
+      return stops
+        .filter((s: DeliveryWaypoint) => this.getEffectiveStopDelivered(s))
+        .filter((s: DeliveryWaypoint) => this.getEffectiveStopPaymentMethod(s) === 'CREDITO')
+        .reduce((sum: number, s: DeliveryWaypoint) => sum + s.totalAmount, 0);
+    } catch (error: unknown) {
+      console.error('Error computing receiving expected credit:', error);
+      return 0;
+    }
   });
 
-  readonly receivingTotalCollected = computed(() => {
-    return this.receivingExpectedCash() + this.receivingExpectedDigital() + this.receivingExpectedCredit();
+  readonly receivingTotalCollected = computed<number>(() => {
+    try {
+      return this.receivingExpectedCash() + this.receivingExpectedDigital() + this.receivingExpectedCredit();
+    } catch (error: unknown) {
+      console.error('Error computing receiving total collected:', error);
+      return 0;
+    }
   });
 
-  readonly cashDifference = computed(() => {
-    return this.physicalCashReceived() - this.receivingExpectedCash();
+  readonly cashDifference = computed<number>(() => {
+    try {
+      return this.physicalCashReceived() - this.receivingExpectedCash();
+    } catch (error: unknown) {
+      console.error('Error computing cash difference:', error);
+      return 0;
+    }
   });
 
   /**
@@ -5646,12 +5698,11 @@ export class DeliveryMapComponent implements OnInit, AfterViewInit, OnDestroy {
   readonly selectedMapStyleId = signal<string>(
     (() => {
       try {
-        const stored = localStorage.getItem('despulpadora_map_style');
-        if (!stored || stored === 'stadia-smooth' || stored === 'carto-positron') return 'osm-white';
-        if (stored === 'stadia-dark' || stored === 'carto-dark') return 'osm-dark';
+        const stored = localStorage.getItem('despulpadora_map_style_v3');
+        if (!stored || !MAP_STYLES.some(s => s.id === stored)) return 'arcgis-white';
         return stored;
       } catch {
-        return 'osm-white';
+        return 'arcgis-white';
       }
     })()
   );
@@ -5731,70 +5782,115 @@ export class DeliveryMapComponent implements OnInit, AfterViewInit, OnDestroy {
     }
   }
 
-  readonly assignedCouriers = computed(() => {
-    const stops = this.deliveryStops();
-    const validStopIds = new Set(stops.map((s: DeliveryWaypoint) => s.id));
-    return this.couriers().filter(
-      (c: Courier) => c.orderIds.some((id: number) => validStopIds.has(id)) || stops.some((s: DeliveryWaypoint) => s.assignedCourierId === c.id)
-    );
-  });
-
-  readonly deliveredCount = computed(() => {
-    return this.deliveryStops().filter((s: DeliveryWaypoint) => s.isDelivered).length;
-  });
-
-  readonly totalTransitCash = computed(() => {
-    return this.deliveryStops()
-      .filter((s: DeliveryWaypoint) => !s.isDelivered)
-      .reduce((sum: number, s: DeliveryWaypoint) => sum + s.totalAmount, 0);
-  });
-
-  readonly activeSpeedAvg = computed(() => {
-    const list = this.couriers();
-    if (list.length === 0) return 0;
-    const sum = list.reduce((acc: number, c: Courier) => acc + c.currentSpeedKmH, 0);
-    return Math.round(sum / list.length);
-  });
-
-  readonly activePlannerStops = computed(() => {
-    const courier = this.couriers().find((c: Courier) => c.id === this.activePlannerCourierId());
-    if (!courier) return [];
-    const stopMap = new Map(this.deliveryStops().map((s: DeliveryWaypoint) => [s.id, s]));
-    return courier.orderIds
-      .map((id: number) => stopMap.get(id))
-      .filter((s): s is DeliveryWaypoint => !!s);
-  });
-
-  readonly computedPlannerDistanceKm = computed(() => {
-    const stops = this.activePlannerStops();
-    if (stops.length === 0) return '0.0';
-    let totalKm = 0;
-    let prevLat = PLANTA_MATRIZ_LAT;
-    let prevLng = PLANTA_MATRIZ_LNG;
-
-    for (const stop of stops) {
-      totalKm += this.calculateHaversineKm(prevLat, prevLng, stop.lat, stop.lng);
-      prevLat = stop.lat;
-      prevLng = stop.lng;
+  readonly assignedCouriers = computed<Courier[]>(() => {
+    try {
+      const stops = this.deliveryStops();
+      const validStopIds = new Set(stops.map((s: DeliveryWaypoint) => s.id));
+      return this.couriers().filter(
+        (c: Courier) => c.orderIds.some((id: number) => validStopIds.has(id)) || stops.some((s: DeliveryWaypoint) => s.assignedCourierId === c.id)
+      );
+    } catch (error: unknown) {
+      console.error('Error computing assigned couriers:', error);
+      return [];
     }
-    totalKm += this.calculateHaversineKm(prevLat, prevLng, PLANTA_MATRIZ_LAT, PLANTA_MATRIZ_LNG);
-    return (totalKm * 1.32).toFixed(1);
   });
 
-  readonly computedPlannerDurationMins = computed(() => {
-    const km = parseFloat(this.computedPlannerDistanceKm());
-    const stopsCount = this.activePlannerStops().length;
-    const transitMins = Math.round((km / 28) * 60);
-    const serviceMins = stopsCount * 8;
-    return transitMins + serviceMins;
+  readonly deliveredCount = computed<number>(() => {
+    try {
+      return this.deliveryStops().filter((s: DeliveryWaypoint) => s.isDelivered).length;
+    } catch (error: unknown) {
+      console.error('Error computing delivered count:', error);
+      return 0;
+    }
   });
 
-  readonly computedPlannerWeightKg = computed(() => {
-    return this.activePlannerStops().reduce((sum: number, s: DeliveryWaypoint) => sum + s.weightKg, 0).toFixed(1);
+  readonly totalTransitCash = computed<number>(() => {
+    try {
+      return this.deliveryStops()
+        .filter((s: DeliveryWaypoint) => !s.isDelivered)
+        .reduce((sum: number, s: DeliveryWaypoint) => sum + s.totalAmount, 0);
+    } catch (error: unknown) {
+      console.error('Error computing total transit cash:', error);
+      return 0;
+    }
   });
 
-  readonly computedPlannerTotalCash = computed(() => {
-    return this.activePlannerStops().reduce((sum: number, s: DeliveryWaypoint) => sum + s.totalAmount, 0);
+  readonly activeSpeedAvg = computed<number>(() => {
+    try {
+      const list = this.couriers();
+      if (list.length === 0) return 0;
+      const sum = list.reduce((acc: number, c: Courier) => acc + c.currentSpeedKmH, 0);
+      return Math.round(sum / list.length);
+    } catch (error: unknown) {
+      console.error('Error computing active speed avg:', error);
+      return 0;
+    }
+  });
+
+  readonly activePlannerStops = computed<DeliveryWaypoint[]>(() => {
+    try {
+      const courier = this.couriers().find((c: Courier) => c.id === this.activePlannerCourierId());
+      if (!courier) return [];
+      const stopMap = new Map(this.deliveryStops().map((s: DeliveryWaypoint) => [s.id, s]));
+      return courier.orderIds
+        .map((id: number) => stopMap.get(id))
+        .filter((s): s is DeliveryWaypoint => !!s);
+    } catch (error: unknown) {
+      console.error('Error computing active planner stops:', error);
+      return [];
+    }
+  });
+
+  readonly computedPlannerDistanceKm = computed<string>(() => {
+    try {
+      const stops = this.activePlannerStops();
+      if (stops.length === 0) return '0.0';
+      let totalKm = 0;
+      let prevLat = PLANTA_MATRIZ_LAT;
+      let prevLng = PLANTA_MATRIZ_LNG;
+
+      for (const stop of stops) {
+        totalKm += this.calculateHaversineKm(prevLat, prevLng, stop.lat, stop.lng);
+        prevLat = stop.lat;
+        prevLng = stop.lng;
+      }
+      totalKm += this.calculateHaversineKm(prevLat, prevLng, PLANTA_MATRIZ_LAT, PLANTA_MATRIZ_LNG);
+      return (totalKm * 1.32).toFixed(1);
+    } catch (error: unknown) {
+      console.error('Error computing planner distance km:', error);
+      return '0.0';
+    }
+  });
+
+  readonly computedPlannerDurationMins = computed<number>(() => {
+    try {
+      const km = parseFloat(this.computedPlannerDistanceKm());
+      const stopsCount = this.activePlannerStops().length;
+      const transitMins = Math.round((km / 28) * 60);
+      const serviceMins = stopsCount * 8;
+      return transitMins + serviceMins;
+    } catch (error: unknown) {
+      console.error('Error computing planner duration mins:', error);
+      return 0;
+    }
+  });
+
+  readonly computedPlannerWeightKg = computed<string>(() => {
+    try {
+      return this.activePlannerStops().reduce((sum: number, s: DeliveryWaypoint) => sum + s.weightKg, 0).toFixed(1);
+    } catch (error: unknown) {
+      console.error('Error computing planner weight kg:', error);
+      return '0.0';
+    }
+  });
+
+  readonly computedPlannerTotalCash = computed<number>(() => {
+    try {
+      return this.activePlannerStops().reduce((sum: number, s: DeliveryWaypoint) => sum + s.totalAmount, 0);
+    } catch (error: unknown) {
+      console.error('Error computing planner total cash:', error);
+      return 0;
+    }
   });
 
   /**
@@ -5917,27 +6013,31 @@ export class DeliveryMapComponent implements OnInit, AfterViewInit, OnDestroy {
         this.currentRefLayer = undefined;
       }
 
-      const tileClassName =
-        style.id === 'osm-white'
-          ? 'osm-tile-white-smooth'
-          : style.id === 'osm-dark'
-            ? 'osm-tile-dark-smooth'
-            : '';
-
       const options: L.TileLayerOptions = {
         maxZoom: style.maxZoom,
         maxNativeZoom: style.maxNativeZoom,
-        className: tileClassName,
-        attribution: style.id === 'esri-gray'
-          ? 'Tiles &copy; Esri &mdash; Esri, DeLorme, NAVTEQ'
+        attribution: style.id.startsWith('arcgis') || style.id.startsWith('esri')
+          ? 'Tiles &copy; Esri &mdash; Esri, HERE, Garmin, OpenStreetMap'
           : '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap</a> contributors'
       };
 
       this.currentTileLayer = L.tileLayer(style.url, options).addTo(this.map);
 
+      const tilePane = this.map.getPane('tilePane');
+      if (tilePane) {
+        tilePane.style.filter = 'none';
+        tilePane.style.setProperty('-webkit-filter', 'none');
+      }
+      this.map.getContainer().style.backgroundColor = style.id === 'osm-dark' ? '#0f172a' : '#f4f6f8';
+
       if (style.id === 'esri-gray') {
         this.currentRefLayer = L.tileLayer(
           'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Reference/MapServer/tile/{z}/{y}/{x}',
+          { maxZoom: 19, maxNativeZoom: 16 }
+        ).addTo(this.map);
+      } else if (style.id === 'osm-dark') {
+        this.currentRefLayer = L.tileLayer(
+          'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Reference/MapServer/tile/{z}/{y}/{x}',
           { maxZoom: 19, maxNativeZoom: 16 }
         ).addTo(this.map);
       }
@@ -5945,7 +6045,7 @@ export class DeliveryMapComponent implements OnInit, AfterViewInit, OnDestroy {
       this.updatePolylineStylesForActiveMap();
 
       try {
-        localStorage.setItem('despulpadora_map_style', styleId);
+        localStorage.setItem('despulpadora_map_style_v3', style.id);
       } catch {
       }
     } catch (error: unknown) {
@@ -5983,10 +6083,10 @@ export class DeliveryMapComponent implements OnInit, AfterViewInit, OnDestroy {
 
       const plantaHtml = `
         <div style="
-          background: #10b981;
+          background: #1e5e3a;
           color: #fff;
           border: 2px solid #ffffff;
-          box-shadow: 0 0 16px rgba(16, 185, 129, 0.7);
+          box-shadow: 0 0 16px rgba(30, 94, 58, 0.7);
           width: 38px;
           height: 38px;
           border-radius: 50%;
@@ -6015,7 +6115,7 @@ export class DeliveryMapComponent implements OnInit, AfterViewInit, OnDestroy {
       const marker = L.marker([PLANTA_MATRIZ_LAT, PLANTA_MATRIZ_LNG], { icon: plantaIcon }).addTo(this.map);
       marker.bindPopup(`
         <div style="font-family: var(--font-body); padding: 4px;">
-          <strong style="color: #10b981; font-size: 0.95rem;">CAVA MATRIZ CUNDINAMARCA</strong>
+          <strong style="color: #1e5e3a; font-size: 0.95rem;">CAVA MATRIZ CUNDINAMARCA</strong>
           <p style="margin: 4px 0 0 0; font-size: 0.8rem; color: #475569;">
             Parque Industrial Calle 80 / Cota<br/>
             Hub Central de Almacenamiento & Despacho de Pulpa Congelada.
@@ -6048,7 +6148,7 @@ export class DeliveryMapComponent implements OnInit, AfterViewInit, OnDestroy {
           return;
         }
 
-        const bgColor = stop.isDelivered ? '#10b981' : (courier ? courier.color : '#ffffff');
+        const bgColor = stop.isDelivered ? '#1e5e3a' : (courier ? courier.color : '#ffffff');
         const textColor = isUnassigned ? '#0f172a' : '#ffffff';
         const borderColor = isUnassigned ? '#475569' : '#ffffff';
         const borderWidth = isUnassigned ? '2.5px' : '2px';
@@ -6133,7 +6233,7 @@ export class DeliveryMapComponent implements OnInit, AfterViewInit, OnDestroy {
             <strong style="font-size: 0.95rem; color: #0f172a; display: block; margin-top: 2px;">${stop.clientName}</strong>
             <div style="font-size: 0.78rem; color: #64748b; margin-top: 4px;">${stop.address} (${stop.zone})</div>
             <div style="font-size: 0.78rem; color: #f59e0b; margin-top: 2px;">${stop.itemsSummary}</div>
-            <div style="font-size: 0.85rem; font-weight: 800; color: #10b981; margin-top: 6px;">Total: ${this.formatCOP(stop.totalAmount)}</div>
+            <div style="font-size: 0.85rem; font-weight: 800; color: #1e5e3a; margin-top: 6px;">Total: ${this.formatCOP(stop.totalAmount)}</div>
             <div style="margin-top: 8px; padding-top: 8px; border-top: 1px solid #e2e8f0;">
               <div style="font-size: 0.7rem; font-weight: 800; color: #1e5e3a; text-transform: uppercase; letter-spacing: 0.03em; margin-bottom: 6px;">
                 Asignar mensajero:
@@ -6564,11 +6664,16 @@ export class DeliveryMapComponent implements OnInit, AfterViewInit, OnDestroy {
     }
   }
 
-  readonly zoneCapturedStops = computed(() => {
-    const pts = this.zonePolygonPoints();
-    const target = this.zoneTargetPoints();
-    if (pts.length < target) return [];
-    return this.deliveryStops().filter((stop: DeliveryWaypoint) => this.isPointInPolygon(stop.lat, stop.lng, pts));
+  readonly zoneCapturedStops = computed<DeliveryWaypoint[]>(() => {
+    try {
+      const pts = this.zonePolygonPoints();
+      const target = this.zoneTargetPoints();
+      if (pts.length < target) return [];
+      return this.deliveryStops().filter((stop: DeliveryWaypoint) => this.isPointInPolygon(stop.lat, stop.lng, pts));
+    } catch (error: unknown) {
+      console.error('Error computing zone captured stops:', error);
+      return [];
+    }
   });
 
   /**
@@ -7031,7 +7136,7 @@ export class DeliveryMapComponent implements OnInit, AfterViewInit, OnDestroy {
             id="btn-create-order-from-search"
             style="
               width: 100%;
-              background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+              background: linear-gradient(135deg, #1e5e3a 0%, #164a2d 100%);
               color: #ffffff;
               border: none;
               padding: 8px 12px;
@@ -7043,7 +7148,7 @@ export class DeliveryMapComponent implements OnInit, AfterViewInit, OnDestroy {
               align-items: center;
               justify-content: center;
               gap: 6px;
-              box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+              box-shadow: 0 4px 12px rgba(30, 94, 58, 0.3);
             "
           >
             Crear Pedido en Esta Dirección
@@ -7613,46 +7718,56 @@ export class DeliveryMapComponent implements OnInit, AfterViewInit, OnDestroy {
     }
   }
 
-  readonly filteredDrawerStops = computed(() => {
-    const cFilter = this.drawerCourierFilter();
-    const query = this.drawerSearchQuery().trim().toLowerCase();
-    let list = this.deliveryStops();
+  readonly filteredDrawerStops = computed<DeliveryWaypoint[]>(() => {
+    try {
+      const cFilter = this.drawerCourierFilter();
+      const query = this.drawerSearchQuery().trim().toLowerCase();
+      let list = this.deliveryStops();
 
-    if (cFilter !== 'all') {
-      const courier = this.couriers().find((c: Courier) => c.id === cFilter);
-      if (courier) {
-        const stopMap = new Map(this.deliveryStops().map((s: DeliveryWaypoint) => [s.id, s]));
-        const ordered = courier.orderIds
-          .map((id: number) => stopMap.get(id))
-          .filter((s): s is DeliveryWaypoint => !!s);
-        const orderedIds = new Set(courier.orderIds);
-        const extras = this.deliveryStops().filter(
-          (s: DeliveryWaypoint) => s.assignedCourierId === cFilter && !orderedIds.has(s.id)
-        );
-        list = [...ordered, ...extras];
-      } else {
-        list = list.filter((s: DeliveryWaypoint) => s.assignedCourierId === cFilter);
+      if (cFilter !== 'all') {
+        const courier = this.couriers().find((c: Courier) => c.id === cFilter);
+        if (courier) {
+          const stopMap = new Map(this.deliveryStops().map((s: DeliveryWaypoint) => [s.id, s]));
+          const ordered = courier.orderIds
+            .map((id: number) => stopMap.get(id))
+            .filter((s): s is DeliveryWaypoint => !!s);
+          const orderedIds = new Set(courier.orderIds);
+          const extras = this.deliveryStops().filter(
+            (s: DeliveryWaypoint) => s.assignedCourierId === cFilter && !orderedIds.has(s.id)
+          );
+          list = [...ordered, ...extras];
+        } else {
+          list = list.filter((s: DeliveryWaypoint) => s.assignedCourierId === cFilter);
+        }
       }
-    }
 
-    if (query) {
-      list = list.filter(
-        (s: DeliveryWaypoint) =>
-          s.clientName.toLowerCase().includes(query) ||
-          s.orderNumber.toLowerCase().includes(query) ||
-          s.address.toLowerCase().includes(query) ||
-          s.zone.toLowerCase().includes(query)
-      );
-    }
+      if (query) {
+        list = list.filter(
+          (s: DeliveryWaypoint) =>
+            s.clientName.toLowerCase().includes(query) ||
+            s.orderNumber.toLowerCase().includes(query) ||
+            s.address.toLowerCase().includes(query) ||
+            s.zone.toLowerCase().includes(query)
+        );
+      }
 
-    return list;
+      return list;
+    } catch (error: unknown) {
+      console.error('Error computing filtered drawer stops:', error);
+      return [];
+    }
   });
 
-  readonly unmappedOrders = computed(() => {
-    const mappedIds = new Set(this.deliveryStops().map((s: DeliveryWaypoint) => s.id));
-    return this.stateService
-      .orders()
-      .filter((o: OrderDto) => o.status !== 'CANCELLED' && o.status !== 'DELIVERED' && !mappedIds.has(o.orderId));
+  readonly unmappedOrders = computed<OrderDto[]>(() => {
+    try {
+      const mappedIds = new Set(this.deliveryStops().map((s: DeliveryWaypoint) => s.id));
+      return this.stateService
+        .orders()
+        .filter((o: OrderDto) => o.status !== 'CANCELLED' && o.status !== 'DELIVERED' && !mappedIds.has(o.orderId));
+    } catch (error: unknown) {
+      console.error('Error computing unmapped orders:', error);
+      return [];
+    }
   });
 
   readonly isRefreshingDrawer = signal<boolean>(false);
