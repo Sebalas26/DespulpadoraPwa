@@ -25,6 +25,15 @@ export class DashboardComponent {
   // Modal states
   readonly showEditTargetModal = signal(false);
   readonly editTargetAmount = signal<number>(18000000);
+  readonly selectedKpiCard = signal<'billing' | 'pulpStock' | 'pulpsSoldToday' | 'freshFruit' | null>(null);
+
+  openKpiDetail(card: 'billing' | 'pulpStock' | 'pulpsSoldToday' | 'freshFruit') {
+    this.selectedKpiCard.set(card);
+  }
+
+  closeKpiDetail() {
+    this.selectedKpiCard.set(null);
+  }
 
   constructor() {
     this.route.queryParams.subscribe(params => {
@@ -102,7 +111,114 @@ export class DashboardComponent {
     return {
       revenue,
       ordersCount: todayOrders.length,
-      unitsSold: units
+      unitsSold: units,
+      orders: todayOrders
+    };
+  });
+
+  // Detailed orders list for "Facturación hoy" modal
+  readonly todayOrdersList = computed(() => {
+    const orders = this.todayBillingStats().orders;
+    const statusLabels: Record<string, string> = {
+      PENDING: 'Pendiente',
+      PICKING: 'En Alistamiento',
+      BILLED: 'Facturado',
+      DISPATCHED: 'En Ruta',
+      DELIVERED: 'Entregado',
+      CANCELLED: 'Cancelado'
+    };
+
+    return orders.map(o => {
+      const totalUnits = o.items.reduce((sum, i) => sum + (i.quantity || 0), 0);
+      const totalKg = Number(
+        o.items.reduce((sum, i) => sum + ((i.quantity || 0) * (i.grammage || 250)) / 1000, 0).toFixed(1)
+      );
+      return {
+        id: o.orderId,
+        orderNumber: o.orderNumber || `PED-${o.orderId}`,
+        clientName: o.clientName || 'Cliente General',
+        status: o.status,
+        statusLabel: statusLabels[o.status] || o.status,
+        paymentMethod: o.paymentMethodName || 'Efectivo',
+        totalUnits,
+        totalKg,
+        itemsCount: o.items.length,
+        itemsSummary: o.items.map(i => `${i.quantity}x ${i.fruitName} (${i.grammage}g)`).join(', '),
+        totalAmount: o.totalAmount || 0
+      };
+    });
+  });
+
+  // Detailed breakdown of pulps sold today for "Pulpas vendidas hoy" modal
+  readonly todaySoldPulpsBreakdown = computed(() => {
+    const orders = this.todayBillingStats().orders;
+    const fruitsConfig = this.stateService.fruits();
+    const byGrammage = { g140: 0, g250: 0, g500: 0, g1000: 0 };
+    let totalUnits = 0;
+    let totalKg = 0;
+
+    const fruitMap = new Map<
+      string,
+      {
+        name: string;
+        color: string;
+        g140: number;
+        g250: number;
+        g500: number;
+        g1000: number;
+        units: number;
+        totalKg: number;
+        revenue: number;
+      }
+    >();
+
+    orders.forEach(order => {
+      order.items.forEach(item => {
+        const qty = item.quantity || 0;
+        const gram = item.grammage || 250;
+        const price = item.unitPrice || 0;
+        const fruitName = item.fruitName || 'Otra';
+        const fruitMeta = fruitsConfig.find(f => f.name.toLowerCase() === fruitName.toLowerCase());
+
+        totalUnits += qty;
+        totalKg += (qty * gram) / 1000;
+
+        if (gram === 140) byGrammage.g140 += qty;
+        else if (gram === 250) byGrammage.g250 += qty;
+        else if (gram === 500) byGrammage.g500 += qty;
+        else if (gram === 1000) byGrammage.g1000 += qty;
+
+        const existing = fruitMap.get(fruitName) || {
+          name: fruitName,
+          color: fruitMeta?.color || '#1e5e3a',
+          g140: 0,
+          g250: 0,
+          g500: 0,
+          g1000: 0,
+          units: 0,
+          totalKg: 0,
+          revenue: 0
+        };
+
+        if (gram === 140) existing.g140 += qty;
+        else if (gram === 250) existing.g250 += qty;
+        else if (gram === 500) existing.g500 += qty;
+        else if (gram === 1000) existing.g1000 += qty;
+
+        existing.units += qty;
+        existing.totalKg = Number((existing.totalKg + (qty * gram) / 1000).toFixed(1));
+        existing.revenue += qty * price;
+        fruitMap.set(fruitName, existing);
+      });
+    });
+
+    const items = Array.from(fruitMap.values()).sort((a, b) => b.units - a.units);
+
+    return {
+      totalUnits,
+      totalKg: Number(totalKg.toFixed(1)),
+      byGrammage,
+      items
     };
   });
 

@@ -5,6 +5,7 @@ import { VoiceOrdersService } from '../../../core/services/voice-orders.service'
 import { StateService } from '../../../core/services/state.service';
 import { ConfirmVoiceOrderPayload, VoiceOrderItemDto, VoiceOrderMessageDto } from '../../../core/models/voice-order.models';
 import { FruitConfig } from '../../../core/data/initial-data';
+import { CopCurrencyInputDirective } from '../../../shared/directives/cop-currency-input.directive';
 import confetti from 'canvas-confetti';
 
 interface EditableOrderItem {
@@ -17,7 +18,7 @@ interface EditableOrderItem {
 @Component({
   selector: 'app-voice-order-modal',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, CopCurrencyInputDirective],
   templateUrl: './voice-order-modal.component.html',
   styleUrls: ['./voice-order-modal.component.scss']
 })

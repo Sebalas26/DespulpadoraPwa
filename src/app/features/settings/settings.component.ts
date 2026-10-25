@@ -16,6 +16,7 @@ import {
 } from '../../core/models/business.models';
 import { AdminUsersComponent } from '../admin/users/users.component';
 import { AdminRolesComponent } from '../admin/roles/roles.component';
+import { CopCurrencyInputDirective } from '../../shared/directives/cop-currency-input.directive';
 
 const DEFAULT_CATEGORIES: InventoryCategoryConfig[] = [
   { id: 'PULPAS', name: 'Pulpas Puras', icon: '', badgeClass: 'badge-warning', isActive: true },
@@ -47,7 +48,7 @@ const DEFAULT_COLUMNS: InventoryColumnConfig[] = [
 @Component({
   selector: 'app-settings',
   standalone: true,
-  imports: [CommonModule, FormsModule, AdminUsersComponent, AdminRolesComponent],
+  imports: [CommonModule, FormsModule, AdminUsersComponent, AdminRolesComponent, CopCurrencyInputDirective],
   templateUrl: './settings.component.html',
   styleUrls: ['./settings.component.scss']
 })

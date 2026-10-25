@@ -5,6 +5,7 @@ import { Router } from '@angular/router';
 import { StateService } from '../../core/services/state.service';
 import { NotificationService } from '../../core/services/notification.service';
 import { FruitConfig, PortalCmsConfig } from '../../core/data/initial-data';
+import { CopCurrencyInputDirective } from '../../shared/directives/cop-currency-input.directive';
 
 interface EditableCardDraft {
   id: string;
@@ -27,7 +28,7 @@ interface EditableCardDraft {
 @Component({
   selector: 'app-client-portal-admin',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, CopCurrencyInputDirective],
   template: `
     <div class="portal-admin-page">
       <!-- ========================================================
@@ -356,9 +357,9 @@ interface EditableCardDraft {
                     <div class="cop-input-wrap">
                       <span class="cop-sign">$</span>
                       <input
-                        type="number"
-                        min="0"
-                        step="100"
+                        type="text"
+                        appCopInput
+                        [appCopPrefix]="false"
                         [ngModel]="fruit.prices.g140"
                         (ngModelChange)="updateInlinePrice(fruit, 'g140', $event)"
                       />
@@ -370,9 +371,9 @@ interface EditableCardDraft {
                     <div class="cop-input-wrap">
                       <span class="cop-sign">$</span>
                       <input
-                        type="number"
-                        min="0"
-                        step="100"
+                        type="text"
+                        appCopInput
+                        [appCopPrefix]="false"
                         [ngModel]="fruit.prices.g250"
                         (ngModelChange)="updateInlinePrice(fruit, 'g250', $event)"
                       />
@@ -384,9 +385,9 @@ interface EditableCardDraft {
                     <div class="cop-input-wrap">
                       <span class="cop-sign">$</span>
                       <input
-                        type="number"
-                        min="0"
-                        step="100"
+                        type="text"
+                        appCopInput
+                        [appCopPrefix]="false"
                         [ngModel]="fruit.prices.g500"
                         (ngModelChange)="updateInlinePrice(fruit, 'g500', $event)"
                       />
@@ -398,9 +399,9 @@ interface EditableCardDraft {
                     <div class="cop-input-wrap">
                       <span class="cop-sign">$</span>
                       <input
-                        type="number"
-                        min="0"
-                        step="100"
+                        type="text"
+                        appCopInput
+                        [appCopPrefix]="false"
                         [ngModel]="fruit.prices.g1000"
                         (ngModelChange)="updateInlinePrice(fruit, 'g1000', $event)"
                       />
@@ -542,19 +543,19 @@ interface EditableCardDraft {
                   <div class="modal-prices-grid">
                     <div class="form-group">
                       <label>Bolsa 140g</label>
-                      <input type="number" min="0" step="100" [(ngModel)]="activeDraft()!.prices.g140" />
+                      <input type="text" appCopInput [(ngModel)]="activeDraft()!.prices.g140" />
                     </div>
                     <div class="form-group">
                       <label>Bolsa 250g</label>
-                      <input type="number" min="0" step="100" [(ngModel)]="activeDraft()!.prices.g250" />
+                      <input type="text" appCopInput [(ngModel)]="activeDraft()!.prices.g250" />
                     </div>
                     <div class="form-group">
                       <label>Bolsa 500g</label>
-                      <input type="number" min="0" step="100" [(ngModel)]="activeDraft()!.prices.g500" />
+                      <input type="text" appCopInput [(ngModel)]="activeDraft()!.prices.g500" />
                     </div>
                     <div class="form-group">
                       <label>Bolsa 1000g (1 Kg)</label>
-                      <input type="number" min="0" step="100" [(ngModel)]="activeDraft()!.prices.g1000" />
+                      <input type="text" appCopInput [(ngModel)]="activeDraft()!.prices.g1000" />
                     </div>
                   </div>
                 </div>

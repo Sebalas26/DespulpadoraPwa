@@ -307,7 +307,7 @@ import { environment } from '../../../environments/environment';
       width: 100%;
       background: #ffffff;
       border-radius: 20px 20px 0 0;
-      padding: 12px 16px max(14px, env(safe-area-inset-bottom, 12px));
+      padding: 16px 18px max(20px, env(safe-area-inset-bottom, 16px));
       max-height: 94dvh;
       overflow-y: auto;
       box-shadow: 0 -8px 30px rgba(0, 0, 0, 0.18);
@@ -318,20 +318,20 @@ import { environment } from '../../../environments/environment';
       display: flex;
       align-items: center;
       justify-content: space-between;
-      margin-bottom: 6px;
-      padding-bottom: 8px;
+      margin-bottom: 10px;
+      padding-bottom: 12px;
       border-bottom: 1px solid #eef2ef;
     }
 
     .drawer-link-item {
       display: flex;
       align-items: center;
-      gap: 10px;
-      padding: 6px 10px;
-      border-radius: 10px;
+      gap: 12px;
+      padding: 10px 12px;
+      border-radius: 12px;
       text-decoration: none;
       transition: background 0.15s ease;
-      margin-bottom: 2px;
+      margin-bottom: 4px;
 
       &:hover {
         background: #f6f8f7;
@@ -339,10 +339,10 @@ import { environment } from '../../../environments/environment';
     }
 
     .drawer-icon {
-      font-size: 1.15rem;
-      width: 32px;
-      height: 32px;
-      border-radius: 9px;
+      font-size: 1.25rem;
+      width: 36px;
+      height: 36px;
+      border-radius: 10px;
       background: #f0f7f2;
       display: flex;
       align-items: center;
@@ -351,21 +351,22 @@ import { environment } from '../../../environments/environment';
     }
 
     .drawer-title {
-      font-size: 0.84rem;
+      font-size: 0.87rem;
       font-weight: 700;
       color: #111827;
-      line-height: 1.2;
+      line-height: 1.25;
     }
 
     .drawer-desc {
-      font-size: 0.7rem;
+      font-size: 0.73rem;
       color: #6b7280;
-      line-height: 1.2;
+      line-height: 1.25;
+      margin-top: 2px;
     }
 
     .mobile-drawer-footer {
-      margin-top: 8px;
-      padding-top: 8px;
+      margin-top: 12px;
+      padding-top: 12px;
       border-top: 1px solid #eef2ef;
     }
 
@@ -374,16 +375,16 @@ import { environment } from '../../../environments/environment';
       justify-content: center;
       color: #dc2626 !important;
       border-color: #fecaca !important;
-      padding: 8px 14px !important;
-      font-size: 0.84rem !important;
+      padding: 10px 14px !important;
+      font-size: 0.86rem !important;
     }
 
     .drawer-version-text {
-      font-size: 0.65rem;
+      font-size: 0.68rem;
       font-weight: 600;
       color: #9ca3af;
       text-align: center;
-      margin-top: 6px;
+      margin-top: 8px;
       letter-spacing: 0.04em;
     }
 

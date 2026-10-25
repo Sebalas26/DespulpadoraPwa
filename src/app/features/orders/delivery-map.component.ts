@@ -16,6 +16,7 @@ import { StateService } from '../../core/services/state.service';
 import { NotificationService } from '../../core/services/notification.service';
 import { GeocodingService } from '../../core/services/geocoding.service';
 import { OrderDto } from '../../core/models/business.models';
+import { CopCurrencyInputDirective } from '../../shared/directives/cop-currency-input.directive';
 import confetti from 'canvas-confetti';
 import * as L from 'leaflet';
 
@@ -272,7 +273,7 @@ export const MAP_STYLES: MapStyleOption[] = [
 @Component({
   selector: 'app-delivery-map',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, CopCurrencyInputDirective],
   template: `
     <div class="delivery-map-container">
       <!-- Map Header & Telemetry Bar -->
@@ -1202,10 +1203,11 @@ export const MAP_STYLES: MapStyleOption[] = [
                 <div class="form-group half-col">
                   <label class="form-label">Total a Cobrar ($ COP)</label>
                   <input
-                    type="number"
+                    type="text"
+                    appCopInput
                     class="form-input"
                     [(ngModel)]="newOrderAmount"
-                    placeholder="150000"
+                    placeholder="$ 150.000"
                   />
                 </div>
 
@@ -1618,12 +1620,12 @@ export const MAP_STYLES: MapStyleOption[] = [
                     <div class="cash-input-shell">
                       <span class="currency-prefix">$</span>
                       <input
-                        type="number"
+                        type="text"
+                        appCopInput
+                        [appCopPrefix]="false"
                         class="cash-input-field"
                         [ngModel]="physicalCashReceived()"
                         (ngModelChange)="physicalCashReceived.set(+$event)"
-                        step="1000"
-                        min="0"
                       />
                       <button
                         type="button"
@@ -1943,6 +1945,28 @@ export const MAP_STYLES: MapStyleOption[] = [
       padding: 8px 12px;
       border-radius: var(--radius-sm, 8px);
       background: var(--bg-subtle);
+    }
+
+    @media (max-width: 768px) {
+      .map-header-card {
+        background: transparent;
+        border: none;
+        padding: 0;
+        box-shadow: none;
+      }
+
+      .telemetry-bar {
+        grid-template-columns: 1fr;
+        gap: 10px;
+      }
+
+      .telemetry-item {
+        background: #ffffff;
+        border: 1.5px solid #e2e8f0;
+        border-radius: 14px;
+        padding: 12px 14px;
+        box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
+      }
     }
 
     .telemetry-icon {

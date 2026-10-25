@@ -167,6 +167,9 @@ import { VoiceOrdersService } from '../../core/services/voice-orders.service';
     .topbar {
       height: 64px;
       border-bottom: 1px solid var(--border-subtle);
+      border-left: 1px solid var(--border-subtle);
+      border-top-left-radius: 20px;
+      border-bottom-left-radius: 20px;
       background: #ffffff !important;
       display: flex;
       align-items: center;
@@ -181,6 +184,14 @@ import { VoiceOrdersService } from '../../core/services/voice-orders.service';
       transition: transform 0.32s cubic-bezier(0.16, 1, 0.3, 1),
                   opacity 0.28s ease,
                   visibility 0.28s ease;
+    }
+
+    @media (max-width: 1024px) {
+      .topbar {
+        border-left: none;
+        border-top-left-radius: 0;
+        border-bottom-left-radius: 0;
+      }
     }
 
     .topbar.header-hidden {

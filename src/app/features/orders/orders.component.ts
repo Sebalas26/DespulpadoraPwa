@@ -8,13 +8,14 @@ import { VoiceOrdersService } from '../../core/services/voice-orders.service';
 import { GeocodingService, GeocodedLocation } from '../../core/services/geocoding.service';
 import { OrderDto, OrderStatus } from '../../core/models/business.models';
 import { DeliveryMapComponent } from './delivery-map.component';
+import { CopCurrencyInputDirective } from '../../shared/directives/cop-currency-input.directive';
 import confetti from 'canvas-confetti';
 import * as L from 'leaflet';
 
 @Component({
   selector: 'app-orders',
   standalone: true,
-  imports: [CommonModule, FormsModule, DeliveryMapComponent],
+  imports: [CommonModule, FormsModule, DeliveryMapComponent, CopCurrencyInputDirective],
   templateUrl: './orders.component.html',
   styleUrls: ['./orders.component.scss']
 })

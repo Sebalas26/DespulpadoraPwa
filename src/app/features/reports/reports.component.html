@@ -1175,9 +1175,8 @@
               />
 
               <input
-                type="number"
-                min="0"
-                step="100"
+                type="text"
+                appCopInput
                 class="form-control"
                 [ngModel]="item.unitPrice"
                 (ngModelChange)="updateEditItemPrice($index, $event)"

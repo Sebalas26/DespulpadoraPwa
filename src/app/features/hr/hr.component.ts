@@ -5,13 +5,14 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { StateService } from '../../core/services/state.service';
 import { NotificationService } from '../../core/services/notification.service';
 import { EmployeeArea, EmployeeDto, EmployeeGender, PayrollSettlementDto, WorkShiftDto } from '../../core/models/business.models';
+import { CopCurrencyInputDirective } from '../../shared/directives/cop-currency-input.directive';
 
 export type HrTabType = 'employees' | 'shifts' | 'certificates' | 'payroll';
 
 @Component({
   selector: 'app-hr',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, CopCurrencyInputDirective],
   templateUrl: './hr.component.html',
   styleUrls: ['./hr.component.scss']
 })

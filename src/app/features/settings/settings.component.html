@@ -2206,8 +2206,8 @@
           <div class="form-group" style="margin: 0;">
             <label class="form-label">Costo Unitario (COP) *</label>
             <input
-              type="number"
-              min="0"
+              type="text"
+              appCopInput
               class="form-control"
               [ngModel]="newVariantUnitCost()"
               (ngModelChange)="newVariantUnitCost.set($event)"
@@ -2217,8 +2217,8 @@
           <div class="form-group" style="margin: 0;">
             <label class="form-label">Precio de Venta (COP) *</label>
             <input
-              type="number"
-              min="0"
+              type="text"
+              appCopInput
               class="form-control"
               [ngModel]="newVariantBasePrice()"
               (ngModelChange)="newVariantBasePrice.set($event)"
@@ -2324,7 +2324,8 @@
           <div class="form-group" style="margin: 0;">
             <label class="form-label">Costo Producción (COP)</label>
             <input
-              type="number"
+              type="text"
+              appCopInput
               class="form-control"
               [(ngModel)]="editItem.unitCost"
             />
@@ -2333,7 +2334,8 @@
           <div class="form-group" style="margin: 0;">
             <label class="form-label">Precio de Venta (COP)</label>
             <input
-              type="number"
+              type="text"
+              appCopInput
               class="form-control"
               [(ngModel)]="editItem.basePrice"
             />

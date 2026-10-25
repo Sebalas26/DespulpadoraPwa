@@ -11,6 +11,7 @@ import {
   ExpenseDto,
   PayrollSettlementDto
 } from '../../core/models/business.models';
+import { CopCurrencyInputDirective } from '../../shared/directives/cop-currency-input.directive';
 
 export type ReportTab = 'sales' | 'loss' | 'stock' | 'expenses' | 'payroll';
 export type ReportDateFilter = 'today' | 'yesterday' | 'month' | 'year' | 'range';
@@ -24,7 +25,7 @@ export interface MonthOption {
 @Component({
   selector: 'app-reports',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, CopCurrencyInputDirective],
   templateUrl: './reports.component.html',
   styleUrls: ['./reports.component.scss']
 })

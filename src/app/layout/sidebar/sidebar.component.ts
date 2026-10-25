@@ -249,6 +249,8 @@ import { environment } from '../../../environments/environment';
       max-width: 240px;
       background: #ffffff;
       border-right: 1px solid #eef2ef;
+      border-top-right-radius: 20px;
+      border-bottom-right-radius: 20px;
       height: 100vh;
       display: flex;
       flex-direction: column;
