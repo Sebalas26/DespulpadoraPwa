@@ -200,31 +200,15 @@ import { environment } from '../../../environments/environment';
               </div>
             </a>
 
-            <a routerLink="/settings" [queryParams]="{ tab: 'users' }" class="drawer-link-item" (click)="showMoreDrawer.set(false)">
-              <span class="drawer-icon">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
-                  <circle cx="9" cy="7" r="4"></circle>
-                  <path d="M22 21v-2a4 4 0 0 0-3-3.87"></path>
-                  <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
-                </svg>
-              </span>
-              <div>
-                <div class="drawer-title">Usuarios y Roles</div>
-                <div class="drawer-desc">Cuentas, permisos y seguridad RBAC</div>
-              </div>
-            </a>
-
-            <div style="margin-top: 14px; padding-top: 14px; border-top: 1px solid #eef2ef;">
+            <div class="mobile-drawer-footer">
               <button
                 type="button"
-                class="btn btn-outline"
-                style="width: 100%; justify-content: center; color: #dc2626; border-color: #fecaca;"
+                class="btn btn-outline drawer-logout-btn"
                 (click)="authService.logout(); showMoreDrawer.set(false)"
               >
                 Cerrar Sesión
               </button>
-              <div style="font-size: 0.68rem; font-weight: 600; color: #9ca3af; text-align: center; margin-top: 10px; letter-spacing: 0.04em;">
+              <div class="drawer-version-text">
                 V. {{ environment.version }}
               </div>
             </div>
@@ -323,8 +307,8 @@ import { environment } from '../../../environments/environment';
       width: 100%;
       background: #ffffff;
       border-radius: 20px 20px 0 0;
-      padding: 20px 18px max(30px, calc(env(safe-area-inset-bottom, 16px) + 24px));
-      max-height: 82vh;
+      padding: 12px 16px max(14px, env(safe-area-inset-bottom, 12px));
+      max-height: 94dvh;
       overflow-y: auto;
       box-shadow: 0 -8px 30px rgba(0, 0, 0, 0.18);
       animation: slideUp 0.25s ease;
@@ -334,20 +318,20 @@ import { environment } from '../../../environments/environment';
       display: flex;
       align-items: center;
       justify-content: space-between;
-      margin-bottom: 16px;
-      padding-bottom: 12px;
+      margin-bottom: 6px;
+      padding-bottom: 8px;
       border-bottom: 1px solid #eef2ef;
     }
 
     .drawer-link-item {
       display: flex;
       align-items: center;
-      gap: 12px;
-      padding: 11px 12px;
-      border-radius: 12px;
+      gap: 10px;
+      padding: 6px 10px;
+      border-radius: 10px;
       text-decoration: none;
       transition: background 0.15s ease;
-      margin-bottom: 4px;
+      margin-bottom: 2px;
 
       &:hover {
         background: #f6f8f7;
@@ -355,25 +339,52 @@ import { environment } from '../../../environments/environment';
     }
 
     .drawer-icon {
-      font-size: 1.3rem;
-      width: 36px;
-      height: 36px;
-      border-radius: 10px;
+      font-size: 1.15rem;
+      width: 32px;
+      height: 32px;
+      border-radius: 9px;
       background: #f0f7f2;
       display: flex;
       align-items: center;
       justify-content: center;
+      flex-shrink: 0;
     }
 
     .drawer-title {
-      font-size: 0.88rem;
+      font-size: 0.84rem;
       font-weight: 700;
       color: #111827;
+      line-height: 1.2;
     }
 
     .drawer-desc {
-      font-size: 0.74rem;
+      font-size: 0.7rem;
       color: #6b7280;
+      line-height: 1.2;
+    }
+
+    .mobile-drawer-footer {
+      margin-top: 8px;
+      padding-top: 8px;
+      border-top: 1px solid #eef2ef;
+    }
+
+    .drawer-logout-btn {
+      width: 100%;
+      justify-content: center;
+      color: #dc2626 !important;
+      border-color: #fecaca !important;
+      padding: 8px 14px !important;
+      font-size: 0.84rem !important;
+    }
+
+    .drawer-version-text {
+      font-size: 0.65rem;
+      font-weight: 600;
+      color: #9ca3af;
+      text-align: center;
+      margin-top: 6px;
+      letter-spacing: 0.04em;
     }
 
     @keyframes slideUp {
