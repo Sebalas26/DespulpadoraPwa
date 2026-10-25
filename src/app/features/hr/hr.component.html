@@ -1,6 +1,4 @@
 <div class="hr-module-container" style="display: flex; flex-direction: column; gap: 20px;">
-
-  <!-- Header del Módulo de Personal -->
   <div class="no-print" style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 16px; background: #ffffff; padding: 20px 24px; border-radius: 14px; border: 1px solid var(--border-subtle); box-shadow: 0 1px 3px rgba(0,0,0,0.03);">
     <div>
       <div style="display: flex; align-items: center; gap: 10px;">
@@ -32,7 +30,6 @@
     </div>
   </div>
 
-  <!-- Barra de Opciones Subdivididas del Módulo (4 Opciones) -->
   <div class="hr-subnav-bar no-print">
     <button
       type="button"
@@ -76,12 +73,8 @@
     </button>
   </div>
 
-  <!-- ========================================================================= -->
-  <!-- OPCIÓN 1: PERSONAL (DIRECTORIO DE COLABORADORES)                           -->
-  <!-- ========================================================================= -->
   @if (activeTab() === 'employees') {
     <div class="hr-tab-content animate-fade-in no-print">
-      <!-- Toolbar de Búsqueda y Filtros -->
       <div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 14px;">
         <div style="display: flex; align-items: center; gap: 10px; flex: 1; min-width: 280px; max-width: 460px;">
           <div style="position: relative; width: 100%;">
@@ -102,7 +95,6 @@
           </div>
         </div>
 
-        <!-- Filtro por Área -->
         <div class="pill-filter-group">
           <button
             type="button"
@@ -139,7 +131,6 @@
         </div>
       </div>
 
-      <!-- Tabla de Personal -->
       <div class="card" style="border-radius: 14px; overflow: hidden; box-shadow: var(--shadow-sm);">
         <div class="table-container">
           <table class="dgl-table">
@@ -212,10 +203,10 @@
                   <td data-label="Cuenta Bancaria de Nómina">
                     <div style="display: flex; flex-direction: column; gap: 2px;">
                       <div style="font-weight: 700; font-size: 0.83rem; color: #0f172a;">
-                        {{ emp.bankName || 'Bancolombia' }}
+                        {{ emp.bankName }}
                       </div>
                       <div style="font-size: 0.74rem; color: var(--text-muted); font-family: monospace;">
-                        {{ emp.bankAccountType || 'Ahorros' }}: {{ emp.bankAccountNumber || '458-921478-12' }}
+                        {{ emp.bankAccountType }}: {{ emp.bankAccountNumber }}
                       </div>
                     </div>
                   </td>
@@ -299,17 +290,13 @@
     </div>
   }
 
-  <!-- ========================================================================= -->
-  <!-- OPCIÓN 2: INGRESO Y SALIDA DE TURNOS                                      -->
-  <!-- ========================================================================= -->
   @if (activeTab() === 'shifts') {
     <div class="hr-tab-content animate-fade-in no-print" style="display: flex; flex-direction: column; gap: 20px;">
-      <!-- Hero Banner Reloj en Vivo -->
       <div class="shifts-hero-banner">
         <div class="shifts-hero-left">
           <span class="shifts-live-pill">● SISTEMA DE MARCACIÓN EN VIVO</span>
           <div class="shifts-clock-display">{{ liveClock() }}</div>
-          <div class="shifts-date-display">Bogotá D.C. · {{ liveDate() }}</div>
+          <div class="shifts-date-display">{{ stateService.companyInfo().city }} · {{ liveDate() }}</div>
         </div>
         <div class="shifts-hero-right">
           <div class="shifts-metric-box">
@@ -323,9 +310,7 @@
         </div>
       </div>
 
-      <!-- Grid: Registro de Entrada (Izquierda) + Turnos Activos (Derecha) -->
       <div class="shifts-split-grid">
-        <!-- Columna Izquierda: Formulario de Entrada -->
         <div class="card shift-form-card">
           <div class="card-header" style="border-bottom: 1px solid var(--border-subtle); padding-bottom: 12px;">
             <h3 class="card-title" style="display: flex; align-items: center; gap: 8px;">
@@ -437,7 +422,6 @@
           </div>
         </div>
 
-        <!-- Columna Derecha: Turnos Activos con Salida Rápida -->
         <div class="card active-shifts-card">
           <div class="card-header" style="justify-content: space-between; border-bottom: 1px solid var(--border-subtle); padding-bottom: 12px;">
             <div>
@@ -501,7 +485,6 @@
         </div>
       </div>
 
-      <!-- Historial de Turnos Cerrados del Día -->
       @if (closedShifts().length > 0) {
         <div class="card" style="border-radius: 14px; overflow: hidden;">
           <div class="card-header">
@@ -557,16 +540,11 @@
     </div>
   }
 
-  <!-- ========================================================================= -->
-  <!-- OPCIÓN 3: CERTIFICACIÓN BANCARIA & LABORAL                                 -->
-  <!-- ========================================================================= -->
   @if (activeTab() === 'certificates') {
     <div class="hr-tab-content animate-fade-in" style="display: flex; flex-direction: column; gap: 20px;">
-      <!-- Panel de Control y Configuración del Certificado -->
       <div class="card no-print" style="padding: 20px; border-radius: 14px;">
         <div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 16px;">
           <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 14px; flex: 1;">
-            <!-- Selector de Colaborador -->
             <div style="min-width: 240px; flex: 1;">
               <label class="form-label" style="font-size: 0.78rem;">Seleccionar Colaborador de la Empresa *</label>
               <select
@@ -582,7 +560,6 @@
               </select>
             </div>
 
-            <!-- Tipo de Certificado -->
             <div style="min-width: 220px;">
               <label class="form-label" style="font-size: 0.78rem;">Tipo de Documento Oficial</label>
               <div class="cert-type-toggle">
@@ -605,7 +582,6 @@
               </div>
             </div>
 
-            <!-- Dirigido a -->
             <div style="min-width: 180px;">
               <label class="form-label" style="font-size: 0.78rem;">Dirigido a:</label>
               <input
@@ -618,7 +594,6 @@
             </div>
           </div>
 
-          <!-- Botón de Impresión -->
           <button
             type="button"
             class="btn btn-primary"
@@ -635,17 +610,15 @@
         </div>
       </div>
 
-      <!-- Hoja Oficial en Papel Membretado (Imprimible) -->
       @if (selectedCertEmployee(); as emp) {
         <div class="certificate-paper-sheet printable-sheet">
-          <!-- Cabecera Oficial Corporativa -->
           <div class="cert-header">
             <div class="cert-logo-brand">
               <img src="/logo-dgl.png" alt="DGL Despulpadora" class="cert-logo-img" />
               <div>
-                <h2 class="cert-company-name">DG DISTRIBUIDORES LOGÍSTICOS S.A.S.</h2>
-                <div class="cert-company-sub">DGL Despulpadora · NIT 901.801.042-5 · Matrícula Mercantil No. 03458921</div>
-                <div class="cert-company-sub">Sede Operativa: Calle 93A # 13-25, Bogotá D.C. · Tel: (+57) 312 445 0389</div>
+                <h2 class="cert-company-name">{{ stateService.companyInfo().legalName }}</h2>
+                <div class="cert-company-sub">{{ stateService.companyInfo().companyName }} · NIT {{ stateService.companyInfo().nit }}</div>
+                <div class="cert-company-sub">Sede Operativa: {{ stateService.companyInfo().address }}, {{ stateService.companyInfo().city }} · Tel: {{ stateService.companyInfo().phone }}</div>
               </div>
             </div>
             <div class="cert-code-stamp">
@@ -656,7 +629,6 @@
 
           <div class="cert-divider-line"></div>
 
-          <!-- Título y Destinatario -->
           <div class="cert-addressee-block">
             <div class="cert-city-date">{{ certCustomCity() }}, {{ certExpeditionDate() }}</div>
             <div class="cert-addressee-title">Señores:</div>
@@ -664,14 +636,13 @@
             <div class="cert-addressee-city">Ciudad</div>
           </div>
 
-          <!-- Contenido Certificación Bancaria de Nómina -->
           @if (certificateType() === 'banking') {
             <div class="cert-title-centered">
               CERTIFICACIÓN BANCARIA DE DISPERSIÓN DE NÓMINA
             </div>
 
             <p class="cert-paragraph">
-              La suscrita Dirección de Gestión Humana y Nómina de <strong>DG DISTRIBUIDORES LOGÍSTICOS S.A.S. (DGL)</strong>, sociedad comercial legalmente constituida identificada con NIT <strong>901.801.042-5</strong>, por medio del presente documento hace constar y:
+              La suscrita Dirección de Gestión Humana y Nómina de <strong>{{ stateService.companyInfo().legalName }}</strong>, sociedad comercial legalmente constituida identificada con NIT <strong>{{ stateService.companyInfo().nit }}</strong>, por medio del presente documento hace constar y:
             </p>
 
             <div class="cert-certifies-heading">CERTIFICA QUE:</div>
@@ -684,7 +655,6 @@
               Asimismo, se certifica que la empresa realiza la dispersión, pago y transferencia periódica de sus haberes laborales, salario básico mensual por valor de <strong>{{ formatCOP(emp.baseSalary) }} M/CTE</strong> y demás emolumentos de ley, a la siguiente cuenta bancaria activa registrada a su nombre en nuestro sistema de nómina:
             </p>
 
-            <!-- Cuadro Destacado con Datos Bancarios -->
             <div class="banking-details-box">
               <div class="banking-box-title">DATOS BANCARIOS REGISTRADOS PARA PAGO DE NÓMINA</div>
               <div class="banking-grid">
@@ -698,15 +668,15 @@
                 </div>
                 <div class="banking-item">
                   <span class="banking-label">Entidad Bancaria:</span>
-                  <span class="banking-value highlight-bank">{{ emp.bankName || 'Bancolombia S.A.' }}</span>
+                  <span class="banking-value highlight-bank">{{ emp.bankName }}</span>
                 </div>
                 <div class="banking-item">
                   <span class="banking-label">Tipo de Cuenta:</span>
-                  <span class="banking-value">{{ emp.bankAccountType || 'Cuenta de Ahorros' }}</span>
+                  <span class="banking-value">{{ emp.bankAccountType }}</span>
                 </div>
                 <div class="banking-item">
                   <span class="banking-label">Número de Cuenta Bancaria:</span>
-                  <span class="banking-value highlight-account">{{ emp.bankAccountNumber || '458-921478-12' }}</span>
+                  <span class="banking-value highlight-account">{{ emp.bankAccountNumber }}</span>
                 </div>
                 <div class="banking-item">
                   <span class="banking-label">Periodicidad de Dispersión:</span>
@@ -719,13 +689,12 @@
               La presente certificación se expide a solicitud de la parte interesada con destino a <strong>{{ certAddressedTo() }}</strong>, en la ciudad de {{ certCustomCity() }}, a los {{ certExpeditionDate() }}.
             </p>
           } @else {
-            <!-- Contenido Certificado Laboral Oficial -->
             <div class="cert-title-centered">
               CERTIFICADO LABORAL OFICIAL
             </div>
 
             <p class="cert-paragraph">
-              La Dirección de Gestión Humana y Relaciones Laborales de <strong>DG DISTRIBUIDORES LOGÍSTICOS S.A.S.</strong>, con NIT <strong>901.801.042-5</strong>:
+              La Dirección de Gestión Humana y Relaciones Laborales de <strong>{{ stateService.companyInfo().legalName }}</strong>, con NIT <strong>{{ stateService.companyInfo().nit }}</strong>:
             </p>
 
             <div class="cert-certifies-heading">CERTIFICA QUE:</div>
@@ -743,19 +712,18 @@
             </p>
           }
 
-          <!-- Firmas y Sellos Oficiales -->
           <div class="cert-signature-section">
             <div class="cert-signature-block">
               <div class="cert-signature-line"></div>
               <div class="cert-signer-name">DIRECCIÓN DE GESTIÓN HUMANA</div>
-              <div class="cert-signer-role">DG Distribuidores Logísticos S.A.S. (DGL)</div>
-              <div class="cert-signer-contact">PBX: (+57) 312 445 0389 · talento&#64;pulpaspro.com</div>
+              <div class="cert-signer-role">{{ stateService.companyInfo().legalName }}</div>
+              <div class="cert-signer-contact">PBX: {{ stateService.companyInfo().phone }} · {{ stateService.companyInfo().email }}</div>
             </div>
             <div class="cert-seal-box">
               <div class="cert-seal-circle">
-                <span>DGL S.A.S.</span>
+                <span>{{ stateService.companyInfo().companyName }}</span>
                 <span style="font-size: 0.62rem;">GESTIÓN HUMANA</span>
-                <span style="font-size: 0.58rem;">NIT 901.801.042-5</span>
+                <span style="font-size: 0.58rem;">NIT {{ stateService.companyInfo().nit }}</span>
               </div>
             </div>
           </div>
@@ -764,12 +732,8 @@
     </div>
   }
 
-  <!-- ========================================================================= -->
-  <!-- OPCIÓN 4: REGISTRO DE PAGOS DE NÓMINA (LIQUIDACIÓN QUINCENAL)              -->
-  <!-- ========================================================================= -->
   @if (activeTab() === 'payroll') {
     <div class="hr-tab-content animate-fade-in no-print" style="display: flex; flex-direction: column; gap: 20px;">
-      <!-- Tarjetas Métricas de Nómina -->
       <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px;">
         <div class="card" style="padding: 16px; border-radius: 12px; background: #ffffff;">
           <div style="font-size: 0.74rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">
@@ -802,7 +766,6 @@
         </div>
       </div>
 
-      <!-- Barra de Acciones de Nómina -->
       <div style="display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap;">
         <div>
           <h3 style="margin: 0; font-size: 1.15rem; font-weight: 800; color: #0f172a;">Historial de Pagos y Liquidaciones</h3>
@@ -821,7 +784,6 @@
         </div>
       </div>
 
-      <!-- Tabla de Liquidaciones Realizadas -->
       <div class="card" style="border-radius: 14px; overflow: hidden; box-shadow: var(--shadow-sm);">
         <div class="table-container">
           <table class="dgl-table">
@@ -907,14 +869,8 @@
       </div>
     </div>
   }
-
 </div>
 
-<!-- ========================================================================= -->
-<!-- MODALES: NUEVO COLABORADOR, LIQUIDACIÓN Y DESPRENDIBLE                      -->
-<!-- ========================================================================= -->
-
-<!-- MODAL VINCULAR NUEVO COLABORADOR (CON DATOS BANCARIOS) -->
 @if (showNewEmployeeModal()) {
 <div class="modal-overlay" (click)="showNewEmployeeModal.set(false)">
   <div class="modal-content" style="max-width: 600px;" (click)="$event.stopPropagation()">
@@ -975,7 +931,6 @@
         </div>
       </div>
 
-      <!-- Sección Datos Bancarios de Nómina -->
       <div style="background: #f8fafc; padding: 14px; border-radius: 8px; border: 1px solid #e2e8f0;">
         <div style="font-weight: 700; font-size: 0.8rem; color: #1e5e3a; margin-bottom: 8px;">
           Datos Bancarios para Dispersión de Nómina
@@ -984,6 +939,7 @@
           <div class="form-group">
             <label class="form-label" style="font-size: 0.74rem;">Entidad Bancaria</label>
             <select class="form-control" [ngModel]="newBankName()" (ngModelChange)="newBankName.set($event)">
+              <option value="">Seleccione banco...</option>
               <option value="Bancolombia">Bancolombia</option>
               <option value="Davivienda">Davivienda</option>
               <option value="Nequi">Nequi</option>
@@ -995,6 +951,7 @@
           <div class="form-group">
             <label class="form-label" style="font-size: 0.74rem;">Tipo de Cuenta</label>
             <select class="form-control" [ngModel]="newBankAccountType()" (ngModelChange)="newBankAccountType.set($event)">
+              <option value="">Seleccione tipo...</option>
               <option value="Cuenta de Ahorros">Cuenta de Ahorros</option>
               <option value="Cuenta Corriente">Cuenta Corriente</option>
             </select>
@@ -1015,7 +972,6 @@
 </div>
 }
 
-<!-- MODAL LIQUIDACIÓN QUINCENAL -->
 @if (showSettlementModal()) {
 <div class="modal-overlay" (click)="showSettlementModal.set(false)">
   <div class="modal-content" style="max-width: 540px;" (click)="$event.stopPropagation()">
@@ -1075,7 +1031,6 @@
 </div>
 }
 
-<!-- MODAL DESPRENDIBLE DE PAGO (IMPRIMIBLE) -->
 @if (showPayslipModal() && selectedEmployee()) {
 <div class="modal-overlay" (click)="showPayslipModal.set(false)">
   <div class="modal-content" style="max-width: 540px;" (click)="$event.stopPropagation()">
@@ -1086,8 +1041,8 @@
 
     <div class="modal-body" style="background: #ffffff; color: #000; font-family: sans-serif; font-size: 0.86rem; padding: 24px; border-radius: 8px;">
       <div style="text-align: center; border-bottom: 2px solid #000; padding-bottom: 10px; margin-bottom: 14px;">
-        <h2 style="font-size: 1.25rem; font-weight: 800; margin: 0; color: #000;">DGL S.A.S.</h2>
-        <div style="font-size: 0.78rem; color: #444;">NIT: 901.801.042-5 · Comprobante Quincenal de Nómina</div>
+        <h2 style="font-size: 1.25rem; font-weight: 800; margin: 0; color: #000;">{{ stateService.companyInfo().companyName }}</h2>
+        <div style="font-size: 0.78rem; color: #444;">NIT: {{ stateService.companyInfo().nit }} · Comprobante Quincenal de Nómina</div>
         <div style="font-size: 0.75rem; color: #666; margin-top: 2px;">
           {{ activeSettlement() ? (activeSettlement()!.periodId === 1 ? 'Periodo: 1ra Quincena (01 al 15)' : 'Periodo: 2da Quincena (16 al 30)') : 'Periodo: Quincena en Curso' }}
         </div>
@@ -1098,8 +1053,8 @@
         <div><strong>C.C.:</strong> {{ selectedEmployee()?.identificationNumber }}</div>
         <div><strong>Cargo:</strong> {{ selectedEmployee()?.position }}</div>
         <div><strong>Área:</strong> {{ activeSettlement() ? activeSettlement()!.area : selectedEmployee()?.department }}</div>
-        <div><strong>Banco:</strong> {{ selectedEmployee()?.bankName || 'Bancolombia' }}</div>
-        <div><strong>Cuenta:</strong> {{ selectedEmployee()?.bankAccountNumber || 'Ahorros' }}</div>
+        <div><strong>Banco:</strong> {{ selectedEmployee()?.bankName }}</div>
+        <div><strong>Cuenta:</strong> {{ selectedEmployee()?.bankAccountNumber }}</div>
       </div>
 
       <div style="border: 1px solid #ccc; border-radius: 4px; overflow: hidden; margin-bottom: 14px;">

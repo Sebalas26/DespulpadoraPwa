@@ -2,10 +2,7 @@
 <div class="modal-overlay" (click)="closeModal()">
   <div class="voice-modal-container" (click)="$event.stopPropagation()">
 
-    <!-- ========================================== -->
-    <!-- MODAL HEADER                               -->
-    <!-- ========================================== -->
-    <div class="voice-modal-header">
+                <div class="voice-modal-header">
       <div class="header-left-title">
         <div class="wa-badge-icon">
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -29,8 +26,7 @@
       </div>
 
       <div class="header-actions">
-        <!-- Quick simulate button for testing -->
-        <button
+                <button
           type="button"
           class="btn-simulate-audio"
           title="Simular nueva nota de voz de WhatsApp para probar el flujo SignalR"
@@ -49,10 +45,7 @@
       </div>
     </div>
 
-    <!-- ========================================== -->
-    <!-- PENDING AUDIOS SELECTOR CAROUSEL           -->
-    <!-- ========================================== -->
-    @if (voiceOrdersService.voiceOrders().length > 1) {
+                @if (voiceOrdersService.voiceOrders().length > 1) {
       <div class="audio-queue-strip">
         <span class="queue-label">Notas recibidas:</span>
         <div class="queue-chips">
@@ -77,20 +70,13 @@
       </div>
     }
 
-    <!-- ========================================== -->
-    <!-- MODAL BODY: TWO-COLUMN WORKFLOW            -->
-    <!-- ========================================== -->
-    <div class="voice-modal-body">
+                <div class="voice-modal-body">
       @if (voiceOrdersService.activeVoiceOrder(); as activeOrder) {
         <div class="split-columns-layout">
 
-          <!-- ========================================== -->
-          <!-- LEFT COLUMN: AUDIO PLAYER & CLIENT INFO    -->
-          <!-- ========================================== -->
-          <div class="col-audio-panel">
+                                        <div class="col-audio-panel">
 
-            <!-- Customer Header Card -->
-            <div class="customer-info-box">
+                        <div class="customer-info-box">
               <div class="customer-avatar">
                 <span>{{ clientName().substring(0, 2).toUpperCase() || 'WA' }}</span>
               </div>
@@ -120,10 +106,8 @@
               </div>
             </div>
 
-            <!-- HTML5 AUDIO PLAYER CARD -->
-            <div class="audio-player-card">
-              <!-- Native HTML5 Audio Tag (Hidden with Ref) -->
-              <audio
+                        <div class="audio-player-card">
+                            <audio
                 #audioPlayerRef
                 [src]="activeOrder.audioUrl"
                 preload="metadata"
@@ -159,15 +143,13 @@
                 </button>
               </div>
 
-              <!-- Animated Sound Waveform Visualizer -->
-              <div class="waveform-visualizer">
+                            <div class="waveform-visualizer">
                 <div class="wave-track" (click)="seek($event)" title="Hacer clic para avanzar en el audio">
                   <div
                     class="wave-progress"
                     [style.width.%]="(currentTime() / (duration() || activeOrder.durationSeconds || 14)) * 100"
                   ></div>
-                  <!-- Decorative audio bars -->
-                  <div class="wave-bars-overlay">
+                                    <div class="wave-bars-overlay">
                     <span class="w-bar" style="height: 35%"></span>
                     <span class="w-bar" style="height: 65%"></span>
                     <span class="w-bar" style="height: 90%"></span>
@@ -188,16 +170,13 @@
                 </div>
               </div>
 
-              <!-- Time display -->
-              <div class="player-time-row">
+                            <div class="player-time-row">
                 <span class="time-elapsed">{{ formatTime(currentTime()) }}</span>
                 <span class="time-total">{{ formatTime(duration() || activeOrder.durationSeconds) }}</span>
               </div>
 
-              <!-- Interactive Controls Row -->
-              <div class="player-controls-row">
-                <!-- Restart button -->
-                <button
+                            <div class="player-controls-row">
+                                <button
                   type="button"
                   class="btn-control-secondary"
                   title="Reiniciar audio al inicio"
@@ -209,8 +188,7 @@
                   </svg>
                 </button>
 
-                <!-- BIG PLAY/PAUSE BUTTON -->
-                <button
+                                <button
                   type="button"
                   class="btn-play-pause"
                   [class.is-playing]="isPlaying()"
@@ -231,8 +209,7 @@
                   }
                 </button>
 
-                <!-- Playback Speed Chips -->
-                <div class="speed-selector">
+                                <div class="speed-selector">
                   <span class="speed-label">Velocidad:</span>
                   @for (rate of [1.0, 1.25, 1.5, 2.0]; track rate) {
                     <button
@@ -247,8 +224,7 @@
                 </div>
               </div>
 
-              <!-- Audio notice / error fallback -->
-              @if (audioError()) {
+                            @if (audioError()) {
                 <div class="audio-notice-alert">
                   <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <circle cx="12" cy="12" r="10"></circle>
@@ -260,8 +236,7 @@
               }
             </div>
 
-            <!-- TRANSCRIPTION / CLIENT HINT CARD -->
-            @if (activeOrder.transcriptPreview) {
+                        @if (activeOrder.transcriptPreview) {
               <div class="transcript-hint-card">
                 <div class="hint-header">
                   <div class="hint-title-group">
@@ -278,8 +253,7 @@
               </div>
             }
 
-            <!-- OPERATOR TIPS BOX -->
-            <div class="operator-guide-box">
+                        <div class="operator-guide-box">
               <div class="guide-title">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <circle cx="12" cy="12" r="10"></circle>
@@ -297,10 +271,7 @@
 
           </div>
 
-          <!-- ========================================== -->
-          <!-- RIGHT COLUMN: MANUAL DIGITIZING & WHATSAPP -->
-          <!-- ========================================== -->
-          <div class="col-form-panel">
+                                        <div class="col-form-panel">
 
             <div class="form-header-bar">
               <div>
@@ -315,8 +286,7 @@
               </div>
             </div>
 
-            <!-- Customer & Logistics Row -->
-            <div class="logistics-grid">
+                        <div class="logistics-grid">
               <div class="form-field">
                 <label class="field-label">Cliente / Razón Social</label>
                 <input
@@ -375,8 +345,7 @@
               </div>
             </div>
 
-            <!-- ITEMS TABLE / LIST -->
-            <div class="order-items-section">
+                        <div class="order-items-section">
               <div class="items-section-header">
                 <span class="items-title">Pulpas y Productos a Alistar</span>
                 <button type="button" class="btn-add-item" (click)="addItem()">
@@ -403,8 +372,7 @@
                   <tbody>
                     @for (item of items(); track $index) {
                       <tr>
-                        <!-- Fruit select -->
-                        <td>
+                                                <td>
                           <select
                             class="table-select fruit-select"
                             [ngModel]="item.fruitName"
@@ -418,8 +386,7 @@
                           </select>
                         </td>
 
-                        <!-- Grammage select -->
-                        <td>
+                                                <td>
                           <select
                             class="table-select"
                             [ngModel]="item.grammage"
@@ -432,8 +399,7 @@
                           </select>
                         </td>
 
-                        <!-- Quantity stepper -->
-                        <td>
+                                                <td>
                           <div class="qty-stepper">
                             <button type="button" class="qty-btn" (click)="decrementQuantity($index)">-</button>
                             <input
@@ -446,8 +412,7 @@
                           </div>
                         </td>
 
-                        <!-- Unit Price -->
-                        <td>
+                                                <td>
                           <input
                             type="number"
                             class="price-input"
@@ -456,13 +421,11 @@
                           />
                         </td>
 
-                        <!-- Subtotal -->
-                        <td style="text-align: right; font-weight: 700; color: #1e5e3a;">
+                                                <td style="text-align: right; font-weight: 700; color: #1e5e3a;">
                           ${{ (item.quantity * item.unitPrice || 0) | number:'1.0-0' }}
                         </td>
 
-                        <!-- Delete button -->
-                        <td>
+                                                <td>
                           <button
                             type="button"
                             class="btn-delete-row"
@@ -478,8 +441,7 @@
                 </table>
               </div>
 
-              <!-- TOTALS STRIP -->
-              <div class="totals-summary-strip">
+                            <div class="totals-summary-strip">
                 <div class="summary-metric">
                   <span class="metric-label">Total Unidades</span>
                   <span class="metric-value">{{ totalUnits() }} paquetes</span>
@@ -495,8 +457,7 @@
               </div>
             </div>
 
-            <!-- LIVE WHATSAPP CONFIRMATION MESSAGE PREVIEW -->
-            <div class="whatsapp-preview-card">
+                        <div class="whatsapp-preview-card">
               <div class="preview-header">
                 <div class="preview-badge">
                   <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -525,10 +486,7 @@
       }
     </div>
 
-    <!-- ========================================== -->
-    <!-- MODAL FOOTER ACTIONS                       -->
-    <!-- ========================================== -->
-    <div class="voice-modal-footer">
+                <div class="voice-modal-footer">
       <div class="footer-left">
         <span class="footer-hint">
           Al confirmar, el pedido se transfiere al <strong>Alistamiento en Cava</strong> y se despacha la confirmación de WhatsApp al cliente.

@@ -1,11 +1,29 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Router } from '@angular/router';
-import { Observable, tap, catchError, throwError, of } from 'rxjs';
+import { Observable, tap, catchError, throwError, map } from 'rxjs';
 import { environment } from '../../../environments/environment';
-import { AuthResponseDto, BranchDto, ChangePasswordRequest, ForgotPasswordRequest, LoginRequest, ResetPasswordRequest, UserClaimsDto } from '../models/auth.models';
+import {
+  AuthenticatedUserDto,
+  AuthResponseDto,
+  BranchDto,
+  ChangePasswordRequest,
+  ForgotPasswordRequest,
+  LoginRequest,
+  LoginRequestDto,
+  LoginResponseDto,
+  NavigationModuleDto,
+  NavigationSectionGroup,
+  PermissionDto,
+  RefreshTokenRequestDto,
+  ResetPasswordRequest,
+  UserClaimsDto
+} from '../models/auth.models';
 import { NotificationService } from './notification.service';
 
+/**
+ * Central reactive authentication and Server-Driven RBAC navigation service.
+ */
 @Injectable({
   providedIn: 'root'
 })
@@ -14,172 +32,557 @@ export class AuthService {
   private readonly router = inject(Router);
   private readonly notification = inject(NotificationService);
 
-  private readonly TOKEN_KEY = `${environment.storagePrefix}token`;
-  private readonly USER_KEY = `${environment.storagePrefix}user`;
+  private readonly ACCESS_TOKEN_KEY = `${environment.storagePrefix}token`;
+  private readonly REFRESH_TOKEN_KEY = `${environment.storagePrefix}refresh_token`;
+  private readonly EXPIRES_AT_KEY = `${environment.storagePrefix}expires_at`;
+  private readonly USER_PROFILE_KEY = `${environment.storagePrefix}auth_user`;
+  private readonly NAV_MODULES_KEY = `${environment.storagePrefix}nav_modules`;
+  private readonly SESSION_KEY = `${environment.storagePrefix}user`;
   private readonly BRANCH_KEY = `${environment.storagePrefix}active_branch`;
-  private readonly DEMO_KEY = `${environment.storagePrefix}demo_mode`;
 
-  readonly token = signal<string | null>(localStorage.getItem(this.TOKEN_KEY));
-  readonly currentUser = signal<AuthResponseDto | null>(this.loadStoredUser());
+  readonly accessToken = signal<string | null>(this.readStorageString(this.ACCESS_TOKEN_KEY));
+  readonly refreshToken = signal<string | null>(this.readStorageString(this.REFRESH_TOKEN_KEY));
+  readonly expiresAtUtc = signal<string | null>(this.readStorageString(this.EXPIRES_AT_KEY));
+  readonly user = signal<AuthenticatedUserDto | null>(this.loadStoredAuthenticatedUser());
+  readonly navigationModules = signal<NavigationModuleDto[]>(this.loadStoredNavigationModules());
+  readonly currentUser = signal<AuthResponseDto | null>(this.loadStoredSession());
   readonly selectedBranch = signal<BranchDto | null>(this.loadStoredBranch());
-  readonly isDemoMode = signal<boolean>(localStorage.getItem(this.DEMO_KEY) === 'true');
 
-  readonly isAuthenticated = computed(() => !!this.token());
-  readonly isSuperAdmin = computed(() => this.currentUser()?.isSuperAdmin ?? false);
-  readonly isAdmin = computed(() => (this.currentUser()?.isAdmin || this.currentUser()?.isSuperAdmin) ?? false);
-  readonly branches = computed(() => this.currentUser()?.branches ?? []);
-  readonly permissions = computed(() => this.currentUser()?.permissions ?? []);
+  readonly token = computed<string | null>(() => this.accessToken());
+  readonly isAuthenticated = computed<boolean>(() => Boolean(this.accessToken()));
+  readonly isSystemDeveloper = computed<boolean>(() => {
+    const profile = this.user();
+    if (profile?.isSystemDeveloper) {
+      return true;
+    }
+    return this.currentUser()?.isSystemDeveloper ?? false;
+  });
 
-  private loadStoredUser(): AuthResponseDto | null {
+  readonly isSuperAdmin = computed<boolean>(() => {
+    if (this.isSystemDeveloper()) {
+      return true;
+    }
+    return this.hasPermission('roles.manage') || this.hasPermission('system.catalog');
+  });
+
+  readonly isAdmin = computed<boolean>(() => {
+    if (this.isSuperAdmin()) {
+      return true;
+    }
+    return this.hasModuleAccess('/settings') || this.hasPermission('users.manage');
+  });
+
+  readonly branches = computed<BranchDto[]>(() => this.currentUser()?.branches ?? []);
+  readonly permissions = computed<PermissionDto[]>(() => this.currentUser()?.permissions ?? []);
+
+  readonly allowedActionSlugsSet = computed<Set<string>>(() => {
+    const slugs = new Set<string>();
+    const modules = this.navigationModules();
+    for (const mod of modules) {
+      if (Array.isArray(mod.allowedActionSlugs)) {
+        for (const slug of mod.allowedActionSlugs) {
+          slugs.add(slug);
+        }
+      }
+    }
+    const directPermissions = this.currentUser()?.permissions ?? [];
+    for (const perm of directPermissions) {
+      if (perm.actionSlug) {
+        slugs.add(perm.actionSlug);
+      }
+    }
+    return slugs;
+  });
+
+  readonly groupedNavigationSections = computed<NavigationSectionGroup[]>(() => {
     try {
-      const data = localStorage.getItem(this.USER_KEY);
-      return data ? JSON.parse(data) : null;
+      const modules = [...this.navigationModules()].sort((a, b) => a.displayOrder - b.displayOrder);
+      const sectionMap = new Map<string, NavigationModuleDto[]>();
+
+      for (const mod of modules) {
+        const section = (mod.menuSection || 'OPERACIÓN GENERAL').trim();
+        const existing = sectionMap.get(section) ?? [];
+        existing.push(mod);
+        sectionMap.set(section, existing);
+      }
+
+      const groups: NavigationSectionGroup[] = [];
+      sectionMap.forEach((items, sectionName) => {
+        groups.push({
+          sectionName,
+          modules: items.sort((a, b) => a.displayOrder - b.displayOrder)
+        });
+      });
+      return groups;
+    } catch {
+      return [];
+    }
+  });
+
+  /**
+   * Authenticates a user against `POST /api/auth/login` using username or email and password.
+   */
+  login(credentials: LoginRequest | LoginRequestDto): Observable<AuthResponseDto> {
+    try {
+      const rawIdentifier = ('usernameOrEmail' in credentials && credentials.usernameOrEmail)
+        ? credentials.usernameOrEmail
+        : (('username' in credentials && credentials.username) ? credentials.username : '');
+      const payload: LoginRequestDto = {
+        usernameOrEmail: rawIdentifier.trim(),
+        password: credentials.password
+      };
+
+      return this.http.post<LoginResponseDto>(`${environment.apiUrl}/auth/login`, payload).pipe(
+        map((response: LoginResponseDto) => this.persistLoginSession(response, true)),
+        catchError((error: unknown) => {
+          return throwError(() => error);
+        })
+      );
+    } catch (error: unknown) {
+      return throwError(() => error);
+    }
+  }
+
+  /**
+   * Rotates an expired JWT access token using `POST /api/auth/refresh-token`.
+   */
+  refreshSession(): Observable<AuthResponseDto> {
+    try {
+      const storedRefreshToken = this.refreshToken();
+      if (!storedRefreshToken) {
+        return throwError(() => new Error('No refresh token available.'));
+      }
+
+      const payload: RefreshTokenRequestDto = {
+        refreshToken: storedRefreshToken
+      };
+
+      return this.http.post<LoginResponseDto>(`${environment.apiUrl}/auth/refresh-token`, payload).pipe(
+        map((response: LoginResponseDto) => this.persistLoginSession(response, false)),
+        catchError((error: unknown) => {
+          this.logout();
+          return throwError(() => error);
+        })
+      );
+    } catch (error: unknown) {
+      this.logout();
+      return throwError(() => error);
+    }
+  }
+
+  /**
+   * Persists the `LoginResponseDto` into reactive signals and browser storage.
+   */
+  persistLoginSession(response: LoginResponseDto, notifyUser: boolean = false): AuthResponseDto {
+    try {
+      const rawRecord = response as unknown as Record<string, unknown>;
+      const resolvedUser: AuthenticatedUserDto = response.user ?? {
+        id: Number(rawRecord['userId'] ?? 0),
+        username: String(rawRecord['username'] ?? ''),
+        email: String(rawRecord['email'] ?? ''),
+        fullName: String(rawRecord['fullName'] ?? rawRecord['username'] ?? ''),
+        roleId: Number(rawRecord['roleId'] ?? 0),
+        roleName: String(rawRecord['roleName'] ?? ''),
+        isSystemDeveloper: Boolean(rawRecord['isSystemDeveloper'] ?? false)
+      };
+
+      const sortedModules = Array.isArray(response.navigationModules)
+        ? [...response.navigationModules].sort((a, b) => a.displayOrder - b.displayOrder)
+        : [];
+
+      const flatPermissions: PermissionDto[] = [];
+      let syntheticId = 1;
+      for (const mod of sortedModules) {
+        const slugs = Array.isArray(mod.allowedActionSlugs) ? mod.allowedActionSlugs : [];
+        for (const slug of slugs) {
+          flatPermissions.push({
+            actionId: syntheticId++,
+            actionName: slug,
+            actionSlug: slug,
+            operationId: mod.moduleId,
+            operationName: mod.menuSection,
+            moduleId: mod.moduleId,
+            moduleName: mod.name
+          });
+        }
+      }
+
+      const defaultBranches: BranchDto[] = Array.isArray(rawRecord['branches'])
+        ? (rawRecord['branches'] as BranchDto[])
+        : [];
+
+      const hasAdminPrivilege = Boolean(
+        resolvedUser.isSystemDeveloper ||
+        sortedModules.some(m =>
+          m.frontendRoute.startsWith('/settings') ||
+          m.frontendRoute.startsWith('/admin') ||
+          m.slug.includes('settings') ||
+          m.slug.includes('security')
+        )
+      );
+
+      const unifiedSession: AuthResponseDto = {
+        success: true,
+        token: response.accessToken,
+        accessToken: response.accessToken,
+        refreshToken: response.refreshToken,
+        expiresAtUtc: response.expiresAtUtc,
+        userId: resolvedUser.id,
+        username: resolvedUser.username,
+        email: resolvedUser.email,
+        fullName: resolvedUser.fullName,
+        roleId: resolvedUser.roleId,
+        roleName: resolvedUser.roleName,
+        isSystemDeveloper: resolvedUser.isSystemDeveloper,
+        isSuperAdmin: resolvedUser.isSystemDeveloper,
+        isAdmin: hasAdminPrivilege,
+        companyId: Number(rawRecord['companyId'] ?? 0),
+        companyName: String(rawRecord['companyName'] ?? ''),
+        allowMultipleSessions: true,
+        maxActiveSessionsPerUser: 5,
+        branches: defaultBranches,
+        permissions: flatPermissions,
+        user: resolvedUser,
+        navigationModules: sortedModules
+      };
+
+      this.accessToken.set(response.accessToken);
+      this.refreshToken.set(response.refreshToken);
+      this.expiresAtUtc.set(response.expiresAtUtc);
+      this.user.set(resolvedUser);
+      this.navigationModules.set(sortedModules);
+      this.currentUser.set(unifiedSession);
+
+      localStorage.setItem(this.ACCESS_TOKEN_KEY, response.accessToken);
+      localStorage.setItem(this.REFRESH_TOKEN_KEY, response.refreshToken);
+      localStorage.setItem(this.EXPIRES_AT_KEY, response.expiresAtUtc);
+      localStorage.setItem(this.USER_PROFILE_KEY, JSON.stringify(resolvedUser));
+      localStorage.setItem(this.NAV_MODULES_KEY, JSON.stringify(sortedModules));
+      localStorage.setItem(this.SESSION_KEY, JSON.stringify(unifiedSession));
+
+      if (!this.selectedBranch() && defaultBranches.length > 0) {
+        this.setBranch(defaultBranches[0]);
+      }
+
+      if (notifyUser) {
+        this.notification.success(
+          '¡Bienvenido!',
+          `Sesión iniciada como ${resolvedUser.fullName} (${resolvedUser.roleName})`
+        );
+      }
+
+      return unifiedSession;
+    } catch (error: unknown) {
+      throw error;
+    }
+  }
+
+  /**
+   * Synchronizes updated `NavigationModuleDto[]` into the active session signals and storage.
+   */
+  syncNavigationModules(modules: NavigationModuleDto[]): void {
+    try {
+      const sorted = [...modules].sort((a, b) => a.displayOrder - b.displayOrder);
+      this.navigationModules.set(sorted);
+      localStorage.setItem(this.NAV_MODULES_KEY, JSON.stringify(sorted));
+      const current = this.currentUser();
+      if (current) {
+        const updated: AuthResponseDto = { ...current, navigationModules: sorted };
+        this.currentUser.set(updated);
+        localStorage.setItem(this.SESSION_KEY, JSON.stringify(updated));
+      }
+    } catch {
+      return;
+    }
+  }
+
+  /**
+   * Sets the active operational plant node.
+   */
+  setBranch(branch: BranchDto): void {
+    try {
+      this.selectedBranch.set(branch);
+      localStorage.setItem(this.BRANCH_KEY, JSON.stringify(branch));
+    } catch {
+      return;
+    }
+  }
+
+  /**
+   * Validates dynamically whether the current user has access to a given route or module slug.
+   */
+  hasModuleAccess(routeOrSlug: string): boolean {
+    try {
+      if (!this.isAuthenticated()) {
+        return false;
+      }
+
+      if (this.isSystemDeveloper()) {
+        return true;
+      }
+
+      const normalizedTarget = this.normalizeRouteKey(routeOrSlug);
+      if (!normalizedTarget || normalizedTarget === 'dashboard') {
+        return true;
+      }
+
+      const modules = this.navigationModules();
+      return modules.some((mod: NavigationModuleDto) => {
+        const modRoute = this.normalizeRouteKey(mod.frontendRoute);
+        const modSlug = (mod.slug || '').trim().toLowerCase();
+        return (
+          modRoute === normalizedTarget ||
+          modRoute.startsWith(`${normalizedTarget}/`) ||
+          normalizedTarget.startsWith(`${modRoute}/`) ||
+          modSlug === normalizedTarget
+        );
+      });
+    } catch {
+      return false;
+    }
+  }
+
+  /**
+   * Finds the metadata of an authorized navigation module matching the given route or slug.
+   */
+  findNavigationModuleByRoute(routeUrl: string): NavigationModuleDto | null {
+    try {
+      const normalizedTarget = this.normalizeRouteKey(routeUrl);
+      const modules = this.navigationModules();
+      const exactMatch = modules.find(
+        (m: NavigationModuleDto) =>
+          this.normalizeRouteKey(m.frontendRoute) === normalizedTarget ||
+          (m.slug || '').trim().toLowerCase() === normalizedTarget
+      );
+      if (exactMatch) {
+        return exactMatch;
+      }
+      return (
+        modules.find((m: NavigationModuleDto) => {
+          const modRoute = this.normalizeRouteKey(m.frontendRoute);
+          return modRoute.length > 0 && normalizedTarget.startsWith(modRoute);
+        }) ?? null
+      );
     } catch {
       return null;
     }
   }
 
+  /**
+   * Validates dynamically whether the authenticated user has a specific granular action slug.
+   */
+  hasPermission(actionSlug: string): boolean {
+    try {
+      if (!this.isAuthenticated()) {
+        return false;
+      }
+
+      if (this.isSystemDeveloper()) {
+        return true;
+      }
+
+      const cleanSlug = (actionSlug || '').trim();
+      if (!cleanSlug) {
+        return true;
+      }
+
+      return this.allowedActionSlugsSet().has(cleanSlug);
+    } catch {
+      return false;
+    }
+  }
+
+  /**
+   * Retrieves the current user's profile from `GET /api/auth/me`.
+   */
+  getMe(): Observable<UserClaimsDto> {
+    try {
+      return this.http.get<UserClaimsDto>(`${environment.apiUrl}/auth/me`).pipe(
+        catchError((error: unknown) => throwError(() => error))
+      );
+    } catch (error: unknown) {
+      return throwError(() => error);
+    }
+  }
+
+  /**
+   * Updates the authenticated user's password via `POST /api/auth/change-password`.
+   */
+  changePassword(req: ChangePasswordRequest): Observable< Record<string, unknown> > {
+    try {
+      return this.http.post<Record<string, unknown>>(`${environment.apiUrl}/auth/change-password`, req).pipe(
+        tap(() => this.notification.success('Éxito', 'Contraseña actualizada correctamente')),
+        catchError((error: unknown) => throwError(() => error))
+      );
+    } catch (error: unknown) {
+      return throwError(() => error);
+    }
+  }
+
+  /**
+   * Requests a password reset link via `POST /api/auth/forgot-password`.
+   */
+  forgotPassword(req: ForgotPasswordRequest): Observable<Record<string, unknown>> {
+    try {
+      return this.http.post<Record<string, unknown>>(`${environment.apiUrl}/auth/forgot-password`, req).pipe(
+        catchError((error: unknown) => throwError(() => error))
+      );
+    } catch (error: unknown) {
+      return throwError(() => error);
+    }
+  }
+
+  /**
+   * Completes a password reset operation via `POST /api/auth/reset-password`.
+   */
+  resetPassword(req: ResetPasswordRequest): Observable<Record<string, unknown>> {
+    try {
+      return this.http.post<Record<string, unknown>>(`${environment.apiUrl}/auth/reset-password`, req).pipe(
+        catchError((error: unknown) => throwError(() => error))
+      );
+    } catch (error: unknown) {
+      return throwError(() => error);
+    }
+  }
+
+  /**
+   * Clears all authentication state and redirects the user to `/login`.
+   */
+  logout(): void {
+    try {
+      const currentRefresh = this.refreshToken();
+      if (currentRefresh) {
+        this.http
+          .post(`${environment.apiUrl}/auth/logout`, { refreshToken: currentRefresh })
+          .pipe(catchError(() => []))
+          .subscribe();
+      }
+
+      this.accessToken.set(null);
+      this.refreshToken.set(null);
+      this.expiresAtUtc.set(null);
+      this.user.set(null);
+      this.navigationModules.set([]);
+      this.currentUser.set(null);
+      this.selectedBranch.set(null);
+
+      localStorage.removeItem(this.ACCESS_TOKEN_KEY);
+      localStorage.removeItem(this.REFRESH_TOKEN_KEY);
+      localStorage.removeItem(this.EXPIRES_AT_KEY);
+      localStorage.removeItem(this.USER_PROFILE_KEY);
+      localStorage.removeItem(this.NAV_MODULES_KEY);
+      localStorage.removeItem(this.SESSION_KEY);
+      localStorage.removeItem(this.BRANCH_KEY);
+
+      this.notification.info('Sesión finalizada', 'Ha cerrado sesión correctamente');
+      this.router.navigate(['/login']);
+    } catch {
+      this.router.navigate(['/login']);
+    }
+  }
+
+  /**
+   * Normalizes a URL or route string for permission comparison.
+   */
+  private normalizeRouteKey(rawRoute: string): string {
+    try {
+      const withoutQuery = (rawRoute || '').split('?')[0].split('#')[0].trim();
+      return withoutQuery.replace(/^\/+|\/+$/g, '').toLowerCase();
+    } catch {
+      return '';
+    }
+  }
+
+  /**
+   * Safely reads a string from `localStorage`.
+   */
+  private readStorageString(key: string): string | null {
+    try {
+      return localStorage.getItem(key);
+    } catch {
+      return null;
+    }
+  }
+
+  /**
+   * Loads the stored `AuthenticatedUserDto` from `localStorage`.
+   */
+  private loadStoredAuthenticatedUser(): AuthenticatedUserDto | null {
+    try {
+      const raw = localStorage.getItem(this.USER_PROFILE_KEY);
+      if (raw) {
+        return JSON.parse(raw) as AuthenticatedUserDto;
+      }
+      const sessionRaw = localStorage.getItem(this.SESSION_KEY);
+      if (sessionRaw) {
+        const parsedSession = JSON.parse(sessionRaw) as AuthResponseDto;
+        if (parsedSession.user) {
+          return parsedSession.user;
+        }
+        if (parsedSession.username) {
+          return {
+            id: parsedSession.userId ?? 0,
+            username: parsedSession.username,
+            email: parsedSession.email ?? '',
+            fullName: parsedSession.fullName ?? parsedSession.username,
+            roleId: parsedSession.roleId ?? 0,
+            roleName: parsedSession.roleName ?? '',
+            isSystemDeveloper: Boolean(parsedSession.isSystemDeveloper || parsedSession.isSuperAdmin)
+          };
+        }
+      }
+      return null;
+    } catch {
+      return null;
+    }
+  }
+
+  /**
+   * Loads the stored `NavigationModuleDto[]` from `localStorage`.
+   */
+  private loadStoredNavigationModules(): NavigationModuleDto[] {
+    try {
+      const raw = localStorage.getItem(this.NAV_MODULES_KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw) as NavigationModuleDto[];
+        if (Array.isArray(parsed)) {
+          return parsed;
+        }
+      }
+      const sessionRaw = localStorage.getItem(this.SESSION_KEY);
+      if (sessionRaw) {
+        const parsedSession = JSON.parse(sessionRaw) as AuthResponseDto;
+        if (Array.isArray(parsedSession.navigationModules)) {
+          return parsedSession.navigationModules;
+        }
+      }
+      return [];
+    } catch {
+      return [];
+    }
+  }
+
+  /**
+   * Loads the unified `AuthResponseDto` from `localStorage`.
+   */
+  private loadStoredSession(): AuthResponseDto | null {
+    try {
+      const data = localStorage.getItem(this.SESSION_KEY);
+      return data ? (JSON.parse(data) as AuthResponseDto) : null;
+    } catch {
+      return null;
+    }
+  }
+
+  /**
+   * Loads the active `BranchDto` from `localStorage`.
+   */
   private loadStoredBranch(): BranchDto | null {
     try {
       const data = localStorage.getItem(this.BRANCH_KEY);
-      return data ? JSON.parse(data) : null;
+      return data ? (JSON.parse(data) as BranchDto) : null;
     } catch {
       return null;
     }
-  }
-
-  login(credentials: LoginRequest): Observable<AuthResponseDto> {
-    const cleanUser = (credentials.username || 'usuario').trim() || 'usuario';
-    const sessionRes = this.loginDemo(cleanUser);
-    return of(sessionRes);
-  }
-
-  loginDemo(username = 'admin'): AuthResponseDto {
-    const cleanName = (username || 'usuario').trim() || 'usuario';
-    const mockUser: AuthResponseDto = {
-      success: true,
-      userId: 1,
-      username: cleanName,
-      fullName: cleanName,
-      roleId: 1,
-      roleName: 'Usuario DGL',
-      isSuperAdmin: true,
-      isAdmin: true,
-      companyId: 1,
-      companyName: 'DGL Despulpadora',
-      allowMultipleSessions: true,
-      maxActiveSessionsPerUser: 5,
-      token: 'dgl-session-token-pwa',
-      branches: [
-        { branchId: 1, name: 'Sede Principal - Planta Cava', code: 'MAT-01', isMatrix: true, companyId: 1 },
-        { branchId: 2, name: 'Sede Distribución Norte', code: 'SUC-02', isMatrix: false, companyId: 1 }
-      ],
-      permissions: [
-        { actionId: 101, actionName: 'Ver Lotes', actionSlug: 'batches.view', operationId: 1, operationName: 'Lotes', moduleId: 1, moduleName: 'Producción' },
-        { actionId: 102, actionName: 'Crear Lotes', actionSlug: 'batches.create', operationId: 1, operationName: 'Lotes', moduleId: 1, moduleName: 'Producción' },
-        { actionId: 103, actionName: 'Completar Lotes', actionSlug: 'batches.complete', operationId: 1, operationName: 'Lotes', moduleId: 1, moduleName: 'Producción' },
-        { actionId: 104, actionName: 'Calculadora Mermas', actionSlug: 'calculator.view', operationId: 1, operationName: 'Mermas', moduleId: 1, moduleName: 'Producción' },
-        { actionId: 105, actionName: 'Auditoría Mermas', actionSlug: 'calculator.audit', operationId: 1, operationName: 'Mermas', moduleId: 1, moduleName: 'Producción' },
-        { actionId: 201, actionName: 'Ver Stock Cava', actionSlug: 'stock.view', operationId: 2, operationName: 'Existencias', moduleId: 2, moduleName: 'Cava' },
-        { actionId: 202, actionName: 'Ajustar Stock', actionSlug: 'stock.adjust', operationId: 2, operationName: 'Existencias', moduleId: 2, moduleName: 'Cava' },
-        { actionId: 203, actionName: 'Fruta Disponible', actionSlug: 'inventory.fruit_view', operationId: 2, operationName: 'Existencias', moduleId: 2, moduleName: 'Cava' },
-        { actionId: 205, actionName: 'Catálogo Frutas', actionSlug: 'fruit.manage', operationId: 2, operationName: 'Existencias', moduleId: 2, moduleName: 'Cava' },
-        { actionId: 301, actionName: 'Ver Pedidos', actionSlug: 'orders.view', operationId: 3, operationName: 'Pedidos', moduleId: 3, moduleName: 'Comercial' },
-        { actionId: 302, actionName: 'Crear Pedidos', actionSlug: 'orders.create', operationId: 3, operationName: 'Pedidos', moduleId: 3, moduleName: 'Comercial' },
-        { actionId: 304, actionName: 'KDS Alistamiento', actionSlug: 'kds.view', operationId: 3, operationName: 'KDS', moduleId: 3, moduleName: 'Comercial' },
-        { actionId: 305, actionName: 'Picking Cava', actionSlug: 'kds.picking', operationId: 3, operationName: 'KDS', moduleId: 3, moduleName: 'Comercial' },
-        { actionId: 401, actionName: 'Facturar POS', actionSlug: 'orders.bill', operationId: 4, operationName: 'POS', moduleId: 4, moduleName: 'Facturación' },
-        { actionId: 402, actionName: 'Flujo Facturación', actionSlug: 'billing.view', operationId: 4, operationName: 'POS', moduleId: 4, moduleName: 'Facturación' },
-        { actionId: 403, actionName: 'Registrar Pagos', actionSlug: 'billing.payment_collect', operationId: 4, operationName: 'POS', moduleId: 4, moduleName: 'Facturación' },
-        { actionId: 501, actionName: 'Despachar Rutas', actionSlug: 'orders.dispatch', operationId: 5, operationName: 'Despacho', moduleId: 5, moduleName: 'Logística' },
-        { actionId: 502, actionName: 'Mapa & Telemetría', actionSlug: 'map.view', operationId: 5, operationName: 'Mapa', moduleId: 5, moduleName: 'Logística' },
-        { actionId: 504, actionName: 'Enrutador Rutas', actionSlug: 'map.route_planner', operationId: 5, operationName: 'Mapa', moduleId: 5, moduleName: 'Logística' },
-        { actionId: 505, actionName: 'Arqueo Domiciliario', actionSlug: 'map.courier_receive', operationId: 5, operationName: 'Mapa', moduleId: 5, moduleName: 'Logística' },
-        { actionId: 601, actionName: 'Login App Móvil', actionSlug: 'mobile.app_login', operationId: 6, operationName: 'App', moduleId: 6, moduleName: 'App Móvil' },
-        { actionId: 602, actionName: 'Rutas App Móvil', actionSlug: 'mobile.route_view', operationId: 6, operationName: 'App', moduleId: 6, moduleName: 'App Móvil' },
-        { actionId: 604, actionName: 'Recaudo Calle', actionSlug: 'mobile.cash_collection', operationId: 6, operationName: 'App', moduleId: 6, moduleName: 'App Móvil' },
-        { actionId: 701, actionName: 'Directorio Clientes', actionSlug: 'clients.view', operationId: 7, operationName: 'Clientes', moduleId: 7, moduleName: 'Cartera' },
-        { actionId: 702, actionName: 'Gestionar Clientes', actionSlug: 'clients.manage', operationId: 7, operationName: 'Clientes', moduleId: 7, moduleName: 'Cartera' },
-        { actionId: 704, actionName: 'Libro Contable', actionSlug: 'accounting.view', operationId: 7, operationName: 'Libro', moduleId: 7, moduleName: 'Contabilidad' },
-        { actionId: 801, actionName: 'Directorio Personal', actionSlug: 'hr.view', operationId: 8, operationName: 'Personal', moduleId: 8, moduleName: 'Gestión Humana' },
-        { actionId: 803, actionName: 'Certificaciones', actionSlug: 'hr.certificates', operationId: 8, operationName: 'Personal', moduleId: 8, moduleName: 'Gestión Humana' },
-        { actionId: 804, actionName: 'Liquidar Nómina', actionSlug: 'hr.payroll_settle', operationId: 8, operationName: 'Nómina', moduleId: 8, moduleName: 'Gestión Humana' },
-        { actionId: 805, actionName: 'Ver Turnos', actionSlug: 'shifts.view', operationId: 8, operationName: 'Turnos', moduleId: 8, moduleName: 'Gestión Humana' },
-        { actionId: 806, actionName: 'Marcación Turnos', actionSlug: 'shifts.punch', operationId: 8, operationName: 'Turnos', moduleId: 8, moduleName: 'Gestión Humana' },
-        { actionId: 901, actionName: 'Reportes Ventas', actionSlug: 'reports.view', operationId: 9, operationName: 'Reportes', moduleId: 9, moduleName: 'Informes' },
-        { actionId: 903, actionName: 'Metas Comerciales', actionSlug: 'dashboard.targets', operationId: 9, operationName: 'Metas', moduleId: 9, moduleName: 'Informes' },
-        { actionId: 1001, actionName: 'Configuración Catálogo', actionSlug: 'settings.catalog', operationId: 10, operationName: 'Ajustes', moduleId: 10, moduleName: 'Configuración' },
-        { actionId: 1003, actionName: 'Gestión Usuarios', actionSlug: 'users.manage', operationId: 10, operationName: 'Usuarios', moduleId: 10, moduleName: 'Seguridad' },
-        { actionId: 1004, actionName: 'Gestión Roles', actionSlug: 'roles.manage', operationId: 10, operationName: 'Roles', moduleId: 10, moduleName: 'Seguridad' }
-      ]
-    };
-
-    const token = mockUser.token!;
-    this.token.set(token);
-    this.currentUser.set(mockUser);
-    this.isDemoMode.set(true);
-    localStorage.setItem(this.TOKEN_KEY, token);
-    localStorage.setItem(this.USER_KEY, JSON.stringify(mockUser));
-    localStorage.setItem(this.DEMO_KEY, 'true');
-
-    if (mockUser.branches && mockUser.branches.length > 0) {
-      this.setBranch(mockUser.branches[0]);
-    }
-
-    this.notification.success('¡Bienvenido!', `Sesión iniciada como ${mockUser.username}`);
-    return mockUser;
-  }
-
-  setBranch(branch: BranchDto) {
-    this.selectedBranch.set(branch);
-    localStorage.setItem(this.BRANCH_KEY, JSON.stringify(branch));
-  }
-
-  hasPermission(actionSlug: string): boolean {
-    const user = this.currentUser();
-    if (!user) return false;
-
-    // Super Admin o Administrador de Sistema siempre tiene acceso completo
-    if (user.isSuperAdmin || user.isAdmin || user.roleId === 1) {
-      return true;
-    }
-
-    // Comprobar array de permisos directos
-    if (user.permissions && user.permissions.some(p => p.actionSlug === actionSlug)) {
-      return true;
-    }
-
-    return true;
-  }
-
-  getMe(): Observable<UserClaimsDto> {
-    return this.http.get<UserClaimsDto>(`${environment.apiUrl}/auth/me`);
-  }
-
-  changePassword(req: ChangePasswordRequest): Observable<any> {
-    return this.http.post(`${environment.apiUrl}/auth/change-password`, req).pipe(
-      tap(() => this.notification.success('Éxito', 'Contraseña actualizada correctamente'))
-    );
-  }
-
-  forgotPassword(req: ForgotPasswordRequest): Observable<any> {
-    return this.http.post(`${environment.apiUrl}/auth/forgot-password`, req);
-  }
-
-  resetPassword(req: ResetPasswordRequest): Observable<any> {
-    return this.http.post(`${environment.apiUrl}/auth/reset-password`, req);
-  }
-
-  logout() {
-    this.token.set(null);
-    this.currentUser.set(null);
-    this.selectedBranch.set(null);
-    this.isDemoMode.set(false);
-    localStorage.removeItem(this.TOKEN_KEY);
-    localStorage.removeItem(this.USER_KEY);
-    localStorage.removeItem(this.BRANCH_KEY);
-    localStorage.removeItem(this.DEMO_KEY);
-    this.notification.info('Sesión finalizada', 'Ha cerrado sesión correctamente');
-    this.router.navigate(['/login']);
   }
 }

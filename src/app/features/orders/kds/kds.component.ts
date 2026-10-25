@@ -8,32 +8,42 @@ import {
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Router, RouterLink } from '@angular/router';
+import { Router } from '@angular/router';
 import { StateService } from '../../../core/services/state.service';
 import { NotificationService } from '../../../core/services/notification.service';
-import { OrderDto, OrderStatus } from '../../../core/models/business.models';
+import { ClientDto, FruitConfig, OrderDto, OrderItemDto, OrderStatus } from '../../../core/models/business.models';
 import confetti from 'canvas-confetti';
 
-interface OrderTimer {
+/**
+ * Represents the elapsed timer metadata for a KDS order ticket.
+ */
+export interface OrderTimer {
   orderId: number;
-  startTime: number; // timestamp
+  startTime: number;
 }
 
+/**
+ * Extended Window interface supporting legacy webkitAudioContext.
+ */
+interface AudioContextWindow extends Window {
+  webkitAudioContext?: typeof AudioContext;
+}
+
+/**
+ * Kitchen Display System (KDS) component for real-time order picking and dispatch tracking.
+ */
 @Component({
   selector: 'app-kds',
   standalone: true,
   imports: [CommonModule, FormsModule],
   template: `
     <div class="kds-root" [class.dark-theme]="isDarkTheme()">
-      <!-- KDS Top Header (TV Monitor Style) -->
-      <header class="kds-header">
-        <!-- Live Clock on the Left (Styled prominent like the title, no box/border) -->
-        <div class="kds-clock-left">
+            <header class="kds-header">
+                <div class="kds-clock-left">
           <span class="clock-time-large">{{ currentTime() }}</span>
         </div>
 
-        <!-- Live Metrics Bar -->
-        <div class="kds-metrics-bar">
+                <div class="kds-metrics-bar">
           <div class="kds-metric-pill metric-pending">
             <span class="metric-num">{{ pendingOrders().length }}</span>
             <span class="metric-lbl">Por Iniciar</span>
@@ -55,10 +65,8 @@ interface OrderTimer {
           </div>
         </div>
 
-        <!-- Utility Controls -->
-        <div class="kds-actions-group">
-          <!-- Simulate Urgent Order Button -->
-          <button
+                <div class="kds-actions-group">
+                    <button
             type="button"
             class="btn-kds-simulate"
             (click)="simulateIncomingOrder()"
@@ -68,8 +76,7 @@ interface OrderTimer {
             <span>+ Simular Pedido</span>
           </button>
 
-          <!-- Audio Bell Toggle -->
-          <button
+                    <button
             type="button"
             class="kds-icon-btn"
             [class.muted]="!soundEnabled()"
@@ -92,8 +99,7 @@ interface OrderTimer {
             }
           </button>
 
-          <!-- View Mode Toggle: Columns vs Grid -->
-          <div class="kds-view-toggle">
+                    <div class="kds-view-toggle">
             <button
               type="button"
               [class.active]="viewMode() === 'columns'"
@@ -121,8 +127,7 @@ interface OrderTimer {
             </button>
           </div>
 
-          <!-- Fullscreen Toggle -->
-          <button
+                    <button
             type="button"
             class="kds-icon-btn"
             (click)="toggleFullscreen()"
@@ -131,8 +136,7 @@ interface OrderTimer {
             ⛶
           </button>
 
-          <!-- Theme Toggle -->
-          <button
+                    <button
             type="button"
             class="kds-icon-btn"
             (click)="toggleTheme()"
@@ -157,8 +161,7 @@ interface OrderTimer {
             }
           </button>
 
-          <!-- Return to ERP Button -->
-          <button
+                    <button
             type="button"
             class="kds-icon-btn"
             (click)="returnToErp()"
@@ -173,13 +176,9 @@ interface OrderTimer {
         </div>
       </header>
 
-      <!-- ===================================================================== -->
-      <!-- VIEW 1: KANBAN COLUMNS (ESTILO COCINA / KDS RESTAURANTE)              -->
-      <!-- ===================================================================== -->
-      @if (viewMode() === 'columns') {
+                        @if (viewMode() === 'columns') {
         <main class="kds-board-columns">
-          <!-- COLUMN 1: NUEVOS / PENDIENTES -->
-          <section class="kds-column col-pending">
+                    <section class="kds-column col-pending">
             <div class="kds-column-header">
               <div class="col-title-group">
                 <span class="col-dot dot-pending"></span>
@@ -202,11 +201,10 @@ interface OrderTimer {
                   </header>
 
                   <div class="ticket-location">
-                    {{ order.clientAddress || 'Sede Bogotá / Cundinamarca' }}
+                    {{ order.clientAddress || '' }}
                   </div>
 
-                  <!-- Items Checklist -->
-                  <div class="ticket-items-list">
+                                    <div class="ticket-items-list">
                     @for (item of order.items; track (item.fruitName || '') + item.grammage) {
                       <div class="ticket-item-row" (click)="toggleItem(order, item)">
                         <div class="item-check" [class.checked]="(item.pickedQuantity || 0) >= item.quantity">
@@ -266,8 +264,7 @@ interface OrderTimer {
             </div>
           </section>
 
-          <!-- COLUMN 2: EN ALISTAMIENTO -->
-          <section class="kds-column col-picking">
+                    <section class="kds-column col-picking">
             <div class="kds-column-header">
               <div class="col-title-group">
                 <span class="col-dot dot-picking"></span>
@@ -293,8 +290,7 @@ interface OrderTimer {
                     {{ order.clientAddress }}
                   </div>
 
-                  <!-- Items Checklist with Interactive Touch / Click -->
-                  <div class="ticket-items-list">
+                                    <div class="ticket-items-list">
                     @for (item of order.items; track (item.fruitName || '') + item.grammage) {
                       <div
                         class="ticket-item-row interactive"
@@ -328,8 +324,7 @@ interface OrderTimer {
                     </div>
                   }
 
-                  <!-- Progress Bar -->
-                  <div class="ticket-progress-wrap">
+                                    <div class="ticket-progress-wrap">
                     <div class="ticket-progress-bar" [style.width.%]="getOrderPickedPercentage(order)"></div>
                   </div>
 
@@ -370,8 +365,7 @@ interface OrderTimer {
             </div>
           </section>
 
-          <!-- COLUMN 3: ALISTADOS / LISTOS PARA DESPACHO -->
-          <section class="kds-column col-ready">
+                    <section class="kds-column col-ready">
             <div class="kds-column-header">
               <div class="col-title-group">
                 <span class="col-dot dot-ready"></span>
@@ -438,10 +432,7 @@ interface OrderTimer {
         </main>
       }
 
-      <!-- ===================================================================== -->
-      <!-- VIEW 2: TV GRID (MONITOR REJILLA COMPLETA)                            -->
-      <!-- ===================================================================== -->
-      @if (viewMode() === 'grid') {
+                        @if (viewMode() === 'grid') {
         <main class="kds-board-grid">
           @for (order of allActiveOrders(); track order.orderId) {
             <article
@@ -465,8 +456,7 @@ interface OrderTimer {
                 {{ order.clientAddress }}
               </div>
 
-              <!-- Items Checklist -->
-              <div class="ticket-items-list">
+                            <div class="ticket-items-list">
                 @for (item of order.items; track (item.fruitName || '') + item.grammage) {
                   <div
                     class="ticket-item-row interactive"
@@ -518,9 +508,9 @@ interface OrderTimer {
     </div>
   `,
   styles: [`
-    /* ========================================================================= */
-    /* KDS ROOT & KIOSK THEME (CLEAN PWA LIGHT AESTHETIC - MINIMAL COLOR)        */
-    /* ========================================================================= */
+    
+    
+    
     .kds-root {
       width: 100vw;
       height: 100vh;
@@ -534,7 +524,7 @@ interface OrderTimer {
       transition: background-color 0.25s ease, color 0.25s ease;
     }
 
-    /* KDS Top Header Bar */
+    
     .kds-header {
       background: #ffffff;
       border-bottom: 1px solid #eef2ef;
@@ -547,7 +537,7 @@ interface OrderTimer {
       box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
     }
 
-    /* Live Clock on the Left (Centered in its section) */
+    
     .kds-clock-left {
       flex: 1 1 0%;
       display: flex;
@@ -569,7 +559,7 @@ interface OrderTimer {
       text-align: center;
     }
 
-    /* Live Metrics Bar */
+    
     .kds-metrics-bar {
       flex: 0 0 auto;
       display: flex;
@@ -611,7 +601,7 @@ interface OrderTimer {
       color: #1e5e3a;
     }
 
-    /* Actions & Utility Controls */
+    
     .kds-actions-group {
       flex: 1 1 0%;
       display: flex;
@@ -705,9 +695,9 @@ interface OrderTimer {
       font-weight: 700;
     }
 
-    /* ========================================================================= */
-    /* VIEW 1: KANBAN COLUMNS LAYOUT                                             */
-    /* ========================================================================= */
+    
+    
+    
     .kds-board-columns {
       flex: 1;
       display: grid;
@@ -780,7 +770,7 @@ interface OrderTimer {
       gap: 12px;
     }
 
-    /* KDS Ticket Cards (Kitchen Display Order Tickets) */
+    
     .kds-ticket {
       background: #ffffff;
       border: 1px solid #e5e7eb;
@@ -831,7 +821,7 @@ interface OrderTimer {
       color: #6b7280;
     }
 
-    /* Timers */
+    
     .ticket-timer {
       background: #f3f4f6;
       border: 1px solid #e5e7eb;
@@ -850,7 +840,7 @@ interface OrderTimer {
       border-color: #fecaca !important;
     }
 
-    /* Items Checklist */
+    
     .ticket-items-list {
       background: #f9fafb;
       border: 1px solid #f3f4f6;
@@ -935,7 +925,7 @@ interface OrderTimer {
       border-radius: 4px;
     }
 
-    /* Progress Bar */
+    
     .ticket-progress-wrap {
       height: 5px;
       background: #e5e7eb;
@@ -950,7 +940,7 @@ interface OrderTimer {
       transition: width 0.25s ease;
     }
 
-    /* Priority Card Style: Red Border */
+    
     .kds-ticket.ticket-priority {
       border: 2px solid #ef4444 !important;
       box-shadow: 0 0 0 1px #ef4444, 0 4px 14px rgba(239, 68, 68, 0.16) !important;
@@ -1104,9 +1094,9 @@ interface OrderTimer {
       font-size: 2.2rem;
     }
 
-    /* ========================================================================= */
-    /* VIEW 2: TV GRID (MONITOR REJILLA COMPLETA)                                */
-    /* ========================================================================= */
+    
+    
+    
     .kds-board-grid {
       flex: 1;
       display: grid;
@@ -1127,7 +1117,7 @@ interface OrderTimer {
     .chip-purple { background: #f3f4f6; color: #374151; border: 1px solid #e5e7eb; }
     .chip-success { background: #eaf5ee; color: #1e5e3a; border: 1px solid #d1e7d8; }
 
-    /* Animations */
+    
     .animate-slide-in {
       animation: slideIn 0.25s ease-out;
     }
@@ -1137,7 +1127,7 @@ interface OrderTimer {
       to { opacity: 1; transform: translateY(0) scale(1); }
     }
 
-    /* Optional Dark Mode (Only if explicitly toggled) */
+    
     .kds-root.dark-theme {
       background: #0f172a;
       color: #f8fafc;
@@ -1180,36 +1170,34 @@ export class KdsComponent implements OnInit, OnDestroy {
   private readonly notification = inject(NotificationService);
   private readonly router = inject(Router);
 
-  // Layout and Display Signals
   readonly viewMode = signal<'columns' | 'grid'>('columns');
   readonly isDarkTheme = signal<boolean>(false);
   readonly soundEnabled = signal<boolean>(true);
   readonly currentTime = signal<string>('');
 
-  private clockInterval?: any;
+  private clockInterval?: ReturnType<typeof setInterval>;
   private audioCtx?: AudioContext;
+  private readonly orderTimers: Map<number, number> = new Map<number, number>();
 
-  // Track start times of orders for accurate KDS elapsed timers
-  private orderTimers: Map<number, number> = new Map();
-
-  // Reactive Computed Orders from StateService
-  readonly pendingOrders = computed(() => {
-    return this.stateService.orders().filter(o => o.status === 'PENDING');
+  readonly pendingOrders = computed<OrderDto[]>(() => {
+    return this.stateService.orders().filter((o: OrderDto) => o.status === 'PENDING');
   });
 
-  readonly pickingOrders = computed(() => {
-    return this.stateService.orders().filter(o => o.status === 'PICKING');
+  readonly pickingOrders = computed<OrderDto[]>(() => {
+    return this.stateService.orders().filter((o: OrderDto) => o.status === 'PICKING');
   });
 
-  readonly readyOrders = computed(() => {
-    return this.stateService.orders().filter(o => o.status === 'BILLED' || o.status === 'DISPATCHED' || o.status === 'DELIVERED');
+  readonly readyOrders = computed<OrderDto[]>(() => {
+    return this.stateService.orders().filter(
+      (o: OrderDto) => o.status === 'BILLED' || o.status === 'DISPATCHED' || o.status === 'DELIVERED'
+    );
   });
 
-  readonly allActiveOrders = computed(() => {
+  readonly allActiveOrders = computed<OrderDto[]>(() => {
     return this.stateService.orders();
   });
 
-  readonly totalPendingKg = computed(() => {
+  readonly totalPendingKg = computed<string>(() => {
     const orders = [...this.pendingOrders(), ...this.pickingOrders()];
     let kg = 0;
     for (const o of orders) {
@@ -1220,73 +1208,121 @@ export class KdsComponent implements OnInit, OnDestroy {
     return kg.toFixed(1);
   });
 
-  ngOnInit() {
-    this.updateClock();
-    this.clockInterval = setInterval(() => this.updateClock(), 1000);
-
-    // Initialize timers for existing orders
-    const now = Date.now();
-    this.stateService.orders().forEach((o, index) => {
-      // Stagger existing timestamps realistically (2m, 5m, 10m ago)
-      this.orderTimers.set(o.orderId, now - (index * 180000 + 120000));
-    });
-
-    // Default to clean light PWA theme
-    const savedTheme = localStorage.getItem('despulpadora_kds_theme');
-    if (savedTheme) {
-      this.isDarkTheme.set(savedTheme === 'dark');
-    } else {
-      this.isDarkTheme.set(false);
-    }
-  }
-
-  ngOnDestroy() {
-    if (this.clockInterval) {
-      clearInterval(this.clockInterval);
-    }
-    if (this.audioCtx) {
-      this.audioCtx.close();
-    }
-  }
-
-  private updateClock() {
-    const now = new Date();
-    this.currentTime.set(now.toLocaleTimeString('es-CO', { hour12: true }));
-  }
-
-  returnToErp() {
-    this.router.navigate(['/orders']);
-  }
-
-  toggleTheme() {
-    this.isDarkTheme.update(v => !v);
-    localStorage.setItem('despulpadora_kds_theme', this.isDarkTheme() ? 'dark' : 'light');
-  }
-
-  toggleSound() {
-    this.soundEnabled.update(v => !v);
-    if (this.soundEnabled()) {
-      this.playKitchenBellChime();
-    }
-  }
-
-  toggleFullscreen() {
-    if (!document.fullscreenElement) {
-      document.documentElement.requestFullscreen().catch(() => {});
-    } else {
-      document.exitFullscreen().catch(() => {});
-    }
-  }
-
-  // =========================================================================
-  // AUDIO SYNTHESIS CHIME (WEB AUDIO API - RESTAURANT POS BELL)
-  // =========================================================================
-  private playKitchenBellChime() {
-    if (!this.soundEnabled()) return;
-
+  /**
+   * Initializes the KDS clock, order timers, and persisted display theme.
+   */
+  ngOnInit(): void {
     try {
+      this.updateClock();
+      this.clockInterval = setInterval(() => this.updateClock(), 1000);
+
+      const now = Date.now();
+      this.stateService.orders().forEach((o: OrderDto, index: number) => {
+        this.orderTimers.set(o.orderId, now - (index * 180000 + 120000));
+      });
+
+      const savedTheme = localStorage.getItem('despulpadora_kds_theme');
+      if (savedTheme) {
+        this.isDarkTheme.set(savedTheme === 'dark');
+      } else {
+        this.isDarkTheme.set(false);
+      }
+    } catch (error: unknown) {
+      console.error('Error initializing KdsComponent:', error);
+    }
+  }
+
+  /**
+   * Cleans up the clock interval and audio context upon component destruction.
+   */
+  ngOnDestroy(): void {
+    try {
+      if (this.clockInterval) {
+        clearInterval(this.clockInterval);
+      }
+      if (this.audioCtx) {
+        this.audioCtx.close();
+      }
+    } catch (error: unknown) {
+      console.error('Error destroying KdsComponent:', error);
+    }
+  }
+
+  /**
+   * Updates the current time signal formatted for Colombia locale.
+   */
+  private updateClock(): void {
+    try {
+      const now = new Date();
+      this.currentTime.set(now.toLocaleTimeString('es-CO', { hour12: true }));
+    } catch (error: unknown) {
+      console.error('Error updating KDS clock:', error);
+    }
+  }
+
+  /**
+   * Navigates back to the main orders management view.
+   */
+  returnToErp(): void {
+    try {
+      this.router.navigate(['/orders']);
+    } catch (error: unknown) {
+      console.error('Error navigating back to ERP:', error);
+    }
+  }
+
+  /**
+   * Toggles between dark and light display themes for the KDS screen.
+   */
+  toggleTheme(): void {
+    try {
+      this.isDarkTheme.update((v: boolean) => !v);
+      localStorage.setItem('despulpadora_kds_theme', this.isDarkTheme() ? 'dark' : 'light');
+    } catch (error: unknown) {
+      console.error('Error toggling KDS theme:', error);
+    }
+  }
+
+  /**
+   * Toggles the sound notification state and plays a chime when enabled.
+   */
+  toggleSound(): void {
+    try {
+      this.soundEnabled.update((v: boolean) => !v);
+      if (this.soundEnabled()) {
+        this.playKitchenBellChime();
+      }
+    } catch (error: unknown) {
+      console.error('Error toggling KDS sound:', error);
+    }
+  }
+
+  /**
+   * Toggles fullscreen mode on the browser document element.
+   */
+  toggleFullscreen(): void {
+    try {
+      if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen().catch(() => undefined);
+      } else {
+        document.exitFullscreen().catch(() => undefined);
+      }
+    } catch (error: unknown) {
+      console.error('Error toggling fullscreen:', error);
+    }
+  }
+
+  /**
+   * Plays a synthesized two-tone bell chime using the Web Audio API.
+   */
+  private playKitchenBellChime(): void {
+    try {
+      if (!this.soundEnabled()) return;
+
       if (!this.audioCtx) {
-        const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
+        const audioWin = window as unknown as AudioContextWindow;
+        const AudioContextClass = window.AudioContext || audioWin.webkitAudioContext;
+        if (!AudioContextClass) return;
         this.audioCtx = new AudioContextClass();
       }
 
@@ -1296,7 +1332,6 @@ export class KdsComponent implements OnInit, OnDestroy {
 
       const now = this.audioCtx.currentTime;
 
-      // Note 1: High crisp bell ping (880 Hz - A5)
       const osc1 = this.audioCtx.createOscillator();
       const gain1 = this.audioCtx.createGain();
       osc1.type = 'sine';
@@ -1308,7 +1343,6 @@ export class KdsComponent implements OnInit, OnDestroy {
       osc1.start(now);
       osc1.stop(now + 0.6);
 
-      // Note 2: Harmonic chime (1320 Hz - E6)
       const osc2 = this.audioCtx.createOscillator();
       const gain2 = this.audioCtx.createGain();
       osc2.type = 'sine';
@@ -1320,165 +1354,234 @@ export class KdsComponent implements OnInit, OnDestroy {
       osc2.start(now + 0.08);
       osc2.stop(now + 0.8);
     } catch {
-      // Audio context may be restricted by browser until first user gesture
+      return;
     }
   }
 
-  // =========================================================================
-  // SIMULATOR: INCOMING URGENT ORDER
-  // =========================================================================
-  simulateIncomingOrder() {
-    const clients = [
-      { name: 'Restaurante Wok Parque 93', address: 'Calle 93A # 13-25, Chicó Norte, Bogotá' },
-      { name: 'Crepes & Waffles Zona G', address: 'Cra 5 # 69-18, Chapinero, Bogotá' },
-      { name: 'Frutería & Helados El Retén Chía', address: 'Variante Chía - Cota Km 3' },
-      { name: 'Bistro Cota Gourmet', address: 'Variante Cota, Cundinamarca' },
-      { name: 'Café & Panadería Usaquén', address: 'Cra 6A # 119-24, Usaquén, Bogotá' }
-    ];
+  /**
+   * Simulates an incoming urgent order using real clients and fruits from StateService.
+   */
+  simulateIncomingOrder(): void {
+    try {
+      const availableClients: ClientDto[] = this.stateService.clients();
+      const availableFruits: FruitConfig[] = this.stateService.fruits();
 
-    const fruitPresets = [
-      { name: 'Maracuyá', gram: 1000 as const, price: 11000 },
-      { name: 'Mango Tommy', gram: 1000 as const, price: 10500 },
-      { name: 'Lulo de Castilla', gram: 500 as const, price: 6600 },
-      { name: 'Mora de Castilla', gram: 500 as const, price: 6500 },
-      { name: 'Guanábana Criolla', gram: 1000 as const, price: 13800 }
-    ];
+      if (availableClients.length === 0 || availableFruits.length === 0) {
+        this.notification.warning(
+          'Catálogo vacío',
+          'Configure clientes y frutas antes de simular una comanda.'
+        );
+        return;
+      }
 
-    const client = clients[Math.floor(Math.random() * clients.length)];
-    const itemCount = Math.floor(Math.random() * 3) + 2;
-    const items = [];
+      const client = availableClients[Math.floor(Math.random() * availableClients.length)];
+      const itemCount = Math.min(availableFruits.length, Math.floor(Math.random() * 2) + 1);
+      const items: Array<{
+        fruitName: string;
+        grammage: 140 | 250 | 500 | 1000;
+        quantity: number;
+        unitPrice: number;
+      }> = [];
 
-    for (let i = 0; i < itemCount; i++) {
-      const f = fruitPresets[Math.floor(Math.random() * fruitPresets.length)];
-      const qty = Math.floor(Math.random() * 8) + 4;
-      items.push({
-        fruitName: f.name,
-        grammage: f.gram,
-        quantity: qty,
-        unitPrice: f.price
+      for (let i = 0; i < itemCount; i++) {
+        const f = availableFruits[i % availableFruits.length];
+        const qty = Math.floor(Math.random() * 5) + 1;
+        items.push({
+          fruitName: f.name,
+          grammage: 1000,
+          quantity: qty,
+          unitPrice: f.prices.g1000 ?? 0
+        });
+      }
+
+      const newOrder = this.stateService.createOrder({
+        clientName: client.fullName || client.name || '',
+        clientPhone: client.phone || '',
+        clientAddress: client.address || '',
+        notes: 'Comanda generada para alistamiento en cava',
+        paymentMethodName: '',
+        items
       });
-    }
 
-    const newOrder = this.stateService.createOrder({
-      clientName: client.name,
-      clientPhone: '315 ' + Math.floor(1000000 + Math.random() * 9000000),
-      clientAddress: client.address,
-      notes: 'Comanda generada para alistamiento en cava',
-      paymentMethodName: 'Contra Entrega Efectivo',
-      items
-    });
+      this.orderTimers.set(newOrder.orderId, Date.now());
+      this.playKitchenBellChime();
 
-    this.orderTimers.set(newOrder.orderId, Date.now());
+      try {
+        confetti({
+          particleCount: 35,
+          spread: 50,
+          origin: { y: 0.15 }
+        });
+      } catch {
+        void 0;
+      }
 
-    // Kitchen chime
-    this.playKitchenBellChime();
-
-    // Confetti effect
-    confetti({
-      particleCount: 35,
-      spread: 50,
-      origin: { y: 0.15 }
-    });
-
-    this.notification.info(
-      '¡Nueva Comanda en Pantalla!',
-      `Pedido ${newOrder.orderNumber} para ${client.name}`
-    );
-  }
-
-  // =========================================================================
-  // ORDER ACTIONS & STATUS ADVANCEMENTS
-  // =========================================================================
-  advanceStatus(order: OrderDto, newStatus: OrderStatus) {
-    this.stateService.updateOrderStatus(order.orderId, newStatus);
-    if (!this.orderTimers.has(order.orderId)) {
-      this.orderTimers.set(order.orderId, Date.now());
-    }
-  }
-
-  completeOrderPicking(order: OrderDto) {
-    // Mark all items as picked
-    order.items.forEach(it => {
-      this.stateService.updateItemPickedQuantity(
-        order.orderId,
-        it.fruitId,
-        it.grammage,
-        it.quantity
+      this.notification.info(
+        '¡Nueva Comanda en Pantalla!',
+        `Pedido ${newOrder.orderNumber} para ${newOrder.clientName}`
       );
-    });
-
-    // Advance order to BILLED / ready for billing and dispatch
-    this.stateService.updateOrderStatus(order.orderId, 'BILLED');
-
-    this.playKitchenBellChime();
-
-    confetti({
-      particleCount: 50,
-      spread: 60,
-      origin: { y: 0.6 }
-    });
-
-    this.notification.success(
-      '¡Alistamiento Completado!',
-      `${order.orderNumber} empacado y listo para despacho.`
-    );
-  }
-
-  toggleItem(order: OrderDto, item: any) {
-    const isCompleted = (item.pickedQuantity || 0) >= item.quantity;
-    const newQty = isCompleted ? 0 : item.quantity;
-    this.stateService.updateItemPickedQuantity(order.orderId, item.fruitId, item.grammage, newQty);
-  }
-
-  // =========================================================================
-  // TIMERS & METRIC HELPERS
-  // =========================================================================
-  getOrderElapsedTime(order: OrderDto): string {
-    const startTime = this.orderTimers.get(order.orderId) || Date.now() - 120000;
-    const diffSec = Math.max(0, Math.floor((Date.now() - startTime) / 1000));
-    const mins = Math.floor(diffSec / 60);
-    const secs = diffSec % 60;
-    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-  }
-
-  isTimerOverdue(order: OrderDto): boolean {
-    const startTime = this.orderTimers.get(order.orderId) || Date.now();
-    const diffSec = (Date.now() - startTime) / 1000;
-    return diffSec > 900; // > 15 mins alert
-  }
-
-  calculateOrderKg(order: OrderDto): string {
-    const sum = order.items.reduce((acc, it) => acc + (it.quantity * it.grammage) / 1000, 0);
-    return sum.toFixed(1);
-  }
-
-  getOrderPickedPercentage(order: OrderDto): number {
-    const total = order.items.reduce((acc, it) => acc + it.quantity, 0);
-    if (total === 0) return 0;
-    const picked = order.items.reduce((acc, it) => acc + (it.pickedQuantity || 0), 0);
-    return Math.min(100, Math.round((picked / total) * 100));
-  }
-
-  getStatusBadgeClass(status: OrderStatus): string {
-    switch (status) {
-      case 'PENDING': return 'chip-warning';
-      case 'PICKING': return 'chip-purple';
-      case 'BILLED':
-      case 'DISPATCHED':
-      case 'DELIVERED':
-        return 'chip-success';
-      default: return '';
+    } catch (error: unknown) {
+      console.error('Error simulating incoming order:', error);
     }
   }
 
+  /**
+   * Advances an order ticket to a new status and initializes its timer if needed.
+   */
+  advanceStatus(order: OrderDto, newStatus: OrderStatus): void {
+    try {
+      this.stateService.updateOrderStatus(order.orderId, newStatus);
+      if (!this.orderTimers.has(order.orderId)) {
+        this.orderTimers.set(order.orderId, Date.now());
+      }
+    } catch (error: unknown) {
+      console.error('Error advancing KDS order status:', error);
+    }
+  }
+
+  /**
+   * Marks all items in an order as picked and transitions the order to BILLED status.
+   */
+  completeOrderPicking(order: OrderDto): void {
+    try {
+      order.items.forEach((it: OrderItemDto) => {
+        this.stateService.updateItemPickedQuantity(
+          order.orderId,
+          it.fruitId,
+          it.grammage,
+          it.quantity
+        );
+      });
+
+      this.stateService.updateOrderStatus(order.orderId, 'BILLED');
+      this.playKitchenBellChime();
+
+      try {
+        confetti({
+          particleCount: 50,
+          spread: 60,
+          origin: { y: 0.6 }
+        });
+      } catch {
+        void 0;
+      }
+
+      this.notification.success(
+        '¡Alistamiento Completado!',
+        `${order.orderNumber} empacado y listo para despacho.`
+      );
+    } catch (error: unknown) {
+      console.error('Error completing order picking:', error);
+    }
+  }
+
+  /**
+   * Toggles the picked completion state of a single order line item.
+   */
+  toggleItem(order: OrderDto, item: OrderItemDto): void {
+    try {
+      const isCompleted = (item.pickedQuantity || 0) >= item.quantity;
+      const newQty = isCompleted ? 0 : item.quantity;
+      this.stateService.updateItemPickedQuantity(order.orderId, item.fruitId, item.grammage, newQty);
+    } catch (error: unknown) {
+      console.error('Error toggling KDS item:', error);
+    }
+  }
+
+  /**
+   * Returns the formatted MM:SS elapsed time string for an order ticket.
+   */
+  getOrderElapsedTime(order: OrderDto): string {
+    try {
+      const startTime = this.orderTimers.get(order.orderId) || Date.now() - 120000;
+      const diffSec = Math.max(0, Math.floor((Date.now() - startTime) / 1000));
+      const mins = Math.floor(diffSec / 60);
+      const secs = diffSec % 60;
+      return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+    } catch (error: unknown) {
+      console.error('Error getting order elapsed time:', error);
+      return '00:00';
+    }
+  }
+
+  /**
+   * Determines whether an order ticket has exceeded the 15-minute SLA threshold.
+   */
+  isTimerOverdue(order: OrderDto): boolean {
+    try {
+      const startTime = this.orderTimers.get(order.orderId) || Date.now();
+      const diffSec = (Date.now() - startTime) / 1000;
+      return diffSec > 900;
+    } catch (error: unknown) {
+      console.error('Error checking if timer is overdue:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Calculates the total weight in kilograms for an order ticket.
+   */
+  calculateOrderKg(order: OrderDto): string {
+    try {
+      const sum = order.items.reduce((acc: number, it: OrderItemDto) => acc + (it.quantity * it.grammage) / 1000, 0);
+      return sum.toFixed(1);
+    } catch (error: unknown) {
+      console.error('Error calculating order kg:', error);
+      return '0.0';
+    }
+  }
+
+  /**
+   * Calculates the percentage of picked items for an order ticket.
+   */
+  getOrderPickedPercentage(order: OrderDto): number {
+    try {
+      const total = order.items.reduce((acc: number, it: OrderItemDto) => acc + it.quantity, 0);
+      if (total === 0) return 0;
+      const picked = order.items.reduce((acc: number, it: OrderItemDto) => acc + (it.pickedQuantity || 0), 0);
+      return Math.min(100, Math.round((picked / total) * 100));
+    } catch (error: unknown) {
+      console.error('Error getting order picked percentage:', error);
+      return 0;
+    }
+  }
+
+  /**
+   * Returns the CSS badge class corresponding to an order status.
+   */
+  getStatusBadgeClass(status: OrderStatus): string {
+    try {
+      switch (status) {
+        case 'PENDING': return 'chip-warning';
+        case 'PICKING': return 'chip-purple';
+        case 'BILLED':
+        case 'DISPATCHED':
+        case 'DELIVERED':
+          return 'chip-success';
+        default: return '';
+      }
+    } catch (error: unknown) {
+      console.error('Error getting status badge class:', error);
+      return '';
+    }
+  }
+
+  /**
+   * Returns the human-readable Spanish label for an order status.
+   */
   getStatusText(status: OrderStatus): string {
-    switch (status) {
-      case 'PENDING': return 'Por Iniciar';
-      case 'PICKING': return 'En Picking';
-      case 'BILLED': return 'Facturado';
-      case 'DISPATCHED': return 'En Reparto';
-      case 'DELIVERED': return 'Entregado';
-      default: return status;
+    try {
+      switch (status) {
+        case 'PENDING': return 'Por Iniciar';
+        case 'PICKING': return 'En Picking';
+        case 'BILLED': return 'Facturado';
+        case 'DISPATCHED': return 'En Reparto';
+        case 'DELIVERED': return 'Entregado';
+        default: return status;
+      }
+    } catch (error: unknown) {
+      console.error('Error getting status text:', error);
+      return status;
     }
   }
 }

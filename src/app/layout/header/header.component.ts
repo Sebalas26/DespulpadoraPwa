@@ -1,19 +1,32 @@
-import { Component, computed, HostBinding, HostListener, inject, OnInit, OnDestroy, signal } from '@angular/core';
+import {
+  Component,
+  HostBinding,
+  HostListener,
+  OnDestroy,
+  OnInit,
+  computed,
+  inject,
+  signal
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Router, NavigationEnd } from '@angular/router';
+import { NavigationEnd, Router } from '@angular/router';
 import { toSignal } from '@angular/core/rxjs-interop';
-import { filter, map } from 'rxjs/operators';
+import { catchError, filter, map } from 'rxjs/operators';
+import { of } from 'rxjs';
 import { AuthService } from '../../core/services/auth.service';
 import { StateService } from '../../core/services/state.service';
 import { VoiceOrdersService } from '../../core/services/voice-orders.service';
 
+/**
+ * Top application bar component displaying the active module breadcrumb, KDS shortcuts,
+ * network connectivity indicator, company branding, and user avatar initials.
+ */
 @Component({
   selector: 'app-header',
   standalone: true,
   imports: [CommonModule],
   template: `
     <header class="topbar" [class.header-hidden]="isHeaderHidden()">
-      <!-- Desktop Left: (Sidebar Toggle + Brand when collapsed) + Dynamic Module Title -->
       <div class="topbar-left no-mobile">
         @if (stateService.isSidebarCollapsed()) {
           <button
@@ -30,10 +43,10 @@ import { VoiceOrdersService } from '../../core/services/voice-orders.service';
           </button>
 
           <div class="header-collapsed-brand">
-            <img src="/logo-dgl.png" alt="DGL Despulpadora" class="header-logo-img" />
+            <img [src]="stateService.companyInfo().logoUrl || '/logo-dgl.png'" [alt]="stateService.companyInfo().companyName" class="header-logo-img" />
             <div class="header-brand-text">
-              <span class="header-brand-name">DGL Despulpadora</span>
-              <span class="header-brand-sub">Gestión de pulpas</span>
+              <span class="header-brand-name">{{ stateService.companyInfo().companyName }}</span>
+              <span class="header-brand-sub">{{ stateService.companyInfo().tagline }}</span>
             </div>
           </div>
           <span class="header-brand-divider"></span>
@@ -44,17 +57,14 @@ import { VoiceOrdersService } from '../../core/services/voice-orders.service';
         </div>
       </div>
 
-      <!-- Mobile Top Bar: DGL Logo + Notification + Avatar -->
       <div class="mobile-only-header only-mobile">
         <div class="mobile-brand">
-          <img src="/logo-dgl.png" alt="DGL Despulpadora" style="width: 34px; height: 34px; object-fit: contain;" />
-          <span class="mobile-brand-title">DGL Despulpadora</span>
+          <img [src]="stateService.companyInfo().logoUrl || '/logo-dgl.png'" [alt]="stateService.companyInfo().companyName" style="width: 34px; height: 34px; object-fit: contain;" />
+          <span class="mobile-brand-title">{{ stateService.companyInfo().companyName }}</span>
         </div>
       </div>
 
-      <!-- Right side: Status, Search, Notifications, + Nuevo pedido button -->
       <div class="topbar-actions">
-        <!-- Pantalla de Alistamiento de Pedidos (KDS) -->
         <button
           type="button"
           class="btn-kds-access"
@@ -70,7 +80,6 @@ import { VoiceOrdersService } from '../../core/services/voice-orders.service';
           <span class="kds-access-badge">KDS</span>
         </button>
 
-        <!-- Pantalla KDS de Inventario & Stock (Planta & Cava) -->
         <button
           type="button"
           class="btn-kds-access btn-kds-inventory"
@@ -86,7 +95,6 @@ import { VoiceOrdersService } from '../../core/services/voice-orders.service';
           <span class="kds-access-badge badge-inventory">PLANTA</span>
         </button>
 
-        <!-- Portal de Autopedido para Clientes (Catálogo Digital) -->
         <button
           type="button"
           class="btn-kds-access btn-kds-portal"
@@ -102,13 +110,11 @@ import { VoiceOrdersService } from '../../core/services/voice-orders.service';
           <span class="kds-access-badge badge-portal">PEDIDOS</span>
         </button>
 
-        <!-- Status Indicator • En línea (Figma style) -->
         <div class="online-pill" [title]="stateService.isOnline() ? 'Sistema conectado a la red' : 'Sin conexión'">
           <span class="online-dot" [style.background]="stateService.isOnline() ? '#1e5e3a' : '#dc2626'"></span>
           <span class="online-text">{{ stateService.isOnline() ? 'En línea' : 'Desconectado' }}</span>
         </div>
 
-        <!-- Notification Bell -->
         <button
           type="button"
           class="topbar-icon-btn"
@@ -123,12 +129,10 @@ import { VoiceOrdersService } from '../../core/services/voice-orders.service';
           }
         </button>
 
-        <!-- Mobile Avatar Badge (Matches Figma Mobile Header) -->
-        <div class="mobile-user-avatar only-mobile" title="Administrador">
-          <span>AD</span>
+        <div class="mobile-user-avatar only-mobile" [title]="authService.user()?.roleName || ''">
+          <span>{{ userInitials() }}</span>
         </div>
 
-        <!-- Primary CTA: + Nuevo pedido (Desktop Figma button) -->
         <button
           type="button"
           class="btn btn-dgl-primary no-mobile"
@@ -629,143 +633,244 @@ export class HeaderComponent implements OnInit, OnDestroy {
   readonly voiceOrdersService = inject(VoiceOrdersService);
   private readonly router = inject(Router);
 
-  // Auto-hide on scroll down, reappear on scroll up
   readonly isHeaderHidden = signal<boolean>(false);
   private lastScrollY = 0;
   private readonly scrollThreshold = 8;
   private cleanupScrollListeners?: () => void;
 
+  /**
+   * Computes the two-letter avatar initials of the currently authenticated user.
+   */
+  readonly userInitials = computed<string>(() => {
+    try {
+      const name = (
+        this.authService.user()?.fullName ||
+        this.authService.user()?.username ||
+        ''
+      ).trim();
+      if (!name) {
+        return '';
+      }
+      const parts = name.split(/\s+/);
+      if (parts.length >= 2) {
+        return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
+      }
+      return name.substring(0, 2).toUpperCase();
+    } catch {
+      return '';
+    }
+  });
+
+  /**
+   * Binds the `header-hidden` CSS class on the host element when the header is auto-hidden on scroll.
+   */
   @HostBinding('class.header-hidden')
-  get hostHeaderHidden() {
-    return this.isHeaderHidden();
-  }
-
-  ngOnInit() {
-    if (typeof window !== 'undefined') {
-      const scrollHandler = () => this.handleScroll();
-      window.addEventListener('scroll', scrollHandler, { passive: true });
-      document.addEventListener('scroll', scrollHandler, { passive: true, capture: true });
-
-      this.cleanupScrollListeners = () => {
-        window.removeEventListener('scroll', scrollHandler);
-        document.removeEventListener('scroll', scrollHandler, { capture: true });
-      };
-    }
-
-    // Reset visibility when navigating to another view
-    this.router.events.pipe(filter(e => e instanceof NavigationEnd)).subscribe(() => {
-      this.isHeaderHidden.set(false);
-      this.lastScrollY = 0;
-    });
-  }
-
-  ngOnDestroy() {
-    if (this.cleanupScrollListeners) {
-      this.cleanupScrollListeners();
+  get hostHeaderHidden(): boolean {
+    try {
+      return this.isHeaderHidden();
+    } catch {
+      return false;
     }
   }
 
+  /**
+   * Initializes scroll event listeners and route change resets.
+   */
+  ngOnInit(): void {
+    try {
+      if (typeof window !== 'undefined') {
+        const scrollHandler = (): void => this.handleScroll();
+        window.addEventListener('scroll', scrollHandler, { passive: true });
+        document.addEventListener('scroll', scrollHandler, { passive: true, capture: true });
+
+        this.cleanupScrollListeners = (): void => {
+          window.removeEventListener('scroll', scrollHandler);
+          document.removeEventListener('scroll', scrollHandler, { capture: true });
+        };
+      }
+
+      this.router.events
+        .pipe(
+          filter((e): e is NavigationEnd => e instanceof NavigationEnd),
+          catchError(() => of())
+        )
+        .subscribe(() => {
+          this.isHeaderHidden.set(false);
+          this.lastScrollY = 0;
+        });
+    } catch {
+      return;
+    }
+  }
+
+  /**
+   * Cleans up registered window and document scroll listeners.
+   */
+  ngOnDestroy(): void {
+    try {
+      if (this.cleanupScrollListeners) {
+        this.cleanupScrollListeners();
+      }
+    } catch {
+      return;
+    }
+  }
+
+  /**
+   * Handles window scroll events to toggle header visibility.
+   */
   @HostListener('window:scroll')
-  onWindowScroll() {
-    this.handleScroll();
+  onWindowScroll(): void {
+    try {
+      this.handleScroll();
+    } catch {
+      return;
+    }
   }
 
-  private handleScroll() {
-    if (typeof window === 'undefined') return;
+  /**
+   * Evaluates vertical scroll delta to auto-hide or reveal the header.
+   */
+  private handleScroll(): void {
+    try {
+      if (typeof window === 'undefined') {
+        return;
+      }
 
-    const currentScrollY = window.scrollY || document.documentElement.scrollTop || document.body.scrollTop || 0;
+      const currentScrollY =
+        window.scrollY || document.documentElement.scrollTop || document.body.scrollTop || 0;
 
-    // At top of page, always show header
-    if (currentScrollY <= 25) {
-      this.isHeaderHidden.set(false);
+      if (currentScrollY <= 25) {
+        this.isHeaderHidden.set(false);
+        this.lastScrollY = currentScrollY;
+        return;
+      }
+
+      const delta = currentScrollY - this.lastScrollY;
+
+      if (Math.abs(delta) < this.scrollThreshold) {
+        return;
+      }
+
+      if (delta > 0 && currentScrollY > 64) {
+        this.isHeaderHidden.set(true);
+      } else if (delta < 0) {
+        this.isHeaderHidden.set(false);
+      }
+
       this.lastScrollY = currentScrollY;
+    } catch {
       return;
     }
-
-    const delta = currentScrollY - this.lastScrollY;
-
-    // Ignore tiny movements below threshold
-    if (Math.abs(delta) < this.scrollThreshold) {
-      return;
-    }
-
-    // Scrolling down past the header height -> hide smoothly
-    if (delta > 0 && currentScrollY > 64) {
-      this.isHeaderHidden.set(true);
-    }
-    // Scrolling up -> show smoothly
-    else if (delta < 0) {
-      this.isHeaderHidden.set(false);
-    }
-
-    this.lastScrollY = currentScrollY;
   }
 
   private readonly navEnd$ = this.router.events.pipe(
-    filter(e => e instanceof NavigationEnd),
+    filter((e): e is NavigationEnd => e instanceof NavigationEnd),
     map(() => this.router.url)
   );
 
   private readonly urlSignal = toSignal(this.navEnd$, { initialValue: this.router.url });
 
-  readonly currentRouteTitle = computed(() => {
-    const url = this.urlSignal();
-    if (url.startsWith('/dashboard')) return 'Panel general';
-    if (url.startsWith('/orders')) {
-      if (url.includes('tab=facturacion')) return 'Facturación & POS';
-      if (url.includes('tab=despachos')) return 'Despachos & Rutas';
-      return 'Alistamiento de Pedidos';
-    }
-    if (url.startsWith('/calculator')) return 'Inventario y Stock';
-    if (url.startsWith('/settings')) {
-      if (
-        url.includes('tab=inventory') ||
-        url.includes('tab=variants') ||
-        url.includes('tab=fruits') ||
-        url.includes('tab=cava')
-      ) {
-        return 'Inventario y Stock';
+  readonly currentRouteTitle = computed<string>(() => {
+    try {
+      const url = this.urlSignal() || '';
+      if (url.startsWith('/dashboard')) return 'Panel general';
+      if (url.startsWith('/orders')) {
+        if (url.includes('tab=facturacion')) return 'Facturación & POS';
+        if (url.includes('tab=despachos')) return 'Despachos & Rutas';
+        return 'Alistamiento de Pedidos';
       }
-      if (url.includes('tab=users') || url.includes('tab=usuarios') || url.includes('tab=roles')) {
-        return 'Usuarios y roles';
+      if (url.startsWith('/calculator')) return 'Inventario y Stock';
+      if (url.startsWith('/settings')) {
+        if (
+          url.includes('tab=inventory') ||
+          url.includes('tab=variants') ||
+          url.includes('tab=fruits') ||
+          url.includes('tab=cava')
+        ) {
+          return 'Inventario y Stock';
+        }
+        if (url.includes('tab=users') || url.includes('tab=usuarios') || url.includes('tab=roles')) {
+          return 'Usuarios y roles';
+        }
+        return 'Configuración';
       }
-      return 'Configuración';
+      if (url.startsWith('/accounting')) return 'Clientes';
+      if (url.startsWith('/shifts') || url.startsWith('/hr')) return 'Gestión de Personal';
+      if (url.startsWith('/reports')) return 'Ventas';
+      if (url.startsWith('/admin')) return 'Administración';
+      return 'Panel general';
+    } catch {
+      return 'Panel general';
     }
-    if (url.startsWith('/accounting')) return 'Clientes';
-    if (url.startsWith('/shifts') || url.startsWith('/hr')) return 'Gestión de Personal';
-    if (url.startsWith('/reports')) return 'Ventas';
-    if (url.startsWith('/admin')) return 'Administración';
-    return 'Panel general';
   });
 
-  onSearchClick() {
-    const searchInput = document.querySelector('input[type="text"]') as HTMLInputElement;
-    if (searchInput) {
-      searchInput.focus();
+  /**
+   * Focuses the first text search input on the page.
+   */
+  onSearchClick(): void {
+    try {
+      const searchInput = document.querySelector('input[type="text"]') as HTMLInputElement | null;
+      if (searchInput) {
+        searchInput.focus();
+      }
+    } catch {
+      return;
     }
   }
 
-  onNewOrderClick() {
-    if (!this.router.url.startsWith('/orders')) {
-      this.router.navigate(['/orders'], { queryParams: { tab: 'picking' } }).then(() => {
-        setTimeout(() => {
-          window.dispatchEvent(new CustomEvent('open-new-order-modal'));
-        }, 60);
-      });
-    } else {
-      window.dispatchEvent(new CustomEvent('open-new-order-modal'));
+  /**
+   * Navigates to the orders module and dispatches the new order modal event.
+   */
+  onNewOrderClick(): void {
+    try {
+      if (!this.router.url.startsWith('/orders')) {
+        this.router
+          .navigate(['/orders'], { queryParams: { tab: 'picking' } })
+          .then(() => {
+            setTimeout(() => {
+              window.dispatchEvent(new CustomEvent('open-new-order-modal'));
+            }, 60);
+          })
+          .catch(() => {});
+      } else {
+        window.dispatchEvent(new CustomEvent('open-new-order-modal'));
+      }
+    } catch {
+      return;
     }
   }
 
-  navigateToKds() {
-    this.router.navigate(['/kds']);
+  /**
+   * Navigates to the dedicated order picking KDS view.
+   */
+  navigateToKds(): void {
+    try {
+      void this.router.navigate(['/kds']);
+    } catch {
+      return;
+    }
   }
 
-  navigateToInventoryKds() {
-    this.router.navigate(['/kds-inventory']);
+  /**
+   * Navigates to the dedicated plant inventory KDS view.
+   */
+  navigateToInventoryKds(): void {
+    try {
+      void this.router.navigate(['/kds-inventory']);
+    } catch {
+      return;
+    }
   }
 
-  navigateToClientPortal() {
-    this.router.navigate(['/portal-clientes']);
+  /**
+   * Navigates to the self-service client portal view.
+   */
+  navigateToClientPortal(): void {
+    try {
+      void this.router.navigate(['/portal-clientes']);
+    } catch {
+      return;
+    }
   }
 }

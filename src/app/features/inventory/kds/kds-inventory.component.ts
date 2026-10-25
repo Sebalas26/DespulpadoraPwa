@@ -11,10 +11,13 @@ import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { StateService } from '../../../core/services/state.service';
 import { NotificationService } from '../../../core/services/notification.service';
-import { ProductVariantDto } from '../../../core/models/business.models';
+import { FruitConfig, ProductVariantDto } from '../../../core/models/business.models';
 import confetti from 'canvas-confetti';
 
-interface InventoryTransaction {
+/**
+ * Represents an inventory adjustment audit transaction in the KDS view.
+ */
+export interface InventoryTransaction {
   id: string;
   time: string;
   type: 'fruit' | 'variant';
@@ -25,18 +28,35 @@ interface InventoryTransaction {
   unit: 'Kg' | 'uds';
 }
 
+/**
+ * Represents the target item selected in the touch numpad modal.
+ */
+export interface NumpadTargetItem {
+  type: 'fruit' | 'variant';
+  id: string | number;
+  name: string;
+  current: number;
+  unit: 'Kg' | 'uds';
+}
+
+/**
+ * Extended Window interface supporting legacy webkitAudioContext.
+ */
+interface AudioContextWindow extends Window {
+  webkitAudioContext?: typeof AudioContext;
+}
+
+/**
+ * Touch-first Kitchen Display System (KDS) component for real-time plant and cold storage inventory control.
+ */
 @Component({
   selector: 'app-kds-inventory',
   standalone: true,
   imports: [CommonModule, FormsModule],
   template: `
     <div class="kds-root" [class.dark-theme]="isDarkTheme()">
-      <!-- ========================================================
-           KDS HEADER (TV / WORKSTATION TOUCH MONITOR STYLE)
-           ======================================================== -->
-      <header class="kds-header">
-        <!-- Live Clock & Branding on the Left -->
-        <div class="kds-brand-group">
+            <header class="kds-header">
+                <div class="kds-brand-group">
           <div class="kds-clock">
             <span class="clock-time">{{ currentTime() }}</span>
             <span class="clock-date">{{ currentDate() }}</span>
@@ -47,8 +67,7 @@ interface InventoryTransaction {
           </div>
         </div>
 
-        <!-- Metrics Pills Bar (Live Totals) -->
-        <div class="kds-metrics-bar">
+                <div class="kds-metrics-bar">
           <div class="metric-card metric-fruit">
             <div class="metric-icon">
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -99,10 +118,8 @@ interface InventoryTransaction {
           }
         </div>
 
-        <!-- Utility & Workstation Actions -->
-        <div class="kds-actions-group">
-          <!-- View Mode Selector -->
-          <div class="kds-view-selector">
+                <div class="kds-actions-group">
+                    <div class="kds-view-selector">
             <button
               type="button"
               class="view-pill"
@@ -132,8 +149,7 @@ interface InventoryTransaction {
             </button>
           </div>
 
-          <!-- Sound Feedback Toggle -->
-          <button
+                    <button
             type="button"
             class="kds-tool-btn"
             [class.muted]="!soundEnabled()"
@@ -155,8 +171,7 @@ interface InventoryTransaction {
             }
           </button>
 
-          <!-- Fullscreen Toggle -->
-          <button
+                    <button
             type="button"
             class="kds-tool-btn"
             (click)="toggleFullscreen()"
@@ -170,8 +185,7 @@ interface InventoryTransaction {
             </svg>
           </button>
 
-          <!-- Theme Toggle -->
-          <button
+                    <button
             type="button"
             class="kds-tool-btn"
             (click)="toggleTheme()"
@@ -196,8 +210,7 @@ interface InventoryTransaction {
             }
           </button>
 
-          <!-- Exit KDS Button -->
-          <button
+                    <button
             type="button"
             class="btn-exit-kds"
             (click)="exitKds()"
@@ -212,10 +225,7 @@ interface InventoryTransaction {
         </div>
       </header>
 
-      <!-- ========================================================
-           SUBBAR: SEARCH & QUICK FRUIT FILTER CHIPS
-           ======================================================== -->
-      <div class="kds-filter-bar">
+            <div class="kds-filter-bar">
         <div class="filter-search-wrap">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <circle cx="11" cy="11" r="8"></circle>
@@ -256,15 +266,9 @@ interface InventoryTransaction {
         </div>
       </div>
 
-      <!-- ========================================================
-           MAIN WORKSTATION CONTENT AREA
-           ======================================================== -->
-      <main class="kds-main-grid">
+            <main class="kds-main-grid">
 
-        <!-- ========================================================
-             PANEL 1: FRUTA FRESCA EN PLANTA (MATERIA PRIMA EN KG)
-             ======================================================== -->
-        @if (viewMode() === 'all' || viewMode() === 'fruits') {
+                @if (viewMode() === 'all' || viewMode() === 'fruits') {
           <section class="kds-section-panel">
             <div class="section-title-bar">
               <div class="sec-left">
@@ -290,7 +294,7 @@ interface InventoryTransaction {
                   <div class="card-head">
                     <div class="item-identity">
                       <h3 class="item-name">{{ f.name }}</h3>
-                      <span class="item-sub">{{ f.scientificName }} · Rto: {{ Math.round((f.yieldRate || 0.6) * 100) }}%</span>
+                      <span class="item-sub">{{ f.scientificName }} · Rto: {{ Math.round(f.yieldRate * 100) }}%</span>
                     </div>
 
                     <div class="item-status-pill" [class.low-stock]="f.freshStockKg <= 50">
@@ -298,17 +302,14 @@ interface InventoryTransaction {
                     </div>
                   </div>
 
-                  <!-- Central Big Quantity Display -->
-                  <div class="card-big-stat">
+                                    <div class="card-big-stat">
                     <span class="stat-number">{{ f.freshStockKg | number:'1.0-1' }}</span>
                     <span class="stat-unit">Kg</span>
-                    <span class="stat-equiv">~{{ Math.round(f.freshStockKg * (f.yieldRate || 0.6)) }} kg pulpa est.</span>
+                    <span class="stat-equiv">~{{ Math.round(f.freshStockKg * f.yieldRate) }} kg pulpa est.</span>
                   </div>
 
-                  <!-- Fast Touch Keypad: Green (Entradas) & Red (Salidas) -->
-                  <div class="touch-keypad">
-                    <!-- Positive Entradas -->
-                    <div class="keypad-row positive-row">
+                                    <div class="touch-keypad">
+                                        <div class="keypad-row positive-row">
                       <span class="keypad-row-lbl">+ Cosecha</span>
                       <button type="button" class="kds-key-btn btn-pos" (click)="adjustFruit(f.id, f.name, 10)">+10k</button>
                       <button type="button" class="kds-key-btn btn-pos" (click)="adjustFruit(f.id, f.name, 25)">+25k</button>
@@ -316,8 +317,7 @@ interface InventoryTransaction {
                       <button type="button" class="kds-key-btn btn-pos btn-bold" (click)="adjustFruit(f.id, f.name, 100)">+100k</button>
                     </div>
 
-                    <!-- Negative Salidas -->
-                    <div class="keypad-row negative-row">
+                                        <div class="keypad-row negative-row">
                       <span class="keypad-row-lbl">- Merma</span>
                       <button type="button" class="kds-key-btn btn-neg" (click)="adjustFruit(f.id, f.name, -10)">-10k</button>
                       <button type="button" class="kds-key-btn btn-neg" (click)="adjustFruit(f.id, f.name, -25)">-25k</button>
@@ -325,8 +325,7 @@ interface InventoryTransaction {
                       <button type="button" class="kds-key-btn btn-neg" (click)="adjustFruit(f.id, f.name, -100)">-100k</button>
                     </div>
 
-                    <!-- Exact Custom Numpad Trigger Button -->
-                    <button
+                                        <button
                       type="button"
                       class="btn-exact-numpad"
                       (click)="openNumpad('fruit', f.id, f.name, f.freshStockKg, 'Kg')"
@@ -346,10 +345,7 @@ interface InventoryTransaction {
           </section>
         }
 
-        <!-- ========================================================
-             PANEL 2: STOCK DE PULPAS EN CAVA (TERMINADAS EN UDS)
-             ======================================================== -->
-        @if (viewMode() === 'all' || viewMode() === 'pulps') {
+                @if (viewMode() === 'all' || viewMode() === 'pulps') {
           <section class="kds-section-panel">
             <div class="section-title-bar">
               <div class="sec-left">
@@ -384,8 +380,7 @@ interface InventoryTransaction {
                     </div>
                   </div>
 
-                  <!-- Central Big Quantity Display -->
-                  <div class="card-big-stat">
+                                    <div class="card-big-stat">
                     <span class="stat-number">{{ v.currentStock | number:'1.0-0' }}</span>
                     <span class="stat-unit">uds</span>
                     <span class="stat-equiv">
@@ -393,10 +388,8 @@ interface InventoryTransaction {
                     </span>
                   </div>
 
-                  <!-- Fast Touch Keypad: Green (Producción) & Red (Despacho / Salida) -->
-                  <div class="touch-keypad">
-                    <!-- Positive Entradas -->
-                    <div class="keypad-row positive-row">
+                                    <div class="touch-keypad">
+                                        <div class="keypad-row positive-row">
                       <span class="keypad-row-lbl">+ Producido</span>
                       <button type="button" class="kds-key-btn btn-pos" (click)="adjustVariant(v.variantId, v.name, 5)">+5</button>
                       <button type="button" class="kds-key-btn btn-pos" (click)="adjustVariant(v.variantId, v.name, 10)">+10</button>
@@ -404,8 +397,7 @@ interface InventoryTransaction {
                       <button type="button" class="kds-key-btn btn-pos btn-bold" (click)="adjustVariant(v.variantId, v.name, 50)">+50</button>
                     </div>
 
-                    <!-- Negative Salidas -->
-                    <div class="keypad-row negative-row">
+                                        <div class="keypad-row negative-row">
                       <span class="keypad-row-lbl">- Despacho</span>
                       <button type="button" class="kds-key-btn btn-neg" (click)="adjustVariant(v.variantId, v.name, -5)">-5</button>
                       <button type="button" class="kds-key-btn btn-neg" (click)="adjustVariant(v.variantId, v.name, -10)">-10</button>
@@ -413,8 +405,7 @@ interface InventoryTransaction {
                       <button type="button" class="kds-key-btn btn-neg" (click)="adjustVariant(v.variantId, v.name, -50)">-50</button>
                     </div>
 
-                    <!-- Exact Custom Numpad Trigger Button -->
-                    <button
+                                        <button
                       type="button"
                       class="btn-exact-numpad"
                       (click)="openNumpad('variant', v.variantId, v.name, v.currentStock, 'uds')"
@@ -436,10 +427,7 @@ interface InventoryTransaction {
 
       </main>
 
-      <!-- ========================================================
-           FOOTER TICKER: RECENT TRANSACTIONS LOG & UNDO
-           ======================================================== -->
-      <footer class="kds-audit-footer">
+            <footer class="kds-audit-footer">
         <div class="audit-left">
           <span class="audit-pulse"></span>
           <span class="audit-title">Últimos Movimientos en Pantalla:</span>
@@ -468,10 +456,7 @@ interface InventoryTransaction {
         </div>
       </footer>
 
-      <!-- ========================================================
-           TACTILE ON-SCREEN NUMPAD MODAL (TECLADO TÁCTIL)
-           ======================================================== -->
-      @if (showNumpadModal()) {
+            @if (showNumpadModal()) {
         <div class="modal-backdrop" (click)="closeNumpad()">
           <div class="numpad-modal" (click)="$event.stopPropagation()">
             <div class="numpad-header">
@@ -484,8 +469,7 @@ interface InventoryTransaction {
               <button class="numpad-close" (click)="closeNumpad()">&times;</button>
             </div>
 
-            <!-- Operation Selector: [+] Sumar Entrada vs [-] Descontar Salida -->
-            <div class="numpad-op-selector">
+                        <div class="numpad-op-selector">
               <button
                 type="button"
                 class="op-btn op-add"
@@ -504,15 +488,13 @@ interface InventoryTransaction {
               </button>
             </div>
 
-            <!-- Numpad Digital Display Screen -->
-            <div class="numpad-screen">
+                        <div class="numpad-screen">
               <span class="screen-sign">{{ numpadSign() === 1 ? '+' : '-' }}</span>
               <span class="screen-number">{{ numpadBuffer() || '0' }}</span>
               <span class="screen-unit">{{ numpadTarget()?.unit }}</span>
             </div>
 
-            <!-- Tactile Keys Grid -->
-            <div class="numpad-keys-grid">
+                        <div class="numpad-keys-grid">
               <button type="button" class="numkey" (click)="tapDigit('1')">1</button>
               <button type="button" class="numkey" (click)="tapDigit('2')">2</button>
               <button type="button" class="numkey" (click)="tapDigit('3')">3</button>
@@ -530,8 +512,7 @@ interface InventoryTransaction {
               <button type="button" class="numkey" (click)="tapDecimal()">.</button>
             </div>
 
-            <!-- Quick Add Shortcut Chips -->
-            <div class="numpad-shortcuts">
+                        <div class="numpad-shortcuts">
               <span class="shortcuts-lbl">Rápidos:</span>
               <button type="button" class="shortcut-chip" (click)="setNumpadValue(10)">10</button>
               <button type="button" class="shortcut-chip" (click)="setNumpadValue(25)">25</button>
@@ -540,8 +521,7 @@ interface InventoryTransaction {
               <button type="button" class="shortcut-chip" (click)="setNumpadValue(250)">250</button>
             </div>
 
-            <!-- Confirm Action Button -->
-            <div class="numpad-actions">
+                        <div class="numpad-actions">
               <button type="button" class="btn-numpad-cancel" (click)="closeNumpad()">
                 Cancelar
               </button>
@@ -661,7 +641,7 @@ interface InventoryTransaction {
       }
     }
 
-    /* HEADER */
+    
     .kds-header {
       display: flex;
       align-items: center;
@@ -724,7 +704,7 @@ interface InventoryTransaction {
       }
     }
 
-    /* METRICS BAR */
+    
     .kds-metrics-bar {
       display: flex;
       align-items: center;
@@ -795,7 +775,7 @@ interface InventoryTransaction {
       }
     }
 
-    /* ACTIONS GROUP */
+    
     .kds-actions-group {
       display: flex;
       align-items: center;
@@ -874,7 +854,7 @@ interface InventoryTransaction {
       }
     }
 
-    /* SUBBAR FILTERS */
+    
     .kds-filter-bar {
       display: flex;
       align-items: center;
@@ -976,7 +956,7 @@ interface InventoryTransaction {
       }
     }
 
-    /* MAIN CONTENT */
+    
     .kds-main-grid {
       flex: 1;
       display: flex;
@@ -1050,7 +1030,7 @@ interface InventoryTransaction {
       }
     }
 
-    /* STREAM CARDS GRID */
+    
     .cards-stream-grid {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
@@ -1155,7 +1135,7 @@ interface InventoryTransaction {
       }
     }
 
-    /* KEYPAD IN CARD */
+    
     .touch-keypad {
       display: flex;
       flex-direction: column;
@@ -1253,7 +1233,7 @@ interface InventoryTransaction {
       }
     }
 
-    /* FOOTER AUDIT LOG */
+    
     .kds-audit-footer {
       display: flex;
       align-items: center;
@@ -1348,7 +1328,7 @@ interface InventoryTransaction {
       }
     }
 
-    /* NUMPAD MODAL */
+    
     .modal-backdrop {
       position: fixed;
       inset: 0;
@@ -1592,77 +1572,73 @@ export class KdsInventoryComponent implements OnInit, OnDestroy {
   private readonly router = inject(Router);
   readonly Math = Math;
 
-  // View state
   readonly isDarkTheme = signal<boolean>(true);
   readonly soundEnabled = signal<boolean>(true);
   readonly viewMode = signal<'all' | 'fruits' | 'pulps'>('all');
   readonly searchQuery = signal<string>('');
   readonly selectedFruitFilter = signal<string>('ALL');
 
-  // Clock
   readonly currentTime = signal<string>('');
   readonly currentDate = signal<string>('');
-  private clockInterval?: any;
+  private clockInterval?: ReturnType<typeof setInterval>;
 
-  // Audio Context for synthesized sound feedback
   private audioCtx?: AudioContext;
 
-  // Audit transaction history
   readonly recentTransactions = signal<InventoryTransaction[]>([]);
 
-  // Numpad Modal State
   readonly showNumpadModal = signal<boolean>(false);
   readonly numpadSign = signal<1 | -1>(1);
   readonly numpadBuffer = signal<string>('');
-  readonly numpadTarget = signal<{
-    type: 'fruit' | 'variant';
-    id: string | number;
-    name: string;
-    current: number;
-    unit: 'Kg' | 'uds';
-  } | null>(null);
+  readonly numpadTarget = signal<NumpadTargetItem | null>(null);
 
-  // Computeds
-  readonly totalPulpUnits = computed(() => {
-    return this.stateService.productVariants().reduce((acc, v) => acc + (v.currentStock || 0), 0);
+  readonly totalPulpUnits = computed<number>(() => {
+    return this.stateService.productVariants().reduce(
+      (acc: number, v: ProductVariantDto) => acc + (v.currentStock || 0),
+      0
+    );
   });
 
-  readonly estimatedPulpKg = computed(() => {
-    return Math.round(this.stateService.totalFreshStockKg() * 0.62);
+  readonly estimatedPulpKg = computed<number>(() => {
+    return Math.round(
+      this.stateService.fruits().reduce(
+        (acc: number, f: FruitConfig) => acc + (f.freshStockKg || 0) * (f.yieldRate ?? 0),
+        0
+      )
+    );
   });
 
-  readonly lowStockFruitsCount = computed(() => {
-    return this.stateService.fruits().filter(f => (f.freshStockKg || 0) <= 50).length;
+  readonly lowStockFruitsCount = computed<number>(() => {
+    return this.stateService.fruits().filter((f: FruitConfig) => (f.freshStockKg || 0) <= 50).length;
   });
 
-  readonly filteredFruits = computed(() => {
+  readonly filteredFruits = computed<FruitConfig[]>(() => {
     let list = this.stateService.fruits();
     const sel = this.selectedFruitFilter();
     if (sel !== 'ALL') {
-      list = list.filter(f => f.id === sel);
+      list = list.filter((f: FruitConfig) => String(f.id) === String(sel));
     }
     const q = this.searchQuery().trim().toLowerCase();
     if (q) {
-      list = list.filter(f =>
+      list = list.filter((f: FruitConfig) =>
         f.name.toLowerCase().includes(q) ||
-        (f.scientificName && f.scientificName.toLowerCase().includes(q))
+        Boolean(f.scientificName && f.scientificName.toLowerCase().includes(q))
       );
     }
     return list;
   });
 
-  readonly filteredVariants = computed(() => {
+  readonly filteredVariants = computed<ProductVariantDto[]>(() => {
     let list = this.stateService.productVariants();
     const sel = this.selectedFruitFilter();
     if (sel !== 'ALL') {
-      const fruitObj = this.stateService.fruits().find(f => f.id === sel);
+      const fruitObj = this.stateService.fruits().find((f: FruitConfig) => String(f.id) === String(sel));
       if (fruitObj) {
-        list = list.filter(v => v.fruitName.toLowerCase() === fruitObj.name.toLowerCase());
+        list = list.filter((v: ProductVariantDto) => v.fruitName.toLowerCase() === fruitObj.name.toLowerCase());
       }
     }
     const q = this.searchQuery().trim().toLowerCase();
     if (q) {
-      list = list.filter(v =>
+      list = list.filter((v: ProductVariantDto) =>
         v.name.toLowerCase().includes(q) ||
         v.fruitName.toLowerCase().includes(q) ||
         v.sku.toLowerCase().includes(q) ||
@@ -1672,47 +1648,70 @@ export class KdsInventoryComponent implements OnInit, OnDestroy {
     return list;
   });
 
-  ngOnInit() {
-    this.updateClock();
-    this.clockInterval = setInterval(() => this.updateClock(), 1000);
-  }
-
-  ngOnDestroy() {
-    if (this.clockInterval) {
-      clearInterval(this.clockInterval);
-    }
-    if (this.audioCtx) {
-      this.audioCtx.close().catch(() => {});
-    }
-  }
-
-  private updateClock() {
-    const now = new Date();
-    this.currentTime.set(
-      now.toLocaleTimeString('es-CO', {
-        hour: '2-digit',
-        minute: '2-digit',
-        second: '2-digit',
-        hour12: false
-      })
-    );
-    this.currentDate.set(
-      now.toLocaleDateString('es-CO', {
-        weekday: 'short',
-        day: 'numeric',
-        month: 'short'
-      })
-    );
-  }
-
-  // ==========================================
-  // AUDIO SYNTHESIS
-  // ==========================================
-  private playSound(tone: 'positive' | 'negative' | 'undo' | 'bell') {
-    if (!this.soundEnabled()) return;
+  /**
+   * Starts the live digital clock interval on component initialization.
+   */
+  ngOnInit(): void {
     try {
+      this.updateClock();
+      this.clockInterval = setInterval(() => this.updateClock(), 1000);
+    } catch (error: unknown) {
+      console.error('Error initializing KdsInventoryComponent:', error);
+    }
+  }
+
+  /**
+   * Clears the clock interval and closes the audio context on destruction.
+   */
+  ngOnDestroy(): void {
+    try {
+      if (this.clockInterval) {
+        clearInterval(this.clockInterval);
+      }
+      if (this.audioCtx) {
+        this.audioCtx.close().catch(() => undefined);
+      }
+    } catch (error: unknown) {
+      console.error('Error destroying KdsInventoryComponent:', error);
+    }
+  }
+
+  /**
+   * Updates the current time and date signals formatted for Colombia locale.
+   */
+  private updateClock(): void {
+    try {
+      const now = new Date();
+      this.currentTime.set(
+        now.toLocaleTimeString('es-CO', {
+          hour: '2-digit',
+          minute: '2-digit',
+          second: '2-digit',
+          hour12: false
+        })
+      );
+      this.currentDate.set(
+        now.toLocaleDateString('es-CO', {
+          weekday: 'short',
+          day: 'numeric',
+          month: 'short'
+        })
+      );
+    } catch (error: unknown) {
+      console.error('Error updating KDS inventory clock:', error);
+    }
+  }
+
+  /**
+   * Synthesizes tactile audio feedback for inventory adjustments.
+   */
+  private playSound(tone: 'positive' | 'negative' | 'undo' | 'bell'): void {
+    try {
+      if (!this.soundEnabled()) return;
       if (!this.audioCtx) {
-        const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
+        const audioWin = window as unknown as AudioContextWindow;
+        const AudioContextClass = window.AudioContext || audioWin.webkitAudioContext;
+        if (!AudioContextClass) return;
         this.audioCtx = new AudioContextClass();
       }
       if (this.audioCtx.state === 'suspended') {
@@ -1727,15 +1726,13 @@ export class KdsInventoryComponent implements OnInit, OnDestroy {
       const now = this.audioCtx.currentTime;
 
       if (tone === 'positive') {
-        // High ascending chime
-        osc.frequency.setValueAtTime(587.33, now); // D5
-        osc.frequency.exponentialRampToValueAtTime(880, now + 0.12); // A5
+        osc.frequency.setValueAtTime(587.33, now);
+        osc.frequency.exponentialRampToValueAtTime(880, now + 0.12);
         gain.gain.setValueAtTime(0.15, now);
         gain.gain.exponentialRampToValueAtTime(0.001, now + 0.18);
         osc.start(now);
         osc.stop(now + 0.18);
       } else if (tone === 'negative') {
-        // Lower tone
         osc.frequency.setValueAtTime(440, now);
         osc.frequency.exponentialRampToValueAtTime(293.66, now + 0.15);
         gain.gain.setValueAtTime(0.15, now);
@@ -1743,7 +1740,6 @@ export class KdsInventoryComponent implements OnInit, OnDestroy {
         osc.start(now);
         osc.stop(now + 0.2);
       } else if (tone === 'undo') {
-        // Double blip
         osc.frequency.setValueAtTime(350, now);
         gain.gain.setValueAtTime(0.12, now);
         gain.gain.exponentialRampToValueAtTime(0.001, now + 0.12);
@@ -1751,143 +1747,254 @@ export class KdsInventoryComponent implements OnInit, OnDestroy {
         osc.stop(now + 0.12);
       }
     } catch {
-      // Audio not permitted without interaction
-    }
-  }
-
-  // ==========================================
-  // QUICK TOUCH ADJUSTMENTS
-  // ==========================================
-  adjustFruit(fruitId: string, fruitName: string, deltaKg: number) {
-    this.stateService.adjustFreshFruitStock(fruitId, deltaKg);
-    this.playSound(deltaKg > 0 ? 'positive' : 'negative');
-
-    this.pushTransaction({
-      id: `${Date.now()}-${Math.random()}`,
-      time: this.currentTime(),
-      type: 'fruit',
-      targetId: fruitId,
-      name: fruitName,
-      detail: 'Fruta Fresca',
-      delta: deltaKg,
-      unit: 'Kg'
-    });
-  }
-
-  adjustVariant(variantId: number, variantName: string, deltaUnits: number) {
-    this.stateService.adjustVariantStock(variantId, deltaUnits);
-    this.playSound(deltaUnits > 0 ? 'positive' : 'negative');
-
-    this.pushTransaction({
-      id: `${Date.now()}-${Math.random()}`,
-      time: this.currentTime(),
-      type: 'variant',
-      targetId: variantId,
-      name: variantName,
-      detail: 'Pulpa Terminada',
-      delta: deltaUnits,
-      unit: 'uds'
-    });
-  }
-
-  private pushTransaction(tx: InventoryTransaction) {
-    this.recentTransactions.update(list => [tx, ...list.slice(0, 9)]);
-  }
-
-  undoTransaction(tx: InventoryTransaction) {
-    const reverseDelta = -tx.delta;
-    if (tx.type === 'fruit') {
-      this.stateService.adjustFreshFruitStock(String(tx.targetId), reverseDelta);
-    } else {
-      this.stateService.adjustVariantStock(Number(tx.targetId), reverseDelta);
-    }
-
-    this.playSound('undo');
-    this.recentTransactions.update(list => list.filter(item => item.id !== tx.id));
-    this.notification.info('Movimiento Deshecho', `Se revirtió ${tx.name}: ${reverseDelta > 0 ? '+' : ''}${reverseDelta} ${tx.unit}`);
-  }
-
-  // ==========================================
-  // NUMPAD MODAL
-  // ==========================================
-  openNumpad(type: 'fruit' | 'variant', id: string | number, name: string, current: number, unit: 'Kg' | 'uds') {
-    this.numpadTarget.set({ type, id, name, current, unit });
-    this.numpadSign.set(1);
-    this.numpadBuffer.set('');
-    this.showNumpadModal.set(true);
-  }
-
-  closeNumpad() {
-    this.showNumpadModal.set(false);
-    this.numpadTarget.set(null);
-  }
-
-  tapDigit(d: string) {
-    const curr = this.numpadBuffer();
-    if (curr.length >= 7) return;
-    this.numpadBuffer.set(curr + d);
-  }
-
-  tapDecimal() {
-    const curr = this.numpadBuffer();
-    if (!curr.includes('.')) {
-      this.numpadBuffer.set(curr ? curr + '.' : '0.');
-    }
-  }
-
-  clearNumpad() {
-    this.numpadBuffer.set('');
-  }
-
-  setNumpadValue(val: number) {
-    this.numpadBuffer.set(String(val));
-  }
-
-  confirmNumpadAdjustment() {
-    const rawVal = parseFloat(this.numpadBuffer() || '0');
-    if (isNaN(rawVal) || rawVal <= 0) {
-      this.notification.warning('Valor Requerido', 'Ingresa una cantidad mayor a cero.');
       return;
     }
-
-    const target = this.numpadTarget();
-    if (!target) return;
-
-    const finalDelta = rawVal * this.numpadSign();
-
-    if (target.type === 'fruit') {
-      this.adjustFruit(String(target.id), target.name, finalDelta);
-    } else {
-      this.adjustVariant(Number(target.id), target.name, Math.round(finalDelta));
-    }
-
-    if (finalDelta > 0 && rawVal >= 100) {
-      confetti({ particleCount: 35, spread: 60, origin: { y: 0.6 } });
-    }
-
-    this.closeNumpad();
   }
 
-  // ==========================================
-  // CONTROLS & NAVIGATION
-  // ==========================================
-  toggleSound() {
-    this.soundEnabled.update(s => !s);
-  }
+  /**
+   * Adjusts the fresh fruit stock in kilograms and records an audit transaction.
+   */
+  adjustFruit(fruitId: string | number, fruitName: string, deltaKg: number): void {
+    try {
+      this.stateService.adjustFreshFruitStock(String(fruitId), deltaKg);
+      this.playSound(deltaKg > 0 ? 'positive' : 'negative');
 
-  toggleTheme() {
-    this.isDarkTheme.update(t => !t);
-  }
-
-  toggleFullscreen() {
-    if (!document.fullscreenElement) {
-      document.documentElement.requestFullscreen().catch(() => {});
-    } else {
-      document.exitFullscreen().catch(() => {});
+      this.pushTransaction({
+        id: `${Date.now()}-${Math.random()}`,
+        time: this.currentTime(),
+        type: 'fruit',
+        targetId: fruitId,
+        name: fruitName,
+        detail: 'Fruta Fresca',
+        delta: deltaKg,
+        unit: 'Kg'
+      });
+    } catch (error: unknown) {
+      console.error('Error adjusting fruit stock:', error);
     }
   }
 
-  exitKds() {
-    this.router.navigate(['/settings'], { queryParams: { tab: 'inventory' } });
+  /**
+   * Adjusts the finished pulp variant stock in units and records an audit transaction.
+   */
+  adjustVariant(variantId: number, variantName: string, deltaUnits: number): void {
+    try {
+      this.stateService.adjustVariantStock(variantId, deltaUnits);
+      this.playSound(deltaUnits > 0 ? 'positive' : 'negative');
+
+      this.pushTransaction({
+        id: `${Date.now()}-${Math.random()}`,
+        time: this.currentTime(),
+        type: 'variant',
+        targetId: variantId,
+        name: variantName,
+        detail: 'Pulpa Terminada',
+        delta: deltaUnits,
+        unit: 'uds'
+      });
+    } catch (error: unknown) {
+      console.error('Error adjusting variant stock:', error);
+    }
+  }
+
+  /**
+   * Prepends a transaction to the recent transactions log (keeping up to 10 entries).
+   */
+  private pushTransaction(tx: InventoryTransaction): void {
+    try {
+      this.recentTransactions.update((list: InventoryTransaction[]) => [tx, ...list.slice(0, 9)]);
+    } catch (error: unknown) {
+      console.error('Error pushing transaction:', error);
+    }
+  }
+
+  /**
+   * Reverts a previously recorded inventory adjustment transaction.
+   */
+  undoTransaction(tx: InventoryTransaction): void {
+    try {
+      const reverseDelta = -tx.delta;
+      if (tx.type === 'fruit') {
+        this.stateService.adjustFreshFruitStock(String(tx.targetId), reverseDelta);
+      } else {
+        this.stateService.adjustVariantStock(Number(tx.targetId), reverseDelta);
+      }
+
+      this.playSound('undo');
+      this.recentTransactions.update((list: InventoryTransaction[]) =>
+        list.filter((item: InventoryTransaction) => item.id !== tx.id)
+      );
+      this.notification.info(
+        'Movimiento Deshecho',
+        `Se revirtió ${tx.name}: ${reverseDelta > 0 ? '+' : ''}${reverseDelta} ${tx.unit}`
+      );
+    } catch (error: unknown) {
+      console.error('Error undoing transaction:', error);
+    }
+  }
+
+  /**
+   * Opens the custom quantity numpad modal for a fruit or pulp variant.
+   */
+  openNumpad(
+    type: 'fruit' | 'variant',
+    id: string | number,
+    name: string,
+    current: number,
+    unit: 'Kg' | 'uds'
+  ): void {
+    try {
+      this.numpadTarget.set({ type, id, name, current, unit });
+      this.numpadSign.set(1);
+      this.numpadBuffer.set('');
+      this.showNumpadModal.set(true);
+    } catch (error: unknown) {
+      console.error('Error opening numpad:', error);
+    }
+  }
+
+  /**
+   * Closes the custom quantity numpad modal.
+   */
+  closeNumpad(): void {
+    try {
+      this.showNumpadModal.set(false);
+      this.numpadTarget.set(null);
+    } catch (error: unknown) {
+      console.error('Error closing numpad:', error);
+    }
+  }
+
+  /**
+   * Appends a digit to the numpad input buffer.
+   */
+  tapDigit(d: string): void {
+    try {
+      const curr = this.numpadBuffer();
+      if (curr.length >= 7) return;
+      this.numpadBuffer.set(curr + d);
+    } catch (error: unknown) {
+      console.error('Error tapping digit:', error);
+    }
+  }
+
+  /**
+   * Appends a decimal point to the numpad input buffer if not already present.
+   */
+  tapDecimal(): void {
+    try {
+      const curr = this.numpadBuffer();
+      if (!curr.includes('.')) {
+        this.numpadBuffer.set(curr ? curr + '.' : '0.');
+      }
+    } catch (error: unknown) {
+      console.error('Error tapping decimal:', error);
+    }
+  }
+
+  /**
+   * Clears the numpad input buffer.
+   */
+  clearNumpad(): void {
+    try {
+      this.numpadBuffer.set('');
+    } catch (error: unknown) {
+      console.error('Error clearing numpad:', error);
+    }
+  }
+
+  /**
+   * Sets the numpad input buffer to a preset numeric value.
+   */
+  setNumpadValue(val: number): void {
+    try {
+      this.numpadBuffer.set(String(val));
+    } catch (error: unknown) {
+      console.error('Error setting numpad value:', error);
+    }
+  }
+
+  /**
+   * Confirms and applies the custom quantity adjustment entered in the numpad modal.
+   */
+  confirmNumpadAdjustment(): void {
+    try {
+      const rawVal = parseFloat(this.numpadBuffer() || '0');
+      if (isNaN(rawVal) || rawVal <= 0) {
+        this.notification.warning('Valor Requerido', 'Ingresa una cantidad mayor a cero.');
+        return;
+      }
+
+      const target = this.numpadTarget();
+      if (!target) return;
+
+      const finalDelta = rawVal * this.numpadSign();
+
+      if (target.type === 'fruit') {
+        this.adjustFruit(String(target.id), target.name, finalDelta);
+      } else {
+        this.adjustVariant(Number(target.id), target.name, Math.round(finalDelta));
+      }
+
+      if (finalDelta > 0 && rawVal >= 100) {
+        try {
+          confetti({ particleCount: 35, spread: 60, origin: { y: 0.6 } });
+        } catch {
+          void 0;
+        }
+      }
+
+      this.closeNumpad();
+    } catch (error: unknown) {
+      console.error('Error confirming numpad adjustment:', error);
+    }
+  }
+
+  /**
+   * Toggles tactile sound effects on or off.
+   */
+  toggleSound(): void {
+    try {
+      this.soundEnabled.update((s: boolean) => !s);
+    } catch (error: unknown) {
+      console.error('Error toggling sound:', error);
+    }
+  }
+
+  /**
+   * Toggles between dark and light KDS display themes.
+   */
+  toggleTheme(): void {
+    try {
+      this.isDarkTheme.update((t: boolean) => !t);
+    } catch (error: unknown) {
+      console.error('Error toggling theme:', error);
+    }
+  }
+
+  /**
+   * Toggles fullscreen mode on the browser document element.
+   */
+  toggleFullscreen(): void {
+    try {
+      if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen().catch(() => undefined);
+      } else {
+        document.exitFullscreen().catch(() => undefined);
+      }
+    } catch (error: unknown) {
+      console.error('Error toggling fullscreen:', error);
+    }
+  }
+
+  /**
+   * Navigates back to the inventory tab in settings.
+   */
+  exitKds(): void {
+    try {
+      this.router.navigate(['/settings'], { queryParams: { tab: 'inventory' } });
+    } catch (error: unknown) {
+      console.error('Error exiting KDS inventory:', error);
+    }
   }
 }

@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("Despulpadora.Api")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+66f2b5f4d4b260c7e9c43eb396681e6f7c54bbdd")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+78794f12946f870efb77ffa6e768fb965e087f7b")]
 [assembly: System.Reflection.AssemblyProductAttribute("Despulpadora.Api")]
 [assembly: System.Reflection.AssemblyTitleAttribute("Despulpadora.Api")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

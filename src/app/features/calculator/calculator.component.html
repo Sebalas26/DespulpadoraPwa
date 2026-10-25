@@ -1,6 +1,4 @@
 <div style="display: flex; flex-direction: column; gap: 24px;">
-
-  <!-- Page Header -->
   <div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 16px;">
     <div>
       <h1 style="font-size: 1.85rem; font-weight: 800; margin-bottom: 4px;">
@@ -11,7 +9,6 @@
       </p>
     </div>
 
-    <!-- Navigation Tabs -->
     <div class="dgl-subnav-bar no-print" style="width: auto; max-width: 100%;">
       <button
         type="button"
@@ -41,8 +38,6 @@
   </div>
 
   @if (activeTab() === 'formulation') {
-
-  <!-- Fruit Selection Chips -->
   <div class="card" style="padding: 16px;">
     <div style="font-size: 0.78rem; font-weight: 700; color: var(--text-dim); text-transform: uppercase; margin-bottom: 12px; letter-spacing: 0.05em;">
       Seleccione Fruta para Formulación:
@@ -66,10 +61,7 @@
     </div>
   </div>
 
-  <!-- Two-Column Formulation Console -->
   <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 24px;">
-
-    <!-- Left Column: Inputs & Distribution -->
     <div class="card">
       <div class="card-header">
         <h3 class="card-title" style="display: flex; align-items: center; gap: 8px;">
@@ -88,7 +80,6 @@
         </h3>
       </div>
       <div class="card-body">
-        <!-- Fresh Fruit Weight Input -->
         <div class="form-group">
           <label class="form-label" style="display: flex; justify-content: space-between;">
             <span>Peso Fruta Fresca Recibida (Kg)</span>
@@ -105,7 +96,6 @@
           />
         </div>
 
-        <!-- Water Addition Slider -->
         <div class="form-group">
           <label class="form-label" style="display: flex; justify-content: space-between;">
             <span>Agua Potable Adicionada (%)</span>
@@ -127,7 +117,6 @@
           </div>
         </div>
 
-        <!-- Brix & Operator Inputs -->
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px;">
           <div class="form-group">
             <label class="form-label">Grados Brix (°Bx)</label>
@@ -180,9 +169,7 @@
       </div>
     </div>
 
-    <!-- Right Column: Results & Mass Balance -->
     <div style="display: flex; flex-direction: column; gap: 20px;">
-      <!-- Mass Balance Card -->
       <div class="card mass-balance-card">
         <div class="card-header" style="justify-content: space-between;">
           <h3 class="card-title">Balance de Masa Calculado</h3>
@@ -206,7 +193,6 @@
             </div>
           </div>
 
-          <!-- Portions Result Grid -->
           <div style="font-size: 0.82rem; font-weight: 700; color: var(--text-dim); text-transform: uppercase; margin-bottom: 10px;">
             Unidades a Empacar por Presentación:
           </div>
@@ -233,7 +219,6 @@
             </div>
           </div>
 
-          <!-- Retail Value -->
           <div style="display: flex; align-items: center; justify-content: space-between; padding: 14px 18px; border-radius: var(--radius-md); background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.25); margin-bottom: 20px;">
             <div>
               <div style="font-size: 0.78rem; color: var(--text-muted); text-transform: uppercase; font-weight: 700;">Valor Comercial Estimado</div>
@@ -245,7 +230,6 @@
             </svg>
           </div>
 
-          <!-- Save Batch Button -->
           <button
             type="button"
             class="btn btn-primary"
@@ -264,7 +248,6 @@
     </div>
   </div>
 
-  <!-- Historical Batches Table -->
   <div class="card">
     <div class="card-header" style="justify-content: space-between; flex-wrap: wrap; gap: 14px;">
       <div>
@@ -272,7 +255,6 @@
         <p class="card-subtitle">Registros auditables de rendimiento y trazabilidad por operario</p>
       </div>
 
-      <!-- Filters & Search -->
       <div style="display: flex; gap: 10px; flex-wrap: wrap;">
         <input
           type="text"
@@ -317,7 +299,7 @@
                   <div class="mobile-summary-header">
                     <div class="ms-left">
                       <span class="ms-code-badge">{{ batch.fruitName }}</span>
-                      <span class="ms-subtitle">#{{ batch.batchCode }} • {{ batch.operatorName || 'Planta' }}</span>
+                      <span class="ms-subtitle">#{{ batch.batchCode }} • {{ batch.operatorName }}</span>
                     </div>
                     <div class="ms-right">
                       <div class="ms-top-right">
@@ -341,7 +323,7 @@
                 <td data-label="Rendimiento">
                   <span class="badge badge-warning" style="font-weight: 700;">{{ batch.realYieldPercentage }}%</span>
                 </td>
-                <td data-label="Operario">{{ batch.operatorName || 'Jefe de Planta' }}</td>
+                <td data-label="Operario">{{ batch.operatorName }}</td>
                 <td data-label="Fecha y Hora" style="font-size: 0.8rem; color: var(--text-muted);">
                   {{ batch.productionDate | date:'medium' }}
                 </td>
@@ -365,9 +347,7 @@
 
   } @else if (activeTab() === 'loss-audit') {
 
-    <!-- RESUMEN AUDITORÍA DE MERMAS (MÓDULO 3) -->
     <div class="kpi-grid">
-      <!-- Card 1: Pérdidas en Unidades -->
       <div class="kpi-card hover-lift">
         <div class="kpi-icon-wrapper kpi-icon-amber">
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
@@ -386,7 +366,6 @@
         </div>
       </div>
 
-      <!-- Card 2: Descuadre en Dinero -->
       <div class="kpi-card hover-lift">
         <div class="kpi-icon-wrapper" [ngClass]="totalLossMoney() > 0 ? 'kpi-icon-amber' : 'kpi-icon-emerald'">
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
@@ -405,7 +384,6 @@
         </div>
       </div>
 
-      <!-- Card 3: Venta Ideal Teórica -->
       <div class="kpi-card hover-lift">
         <div class="kpi-icon-wrapper kpi-icon-blue">
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
@@ -415,7 +393,7 @@
           </svg>
         </div>
         <div>
-          <div class="kpi-title">Venta Ideal (Producción × Precio)</div>
+          <div class="kpi-title">Venta Ideal Teórica</div>
           <div class="kpi-value">{{ formatCOP(totalIdealRevenue()) }}</div>
           <div class="kpi-trend kpi-trend-blue">
             <span>Potencial teórico total</span>
@@ -423,7 +401,6 @@
         </div>
       </div>
 
-      <!-- Card 4: Venta Real Facturada -->
       <div class="kpi-card hover-lift">
         <div class="kpi-icon-wrapper kpi-icon-emerald">
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
@@ -441,7 +418,6 @@
       </div>
     </div>
 
-    <!-- TABLA DE CONCILIACIÓN IDEAL VS REAL -->
     <div class="card">
       <div class="card-header" style="justify-content: space-between; flex-wrap: wrap; gap: 12px;">
         <div>
@@ -543,7 +519,6 @@
       </div>
     </div>
 
-    <!-- NOTA METODOLÓGICA DEL EXCEL -->
     <div class="card" style="background: rgba(245, 158, 11, 0.05); border-left: 4px solid #f59e0b;">
       <div class="card-body" style="padding: 16px;">
         <div style="display: flex; gap: 12px; align-items: flex-start;">
@@ -563,5 +538,4 @@
     </div>
 
   }
-
 </div>

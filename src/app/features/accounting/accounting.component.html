@@ -1,6 +1,4 @@
 <div class="clients-page">
-
-  <!-- Page Header -->
   <div class="clients-header">
     <div>
       <h1 class="clients-title">Clientes</h1>
@@ -22,7 +20,6 @@
     </button>
   </div>
 
-  <!-- Full-width Registered Clients List -->
   <div class="client-list-card">
     <div class="list-card-header">
       <div>
@@ -85,7 +82,7 @@
               <td data-label="Teléfono">{{ client.phone }}</td>
               <td data-label="Dirección / Ciudad">
                 <div>{{ client.address || 'Sin dirección' }}</div>
-                <div class="client-city-sub">{{ client.city || 'Bogotá D.C.' }}</div>
+                <div class="client-city-sub">{{ client.city }}</div>
               </td>
               <td data-label="Compras realizadas">
                 <div class="client-purchases-summary">
@@ -151,12 +148,8 @@
       </table>
     </div>
   </div>
-
 </div>
 
-<!-- ========================================================= -->
-<!-- MODAL 1: CREAR NUEVO CLIENTE / EDITAR CLIENTE             -->
-<!-- ========================================================= -->
 @if (showClientForm()) {
   <div class="modal-overlay client-modal-backdrop" (click)="closeClientForm()">
     <div class="modal-content client-modal-card" style="max-width: 520px;" (click)="$event.stopPropagation()">
@@ -267,9 +260,6 @@
   </div>
 }
 
-<!-- ========================================================= -->
-<!-- MODAL 2: DETALLE DE VENTAS E HISTÓRICO DE COMPRAS         -->
-<!-- ========================================================= -->
 @if (selectedHistoryClient(); as client) {
   <div class="modal-overlay client-modal-backdrop" (click)="closeClientSalesHistory()">
     <div class="modal-content client-modal-card sales-history-modal" style="max-width: 720px;" (click)="$event.stopPropagation()">
@@ -284,7 +274,6 @@
       </div>
 
       <div class="modal-body client-modal-body">
-        <!-- Summary KPIs -->
         <div class="history-kpi-grid">
           <div class="history-kpi-box">
             <span class="hkpi-label">Total compras</span>
@@ -311,7 +300,6 @@
           </div>
         </div>
 
-        <!-- Purchases History List (Max 6 recent orders in compact list) -->
         <div class="history-section-header">
           <span class="history-section-title">
             Últimos pedidos realizados ({{ selectedClientHistoryStats().recentOrders.length }} de {{ selectedClientHistoryStats().orders.length }})
@@ -330,7 +318,7 @@
                     <span class="history-status-pill" [attr.data-status]="order.status">
                       {{ getOrderStatusLabel(order.status) }}
                     </span>
-                    <span class="hrow-payment-tag">{{ order.paymentMethodName || 'Efectivo' }}</span>
+                    <span class="hrow-payment-tag">{{ order.paymentMethodName }}</span>
                   </div>
                   <div class="hrow-items-line" [title]="formatOrderItemsCompact(order)">
                     {{ formatOrderItemsCompact(order) }}

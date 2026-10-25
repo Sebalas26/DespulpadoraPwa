@@ -10,11 +10,13 @@ import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { StateService } from '../../core/services/state.service';
 import { NotificationService } from '../../core/services/notification.service';
-import { FruitConfig } from '../../core/data/initial-data';
-import { OrderDto } from '../../core/models/business.models';
+import { ClientDto, FruitConfig, OrderDto, OrderItemDto, ProductVariantDto } from '../../core/models/business.models';
 import confetti from 'canvas-confetti';
 
-interface CartItem {
+/**
+ * Represents a shopping cart line item in the B2B/B2C client portal.
+ */
+export interface CartItem {
   fruitId: number;
   fruitName: string;
   grammage: 140 | 250 | 500 | 1000;
@@ -23,16 +25,16 @@ interface CartItem {
   color?: string;
 }
 
+/**
+ * Self-service B2B and B2C client portal component for direct fruit pulp ordering.
+ */
 @Component({
   selector: 'app-client-portal',
   standalone: true,
   imports: [CommonModule, FormsModule],
   template: `
     <div class="portal-root">
-      <!-- ========================================================
-           TOP BRAND HEADER
-           ======================================================== -->
-      <header class="portal-header">
+            <header class="portal-header">
         <div class="header-inner">
           <div class="brand-left">
             <img src="/logo-dgl.png" alt="DGL Despulpadora" class="brand-logo" />
@@ -46,9 +48,8 @@ interface CartItem {
           </div>
 
           <div class="header-actions">
-            <!-- Contact / WhatsApp pill -->
-            <a
-              href="https://wa.me/573154567890?text=Hola%20DGL%20Despulpadora,%20tengo%20una%20consulta%20sobre%20mi%20pedido"
+                        <a
+              [href]="getCompanyWhatsAppLink()"
               target="_blank"
               class="contact-pill"
               title="Atención directa por WhatsApp"
@@ -57,8 +58,7 @@ interface CartItem {
               <span class="wa-text">Atención WhatsApp</span>
             </a>
 
-            <!-- Admin Shortcut to Return to ERP -->
-            <button
+                        <button
               type="button"
               class="erp-return-btn"
               (click)="returnToErp()"
@@ -73,10 +73,7 @@ interface CartItem {
         </div>
       </header>
 
-      <!-- ========================================================
-           PORTAL HERO BANNER (CATALOG PRESENTATION)
-           ======================================================== -->
-      <section class="portal-hero-banner">
+            <section class="portal-hero-banner">
         <div class="section-container">
           <div class="hero-card">
             <div class="hero-main-info">
@@ -107,13 +104,9 @@ interface CartItem {
         </div>
       </section>
 
-      <!-- ========================================================
-           CATALOG SECTION: CATEGORIES & PRODUCT CARDS
-           ======================================================== -->
-      <main class="portal-main">
+            <main class="portal-main">
         <div class="section-container">
-          <!-- Filter & Search Toolbar -->
-          <div class="catalog-toolbar">
+                    <div class="catalog-toolbar">
             <div class="search-box">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <circle cx="11" cy="11" r="8"></circle>
@@ -131,8 +124,7 @@ interface CartItem {
               }
             </div>
 
-            <!-- Category Pills -->
-            <div class="category-pills-row">
+                        <div class="category-pills-row">
               <button
                 type="button"
                 class="cat-pill"
@@ -154,15 +146,13 @@ interface CartItem {
             </div>
           </div>
 
-          <!-- Product Cards Grid -->
-          <div class="products-grid">
+                    <div class="products-grid">
             @for (fruit of filteredFruits(); track fruit.id) {
               <div
                 class="product-card"
                 [class.in-cart]="getFruitTotalQuantityInCart(fruit.fruitId || 0) > 0"
               >
-                <!-- Food Photography Product Image -->
-                <div class="product-media-container">
+                                <div class="product-media-container">
                   <img
                     [src]="'/fruits/' + fruit.id + '.jpg'"
                     [alt]="fruit.name"
@@ -171,18 +161,15 @@ interface CartItem {
                   />
                   <div class="media-overlay-gradient"></div>
 
-                  <!-- Brand Seal Stamp with logo-dgl.png -->
-                  <div class="brand-sticker-stamp" title="Marca Certificada DGL">
+                                    <div class="brand-sticker-stamp" title="Marca Certificada DGL">
                     <img src="/logo-dgl.png" alt="DGL" />
                   </div>
 
-                  <!-- Floating Category Badge -->
-                  <span class="media-category-badge" [style.background]="fruit.color || '#10b981'">
+                                    <span class="media-category-badge" [style.background]="fruit.color || '#10b981'">
                     {{ fruit.category || '100% Natural' }}
                   </span>
 
-                  <!-- Cart Indicator if in Cart -->
-                  @if (getFruitTotalQuantityInCart(fruit.fruitId || 0) > 0) {
+                                    @if (getFruitTotalQuantityInCart(fruit.fruitId || 0) > 0) {
                     <span class="media-cart-badge">
                       ✓ {{ getFruitTotalQuantityInCart(fruit.fruitId || 0) }} en pedido
                     </span>
@@ -194,14 +181,12 @@ interface CartItem {
                   <span class="fruit-scientific">{{ fruit.scientificName }}</span>
                 </div>
 
-                <!-- Card Body: Description & Presentation Tabs -->
-                <div class="card-body">
+                                <div class="card-body">
                   <p class="fruit-desc">
                     100% pulpa natural pura pasteurizada, sin agua añadida ni conservantes artificiales.
                   </p>
 
-                  <!-- Presentation Selector Tabs (140g, 250g, 500g, 1000g) -->
-                  <div class="grammage-selector-box">
+                                    <div class="grammage-selector-box">
                     <span class="grammage-box-lbl">Selecciona la Presentación:</span>
                     <div class="grammage-pills-row">
                       <button
@@ -239,8 +224,7 @@ interface CartItem {
                     </div>
                   </div>
 
-                  <!-- Price Summary for the Selected Presentation -->
-                  <div class="price-availability-row">
+                                    <div class="price-availability-row">
                     <div>
                       <span class="price-tag">
                         {{ formatCOP(getPrice(fruit, getSelectedGrammage(fruit.id))) }}
@@ -249,8 +233,7 @@ interface CartItem {
                     </div>
                   </div>
 
-                  <!-- Interactive Stepper & Quick Add (Cliqueable) -->
-                  <div class="card-interactive-action">
+                                    <div class="card-interactive-action">
                     <div class="stepper-wrap">
                       <button
                         type="button"
@@ -275,8 +258,7 @@ interface CartItem {
                       </button>
                     </div>
 
-                    <!-- Bulk quick add buttons -->
-                    <div class="bulk-add-row">
+                                        <div class="bulk-add-row">
                       <button
                         type="button"
                         class="bulk-btn"
@@ -310,10 +292,7 @@ interface CartItem {
         </div>
       </main>
 
-      <!-- ========================================================
-           FLOATING CART PILL BUTTON (BOTTOM RIGHT)
-           ======================================================== -->
-      <button
+            <button
         type="button"
         class="cart-floating-btn"
         (click)="toggleCartDrawer()"
@@ -333,14 +312,10 @@ interface CartItem {
         </div>
       </button>
 
-      <!-- ========================================================
-           CART DRAWER / FLOATING SUMMARY (ORDER ORGANIZER)
-           ======================================================== -->
-      @if (showCartDrawer()) {
+            @if (showCartDrawer()) {
         <div class="drawer-backdrop" (click)="showCartDrawer.set(false)">
           <div class="cart-drawer" (click)="$event.stopPropagation()">
-            <!-- Drawer Header -->
-            <div class="drawer-header">
+                        <div class="drawer-header">
               @if (cartDrawerStep() === 'checkout') {
                 <div class="drawer-header-left">
                   <button type="button" class="btn-drawer-back" (click)="cartDrawerStep.set('items')">
@@ -365,8 +340,7 @@ interface CartItem {
               <button class="drawer-close" (click)="closeCartDrawer()">&times;</button>
             </div>
 
-            <!-- STEP 1: CART ITEMS -->
-            @if (cartDrawerStep() === 'items') {
+                        @if (cartDrawerStep() === 'items') {
               <div class="drawer-items-list">
                 @if (cart().length === 0) {
                   <div class="empty-cart-state">
@@ -424,8 +398,7 @@ interface CartItem {
                 }
               </div>
 
-              <!-- Drawer Footer for Step 1 -->
-              <div class="drawer-footer">
+                            <div class="drawer-footer">
                 <div class="order-summary-box">
                   <div class="summary-line">
                     <span>Total Unidades:</span>
@@ -452,11 +425,9 @@ interface CartItem {
               </div>
             }
 
-            <!-- STEP 2: CLIENT DETAILS AFTER CONFIRMING CART -->
-            @if (cartDrawerStep() === 'checkout') {
+                        @if (cartDrawerStep() === 'checkout') {
               <div class="drawer-checkout-body">
-                <!-- Quick Client Switcher -->
-                <div class="drawer-client-switcher">
+                                <div class="drawer-client-switcher">
                   <label class="drawer-field-lbl">Cargar Datos de Cliente:</label>
                   <select
                     class="drawer-field-select"
@@ -548,8 +519,7 @@ interface CartItem {
                 </div>
               </div>
 
-              <!-- Drawer Footer for Step 2 -->
-              <div class="drawer-footer">
+                            <div class="drawer-footer">
                 <div class="order-summary-box">
                   <div class="summary-line">
                     <span>Pedido para:</span>
@@ -578,10 +548,7 @@ interface CartItem {
         </div>
       }
 
-      <!-- ========================================================
-           ORDER SUCCESS MODAL (CONFIRMATION & WHATSAPP)
-           ======================================================== -->
-      @if (showSuccessModal() && submittedOrder(); as order) {
+            @if (showSuccessModal() && submittedOrder(); as order) {
         <div class="modal-backdrop">
           <div class="success-modal">
             <div class="success-header">
@@ -632,8 +599,7 @@ interface CartItem {
               </div>
             </div>
 
-            <!-- Modal Action Buttons: WhatsApp & New Order -->
-            <div class="success-actions">
+                        <div class="success-actions">
               <button
                 type="button"
                 class="btn-send-whatsapp"
@@ -680,7 +646,7 @@ interface CartItem {
       padding: 0 20px;
     }
 
-    /* HEADER */
+    
     .portal-header {
       background: #ffffff;
       border-bottom: 1.5px solid #e2e8f0;
@@ -798,7 +764,7 @@ interface CartItem {
       }
     }
 
-    /* FLOATING CART BUTTON (ESQUINA DERECHA ABAJO FLOTANTE) */
+    
     .cart-floating-btn {
       position: fixed;
       bottom: 24px;
@@ -853,7 +819,7 @@ interface CartItem {
       }
     }
 
-    /* HERO BANNER (COMPACT / ACHICADO) */
+    
     .portal-hero-banner {
       padding: 12px 0 6px 0;
     }
@@ -945,7 +911,7 @@ interface CartItem {
       }
     }
 
-    /* CATALOG MAIN */
+    
     .portal-main {
       padding: 10px 0 60px 0;
       flex: 1;
@@ -1035,7 +1001,7 @@ interface CartItem {
       }
     }
 
-    /* PRODUCTS GRID */
+    
     .products-grid {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
@@ -1327,7 +1293,7 @@ interface CartItem {
       }
     }
 
-    /* CART DRAWER */
+    
     .drawer-backdrop {
       position: fixed;
       inset: 0;
@@ -1687,7 +1653,7 @@ interface CartItem {
       }
     }
 
-    /* SUCCESS MODAL */
+    
     .modal-backdrop {
       position: fixed;
       inset: 0;
@@ -1895,31 +1861,26 @@ export class ClientPortalComponent implements OnInit {
   private readonly notification = inject(NotificationService);
   private readonly router = inject(Router);
 
-  // Cart state
   readonly cart = signal<CartItem[]>([]);
   readonly selectedGrammages = signal<Record<string, 140 | 250 | 500 | 1000>>({});
 
-  // Filter state
   readonly searchQuery = signal<string>('');
   readonly selectedCategory = signal<string>('ALL');
 
-  // Customer info preloaded
-  readonly selectedClientId = signal<number | 'new'>(1);
-  readonly clientName = signal<string>('Restaurante El Portal del Valle');
-  readonly clientPhone = signal<string>('315 456 7890');
-  readonly clientAddress = signal<string>('Calle 45 # 12-30, Cali');
-  readonly deliveryNotes = signal<string>('Entregar en horario de la mañana');
-  readonly selectedPaymentMethod = signal<string>('Contra Entrega Efectivo');
+  readonly selectedClientId = signal<number | 'new' | null>(null);
+  readonly clientName = signal<string>('');
+  readonly clientPhone = signal<string>('');
+  readonly clientAddress = signal<string>('');
+  readonly deliveryNotes = signal<string>('');
+  readonly selectedPaymentMethod = signal<string>('');
   readonly deliveryDay = signal<string>('Hoy mismo (Prioritario)');
 
-  // UI Drawer / Modals
   readonly showCartDrawer = signal<boolean>(false);
   readonly cartDrawerStep = signal<'items' | 'checkout'>('items');
   readonly showSuccessModal = signal<boolean>(false);
   readonly submittedOrder = signal<OrderDto | null>(null);
 
-  // Computeds
-  readonly categories = computed(() => {
+  readonly categories = computed<string[]>(() => {
     const set = new Set<string>();
     for (const f of this.stateService.fruits()) {
       if (f.category) set.add(f.category);
@@ -1927,296 +1888,433 @@ export class ClientPortalComponent implements OnInit {
     return Array.from(set);
   });
 
-  readonly filteredFruits = computed(() => {
+  readonly filteredFruits = computed<FruitConfig[]>(() => {
     let list = this.stateService.fruits();
     const cat = this.selectedCategory();
     if (cat !== 'ALL') {
-      list = list.filter(f => f.category === cat);
+      list = list.filter((f: FruitConfig) => f.category === cat);
     }
     const q = this.searchQuery().trim().toLowerCase();
     if (q) {
-      list = list.filter(f =>
+      list = list.filter((f: FruitConfig) =>
         f.name.toLowerCase().includes(q) ||
-        (f.scientificName && f.scientificName.toLowerCase().includes(q))
+        Boolean(f.scientificName && f.scientificName.toLowerCase().includes(q))
       );
     }
     return list;
   });
 
-  readonly totalCartItems = computed(() => {
-    return this.cart().reduce((sum, item) => sum + item.quantity, 0);
+  readonly totalCartItems = computed<number>(() => {
+    return this.cart().reduce((sum: number, item: CartItem) => sum + item.quantity, 0);
   });
 
-  readonly totalCartAmount = computed(() => {
-    return this.cart().reduce((sum, item) => sum + (item.quantity * item.unitPrice), 0);
+  readonly totalCartAmount = computed<number>(() => {
+    return this.cart().reduce((sum: number, item: CartItem) => sum + (item.quantity * item.unitPrice), 0);
   });
 
-  readonly totalCartKg = computed(() => {
-    return this.cart().reduce((sum, item) => sum + ((item.quantity * item.grammage) / 1000), 0);
+  readonly totalCartKg = computed<number>(() => {
+    return this.cart().reduce((sum: number, item: CartItem) => sum + ((item.quantity * item.grammage) / 1000), 0);
   });
 
-  ngOnInit() {
-    // Initialize default client if available
-    const clients = this.stateService.clients();
-    if (clients.length > 0) {
-      const first = clients[0];
-      this.selectedClientId.set(first.clientId);
-      this.clientName.set(first.fullName);
-      this.clientPhone.set(first.phone);
-      this.clientAddress.set(first.address || 'Sede Principal');
-    }
-
-    // Initialize default payment method if available
-    const pms = this.stateService.activePaymentMethods();
-    if (pms.length > 0) {
-      this.selectedPaymentMethod.set(pms[0].name);
-    }
-  }
-
-  // ==========================================
-  // CLIENT SWITCHER
-  // ==========================================
-  onClientSelect(val: any) {
-    if (val === 'new') {
-      this.selectedClientId.set('new');
-      this.clientName.set('');
-      this.clientPhone.set('');
-      this.clientAddress.set('');
-      this.deliveryNotes.set('');
-    } else {
-      const cId = Number(val);
-      this.selectedClientId.set(cId);
-      const c = this.stateService.clients().find(item => item.clientId === cId);
-      if (c) {
-        this.clientName.set(c.fullName);
-        this.clientPhone.set(c.phone);
-        this.clientAddress.set(c.address || '');
+  /**
+   * Initializes default client and payment method selections if available in StateService.
+   */
+  ngOnInit(): void {
+    try {
+      const clients = this.stateService.clients();
+      if (clients.length > 0) {
+        const first = clients[0];
+        this.selectedClientId.set(first.clientId);
+        this.clientName.set(first.fullName || first.name || '');
+        this.clientPhone.set(first.phone || '');
+        this.clientAddress.set(first.address || '');
       }
+
+      const pms = this.stateService.activePaymentMethods();
+      if (pms.length > 0) {
+        this.selectedPaymentMethod.set(pms[0].name);
+      }
+    } catch (error: unknown) {
+      console.error('Error initializing ClientPortalComponent:', error);
     }
   }
 
-  // ==========================================
-  // GRAMMAGES & PRICES
-  // ==========================================
+  /**
+   * Builds the direct WhatsApp support URL using the company's configured WhatsApp number.
+   */
+  getCompanyWhatsAppLink(): string {
+    try {
+      const phone = (this.stateService.companyInfo().whatsapp || '').replace(/\D/g, '');
+      return `https://wa.me/${phone}?text=Hola%20DGL%20Despulpadora,%20tengo%20una%20consulta%20sobre%20mi%20pedido`;
+    } catch (error: unknown) {
+      console.error('Error building company WhatsApp link:', error);
+      return 'https://wa.me/';
+    }
+  }
+
+  /**
+   * Handles switching between registered clients or entering a new customer in checkout.
+   */
+  onClientSelect(val: number | string | null): void {
+    try {
+      if (val === 'new' || val === null) {
+        this.selectedClientId.set('new');
+        this.clientName.set('');
+        this.clientPhone.set('');
+        this.clientAddress.set('');
+        this.deliveryNotes.set('');
+      } else {
+        const cId = Number(val);
+        this.selectedClientId.set(cId);
+        const c = this.stateService.clients().find((item: ClientDto) => item.clientId === cId);
+        if (c) {
+          this.clientName.set(c.fullName || c.name || '');
+          this.clientPhone.set(c.phone || '');
+          this.clientAddress.set(c.address || '');
+        }
+      }
+    } catch (error: unknown) {
+      console.error('Error selecting client in portal:', error);
+    }
+  }
+
+  /**
+   * Resolves the string identifier for a fruit by its numeric ID.
+   */
   getFruitIdStr(fruitId: number): string {
-    const fruit = this.stateService.fruits().find(f => (f.fruitId || 1) === fruitId);
-    return fruit ? fruit.id : 'maracuya';
+    try {
+      const fruit = this.stateService.fruits().find((f: FruitConfig) => (f.fruitId || f.id) === fruitId);
+      return fruit ? String(fruit.id) : '';
+    } catch (error: unknown) {
+      console.error('Error getting fruit ID string:', error);
+      return '';
+    }
   }
 
-  getSelectedGrammage(fruitId: string): 140 | 250 | 500 | 1000 {
-    return this.selectedGrammages()[fruitId] || 500;
+  /**
+   * Returns the currently selected grammage presentation for a fruit card.
+   */
+  getSelectedGrammage(fruitId: string | number): 140 | 250 | 500 | 1000 {
+    try {
+      return this.selectedGrammages()[String(fruitId)] || 500;
+    } catch (error: unknown) {
+      console.error('Error getting selected grammage:', error);
+      return 500;
+    }
   }
 
-  setSelectedGrammage(fruitId: string, grammage: 140 | 250 | 500 | 1000) {
-    this.selectedGrammages.update(map => ({ ...map, [fruitId]: grammage }));
+  /**
+   * Updates the selected grammage presentation for a fruit card.
+   */
+  setSelectedGrammage(fruitId: string | number, grammage: 140 | 250 | 500 | 1000): void {
+    try {
+      this.selectedGrammages.update(map => ({ ...map, [String(fruitId)]: grammage }));
+    } catch (error: unknown) {
+      console.error('Error setting selected grammage:', error);
+    }
   }
 
+  /**
+   * Resolves the unit price for a fruit and grammage from configured product variants or fruit prices.
+   */
   getPrice(fruit: FruitConfig, grammage: 140 | 250 | 500 | 1000): number {
-    // 1. Check if configured in productVariants
-    const variant = this.stateService.productVariants().find(
-      v => v.fruitId === (fruit.fruitId || 1) && v.grammage === grammage
-    );
-    if (variant && variant.basePrice) {
-      return variant.basePrice;
-    }
+    try {
+      const variant = this.stateService.productVariants().find(
+        (v: ProductVariantDto) => v.fruitId === (fruit.fruitId || fruit.id) && v.grammage === grammage
+      );
+      if (variant && variant.basePrice) {
+        return variant.basePrice;
+      }
 
-    // 2. Check fruit prices map
-    const pKey = ('g' + grammage) as 'g140' | 'g250' | 'g500' | 'g1000';
-    if (fruit.prices && fruit.prices[pKey]) {
-      return fruit.prices[pKey];
-    }
+      if (fruit.prices) {
+        const priceMap = fruit.prices as unknown as Record<string, number | undefined>;
+        const pKey = `g${grammage}`;
+        if (priceMap[pKey] !== undefined) {
+          return priceMap[pKey] ?? 0;
+        }
+        if (grammage === 140 && fruit.prices.g100 !== undefined) {
+          return fruit.prices.g100 ?? 0;
+        }
+      }
 
-    // 3. Fallback standard default
-    switch (grammage) {
-      case 140: return 2000;
-      case 250: return 3500;
-      case 500: return 6000;
-      case 1000: return 11000;
-      default: return 5000;
+      return 0;
+    } catch (error: unknown) {
+      console.error('Error resolving fruit price in portal:', error);
+      return 0;
     }
   }
 
-  // ==========================================
-  // CART OPERATIONS
-  // ==========================================
+  /**
+   * Returns the quantity of a specific fruit and grammage currently in the cart.
+   */
   getItemQuantity(fruitId: number, grammage: 140 | 250 | 500 | 1000): number {
-    const item = this.cart().find(i => i.fruitId === fruitId && i.grammage === grammage);
-    return item ? item.quantity : 0;
+    try {
+      const item = this.cart().find((i: CartItem) => i.fruitId === fruitId && i.grammage === grammage);
+      return item ? item.quantity : 0;
+    } catch (error: unknown) {
+      console.error('Error getting item quantity in cart:', error);
+      return 0;
+    }
   }
 
+  /**
+   * Returns the total units across all grammages for a given fruit ID in the cart.
+   */
   getFruitTotalQuantityInCart(fruitId: number): number {
-    return this.cart()
-      .filter(i => i.fruitId === fruitId)
-      .reduce((sum, i) => sum + i.quantity, 0);
+    try {
+      return this.cart()
+        .filter((i: CartItem) => i.fruitId === fruitId)
+        .reduce((sum: number, i: CartItem) => sum + i.quantity, 0);
+    } catch (error: unknown) {
+      console.error('Error getting total fruit quantity in cart:', error);
+      return 0;
+    }
   }
 
-  updateItemQuantity(fruit: FruitConfig, grammage: 140 | 250 | 500 | 1000, delta: number) {
-    const fId = fruit.fruitId || 1;
-    const unitPrice = this.getPrice(fruit, grammage);
+  /**
+   * Adds, increments, or removes a fruit presentation in the shopping cart.
+   */
+  updateItemQuantity(fruit: FruitConfig, grammage: 140 | 250 | 500 | 1000, delta: number): void {
+    try {
+      const fId = Number(fruit.fruitId || fruit.id);
+      const unitPrice = this.getPrice(fruit, grammage);
 
-    this.cart.update(current => {
-      const idx = current.findIndex(i => i.fruitId === fId && i.grammage === grammage);
-      if (idx >= 0) {
-        const nextQty = current[idx].quantity + delta;
-        if (nextQty <= 0) {
-          return current.filter((_, i) => i !== idx);
-        } else {
-          return current.map((item, i) => i === idx ? { ...item, quantity: nextQty } : item);
-        }
-      } else if (delta > 0) {
-        return [
-          ...current,
-          {
-            fruitId: fId,
-            fruitName: fruit.name,
-            grammage,
-            quantity: delta,
-            unitPrice,
-            color: fruit.color
+      this.cart.update((current: CartItem[]) => {
+        const idx = current.findIndex((i: CartItem) => i.fruitId === fId && i.grammage === grammage);
+        if (idx >= 0) {
+          const nextQty = current[idx].quantity + delta;
+          if (nextQty <= 0) {
+            return current.filter((_: CartItem, i: number) => i !== idx);
+          } else {
+            return current.map((item: CartItem, i: number) => (i === idx ? { ...item, quantity: nextQty } : item));
           }
-        ];
-      }
-      return current;
-    });
-  }
-
-  updateQuantityById(fruitId: number, grammage: 140 | 250 | 500 | 1000, delta: number) {
-    this.cart.update(current => {
-      const idx = current.findIndex(i => i.fruitId === fruitId && i.grammage === grammage);
-      if (idx >= 0) {
-        const nextQty = current[idx].quantity + delta;
-        if (nextQty <= 0) {
-          return current.filter((_, i) => i !== idx);
-        } else {
-          return current.map((item, i) => i === idx ? { ...item, quantity: nextQty } : item);
+        } else if (delta > 0) {
+          return [
+            ...current,
+            {
+              fruitId: fId,
+              fruitName: fruit.name,
+              grammage,
+              quantity: delta,
+              unitPrice,
+              color: fruit.color
+            }
+          ];
         }
+        return current;
+      });
+    } catch (error: unknown) {
+      console.error('Error updating item quantity in cart:', error);
+    }
+  }
+
+  /**
+   * Updates the quantity of an existing cart item by fruit ID and grammage.
+   */
+  updateQuantityById(fruitId: number, grammage: 140 | 250 | 500 | 1000, delta: number): void {
+    try {
+      this.cart.update((current: CartItem[]) => {
+        const idx = current.findIndex((i: CartItem) => i.fruitId === fruitId && i.grammage === grammage);
+        if (idx >= 0) {
+          const nextQty = current[idx].quantity + delta;
+          if (nextQty <= 0) {
+            return current.filter((_: CartItem, i: number) => i !== idx);
+          } else {
+            return current.map((item: CartItem, i: number) => (i === idx ? { ...item, quantity: nextQty } : item));
+          }
+        }
+        return current;
+      });
+    } catch (error: unknown) {
+      console.error('Error updating cart quantity by ID:', error);
+    }
+  }
+
+  /**
+   * Removes an item from the shopping cart by fruit ID and grammage.
+   */
+  removeItem(fruitId: number, grammage: 140 | 250 | 500 | 1000): void {
+    try {
+      this.cart.update((current: CartItem[]) =>
+        current.filter((i: CartItem) => !(i.fruitId === fruitId && i.grammage === grammage))
+      );
+    } catch (error: unknown) {
+      console.error('Error removing item from cart:', error);
+    }
+  }
+
+  /**
+   * Toggles the visibility of the shopping cart side drawer.
+   */
+  toggleCartDrawer(): void {
+    try {
+      this.showCartDrawer.update((s: boolean) => {
+        const next = !s;
+        if (!next) this.cartDrawerStep.set('items');
+        return next;
+      });
+    } catch (error: unknown) {
+      console.error('Error toggling cart drawer:', error);
+    }
+  }
+
+  /**
+   * Closes the shopping cart side drawer and resets its step to items.
+   */
+  closeCartDrawer(): void {
+    try {
+      this.showCartDrawer.set(false);
+      this.cartDrawerStep.set('items');
+    } catch (error: unknown) {
+      console.error('Error closing cart drawer:', error);
+    }
+  }
+
+  /**
+   * Advances the cart drawer to the checkout details step if the cart is not empty.
+   */
+  goToCheckout(): void {
+    try {
+      if (this.cart().length === 0) {
+        this.notification.warning('Canasta vacía', 'Agrega al menos una pulpa a tu pedido antes de continuar.');
+        return;
       }
-      return current;
-    });
-  }
-
-  removeItem(fruitId: number, grammage: 140 | 250 | 500 | 1000) {
-    this.cart.update(current =>
-      current.filter(i => !(i.fruitId === fruitId && i.grammage === grammage))
-    );
-  }
-
-  toggleCartDrawer() {
-    this.showCartDrawer.update(s => {
-      const next = !s;
-      if (!next) this.cartDrawerStep.set('items');
-      return next;
-    });
-  }
-
-  closeCartDrawer() {
-    this.showCartDrawer.set(false);
-    this.cartDrawerStep.set('items');
-  }
-
-  goToCheckout() {
-    if (this.cart().length === 0) {
-      this.notification.warning('Canasta vacía', 'Agrega al menos una pulpa a tu pedido antes de continuar.');
-      return;
+      this.cartDrawerStep.set('checkout');
+    } catch (error: unknown) {
+      console.error('Error advancing to checkout:', error);
     }
-    this.cartDrawerStep.set('checkout');
   }
 
-  // ==========================================
-  // SUBMIT ORDER ("MANDAR A PEDIR")
-  // ==========================================
-  submitClientOrder() {
-    if (this.cart().length === 0) {
-      this.notification.warning('Canasta vacía', 'Agrega al menos una pulpa a tu pedido antes de continuar.');
-      return;
+  /**
+   * Validates checkout fields and submits the client order to StateService.
+   */
+  submitClientOrder(): void {
+    try {
+      if (this.cart().length === 0) {
+        this.notification.warning('Canasta vacía', 'Agrega al menos una pulpa a tu pedido antes de continuar.');
+        return;
+      }
+
+      const name = this.clientName().trim();
+      if (!name) {
+        this.notification.warning('Nombre requerido', 'Por favor ingresa tu nombre o el nombre de tu negocio.');
+        return;
+      }
+
+      const phone = this.clientPhone().trim();
+      if (!phone) {
+        this.notification.warning('Teléfono requerido', 'Ingresa un número de teléfono o WhatsApp de contacto.');
+        return;
+      }
+
+      const address = this.clientAddress().trim();
+      if (!address) {
+        this.notification.warning('Dirección requerida', 'Ingresa la dirección para la entrega de las pulpas.');
+        return;
+      }
+
+      const createdOrder = this.stateService.createOrder({
+        clientName: name,
+        clientPhone: phone,
+        clientAddress: address,
+        notes: this.deliveryNotes().trim(),
+        paymentMethodName: this.selectedPaymentMethod(),
+        scheduledDay: this.deliveryDay(),
+        items: this.cart().map((item: CartItem) => ({
+          fruitName: item.fruitName,
+          grammage: item.grammage,
+          quantity: item.quantity,
+          unitPrice: item.unitPrice
+        }))
+      });
+
+      try {
+        confetti({
+          particleCount: 75,
+          spread: 70,
+          origin: { y: 0.6 }
+        });
+      } catch {
+        void 0;
+      }
+
+      this.submittedOrder.set(createdOrder);
+      this.showCartDrawer.set(false);
+      this.cartDrawerStep.set('items');
+      this.showSuccessModal.set(true);
+
+      this.cart.set([]);
+    } catch (error: unknown) {
+      console.error('Error submitting client order:', error);
     }
+  }
 
-    const name = this.clientName().trim();
-    if (!name) {
-      this.notification.warning('Nombre requerido', 'Por favor ingresa tu nombre o el nombre de tu negocio.');
-      return;
+  /**
+   * Opens a WhatsApp confirmation message for the submitted order using the company's WhatsApp number.
+   */
+  openWhatsAppConfirmation(order: OrderDto): void {
+    try {
+      const itemsText = order.items
+        .map((i: OrderItemDto) => `• ${i.quantity}x ${i.fruitName} (${i.grammage}g) - ${this.formatCOP(i.subtotal || i.quantity * i.unitPrice)}`)
+        .join('%0A');
+
+      const message =
+        `*¡Hola DGL Despulpadora!* 🌿%0A` +
+        `Acabo de registrar el pedido *#${order.orderNumber}* desde el portal de clientes:%0A%0A` +
+        `*Cliente:* ${order.clientName}%0A` +
+        `*Teléfono:* ${order.clientPhone || ''}%0A` +
+        `*Dirección:* ${order.clientAddress || ''}%0A` +
+        `*Forma de Pago:* ${order.paymentMethodName || ''}%0A` +
+        `*Entrega Programada:* ${order.scheduledDay || ''}%0A` +
+        (order.notes ? `*Instrucciones:* ${order.notes}%0A` : '') +
+        `%0A*Detalle del Pedido:*%0A${itemsText}%0A%0A` +
+        `*TOTAL:* ${this.formatCOP(order.totalAmount)} COP%0A%0A` +
+        `Quedo atento a la confirmación de despacho. ¡Muchas gracias!`;
+
+      const companyPhone = (this.stateService.companyInfo().whatsapp || '').replace(/\D/g, '');
+      const whatsappUrl = `https://wa.me/${companyPhone}?text=${message}`;
+      window.open(whatsappUrl, '_blank');
+    } catch (error: unknown) {
+      console.error('Error opening WhatsApp confirmation:', error);
     }
+  }
 
-    const phone = this.clientPhone().trim();
-    if (!phone) {
-      this.notification.warning('Teléfono requerido', 'Ingresa un número de teléfono o WhatsApp de contacto.');
-      return;
+  /**
+   * Closes the order success modal to start a new order.
+   */
+  startNewOrder(): void {
+    try {
+      this.showSuccessModal.set(false);
+      this.submittedOrder.set(null);
+    } catch (error: unknown) {
+      console.error('Error starting new order:', error);
     }
+  }
 
-    const address = this.clientAddress().trim();
-    if (!address) {
-      this.notification.warning('Dirección requerida', 'Ingresa la dirección para la entrega de las pulpas.');
-      return;
+  /**
+   * Navigates back to the main ERP dashboard.
+   */
+  returnToErp(): void {
+    try {
+      this.router.navigate(['/dashboard']);
+    } catch (error: unknown) {
+      console.error('Error returning to ERP:', error);
     }
-
-    // Submit order to state service
-    const createdOrder = this.stateService.createOrder({
-      clientName: name,
-      clientPhone: phone,
-      clientAddress: address,
-      notes: this.deliveryNotes().trim(),
-      paymentMethodName: this.selectedPaymentMethod(),
-      scheduledDay: this.deliveryDay(),
-      items: this.cart().map(item => ({
-        fruitName: item.fruitName,
-        grammage: item.grammage,
-        quantity: item.quantity,
-        unitPrice: item.unitPrice
-      }))
-    });
-
-    // Celebration & feedback
-    confetti({
-      particleCount: 75,
-      spread: 70,
-      origin: { y: 0.6 }
-    });
-
-    this.submittedOrder.set(createdOrder);
-    this.showCartDrawer.set(false);
-    this.cartDrawerStep.set('items');
-    this.showSuccessModal.set(true);
-
-    // Clear cart for next order
-    this.cart.set([]);
   }
 
-  openWhatsAppConfirmation(order: OrderDto) {
-    const itemsText = order.items
-      .map(i => `• ${i.quantity}x ${i.fruitName} (${i.grammage}g) - ${this.formatCOP(i.subtotal)}`)
-      .join('%0A');
-
-    const message =
-      `*¡Hola DGL Despulpadora!* 🌿%0A` +
-      `Acabo de registrar el pedido *${order.orderNumber}* desde el portal de clientes:%0A%0A` +
-      `*Cliente:* ${order.clientName}%0A` +
-      `*Teléfono:* ${order.clientPhone}%0A` +
-      `*Dirección:* ${order.clientAddress}%0A` +
-      `*Forma de Pago:* ${order.paymentMethodName}%0A` +
-      `*Entrega Programada:* ${order.scheduledDay || 'Hoy'}%0A` +
-      (order.notes ? `*Instrucciones:* ${order.notes}%0A` : '') +
-      `%0A*Detalle del Pedido:*%0A${itemsText}%0A%0A` +
-      `*TOTAL:* ${this.formatCOP(order.totalAmount)} COP%0A%0A` +
-      `Quedo atento a la confirmación de despacho. ¡Muchas gracias!`;
-
-    const whatsappUrl = `https://wa.me/573154567890?text=${message}`;
-    window.open(whatsappUrl, '_blank');
-  }
-
-  startNewOrder() {
-    this.showSuccessModal.set(false);
-    this.submittedOrder.set(null);
-  }
-
-  returnToErp() {
-    this.router.navigate(['/dashboard']);
-  }
-
+  /**
+   * Formats a number as Colombian Pesos (COP).
+   */
   formatCOP(num: number): string {
-    return new Intl.NumberFormat('es-CO', {
-      style: 'currency',
-      currency: 'COP',
-      maximumFractionDigits: 0
-    }).format(num || 0);
+    try {
+      return new Intl.NumberFormat('es-CO', {
+        style: 'currency',
+        currency: 'COP',
+        maximumFractionDigits: 0
+      }).format(num || 0);
+    } catch (error: unknown) {
+      console.error('Error formatting COP in client portal:', error);
+      return '$0';
+    }
   }
 }

@@ -6,6 +6,10 @@ import { HeaderComponent } from '../header/header.component';
 import { MobileNavComponent } from '../mobile-nav/mobile-nav.component';
 import { VoiceOrderModalComponent } from '../../features/orders/voice-orders/voice-order-modal.component';
 
+/**
+ * Primary application shell layout containing the sidebar, header, main content router outlet,
+ * mobile bottom navigation, and voice order modal.
+ */
 @Component({
   selector: 'app-main-layout',
   standalone: true,

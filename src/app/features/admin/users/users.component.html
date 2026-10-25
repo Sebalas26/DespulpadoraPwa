@@ -1,13 +1,12 @@
 <div style="display: flex; flex-direction: column; gap: 24px;">
 
-  <!-- Header -->
   <div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 16px;">
     <div>
       <h1 style="font-size: 1.85rem; font-weight: 800; margin-bottom: 4px;">
         Gestión de Usuarios del Sistema
       </h1>
       <p style="color: var(--text-muted); font-size: 0.92rem;">
-        Administración de cuentas, roles asignados y sedes autorizadas para operadores y administradores.
+        Administración de cuentas corporativas, asignación de roles RBAC y control de estado activo/inactivo.
       </p>
     </div>
 
@@ -27,11 +26,10 @@
     </button>
   </div>
 
-  <!-- Users Table Card -->
   <div class="card">
     <div class="card-header" style="justify-content: space-between;">
       <h3 class="card-title">Usuarios Registrados</h3>
-      <span class="badge badge-purple">{{ users().length }} cuentas activas</span>
+      <span class="badge badge-purple">{{ users().length }} cuentas registradas</span>
     </div>
     <div class="card-body" style="padding: 0;">
       <div class="table-container">
@@ -41,8 +39,8 @@
               <th>Usuario</th>
               <th>Nombre Completo</th>
               <th>Correo Electrónico</th>
-              <th>Rol Asignado</th>
-              <th>Sedes Permitidas</th>
+              <th>Rol Asignado (RBAC)</th>
+              <th>Nivel de Acceso</th>
               <th>Estado</th>
               <th>Acción</th>
             </tr>
@@ -59,32 +57,35 @@
                     <div class="ms-right">
                       <div class="ms-top-right">
                         <span class="ms-value">{{ user.roleName }}</span>
-                        <span class="ms-chevron">
-                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
-                            <polyline points="6 9 12 15 18 9"></polyline>
-                          </svg>
-                        </span>
                       </div>
                       <span class="ms-status-pill">{{ user.isActive ? 'Activo' : 'Inactivo' }}</span>
                     </div>
                   </div>
                 </td>
                 <td data-label="Usuario" style="font-weight: 700; font-family: monospace; color: var(--color-primary);">
-                  {{ user.username }}
+                  @{{ user.username }}
                 </td>
                 <td data-label="Nombre Completo" style="font-weight: 600;">{{ user.fullName }}</td>
                 <td data-label="Correo Electrónico" style="font-size: 0.85rem; color: var(--text-muted);">{{ user.email }}</td>
-                <td data-label="Rol Asignado">
-                  <span class="badge badge-purple">{{ user.roleName }}</span>
-                </td>
-                <td data-label="Sedes Permitidas">
-                  <div style="display: flex; flex-wrap: wrap; gap: 4px;">
-                    @for (branch of user.branches; track branch.branchId) {
-                      <span class="badge-pill badge-emerald" style="font-size: 0.72rem;">
-                        {{ branch.name }}
-                      </span>
+                <td data-label="Rol Asignado (RBAC)">
+                  <select
+                    class="form-control"
+                    style="padding: 4px 10px; font-size: 0.82rem; font-weight: 700; min-width: 180px;"
+                    [ngModel]="user.roleId"
+                    [disabled]="user.userId === 1"
+                    (ngModelChange)="onUserRoleChange(user, $event)"
+                  >
+                    @for (role of roles(); track role.roleId) {
+                      <option [ngValue]="role.roleId">{{ role.name }}</option>
                     }
-                  </div>
+                  </select>
+                </td>
+                <td data-label="Nivel de Acceso">
+                  @if (user.isSystemDeveloper || user.userId === 1) {
+                    <span class="badge badge-purple">System Developer</span>
+                  } @else {
+                    <span class="badge badge-emerald">Operación Planta</span>
+                  }
                 </td>
                 <td data-label="Estado">
                   <span class="badge" [ngClass]="user.isActive ? 'badge-success' : 'badge-danger'">
@@ -128,19 +129,25 @@
 
 </div>
 
-<!-- CREATE USER MODAL -->
 @if (showCreateModal()) {
   <div class="modal-overlay" (click)="showCreateModal.set(false)">
-    <div class="modal-content" style="max-width: 480px;" (click)="$event.stopPropagation()">
+    <div class="modal-content" style="max-width: 500px;" (click)="$event.stopPropagation()">
       <div class="modal-header">
         <h3 class="modal-title">Crear Nuevo Usuario</h3>
         <button class="modal-close" (click)="showCreateModal.set(false)">&times;</button>
       </div>
 
       <div class="modal-body">
-        <div class="form-group">
-          <label class="form-label">Nombre de Usuario *</label>
-          <input type="text" class="form-control" [ngModel]="newUsername()" (ngModelChange)="newUsername.set($event)" placeholder="ej: jruiz" />
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+          <div class="form-group">
+            <label class="form-label">Nombre de Usuario *</label>
+            <input type="text" class="form-control" [ngModel]="newUsername()" (ngModelChange)="newUsername.set($event)" placeholder="ej: jruiz" />
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Documento / Cédula</label>
+            <input type="text" class="form-control" [ngModel]="newDocumentNumber()" (ngModelChange)="newDocumentNumber.set($event)" placeholder="ej: 1020304050" />
+          </div>
         </div>
 
         <div class="form-group">
@@ -148,23 +155,45 @@
           <input type="text" class="form-control" [ngModel]="newFullName()" (ngModelChange)="newFullName.set($event)" placeholder="ej: Juan Ruiz Gómez" />
         </div>
 
-        <div class="form-group">
-          <label class="form-label">Correo Electrónico *</label>
-          <input type="email" class="form-control" [ngModel]="newEmail()" (ngModelChange)="newEmail.set($event)" placeholder="juan@despulpadora.com" />
+        <div style="display: grid; grid-template-columns: 1.2fr 0.8fr; gap: 12px;">
+          <div class="form-group">
+            <label class="form-label">Correo Electrónico *</label>
+            <input type="email" class="form-control" [ngModel]="newEmail()" (ngModelChange)="newEmail.set($event)" placeholder="juan@pulpafresca.com" />
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Teléfono</label>
+            <input type="text" class="form-control" [ngModel]="newPhone()" (ngModelChange)="newPhone.set($event)" placeholder="300 000 0000" />
+          </div>
         </div>
 
-        <div class="form-group">
-          <label class="form-label">Contraseña Inicial</label>
-          <input type="text" class="form-control" [ngModel]="newPassword()" (ngModelChange)="newPassword.set($event)" />
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+          <div class="form-group">
+            <label class="form-label">Contraseña Inicial *</label>
+            <input type="text" class="form-control" [ngModel]="newPassword()" (ngModelChange)="newPassword.set($event)" />
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Rol del Sistema *</label>
+            <select class="form-control" [ngModel]="newRoleId()" (ngModelChange)="newRoleId.set(+$event)">
+              @for (role of roles(); track role.roleId) {
+                <option [ngValue]="role.roleId">{{ role.name }}</option>
+              }
+            </select>
+          </div>
         </div>
 
-        <div class="form-group">
-          <label class="form-label">Rol del Sistema</label>
-          <select class="form-control" [ngModel]="newRoleId()" (ngModelChange)="newRoleId.set($event)">
-            @for (role of roles(); track role.roleId) {
-              <option [value]="role.roleId">{{ role.name }}</option>
-            }
-          </select>
+        <div style="display: flex; align-items: center; gap: 8px; margin-top: 4px;">
+          <input
+            type="checkbox"
+            id="newIsSystemDevCheck"
+            [ngModel]="newIsSystemDeveloper()"
+            (ngModelChange)="newIsSystemDeveloper.set($event)"
+            style="accent-color: var(--color-primary); width: 16px; height: 16px; cursor: pointer;"
+          />
+          <label for="newIsSystemDevCheck" style="font-size: 0.83rem; font-weight: 600; cursor: pointer;">
+            Habilitar privilegio maestro <code>IsSystemDeveloper</code> (Catálogo de Módulos)
+          </label>
         </div>
       </div>
 

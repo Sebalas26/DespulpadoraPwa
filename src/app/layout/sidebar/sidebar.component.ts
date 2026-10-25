@@ -1,24 +1,29 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, computed, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Router, RouterLink, RouterLinkActive, NavigationEnd } from '@angular/router';
+import { NavigationEnd, Router, RouterLink, RouterLinkActive } from '@angular/router';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { filter, map } from 'rxjs/operators';
 import { AuthService } from '../../core/services/auth.service';
 import { StateService } from '../../core/services/state.service';
+import { NavigationModuleDto } from '../../core/models/auth.models';
 import { environment } from '../../../environments/environment';
 
+/**
+ * Server-Driven UI Sidebar component that builds its navigation sections and links
+ * 100% dynamically from the authenticated user's `navigationModules` grouped by
+ * `menuSection` and sorted by `displayOrder`.
+ */
 @Component({
   selector: 'app-sidebar',
   standalone: true,
   imports: [CommonModule, RouterLink, RouterLinkActive],
   template: `
     <aside class="sidebar" [class.collapsed]="stateService.isSidebarCollapsed()">
-      <!-- 1. Brand Logo & Name -->
       <div class="sidebar-header">
-        <img src="/logo-dgl.png" alt="DGL Despulpadora" class="dgl-logo-img" />
+        <img [src]="stateService.companyInfo().logoUrl || '/logo-dgl.png'" [alt]="stateService.companyInfo().companyName" class="dgl-logo-img" />
         <div class="dgl-brand-text">
-          <span class="dgl-brand-name">DGL Despulpadora</span>
-          <span class="dgl-brand-sub">Gestión de pulpas</span>
+          <span class="dgl-brand-name">{{ stateService.companyInfo().companyName }}</span>
+          <span class="dgl-brand-sub">{{ stateService.companyInfo().tagline }}</span>
         </div>
         <button
           type="button"
@@ -34,145 +39,172 @@ import { environment } from '../../../environments/environment';
         </button>
       </div>
 
-      <!-- 2. Navigation Section: GESTIÓN DIARIA -->
       <nav class="sidebar-nav">
-        <div class="nav-section-title">GESTIÓN DIARIA</div>
+        @for (section of authService.groupedNavigationSections(); track section.sectionName; let secIdx = $index) {
+          <div class="nav-section-title" [style.marginTop]="secIdx > 0 ? '14px' : '0'">
+            {{ section.sectionName | uppercase }}
+          </div>
 
-        <!-- Panel general -->
-        <a routerLink="/dashboard" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }" class="dgl-nav-item">
-          <span class="dgl-nav-icon">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <rect x="3" y="3" width="7" height="7" rx="1.5"></rect>
-              <rect x="14" y="3" width="7" height="7" rx="1.5"></rect>
-              <rect x="14" y="14" width="7" height="7" rx="1.5"></rect>
-              <rect x="3" y="14" width="7" height="7" rx="1.5"></rect>
-            </svg>
-          </span>
-          <span class="dgl-nav-text">Panel general</span>
-        </a>
+          @for (mod of section.modules; track mod.moduleId) {
+            <a
+              [routerLink]="getRoutePath(mod.frontendRoute)"
+              [queryParams]="getRouteQueryParams(mod.frontendRoute)"
+              [class.active]="isModuleActive(mod)"
+              class="dgl-nav-item"
+              [title]="mod.name"
+            >
+              <span class="dgl-nav-icon">
+                @switch (mod.icon) {
+                  @case ('package') {
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
+                      <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
+                      <line x1="12" y1="22.08" x2="12" y2="12"></line>
+                    </svg>
+                  }
+                  @case ('box') {
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
+                      <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
+                      <line x1="12" y1="22.08" x2="12" y2="12"></line>
+                    </svg>
+                  }
+                  @case ('truck') {
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <rect x="1" y="3" width="15" height="13"></rect>
+                      <polygon points="16 8 20 8 23 11 23 16 16 16 16 8"></polygon>
+                      <circle cx="5.5" cy="18.5" r="2.5"></circle>
+                      <circle cx="18.5" cy="18.5" r="2.5"></circle>
+                    </svg>
+                  }
+                  @case ('clock') {
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <circle cx="12" cy="12" r="10"></circle>
+                      <polyline points="12 6 12 12 16 14"></polyline>
+                    </svg>
+                  }
+                  @case ('users') {
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                      <circle cx="9" cy="7" r="4"></circle>
+                      <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                      <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                    </svg>
+                  }
+                  @case ('user-check') {
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                      <circle cx="8.5" cy="7" r="4"></circle>
+                      <polyline points="17 11 19 13 23 9"></polyline>
+                    </svg>
+                  }
+                  @case ('dollar-sign') {
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <line x1="12" y1="1" x2="12" y2="23"></line>
+                      <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
+                    </svg>
+                  }
+                  @case ('bar-chart-2') {
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <line x1="18" y1="20" x2="18" y2="10"></line>
+                      <line x1="12" y1="20" x2="12" y2="4"></line>
+                      <line x1="6" y1="20" x2="6" y2="14"></line>
+                    </svg>
+                  }
+                  @case ('shield') {
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+                    </svg>
+                  }
+                  @case ('cpu') {
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <rect x="4" y="4" width="16" height="16" rx="2" ry="2"></rect>
+                      <rect x="9" y="9" width="6" height="6"></rect>
+                      <line x1="9" y1="1" x2="9" y2="4"></line>
+                      <line x1="15" y1="1" x2="15" y2="4"></line>
+                      <line x1="9" y1="20" x2="9" y2="23"></line>
+                      <line x1="15" y1="20" x2="15" y2="23"></line>
+                    </svg>
+                  }
+                  @case ('database') {
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <ellipse cx="12" cy="5" rx="9" ry="3"></ellipse>
+                      <path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"></path>
+                      <path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"></path>
+                    </svg>
+                  }
+                  @case ('settings') {
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <circle cx="12" cy="12" r="3"></circle>
+                      <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+                    </svg>
+                  }
+                  @default {
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <rect x="3" y="3" width="7" height="7" rx="1.5"></rect>
+                      <rect x="14" y="3" width="7" height="7" rx="1.5"></rect>
+                      <rect x="14" y="14" width="7" height="7" rx="1.5"></rect>
+                      <rect x="3" y="14" width="7" height="7" rx="1.5"></rect>
+                    </svg>
+                  }
+                }
+              </span>
+              <span class="dgl-nav-text">{{ mod.name }}</span>
+              @if (mod.slug === 'orders' && stateService.pendingOrdersCount() > 0) {
+                <span class="dgl-nav-badge">{{ stateService.pendingOrdersCount() }}</span>
+              }
+            </a>
 
-        <!-- Alistamiento -->
-        <a routerLink="/orders" [queryParams]="{ tab: 'picking' }" [class.active]="isOrderTabActive('picking')" class="dgl-nav-item">
-          <span class="dgl-nav-icon">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-              <polyline points="14 2 14 8 20 8"></polyline>
-              <line x1="16" y1="13" x2="8" y2="13"></line>
-              <line x1="16" y1="17" x2="8" y2="17"></line>
-            </svg>
-          </span>
-          <span class="dgl-nav-text">Alistamiento</span>
-          @if (stateService.pendingOrdersCount() > 0) {
-            <span class="dgl-nav-badge">{{ stateService.pendingOrdersCount() }}</span>
+            @if (mod.frontendRoute === '/orders') {
+              <a
+                routerLink="/orders"
+                [queryParams]="{ tab: 'facturacion' }"
+                [class.active]="isOrderTabActive('facturacion')"
+                class="dgl-nav-item"
+                style="padding-left: 34px; font-size: 0.82rem;"
+              >
+                <span class="dgl-nav-text">↳ Facturación & POS</span>
+              </a>
+              <a
+                routerLink="/orders"
+                [queryParams]="{ tab: 'despachos' }"
+                [class.active]="isOrderTabActive('despachos')"
+                class="dgl-nav-item"
+                style="padding-left: 34px; font-size: 0.82rem;"
+              >
+                <span class="dgl-nav-text">↳ Despachos & Rutas</span>
+              </a>
+            }
           }
-        </a>
+        }
 
-        <!-- Facturación & POS -->
-        <a routerLink="/orders" [queryParams]="{ tab: 'facturacion' }" [class.active]="isOrderTabActive('facturacion')" class="dgl-nav-item">
-          <span class="dgl-nav-icon">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-              <polyline points="14 2 14 8 20 8"></polyline>
-              <line x1="12" y1="18" x2="12" y2="12"></line>
-              <line x1="9" y1="15" x2="15" y2="15"></line>
-            </svg>
-          </span>
-          <span class="dgl-nav-text">Facturación & POS</span>
-        </a>
+        @if (authService.isSystemDeveloper() && (!hasCatalogModuleInTree() || !hasBackupsModuleInTree())) {
+          <div class="nav-section-title" style="margin-top: 14px;">CONFIGURACIÓN MAESTRA</div>
+          @if (!hasCatalogModuleInTree()) {
+            <a routerLink="/admin/catalog" routerLinkActive="active" class="dgl-nav-item">
+              <span class="dgl-nav-icon">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <rect x="4" y="4" width="16" height="16" rx="2" ry="2"></rect>
+                  <rect x="9" y="9" width="6" height="6"></rect>
+                </svg>
+              </span>
+              <span class="dgl-nav-text">Catálogo Maestro</span>
+            </a>
+          }
+          @if (!hasBackupsModuleInTree()) {
+            <a routerLink="/admin/backups" routerLinkActive="active" class="dgl-nav-item">
+              <span class="dgl-nav-icon">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <ellipse cx="12" cy="5" rx="9" ry="3"></ellipse>
+                  <path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"></path>
+                  <path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"></path>
+                </svg>
+              </span>
+              <span class="dgl-nav-text">Copias de Seguridad BD</span>
+            </a>
+          }
+        }
 
-        <!-- Despachos & Rutas -->
-        <a routerLink="/orders" [queryParams]="{ tab: 'despachos' }" [class.active]="isOrderTabActive('despachos')" class="dgl-nav-item">
-          <span class="dgl-nav-icon">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <rect x="1" y="3" width="15" height="13"></rect>
-              <polygon points="16 8 20 8 23 11 23 16 16 16 16 8"></polygon>
-              <circle cx="5.5" cy="18.5" r="2.5"></circle>
-              <circle cx="18.5" cy="18.5" r="2.5"></circle>
-            </svg>
-          </span>
-          <span class="dgl-nav-text">Despachos & Rutas</span>
-        </a>
-
-        <!-- Inventario y Stock (Unifica Fruta Disponible + Pulpas Hechas) -->
-        <a
-          routerLink="/settings"
-          [queryParams]="{ tab: 'inventory' }"
-          [class.active]="isSettingsTabActive('inventory')"
-          class="dgl-nav-item"
-        >
-          <span class="dgl-nav-icon">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
-              <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
-              <line x1="12" y1="22.08" x2="12" y2="12"></line>
-            </svg>
-          </span>
-          <span class="dgl-nav-text">Inventario y Stock</span>
-        </a>
-
-        <!-- Reportes Gerenciales -->
-        <a routerLink="/reports" routerLinkActive="active" class="dgl-nav-item" title="Centro de Reportes Gerenciales">
-          <span class="dgl-nav-icon">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <line x1="18" y1="20" x2="18" y2="10"></line>
-              <line x1="12" y1="20" x2="12" y2="4"></line>
-              <line x1="6" y1="20" x2="6" y2="14"></line>
-            </svg>
-          </span>
-          <span class="dgl-nav-text">Reportes</span>
-        </a>
-
-        <!-- Clientes -->
-        <a routerLink="/accounting" routerLinkActive="active" class="dgl-nav-item">
-          <span class="dgl-nav-icon">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
-              <circle cx="9" cy="7" r="4"></circle>
-              <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
-              <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
-            </svg>
-          </span>
-          <span class="dgl-nav-text">Clientes</span>
-        </a>
-
-        <!-- Gestión de Personal -->
-        <a
-          routerLink="/hr"
-          routerLinkActive="active"
-          class="dgl-nav-item"
-          title="Gestión de Personal"
-        >
-          <span class="dgl-nav-icon">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
-              <circle cx="9" cy="7" r="4"></circle>
-              <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
-              <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
-            </svg>
-          </span>
-          <span class="dgl-nav-text">Gestión de Personal</span>
-        </a>
-
-        <!-- Section: SISTEMA & CONFIGURACIÓN -->
-        <div class="nav-section-title" style="margin-top: 14px;">SISTEMA & CONFIGURACIÓN</div>
-
-        <!-- Configuración General -->
-        <a
-          routerLink="/settings"
-          [queryParams]="{ tab: 'general' }"
-          [class.active]="isSettingsTabActive('general')"
-          class="dgl-nav-item"
-        >
-          <span class="dgl-nav-icon">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <circle cx="12" cy="12" r="3"></circle>
-              <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
-            </svg>
-          </span>
-          <span class="dgl-nav-text">Configuración</span>
-        </a>
-
-        <!-- 4. Promotional / Informational Box (Figma style) -->
         <div class="dgl-callout-card">
           <div class="callout-header">
             <span class="callout-icon" style="display: inline-flex; align-items: center; justify-content: center; color: #10b981;">
@@ -186,15 +218,12 @@ import { environment } from '../../../environments/environment';
         </div>
       </nav>
 
-      <!-- 5. Sidebar Footer: User Profile (Figma style) -->
       <div class="sidebar-footer">
-
-        <!-- User Profile Row -->
         <div class="user-row-box">
-          <div class="user-avatar-circle">AD</div>
+          <div class="user-avatar-circle">{{ userInitials() }}</div>
           <div class="user-text-box">
-            <span class="user-display-name">Administrador</span>
-            <span class="user-display-role">Gestión de planta</span>
+            <span class="user-display-name">{{ displayUserName() }}</span>
+            <span class="user-display-role">{{ displayRoleName() }}</span>
           </div>
           <button
             type="button"
@@ -307,40 +336,6 @@ import { environment } from '../../../environments/environment';
       }
     }
 
-    .sidebar-plant-selector {
-      padding: 0 18px 14px 18px;
-    }
-
-    .plant-label {
-      font-size: 0.68rem;
-      font-weight: 700;
-      color: #9ca3af;
-      letter-spacing: 0.05em;
-      margin-bottom: 6px;
-    }
-
-    .plant-select-box {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 8px 12px;
-      background: #ffffff;
-      border: 1px solid #e5e7eb;
-      border-radius: 10px;
-      cursor: pointer;
-      transition: all 0.15s ease;
-
-      &:hover {
-        border-color: #1e5e3a;
-      }
-    }
-
-    .plant-name {
-      font-size: 0.84rem;
-      font-weight: 600;
-      color: #111827;
-    }
-
     .sidebar-nav {
       flex: 1;
       padding: 0 12px;
@@ -386,7 +381,6 @@ import { environment } from '../../../environments/environment';
         }
       }
     }
-
 
     .dgl-nav-icon {
       display: flex;
@@ -505,12 +499,18 @@ import { environment } from '../../../environments/environment';
       font-weight: 750;
       color: #451a03;
       line-height: 1.2;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
 
     .user-display-role {
       font-size: 0.7rem;
       color: #854d0e;
       font-weight: 600;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
 
     .user-logout-btn {
@@ -545,45 +545,173 @@ export class SidebarComponent {
   private readonly router = inject(Router);
 
   private readonly navEnd$ = this.router.events.pipe(
-    filter(e => e instanceof NavigationEnd),
+    filter((e): e is NavigationEnd => e instanceof NavigationEnd),
     map(() => this.router.url)
   );
 
   private readonly urlSignal = toSignal(this.navEnd$, { initialValue: this.router.url });
 
-  isOrderTabActive(tab: 'picking' | 'facturacion' | 'despachos'): boolean {
-    const url = this.urlSignal();
-    if (!url.startsWith('/orders')) return false;
-    if (tab === 'facturacion') return url.includes('tab=facturacion');
-    if (tab === 'despachos') return url.includes('tab=despachos');
-    return !url.includes('tab=facturacion') && !url.includes('tab=despachos');
-  }
-
-  isSettingsTabActive(tab: 'inventory' | 'general' | 'users'): boolean {
-    const url = this.urlSignal();
-    if (!url.startsWith('/settings')) return false;
-    if (tab === 'inventory') {
+  readonly displayUserName = computed<string>(() => {
+    try {
       return (
-        url.includes('tab=inventory') ||
-        url.includes('tab=variants') ||
-        url.includes('tab=fruits') ||
-        url.includes('tab=cava')
+        this.authService.user()?.fullName ||
+        this.authService.currentUser()?.fullName ||
+        this.authService.user()?.username ||
+        ''
       );
+    } catch {
+      return '';
     }
-    if (tab === 'users') {
-      return url.includes('tab=users') || url.includes('tab=usuarios') || url.includes('tab=roles');
+  });
+
+  readonly displayRoleName = computed<string>(() => {
+    try {
+      return this.authService.user()?.roleName || this.authService.currentUser()?.roleName || '';
+    } catch {
+      return '';
     }
-    return (
-      url.includes('tab=general') ||
-      url.includes('tab=empresa') ||
-      (!url.includes('tab=inventory') &&
-        !url.includes('tab=variants') &&
-        !url.includes('tab=fruits') &&
-        !url.includes('tab=cava') &&
-        !url.includes('tab=users') &&
-        !url.includes('tab=usuarios') &&
-        !url.includes('tab=roles'))
-    );
+  });
+
+  readonly userInitials = computed<string>(() => {
+    try {
+      const name = this.displayUserName().trim();
+      if (!name) {
+        return '';
+      }
+      const parts = name.split(/\s+/);
+      if (parts.length >= 2) {
+        return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
+      }
+      return name.substring(0, 2).toUpperCase();
+    } catch {
+      return '';
+    }
+  });
+
+  readonly hasCatalogModuleInTree = computed<boolean>(() => {
+    try {
+      return this.authService
+        .navigationModules()
+        .some(m => m.frontendRoute === '/admin/catalog' || m.slug === 'system-catalog');
+    } catch {
+      return false;
+    }
+  });
+
+  readonly hasBackupsModuleInTree = computed<boolean>(() => {
+    try {
+      return this.authService
+        .navigationModules()
+        .some(m => m.frontendRoute === '/admin/backups' || m.slug === 'database-backups');
+    } catch {
+      return false;
+    }
+  });
+
+  /**
+   * Extracts the clean router path from a `frontendRoute` string.
+   */
+  getRoutePath(frontendRoute: string): string {
+    try {
+      return (frontendRoute || '/dashboard').split('?')[0];
+    } catch {
+      return '/dashboard';
+    }
   }
 
+  /**
+   * Parses query parameters embedded in a `frontendRoute` string if present.
+   */
+  getRouteQueryParams(frontendRoute: string): Record<string, string> | null {
+    try {
+      const parts = (frontendRoute || '').split('?');
+      if (parts.length < 2 || !parts[1]) {
+        return null;
+      }
+      const params: Record<string, string> = {};
+      const searchParams = new URLSearchParams(parts[1]);
+      searchParams.forEach((val, key) => {
+        params[key] = val;
+      });
+      return params;
+    } catch {
+      return null;
+    }
+  }
+
+  /**
+   * Determines whether a dynamic navigation module link is currently active.
+   */
+  isModuleActive(mod: NavigationModuleDto): boolean {
+    try {
+      const currentUrl = this.urlSignal() || '';
+      const currentPath = currentUrl.split('?')[0];
+      const modPath = this.getRoutePath(mod.frontendRoute);
+
+      if (modPath === '/orders' && currentPath === '/orders') {
+        return !currentUrl.includes('tab=facturacion') && !currentUrl.includes('tab=despachos');
+      }
+
+      return currentPath === modPath;
+    } catch {
+      return false;
+    }
+  }
+
+  /**
+   * Checks whether a specific sub-tab of `/orders` is active.
+   */
+  isOrderTabActive(tab: 'picking' | 'facturacion' | 'despachos'): boolean {
+    try {
+      const url = this.urlSignal() || '';
+      if (!url.startsWith('/orders')) {
+        return false;
+      }
+      if (tab === 'facturacion') {
+        return url.includes('tab=facturacion');
+      }
+      if (tab === 'despachos') {
+        return url.includes('tab=despachos');
+      }
+      return !url.includes('tab=facturacion') && !url.includes('tab=despachos');
+    } catch {
+      return false;
+    }
+  }
+
+  /**
+   * Checks whether a specific sub-tab of `/settings` is active.
+   */
+  isSettingsTabActive(tab: 'inventory' | 'general' | 'users'): boolean {
+    try {
+      const url = this.urlSignal() || '';
+      if (!url.startsWith('/settings')) {
+        return false;
+      }
+      if (tab === 'inventory') {
+        return (
+          url.includes('tab=inventory') ||
+          url.includes('tab=variants') ||
+          url.includes('tab=fruits') ||
+          url.includes('tab=cava')
+        );
+      }
+      if (tab === 'users') {
+        return url.includes('tab=users') || url.includes('tab=usuarios') || url.includes('tab=roles');
+      }
+      return (
+        url.includes('tab=general') ||
+        url.includes('tab=empresa') ||
+        (!url.includes('tab=inventory') &&
+          !url.includes('tab=variants') &&
+          !url.includes('tab=fruits') &&
+          !url.includes('tab=cava') &&
+          !url.includes('tab=users') &&
+          !url.includes('tab=usuarios') &&
+          !url.includes('tab=roles'))
+      );
+    } catch {
+      return false;
+    }
+  }
 }

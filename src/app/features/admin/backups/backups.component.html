@@ -1,0 +1,189 @@
+<div class="page-container">
+  <header class="page-header" style="display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem; flex-wrap: wrap; margin-bottom: 1.5rem;">
+    <div>
+      <div style="display: flex; align-items: center; gap: 0.65rem; margin-bottom: 0.35rem;">
+        <span class="badge badge-primary">SUPERADMIN / MOTOR NATIVO .SQL</span>
+        <span class="badge badge-success">RETENCIÓN PERMANENTE EN SERVIDOR</span>
+      </div>
+      <h1 class="page-title" style="margin: 0; font-size: 1.5rem; font-weight: 700;">
+        Copias de Seguridad de Base de Datos (.SQL)
+      </h1>
+      <p class="page-subtitle" style="margin: 0.25rem 0 0; opacity: 0.8;">
+        Genera respaldos completos en texto plano <code>.sql</code> (estructura DDL + datos transaccionales), almacénalos en el servidor y descárgalos a tu ordenador con un solo clic.
+      </p>
+    </div>
+
+    <div style="display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap;">
+      <button
+        type="button"
+        class="btn btn-outline"
+        (click)="loadBackups()"
+        [disabled]="isLoading() || isGenerating()">
+        <span class="material-icons-round" style="font-size: 1.1rem; margin-right: 0.35rem;">refresh</span>
+        Actualizar Lista
+      </button>
+
+      <button
+        *appHasPermission="'system.backups.manage'"
+        type="button"
+        class="btn btn-primary"
+        (click)="generateAndDownloadOneClickBackup()"
+        [disabled]="isGenerating()">
+        <span class="material-icons-round" style="font-size: 1.15rem; margin-right: 0.45rem;">backup</span>
+        @if (isGenerating()) {
+          Generando y Descargando Copia .SQL...
+        } @else {
+          Generar y Descargar Copia de Seguridad Ahora (.SQL)
+        }
+      </button>
+    </div>
+  </header>
+
+  <section style="display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 1rem; margin-bottom: 1.5rem;">
+    <div class="card" style="padding: 1.15rem;">
+      <div style="font-size: 0.8rem; opacity: 0.75; text-transform: uppercase; font-weight: 600;">
+        Copias Alojadas en Servidor
+      </div>
+      <div style="font-size: 1.65rem; font-weight: 800; margin-top: 0.35rem;">
+        {{ totalBackupsCount() }} archivos .SQL
+      </div>
+      <div style="font-size: 0.8rem; opacity: 0.7; margin-top: 0.2rem;">
+        Directorio persistente: <code>/app/Backups</code>
+      </div>
+    </div>
+
+    <div class="card" style="padding: 1.15rem;">
+      <div style="font-size: 0.8rem; opacity: 0.75; text-transform: uppercase; font-weight: 600;">
+        Espacio Total en Servidor
+      </div>
+      <div style="font-size: 1.65rem; font-weight: 800; margin-top: 0.35rem;">
+        {{ totalStorageFormatted() }}
+      </div>
+      <div style="font-size: 0.8rem; opacity: 0.7; margin-top: 0.2rem;">
+        Se conservan hasta eliminación manual
+      </div>
+    </div>
+
+    <div class="card" style="padding: 1.15rem;">
+      <div style="font-size: 0.8rem; opacity: 0.75; text-transform: uppercase; font-weight: 600;">
+        Último Respaldo Generado
+      </div>
+      @if (latestBackup(); as latest) {
+        <div style="font-size: 1rem; font-weight: 700; margin-top: 0.35rem; word-break: break-all;">
+          {{ latest.fileName }}
+        </div>
+        <div style="font-size: 0.8rem; opacity: 0.7; margin-top: 0.2rem;">
+          {{ latest.createdAtUtc | date:'medium' }} ({{ latest.sizeFormatted }})
+        </div>
+      } @else {
+        <div style="font-size: 1rem; font-weight: 600; margin-top: 0.35rem; opacity: 0.7;">
+          Sin copias registradas aún
+        </div>
+      }
+    </div>
+  </section>
+
+  <section class="card" style="padding: 1.25rem;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 0.5rem;">
+      <div>
+        <h2 style="margin: 0; font-size: 1.1rem; font-weight: 700;">
+          Historial de Copias de Seguridad en el Servidor
+        </h2>
+        <p style="margin: 0.2rem 0 0; font-size: 0.85rem; opacity: 0.75;">
+          Todas las copias permanecen guardadas en el servidor hasta que decidas eliminarlas manualmente.
+        </p>
+      </div>
+    </div>
+
+    @if (isLoading()) {
+      <div style="padding: 2rem; text-align: center; opacity: 0.8;">
+        Consultando copias de seguridad en el servidor...
+      </div>
+    } @else if (backups().length === 0) {
+      <div style="padding: 2.25rem; text-align: center; opacity: 0.85;">
+        <p style="margin: 0 0 0.75rem; font-weight: 600;">
+          No hay copias de seguridad almacenadas en el servidor todavía.
+        </p>
+        <p style="margin: 0; font-size: 0.9rem; opacity: 0.75;">
+          Haz clic en <strong>"Generar y Descargar Copia de Seguridad Ahora (.SQL)"</strong> para crear el primer respaldo en el servidor y descargarlo automáticamente a tu ordenador.
+        </p>
+      </div>
+    } @else {
+      <div class="table-container">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Archivo (.SQL)</th>
+              <th>Base de Datos</th>
+              <th>Tablas / Filas</th>
+              <th>Tamaño</th>
+              <th>Fecha UTC</th>
+              <th>Generado Por</th>
+              <th style="text-align: right;">Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (item of backups(); track item.fileName) {
+              <tr>
+                <td style="font-weight: 600; font-family: monospace;">
+                  {{ item.fileName }}
+                </td>
+                <td>
+                  <span class="badge badge-primary">{{ item.databaseName }}</span>
+                </td>
+                <td>
+                  @if (item.tablesCount > 0) {
+                    {{ item.tablesCount }} tablas / {{ item.totalRowsCount }} filas
+                  } @else {
+                    Respaldo SQL Completo
+                  }
+                </td>
+                <td style="font-weight: 600;">
+                  {{ item.sizeFormatted }}
+                </td>
+                <td>
+                  {{ item.createdAtUtc | date:'yyyy-MM-dd HH:mm:ss' }}
+                </td>
+                <td>
+                  {{ item.createdByUsername }}
+                </td>
+                <td style="text-align: right;">
+                  <div style="display: inline-flex; gap: 0.5rem; justify-content: flex-end;">
+                    <button
+                      type="button"
+                      class="btn btn-outline"
+                      (click)="downloadBackupToComputer(item.fileName)"
+                      [disabled]="downloadingFileName() === item.fileName">
+                      <span class="material-icons-round" style="font-size: 1rem; margin-right: 0.25rem;">download</span>
+                      @if (downloadingFileName() === item.fileName) {
+                        Descargando...
+                      } @else {
+                        Descargar .SQL al PC
+                      }
+                    </button>
+
+                    <button
+                      *appHasPermission="'system.backups.manage'"
+                      type="button"
+                      class="btn btn-outline"
+                      style="border-color: #ef4444; color: #ef4444;"
+                      (click)="deleteBackupFromServer(item.fileName)"
+                      [disabled]="deletingFileName() === item.fileName">
+                      <span class="material-icons-round" style="font-size: 1rem; margin-right: 0.25rem;">delete</span>
+                      @if (deletingFileName() === item.fileName) {
+                        Eliminando...
+                      } @else {
+                        Eliminar del Servidor
+                      }
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+  </section>
+</div>
+

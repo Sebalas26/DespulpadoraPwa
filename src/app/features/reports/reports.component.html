@@ -1,7 +1,6 @@
 <div style="display: flex; flex-direction: column; gap: 24px;">
 
-  <!-- Header & Actions -->
-  <div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 16px;">
+    <div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 16px;">
     <div>
       <h1 style="font-size: 1.85rem; font-weight: 800; margin-bottom: 4px; color: var(--text-main);">
         Centro de Reportes Gerenciales
@@ -11,10 +10,8 @@
       </p>
     </div>
 
-    <!-- Period Filter + Export & Print Buttons -->
-    <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 12px;">
-      <!-- Enhanced Period Filter Bar: Hoy, Ayer, Mes, Año, Rango -->
-      <div class="period-filter-container no-print">
+        <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 12px;">
+            <div class="period-filter-container no-print">
         <span class="period-label">Período:</span>
 
         <div class="period-Segmented-group">
@@ -64,8 +61,7 @@
           </button>
         </div>
 
-        <!-- Contextual Date Display & Selector Capsule -->
-        <div class="selected-date-capsule">
+                <div class="selected-date-capsule">
           <span class="capsule-cal-icon">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
               <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
@@ -179,8 +175,7 @@
     </div>
   </div>
 
-  <!-- Executive Reports Navigation Pills (Figma Style) -->
-  <div class="reports-nav-tabs no-print">
+    <div class="reports-nav-tabs no-print">
     <button
       type="button"
       class="report-tab-btn"
@@ -232,13 +227,9 @@
     </button>
   </div>
 
-  <!-- ======================================================== -->
-  <!-- TAB 1: REPORTE DE VENTAS & METAS                         -->
-  <!-- ======================================================== -->
-  @if (activeTab() === 'sales') {
+        @if (activeTab() === 'sales') {
     <div style="display: flex; flex-direction: column; gap: 20px;">
-      <!-- KPI Row -->
-      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 16px;">
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 16px;">
         <div class="card hover-lift">
           <div class="card-body">
             <div style="font-size: 0.78rem; text-transform: uppercase; color: var(--text-muted); font-weight: 700;">Total Facturado</div>
@@ -288,8 +279,7 @@
         </div>
       </div>
 
-      <!-- Sales Orders Table -->
-      <div class="card" style="overflow: visible;">
+            <div class="card" style="overflow: visible;">
         <div class="card-header" style="justify-content: space-between;">
           <h3 class="card-title">Detalle de Ventas Registradas</h3>
           <span class="badge badge-success">{{ filteredOrders().length }} pedidos</span>
@@ -433,13 +423,9 @@
     </div>
   }
 
-  <!-- ======================================================== -->
-  <!-- TAB 2: AUDITORÍA DE MERMAS (VENTA IDEAL VS VENTA REAL)   -->
-  <!-- ======================================================== -->
-  @if (activeTab() === 'loss') {
+        @if (activeTab() === 'loss') {
     <div style="display: flex; flex-direction: column; gap: 20px;">
-      <!-- KPI Row -->
-      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 16px;">
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 16px;">
         <div class="card hover-lift">
           <div class="card-body">
             <div style="font-size: 0.78rem; text-transform: uppercase; color: var(--text-muted); font-weight: 700;">Pulpa Producida Total</div>
@@ -489,8 +475,7 @@
         </div>
       </div>
 
-      <!-- Logic Explanatory Banner (Excel Model) -->
-      <div class="loss-formula-banner">
+            <div class="loss-formula-banner">
         <div class="banner-icon-box">
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M12 3v18"></path>
@@ -508,8 +493,7 @@
         </div>
       </div>
 
-      <!-- Loss Audit Table -->
-      <div class="card">
+            <div class="card">
         <div class="card-header" style="justify-content: space-between;">
           <h3 class="card-title">Auditoría Detallada por Fruta</h3>
           <span class="badge badge-info">{{ idealVsRealAudit().length }} referencias auditadas</span>
@@ -595,13 +579,9 @@
     </div>
   }
 
-  <!-- ======================================================== -->
-  <!-- TAB 3: INVENTARIO & VALORACIÓN DE CAVA                   -->
-  <!-- ======================================================== -->
-  @if (activeTab() === 'stock') {
+        @if (activeTab() === 'stock') {
     <div style="display: flex; flex-direction: column; gap: 20px;">
-      <!-- KPI Row -->
-      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 16px;">
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 16px;">
         <div class="card hover-lift">
           <div class="card-body">
             <div style="font-size: 0.78rem; text-transform: uppercase; color: var(--text-muted); font-weight: 700;">Pulpa Congelada en Cava</div>
@@ -651,8 +631,7 @@
         </div>
       </div>
 
-      <!-- Cava Inventory Table -->
-      <div class="card">
+            <div class="card">
         <div class="card-header" style="justify-content: space-between;">
           <h3 class="card-title">Existencias por Presentación y Valorización</h3>
           <span class="badge badge-success">{{ stateService.fruits().length }} frutas en catálogo</span>
@@ -736,13 +715,9 @@
     </div>
   }
 
-  <!-- ======================================================== -->
-  <!-- TAB 4: GASTOS OPERATIVOS & LOGÍSTICA                     -->
-  <!-- ======================================================== -->
-  @if (activeTab() === 'expenses') {
+        @if (activeTab() === 'expenses') {
     <div style="display: flex; flex-direction: column; gap: 20px;">
-      <!-- KPI Row -->
-      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 16px;">
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 16px;">
         <div class="card hover-lift">
           <div class="card-body">
             <div style="font-size: 0.78rem; text-transform: uppercase; color: var(--text-muted); font-weight: 700;">Total Gastos Operativos</div>
@@ -792,8 +767,7 @@
         </div>
       </div>
 
-      <!-- Expenses Table -->
-      <div class="card">
+            <div class="card">
         <div class="card-header" style="justify-content: space-between;">
           <h3 class="card-title">Comprobantes de Gastos y Logística</h3>
           <span class="badge badge-info">{{ filteredExpenses().length }} egresos</span>
@@ -867,13 +841,9 @@
     </div>
   }
 
-  <!-- ======================================================== -->
-  <!-- TAB 5: NÓMINA QUINCENAL & RRHH                           -->
-  <!-- ======================================================== -->
-  @if (activeTab() === 'payroll') {
+        @if (activeTab() === 'payroll') {
     <div style="display: flex; flex-direction: column; gap: 20px;">
-      <!-- KPI Row -->
-      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 16px;">
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 16px;">
         <div class="card hover-lift">
           <div class="card-body">
             <div style="font-size: 0.78rem; text-transform: uppercase; color: var(--text-muted); font-weight: 700;">Total Nómina Quincenal</div>
@@ -923,8 +893,7 @@
         </div>
       </div>
 
-      <!-- Payroll Table -->
-      <div class="card">
+            <div class="card">
         <div class="card-header" style="justify-content: space-between;">
           <h3 class="card-title">Liquidación Quincenal Detallada</h3>
           <span class="badge badge-success">Período 1 al 15 · Quincena activa</span>
@@ -1014,9 +983,6 @@
 
 </div>
 
-<!-- ======================================================== -->
-<!-- MODAL: EDITAR PEDIDO (VENTAS)                            -->
-<!-- ======================================================== -->
 @if (showEditOrderModal()) {
   <div class="modal-overlay" (click)="showEditOrderModal.set(false)">
     <div class="modal-content" style="max-width: 680px;" (click)="$event.stopPropagation()">
@@ -1120,8 +1086,7 @@
           />
         </div>
 
-        <!-- Productos del Pedido -->
-        <div style="margin-top: 4px;">
+                <div style="margin-top: 4px;">
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
             <label class="form-label" style="margin-bottom: 0; font-weight: 800;">Productos del Pedido</label>
             <button
@@ -1213,9 +1178,6 @@
   </div>
 }
 
-<!-- ======================================================== -->
-<!-- MODAL: VER FACTURA CORPORATIVA (VENTAS)                  -->
-<!-- ======================================================== -->
 @if (showInvoiceModal() && selectedOrderForInvoice(); as modalOrder) {
   <div class="modal-overlay invoice-modal-overlay" (click)="showInvoiceModal.set(false)">
     <div
@@ -1418,9 +1380,6 @@
   </div>
 }
 
-<!-- ======================================================== -->
-<!-- MODAL: LISTA DE PRODUCTOS DEL PEDIDO (CLIENTE)           -->
-<!-- ======================================================== -->
 @if (showItemsListModal() && selectedOrderForItems(); as modalOrder) {
   <div class="modal-overlay" (click)="showItemsListModal.set(false)">
     <div class="modal-content" style="max-width: 540px; border-radius: 16px; overflow: hidden; box-shadow: 0 20px 40px rgba(0,0,0,0.2);" (click)="$event.stopPropagation()">
@@ -1484,8 +1443,7 @@
           }
         </div>
 
-        <!-- Total Box -->
-        <div style="margin-top: 14px; padding: 14px 16px; background: #ffffff; border: 1.5px solid #cbd5e1; border-radius: 10px; display: flex; justify-content: space-between; align-items: center;">
+                <div style="margin-top: 14px; padding: 14px 16px; background: #ffffff; border: 1.5px solid #cbd5e1; border-radius: 10px; display: flex; justify-content: space-between; align-items: center;">
           <span style="font-weight: 750; font-size: 0.85rem; color: #475569;">Total del Pedido:</span>
           <span style="font-weight: 900; font-size: 1.15rem; color: #0f172a;">
             {{ formatCOP(modalOrder.totalAmount) }}

@@ -1,5 +1,6 @@
 import { Routes } from '@angular/router';
-import { authGuard, adminGuard, guestGuard } from './core/guards/auth.guard';
+import { authGuard, guestGuard } from './core/guards/auth.guard';
+import { permissionGuard } from './core/guards/permission.guard';
 import { LoginComponent } from './features/auth/login/login.component';
 import { MainLayoutComponent } from './layout/main-layout/main-layout.component';
 import { DashboardComponent } from './features/dashboard/dashboard.component';
@@ -12,7 +13,14 @@ import { SettingsComponent } from './features/settings/settings.component';
 import { ReportsComponent } from './features/reports/reports.component';
 import { AdminUsersComponent } from './features/admin/users/users.component';
 import { AdminRolesComponent } from './features/admin/roles/roles.component';
+import { SystemCatalogComponent } from './features/admin/system-catalog/system-catalog.component';
+import { BackupsComponent } from './features/admin/backups/backups.component';
+import { DynamicModulePlaceholderComponent } from './features/dynamic-module-placeholder/dynamic-module-placeholder.component';
 
+/**
+ * Application routing configuration with Server-Driven RBAC guards and intelligent fallback
+ * (`DynamicModulePlaceholderComponent`) for newly registered database modules.
+ */
 export const routes: Routes = [
   {
     path: 'login',
@@ -49,20 +57,33 @@ export const routes: Routes = [
     canActivate: [authGuard],
     children: [
       { path: '', redirectTo: 'dashboard', pathMatch: 'full' },
-      { path: 'dashboard', component: DashboardComponent },
-      { path: 'calculator', component: CalculatorComponent },
-      { path: 'orders', component: OrdersComponent },
-      { path: 'shifts', component: ShiftsComponent },
-      { path: 'hr', component: HrComponent },
-      { path: 'accounting', component: AccountingComponent },
-      { path: 'settings', component: SettingsComponent },
-      { path: 'reports', component: ReportsComponent },
-      { path: 'admin/users', component: AdminUsersComponent, canActivate: [adminGuard] },
-      { path: 'admin/roles', component: AdminRolesComponent, canActivate: [adminGuard] }
+      { path: 'dashboard', component: DashboardComponent, canActivate: [permissionGuard] },
+      { path: 'calculator', component: CalculatorComponent, canActivate: [permissionGuard] },
+      { path: 'orders', component: OrdersComponent, canActivate: [permissionGuard] },
+      { path: 'shifts', component: ShiftsComponent, canActivate: [permissionGuard] },
+      { path: 'hr', component: HrComponent, canActivate: [permissionGuard] },
+      { path: 'accounting', component: AccountingComponent, canActivate: [permissionGuard] },
+      { path: 'settings', component: SettingsComponent, canActivate: [permissionGuard] },
+      { path: 'reports', component: ReportsComponent, canActivate: [permissionGuard] },
+      { path: 'admin/users', component: AdminUsersComponent, canActivate: [permissionGuard] },
+      { path: 'admin/roles', component: AdminRolesComponent, canActivate: [permissionGuard] },
+      {
+        path: 'admin/catalog',
+        component: SystemCatalogComponent,
+        canActivate: [permissionGuard],
+        data: { requiresSystemDeveloper: true }
+      },
+      {
+        path: 'admin/backups',
+        component: BackupsComponent,
+        canActivate: [permissionGuard],
+        data: { requiresSystemDeveloper: true }
+      },
+      {
+        path: '**',
+        component: DynamicModulePlaceholderComponent,
+        canActivate: [permissionGuard]
+      }
     ]
-  },
-  {
-    path: '**',
-    redirectTo: 'dashboard'
   }
 ];

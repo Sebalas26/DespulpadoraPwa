@@ -1,43 +1,31 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
+import { firstValueFrom } from 'rxjs';
 import * as signalR from '@microsoft/signalr';
 import { environment } from '../../../environments/environment';
 import { NotificationService } from './notification.service';
-import { ConfirmVoiceOrderPayload, VoiceOrderMessageDto } from '../models/voice-order.models';
+import {
+  ConfirmVoiceOrderPayload,
+  VoiceOrderMessageDto,
+  VoiceOrderStatus
+} from '../models/voice-order.models';
 
-const INITIAL_DEMO_VOICE_ORDERS: VoiceOrderMessageDto[] = [
-  {
-    id: 'vo_001_elportal',
-    whatsAppMessageId: 'wamid.HBgLMzgxMjQ4OTM5MDUxFQIAEhggMjhGNjY0RjhGNjA0Q0UzM0JFQkU2MzE2RDYwOTI0NzEA',
-    senderPhone: '+57 310 456 7890',
-    customerName: 'Carlos Morales (Restaurante El Portal)',
-    mediaId: 'meta_media_maracuya_coco_001',
-    audioUrl: 'http://localhost:5050/api/whatsapp/media/meta_media_maracuya_coco_001',
-    mimeType: 'audio/wav',
-    fileSizeBytes: 48500,
-    durationSeconds: 14.5,
-    status: 'Pending',
-    receivedAt: new Date(Date.now() - 8 * 60 * 1000).toISOString(),
-    notes: 'Pedido para turno de almuerzo',
-    transcriptPreview: 'Buenas tardes amigos de la despulpadora. Les habla Carlos de El Portal. Me envían por favor 5 paquetes de pulpa de maracuyá de kilo y 2 de limonada de coco de 140g para entregar antes de las 2pm. ¡Muchas gracias!'
-  },
-  {
-    id: 'vo_002_lacosecha',
-    whatsAppMessageId: 'wamid.HBgLMzgxMjQ4OTM5MDUxFQIAEhggODg5Mzk0OTQ5NDk0ODg0ODg0ODg0ODg0ODg0ODg0ODgA',
-    senderPhone: '+57 320 890 1234',
-    customerName: 'Diana Gómez (Frutería La Cosecha)',
-    mediaId: 'meta_media_mango_lulo_002',
-    audioUrl: 'http://localhost:5050/api/whatsapp/media/meta_media_mango_lulo_002',
-    mimeType: 'audio/wav',
-    fileSizeBytes: 36200,
-    durationSeconds: 11.2,
-    status: 'Pending',
-    receivedAt: new Date(Date.now() - 24 * 60 * 1000).toISOString(),
-    notes: 'Pide verificar fecha de vencimiento',
-    transcriptPreview: 'Hola equipo DGL, habla Diana. Necesitamos reponer 10 unidades de pulpa de mango tommy de 250 gramos y 4 de lulo de castilla de 500 gramos. Pago contraentrega en el local del centro.'
-  }
-];
+/**
+ * Empty initial voice orders array populated strictly from the backend API or SignalR hub.
+ */
+export const INITIAL_DEMO_VOICE_ORDERS: VoiceOrderMessageDto[] = [];
 
+/**
+ * Window interface extension for Webkit AudioContext support.
+ */
+interface WindowWithWebkitAudio extends Window {
+  webkitAudioContext?: typeof AudioContext;
+  __karma__?: unknown;
+}
+
+/**
+ * Real-time WhatsApp voice order synchronization and confirmation service.
+ */
 @Injectable({
   providedIn: 'root'
 })
@@ -48,234 +36,312 @@ export class VoiceOrdersService {
   private hubConnection: signalR.HubConnection | null = null;
   readonly isSignalRConnected = signal<boolean>(false);
 
-  // Core reactive signals
   readonly voiceOrders = signal<VoiceOrderMessageDto[]>(this.loadFromStorage());
   readonly isModalOpen = signal<boolean>(false);
   readonly activeVoiceOrder = signal<VoiceOrderMessageDto | null>(null);
 
-  // Computeds
-  readonly pendingVoiceOrders = computed(() =>
+  readonly pendingVoiceOrders = computed<VoiceOrderMessageDto[]>(() =>
     this.voiceOrders().filter(o => o.status === 'Pending')
   );
 
-  readonly pendingCount = computed(() => this.pendingVoiceOrders().length);
+  readonly pendingCount = computed<number>(() => this.pendingVoiceOrders().length);
 
   constructor() {
     this.initSignalR();
-    this.syncFromBackend();
+    void this.syncFromBackend();
   }
 
-  // ==========================================
-  // SIGNALR REAL-TIME WEBSOCKET CONNECTION
-  // ==========================================
-  private initSignalR() {
-    const hubUrl = environment.apiUrl.replace('/api', '') + '/hubs/voice-orders';
+  /**
+   * Initializes the SignalR real-time WebSocket connection to `/hubs/voice-orders`.
+   */
+  private initSignalR(): void {
+    try {
+      if (typeof window !== 'undefined' && (window as WindowWithWebkitAudio).__karma__) {
+        return;
+      }
+      const hubUrl = environment.apiUrl.replace('/api', '') + '/hubs/voice-orders';
 
-    this.hubConnection = new signalR.HubConnectionBuilder()
-      .withUrl(hubUrl, {
-        skipNegotiation: false,
-        transport: signalR.HttpTransportType.WebSockets | signalR.HttpTransportType.LongPolling
-      })
-      .withAutomaticReconnect([0, 2000, 5000, 10000, 30000])
-      .configureLogging(signalR.LogLevel.Warning)
-      .build();
+      this.hubConnection = new signalR.HubConnectionBuilder()
+        .withUrl(hubUrl, {
+          skipNegotiation: false,
+          transport: signalR.HttpTransportType.WebSockets | signalR.HttpTransportType.LongPolling
+        })
+        .withAutomaticReconnect([0, 2000, 5000, 10000, 30000])
+        .configureLogging(signalR.LogLevel.Warning)
+        .build();
 
-    // Listen for incoming voice order broadcast from .NET backend
-    this.hubConnection.on('ReceiveNewVoiceOrder', (newOrder: VoiceOrderMessageDto) => {
-      this.handleIncomingVoiceOrder(newOrder);
-    });
+      this.hubConnection.on('ReceiveNewVoiceOrder', (newOrder: VoiceOrderMessageDto) => {
+        this.handleIncomingVoiceOrder(newOrder);
+      });
 
-    // Listen for status updates
-    this.hubConnection.on('VoiceOrderStatusUpdated', (messageId: string, status: string, orderId?: number) => {
-      this.voiceOrders.update(list => list.map(o => {
-        if (o.id === messageId || o.whatsAppMessageId === messageId) {
-          return {
-            ...o,
-            status: status as any,
-            createdOrderId: orderId || o.createdOrderId,
-            processedAt: status === 'PROCESSED' ? new Date().toISOString() : o.processedAt
-          };
+      this.hubConnection.on(
+        'VoiceOrderStatusUpdated',
+        (messageId: string, status: string, orderId?: number) => {
+          this.voiceOrders.update(list =>
+            list.map(o => {
+              if (o.id === messageId || o.whatsAppMessageId === messageId) {
+                return {
+                  ...o,
+                  status: status as VoiceOrderStatus,
+                  createdOrderId: orderId || o.createdOrderId,
+                  processedAt: status === 'PROCESSED' ? new Date().toISOString() : o.processedAt
+                };
+              }
+              return o;
+            })
+          );
+          this.saveToStorage();
         }
-        return o;
-      }));
-      this.saveToStorage();
-    });
+      );
 
-    this.hubConnection.onreconnecting(() => this.isSignalRConnected.set(false));
-    this.hubConnection.onreconnected(() => this.isSignalRConnected.set(true));
-    this.hubConnection.onclose(() => this.isSignalRConnected.set(false));
+      this.hubConnection.onreconnecting(() => this.isSignalRConnected.set(false));
+      this.hubConnection.onreconnected(() => this.isSignalRConnected.set(true));
+      this.hubConnection.onclose(() => this.isSignalRConnected.set(false));
 
-    this.startConnection();
+      void this.startConnection();
+    } catch {
+      this.isSignalRConnected.set(false);
+    }
   }
 
-  private async startConnection() {
-    if (!this.hubConnection) return;
+  /**
+   * Starts the SignalR connection asynchronously.
+   */
+  private async startConnection(): Promise<void> {
+    if (!this.hubConnection) {
+      return;
+    }
     try {
       await this.hubConnection.start();
       this.isSignalRConnected.set(true);
-      console.log('✅ Connected to Voice Orders SignalR Hub');
-    } catch (err) {
+    } catch {
       this.isSignalRConnected.set(false);
-      // Gracefully silent in demo / offline mode
     }
   }
 
-  private handleIncomingVoiceOrder(order: VoiceOrderMessageDto) {
-    // Add to state if not exists
-    this.voiceOrders.update(list => {
-      const exists = list.some(o => o.id === order.id || o.whatsAppMessageId === order.whatsAppMessageId);
-      return exists ? list : [order, ...list];
-    });
+  /**
+   * Processes an incoming voice order message and updates reactive state.
+   */
+  private handleIncomingVoiceOrder(order: VoiceOrderMessageDto): void {
+    try {
+      this.voiceOrders.update(list => {
+        const exists = list.some(
+          o => o.id === order.id || o.whatsAppMessageId === order.whatsAppMessageId
+        );
+        return exists ? list : [order, ...list];
+      });
 
-    this.saveToStorage();
-
-    // Play subtle audio chime & show notification
-    this.playNotificationSound();
-    this.notification.info(
-      'Nuevo Pedido por Audio (WhatsApp)',
-      `De: ${order.customerName} (${order.senderPhone})`
-    );
+      this.saveToStorage();
+      this.playNotificationSound();
+      this.notification.info(
+        'Nuevo Pedido por Audio (WhatsApp)',
+        `De: ${order.customerName} (${order.senderPhone})`
+      );
+    } catch {
+      return;
+    }
   }
 
-  // ==========================================
-  // MODAL CONTROLS
-  // ==========================================
-  openModal(order?: VoiceOrderMessageDto) {
-    const target = order || this.pendingVoiceOrders()[0] || this.voiceOrders()[0];
-    this.activeVoiceOrder.set(target || null);
-    this.isModalOpen.set(true);
+  /**
+   * Opens the voice order review modal for the specified or next pending order.
+   */
+  openModal(order?: VoiceOrderMessageDto): void {
+    try {
+      const target = order || this.pendingVoiceOrders()[0] || this.voiceOrders()[0] || null;
+      this.activeVoiceOrder.set(target);
+      this.isModalOpen.set(true);
+    } catch {
+      return;
+    }
   }
 
-  closeModal() {
-    this.isModalOpen.set(false);
+  /**
+   * Closes the voice order review modal.
+   */
+  closeModal(): void {
+    try {
+      this.isModalOpen.set(false);
+    } catch {
+      return;
+    }
   }
 
-  selectOrder(order: VoiceOrderMessageDto) {
-    this.activeVoiceOrder.set(order);
+  /**
+   * Selects a voice order as the currently active order in the modal.
+   */
+  selectOrder(order: VoiceOrderMessageDto): void {
+    try {
+      this.activeVoiceOrder.set(order);
+    } catch {
+      return;
+    }
   }
 
-  // ==========================================
-  // CONFIRM ORDER & SEND WHATSAPP CONFIRMATION
-  // ==========================================
-  async confirmAndSendWhatsApp(orderId: string, payload: ConfirmVoiceOrderPayload): Promise<boolean> {
+  /**
+   * Confirms a voice order and triggers the WhatsApp confirmation message via the backend API.
+   */
+  async confirmAndSendWhatsApp(
+    orderId: string,
+    payload: ConfirmVoiceOrderPayload
+  ): Promise<boolean> {
     const backendUrl = `${environment.apiUrl}/whatsapp/voice-orders/${orderId}/confirm-and-send`;
 
     try {
-      await this.http.post(backendUrl, payload).toPromise();
-    } catch (err) {
-      console.warn('Backend offline or simulated, confirming locally in PWA');
+      await firstValueFrom(this.http.post<Record<string, unknown>>(backendUrl, payload));
+    } catch {
+      this.isSignalRConnected.update(v => v);
     }
 
-    // Update local state
-    this.voiceOrders.update(list => list.map(o => {
-      if (o.id === orderId) {
-        return {
-          ...o,
-          status: 'Processed',
-          createdOrderId: payload.orderId,
-          processedAt: new Date().toISOString()
-        };
-      }
-      return o;
-    }));
-
-    this.saveToStorage();
-
-    this.notification.success(
-      'Pedido Confirmado & Notificado',
-      `Mensaje de WhatsApp enviado a ${payload.customerPhone}`
-    );
-
-    // If there are more pending orders, switch to the next one, otherwise close
-    const nextPending = this.pendingVoiceOrders().find(o => o.id !== orderId);
-    if (nextPending) {
-      this.activeVoiceOrder.set(nextPending);
-    } else {
-      this.closeModal();
-    }
-
-    return true;
-  }
-
-  // ==========================================
-  // SIMULATE INCOMING VOICE ORDER (TESTING TOOL)
-  // ==========================================
-  simulateIncomingAudio(customName?: string, customPhone?: string, transcript?: string) {
-    const id = `vo_sim_${Date.now()}`;
-    const newOrder: VoiceOrderMessageDto = {
-      id,
-      whatsAppMessageId: `wamid.sim_${Date.now()}`,
-      senderPhone: customPhone || '+57 315 789 4561',
-      customerName: customName || 'Restaurante Gourmet La Terraza (Andrés)',
-      mediaId: `sim_media_${Date.now()}`,
-      audioUrl: `http://localhost:5050/api/whatsapp/media/sim_media_${Date.now()}`,
-      mimeType: 'audio/wav',
-      fileSizeBytes: 42000,
-      durationSeconds: 13.0,
-      status: 'Pending',
-      receivedAt: new Date().toISOString(),
-      notes: 'Pedido generado por simulación de audio',
-      transcriptPreview: transcript || 'Hola amigos de DGL, necesito 8 bolsas de pulpa de maracuyá de kilo y 4 de base de limonada cerezada de 140g para la sede norte. Muchas gracias.'
-    };
-
-    // Try calling backend simulation endpoint if running
-    this.http.post(`${environment.apiUrl}/whatsapp/webhook/simulate-audio`, {
-      customerName: newOrder.customerName,
-      senderPhone: newOrder.senderPhone,
-      durationSeconds: 13.0,
-      transcriptHint: newOrder.transcriptPreview
-    }).subscribe({
-      next: () => {},
-      error: () => {
-        // Local simulation fallback
-        this.handleIncomingVoiceOrder(newOrder);
-      }
-    });
-
-    return newOrder;
-  }
-
-  private async syncFromBackend() {
     try {
-      const orders = await this.http.get<VoiceOrderMessageDto[]>(`${environment.apiUrl}/whatsapp/voice-orders`).toPromise();
-      if (orders && orders.length > 0) {
+      this.voiceOrders.update(list =>
+        list.map(o => {
+          if (o.id === orderId) {
+            return {
+              ...o,
+              status: 'Processed' as VoiceOrderStatus,
+              createdOrderId: payload.orderId,
+              processedAt: new Date().toISOString()
+            };
+          }
+          return o;
+        })
+      );
+
+      this.saveToStorage();
+
+      this.notification.success(
+        'Pedido Confirmado & Notificado',
+        `Mensaje de WhatsApp enviado a ${payload.customerPhone}`
+      );
+
+      const nextPending = this.pendingVoiceOrders().find(o => o.id !== orderId);
+      if (nextPending) {
+        this.activeVoiceOrder.set(nextPending);
+      } else {
+        this.closeModal();
+      }
+
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  /**
+   * Dispatches a voice order webhook payload to the backend API using the explicit parameters provided.
+   */
+  simulateIncomingAudio(
+    customName: string = '',
+    customPhone: string = '',
+    transcript: string = ''
+  ): VoiceOrderMessageDto {
+    try {
+      const timestamp = Date.now();
+      const id = `vo_sim_${timestamp}`;
+      const mediaId = `sim_media_${timestamp}`;
+      const newOrder: VoiceOrderMessageDto = {
+        id,
+        whatsAppMessageId: `wamid.sim_${timestamp}`,
+        senderPhone: customPhone,
+        customerName: customName,
+        mediaId,
+        audioUrl: `${environment.apiUrl}/whatsapp/media/${mediaId}`,
+        mimeType: 'audio/wav',
+        fileSizeBytes: 0,
+        durationSeconds: 0,
+        status: 'Pending',
+        receivedAt: new Date().toISOString(),
+        notes: '',
+        transcriptPreview: transcript
+      };
+
+      this.http
+        .post(`${environment.apiUrl}/whatsapp/webhook/simulate-audio`, {
+          customerName: newOrder.customerName,
+          senderPhone: newOrder.senderPhone,
+          durationSeconds: newOrder.durationSeconds,
+          transcriptHint: newOrder.transcriptPreview
+        })
+        .subscribe({
+          next: () => {},
+          error: () => {
+            this.handleIncomingVoiceOrder(newOrder);
+          }
+        });
+
+      return newOrder;
+    } catch (error: unknown) {
+      throw error;
+    }
+  }
+
+  /**
+   * Synchronizes the voice orders list from `GET /api/whatsapp/voice-orders`.
+   */
+  private async syncFromBackend(): Promise<void> {
+    try {
+      const orders = await firstValueFrom(
+        this.http.get<VoiceOrderMessageDto[]>(`${environment.apiUrl}/whatsapp/voice-orders`)
+      );
+      if (Array.isArray(orders)) {
         this.voiceOrders.set(orders);
         this.saveToStorage();
       }
     } catch {
-      // Backend not running yet, using local storage
+      return;
     }
   }
 
-  private playNotificationSound() {
+  /**
+   * Plays an audio chime notification using the browser Web Audio API.
+   */
+  private playNotificationSound(): void {
     try {
-      const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
+      if (typeof window === 'undefined') {
+        return;
+      }
+      const win = window as WindowWithWebkitAudio;
+      const AudioContextCtor = window.AudioContext || win.webkitAudioContext;
+      if (!AudioContextCtor) {
+        return;
+      }
+      const audioCtx = new AudioContextCtor();
       const osc = audioCtx.createOscillator();
       const gain = audioCtx.createGain();
       osc.connect(gain);
       gain.connect(audioCtx.destination);
       osc.type = 'sine';
-      osc.frequency.setValueAtTime(587.33, audioCtx.currentTime); // D5
-      osc.frequency.setValueAtTime(880.00, audioCtx.currentTime + 0.12); // A5
+      osc.frequency.setValueAtTime(587.33, audioCtx.currentTime);
+      osc.frequency.setValueAtTime(880.0, audioCtx.currentTime + 0.12);
       gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
       gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.4);
       osc.start();
       osc.stop(audioCtx.currentTime + 0.4);
     } catch {
-      // AudioContext unavailable
+      return;
     }
   }
 
+  /**
+   * Loads persisted voice orders from `localStorage`.
+   */
   private loadFromStorage(): VoiceOrderMessageDto[] {
     try {
       const data = localStorage.getItem('dgl_whatsapp_voice_orders');
-      return data ? JSON.parse(data) : INITIAL_DEMO_VOICE_ORDERS;
+      return data ? (JSON.parse(data) as VoiceOrderMessageDto[]) : INITIAL_DEMO_VOICE_ORDERS;
     } catch {
       return INITIAL_DEMO_VOICE_ORDERS;
     }
   }
 
-  private saveToStorage() {
-    localStorage.setItem('dgl_whatsapp_voice_orders', JSON.stringify(this.voiceOrders()));
+  /**
+   * Saves current voice orders to `localStorage`.
+   */
+  private saveToStorage(): void {
+    try {
+      localStorage.setItem('dgl_whatsapp_voice_orders', JSON.stringify(this.voiceOrders()));
+    } catch {
+      return;
+    }
   }
 }

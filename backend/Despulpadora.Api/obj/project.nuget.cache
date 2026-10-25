@@ -1,11 +1,11 @@
 {
   "version": 2,
-  "dgSpecHash": "9yG5dLBFYTk=",
+  "dgSpecHash": "+hjq5fe1v7U=",
   "success": true,
-  "projectFilePath": "/Users/sebastiansalamanca/Documents/Pwa/DespulpadoraPwa/backend/Despulpadora.Api/Despulpadora.Api.csproj",
+  "projectFilePath": "C:\\Users\\migue\\Documents\\DespulpadoraPwa\\backend\\Despulpadora.Api\\Despulpadora.Api.csproj",
   "expectedPackageFiles": [
-    "/Users/sebastiansalamanca/.nuget/packages/microsoft.aspnetcore.openapi/10.0.11/microsoft.aspnetcore.openapi.10.0.11.nupkg.sha512",
-    "/Users/sebastiansalamanca/.nuget/packages/microsoft.openapi/2.7.5/microsoft.openapi.2.7.5.nupkg.sha512"
+    "C:\\Users\\migue\\.nuget\\packages\\microsoft.aspnetcore.openapi\\10.0.11\\microsoft.aspnetcore.openapi.10.0.11.nupkg.sha512",
+    "C:\\Users\\migue\\.nuget\\packages\\microsoft.openapi\\2.7.5\\microsoft.openapi.2.7.5.nupkg.sha512"
   ],
   "logs": []
 }

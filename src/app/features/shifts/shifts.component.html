@@ -1,6 +1,4 @@
 <div style="display: flex; flex-direction: column; gap: 24px;">
-
-  <!-- Header & Clock -->
   <div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 16px;">
     <div>
       <h1 style="font-size: 1.85rem; font-weight: 800; margin-bottom: 4px;">
@@ -11,7 +9,6 @@
       </p>
     </div>
 
-    <!-- Live Digital Clock Pill -->
     <div style="display: flex; align-items: center; gap: 14px; padding: 12px 20px; border-radius: var(--radius-md); background: var(--bg-card); border: 1px solid var(--border-subtle); box-shadow: var(--shadow-sm);">
       <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--color-primary-text)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <circle cx="12" cy="12" r="10"></circle>
@@ -26,10 +23,7 @@
     </div>
   </div>
 
-  <!-- Terminal de Marcación & Estado de Planta (2 Columns) -->
   <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 24px;">
-
-    <!-- Left: Punch Form Card -->
     <div class="card">
       <div class="card-header">
         <h3 class="card-title">Terminal de Marcación Rápida</h3>
@@ -79,7 +73,6 @@
       </div>
     </div>
 
-    <!-- Right: Summary Metrics -->
     <div style="display: flex; flex-direction: column; gap: 14px;">
       <div class="card hover-lift" style="flex: 1;">
         <div class="card-body" style="display: flex; align-items: center; gap: 18px;">
@@ -120,7 +113,6 @@
     </div>
   </div>
 
-  <!-- Active Shifts Table -->
   <div class="card" id="active-shifts-table">
     <div class="card-header">
       <h3 class="card-title">Personal con Turno Activo Hoy</h3>
@@ -192,5 +184,4 @@
       </div>
     </div>
   </div>
-
 </div>

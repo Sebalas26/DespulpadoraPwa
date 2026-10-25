@@ -1,0 +1,158 @@
+import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { provideRouter } from '@angular/router';
+import { signal } from '@angular/core';
+import { DashboardComponent } from './dashboard.component';
+import { StateService } from '../../core/services/state.service';
+import { AuthService } from '../../core/services/auth.service';
+import { VoiceOrdersService } from '../../core/services/voice-orders.service';
+import { FruitConfig } from '../../core/data/initial-data';
+import { OrderDto, SalesPerformanceKpiDto } from '../../core/models/business.models';
+
+/**
+ * Unit tests for DashboardComponent verifying zeroed defaults, financial metrics, and inventory reports.
+ */
+describe('DashboardComponent', () => {
+  let component: DashboardComponent;
+  let fixture: ComponentFixture<DashboardComponent>;
+  let upsertTargetSpy: jasmine.Spy;
+
+  const mockFruits = signal<FruitConfig[]>([
+    {
+      id: 'mora',
+      fruitId: 1,
+      name: 'Mora',
+      scientificName: 'Rubus glaucus',
+      emoji: '',
+      color: '#16a34a',
+      bgColor: '#f0fdf4',
+      yieldRate: 0.7,
+      waterAdditionDefault: 0.08,
+      freshStockKg: 250,
+      category: 'PULPAS',
+      prices: { g140: 2000, g250: 3500, g500: 6500, g1000: 12000 },
+      stock: { g140: 5, g250: 20, g500: 15, g1000: 10 },
+      minStock: { g140: 10, g250: 10, g500: 10, g1000: 5 }
+    }
+  ]);
+
+  const mockOrders = signal<OrderDto[]>([
+    {
+      orderId: 1,
+      orderNumber: 'ORD-001',
+      clientId: 1,
+      clientName: 'Hotel Central',
+      branchId: 1,
+      status: 'PENDING',
+      isPaid: false,
+      paymentMethodName: 'Efectivo',
+      totalAmount: 35000,
+      createdAt: new Date().toISOString(),
+      orderDate: new Date().toISOString().substring(0, 10),
+      items: [
+        {
+          fruitId: 1,
+          fruitName: 'Mora',
+          grammage: 250,
+          quantity: 10,
+          unitPrice: 3500,
+          subtotal: 35000
+        }
+      ]
+    }
+  ]);
+
+  const mockSalesPerformance = signal<SalesPerformanceKpiDto>({
+    monthTargetRevenue: 5000000,
+    currentMonthRevenue: 1500000,
+    previousMonthRevenue: 1200000,
+    growthPercentage: 25,
+    grossProfit: 600000,
+    grossMarginPercentage: 40,
+    targetAccumulatedProrated: 2500000,
+    compliancePercentage: 30,
+    projectedClosingRevenue: 3000000,
+    totalOrdersCount: 1,
+    averageTicketValue: 35000
+  });
+
+  beforeEach(async () => {
+    upsertTargetSpy = jasmine.createSpy('upsertSalesTarget');
+
+    const stateServiceMock: Partial<StateService> = {
+      fruits: mockFruits,
+      orders: mockOrders,
+      salesPerformance: mockSalesPerformance,
+      totalStockKg: signal<number>(17.2) as unknown as StateService['totalStockKg'],
+      totalFreshStockKg: signal<number>(250) as unknown as StateService['totalFreshStockKg'],
+      upsertSalesTarget: upsertTargetSpy
+    };
+
+    const authServiceMock: Partial<AuthService> = {
+      currentUser: signal(null) as unknown as AuthService['currentUser']
+    };
+
+    const voiceOrdersMock: Partial<VoiceOrdersService> = {
+      pendingCount: signal<number>(0) as unknown as VoiceOrdersService['pendingCount'],
+      openModal: jasmine.createSpy('openModal')
+    };
+
+    await TestBed.configureTestingModule({
+      imports: [DashboardComponent],
+      providers: [
+        provideRouter([]),
+        { provide: StateService, useValue: stateServiceMock },
+        { provide: AuthService, useValue: authServiceMock },
+        { provide: VoiceOrdersService, useValue: voiceOrdersMock }
+      ]
+    }).compileComponents();
+
+    fixture = TestBed.createComponent(DashboardComponent);
+    component = fixture.componentInstance;
+    fixture.detectChanges();
+  });
+
+  it('should create and initialize editTargetAmount to 0 without hardcoded fallback', () => {
+    expect(component).toBeTruthy();
+    expect(component.editTargetAmount()).toBe(0);
+  });
+
+  it('should save target revenue with 0 when editTargetAmount is 0', () => {
+    component.editTargetAmount.set(0);
+    component.saveTarget();
+
+    expect(upsertTargetSpy).toHaveBeenCalledWith(
+      jasmine.objectContaining({
+        targetRevenue: 0
+      })
+    );
+    expect(component.showEditTargetModal()).toBeFalse();
+  });
+
+  it('should open target modal and populate current monthTargetRevenue', () => {
+    component.openTargetModal();
+    expect(component.showEditTargetModal()).toBeTrue();
+    expect(component.editTargetAmount()).toBe(5000000);
+  });
+
+  it('should compute ordersByStatus, todayBillingStats, and soldPulpsSummary accurately', () => {
+    expect(component.ordersByStatus().pending).toBe(1);
+    expect(component.todayBillingStats().revenue).toBe(35000);
+    expect(component.todayBillingStats().unitsSold).toBe(10);
+    expect(component.soldPulpsSummary().totalUnits).toBe(10);
+    expect(component.soldPulpsSummary().totalKg).toBe(2.5);
+  });
+
+  it('should compute topClientOfMonth, totalPreparedPulpUnits, and inventory reports', () => {
+    expect(component.topClientOfMonth().name).toBe('Hotel Central');
+    expect(component.totalPreparedPulpUnits()).toBe(50);
+    expect(component.estimatedPulpFromFreshFruitKg()).toBe(175);
+    expect(component.fruitInventoryReport().length).toBe(1);
+    expect(component.preparedPulpsReport().totalUnits).toBe(50);
+    expect(component.lowStockItems().length).toBe(1);
+  });
+
+  it('should return currentMonthName and formatCOP strings', () => {
+    expect(component.currentMonthName().length).toBeGreaterThan(0);
+    expect(component.formatCOP(15000)).toContain('15.000');
+  });
+});

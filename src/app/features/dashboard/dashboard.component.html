@@ -1,20 +1,14 @@
 <div class="dashboard-container">
-
-  <!-- ========================================== -->
-  <!-- TOP HEADER & TIME FILTER CAPSULE           -->
-  <!-- ========================================== -->
   <div class="dashboard-top-section">
     <div>
       <h1 class="dgl-greeting-title">Dashboard general</h1>
-  
-      <!-- Mobile location & status pill (Shown only on Mobile screen) -->
+
       <div class="mobile-location-tag">
         <span class="dot-indicator"></span>
         <span>Bodega principal • En línea</span>
       </div>
     </div>
 
-    <!-- Capsule Toggle: [ Hoy | Este mes ] (Matches Figma) -->
     <div class="time-toggle-capsule">
       <button
         type="button"
@@ -35,11 +29,7 @@
     </div>
   </div>
 
-  <!-- ========================================== -->
-  <!-- ROW 1: 4 QUICK KPI CARDS (2x2 on Mobile)    -->
-  <!-- ========================================== -->
   <div class="quick-kpis-grid">
-    <!-- Card 1: Facturación hoy -->
     <div class="quick-kpi-card">
       <div class="kpi-icon-box icon-green">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -67,7 +57,6 @@
       </span>
     </div>
 
-    <!-- Card 2: Pulpa total en bodega -->
     <div class="quick-kpi-card">
       <div class="kpi-icon-box icon-green">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -93,7 +82,6 @@
       <span class="kpi-subtext">{{ totalPreparedPulpUnits() }} pulpas · {{ stateService.fruits().length }} frutas en bodega</span>
     </div>
 
-    <!-- Card 3: En alistamiento -->
     <div class="quick-kpi-card">
       <div class="kpi-icon-box icon-amber">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -119,7 +107,6 @@
       <span class="kpi-subtext">Prioridad de despacho</span>
     </div>
 
-    <!-- Card 4: En ruta -->
     <div class="quick-kpi-card">
       <div class="kpi-icon-box icon-purple">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -148,9 +135,6 @@
     </div>
   </div>
 
-  <!-- ========================================== -->
-  <!-- ROW 2: RENDIMIENTO FINANCIERO CARD          -->
-  <!-- ========================================== -->
   <div class="financial-card" id="sales-goals-section">
     <div class="card-top-header">
       <div class="card-title-group">
@@ -183,9 +167,7 @@
       </button>
     </div>
 
-    <!-- 3 Metric Columns -->
     <div class="financial-metrics-row">
-      <!-- Col 1: Ventas del mes -->
       <div class="fin-metric-box dark-green-card">
         <svg class="fin-bg-waves" viewBox="0 0 320 130" preserveAspectRatio="none" aria-hidden="true">
           <path d="M0 105 C 45 95, 75 70, 115 88 C 155 106, 185 45, 225 65 C 260 82, 285 25, 320 48 L 320 130 L 0 130 Z" fill="rgba(255, 255, 255, 0.05)" stroke="rgba(255, 255, 255, 0.14)" stroke-width="1.5" />
@@ -199,7 +181,6 @@
         <div class="fin-box-desc">Total facturado acumulado del mes</div>
       </div>
 
-      <!-- Col 2: Cliente del mes -->
       <div class="fin-metric-box white-card">
         <div class="fin-box-header">
           <span>Cliente del mes</span>
@@ -213,7 +194,6 @@
         <div class="fin-box-desc">Total comprado: {{ formatCOP(topClientOfMonth().total) }}</div>
       </div>
 
-      <!-- Col 3: Pulpas vendidas -->
       <div class="fin-metric-box white-card">
         <div class="fin-box-header">
           <span>Pulpas vendidas</span>
@@ -224,14 +204,12 @@
       </div>
     </div>
 
-    <!-- Monthly Target Progress Section -->
     <div class="target-progress-box">
       <div class="target-progress-header">
         <span class="target-label">Meta mensual</span>
         <span class="target-pct">{{ stateService.salesPerformance().compliancePercentage }}%</span>
       </div>
 
-      <!-- Clean thin progress bar -->
       <div class="target-track-bar">
         <div class="target-fill-bar" [style.width.%]="stateService.salesPerformance().compliancePercentage">
           <span class="bar-end-dot"></span>
@@ -252,12 +230,7 @@
     </div>
   </div>
 
-  <!-- ========================================================== -->
-  <!-- ROW 3: INFORMES DE INVENTARIO DE FRUTA Y PULPAS PREPARADAS -->
-  <!-- ========================================================== -->
   <div class="inventory-reports-grid">
-
-    <!-- Left Report: Informe de Inventario de Fruta (Kg) -->
     <div class="card-section-box report-card">
       <div class="report-card-header">
         <div class="card-title-group">
@@ -277,7 +250,6 @@
         </a>
       </div>
 
-      <!-- Mini Summary Strip -->
       <div class="report-summary-strip">
         <div class="summary-mini-stat">
           <span class="mini-stat-label">Fruta total en bodega</span>
@@ -293,7 +265,6 @@
         </div>
       </div>
 
-      <!-- Fruit Inventory Bars List -->
       <div class="fruit-report-list">
         @for (item of fruitInventoryReport(); track item.id) {
           <div class="fruit-report-row">
@@ -336,7 +307,6 @@
       </div>
     </div>
 
-    <!-- Right Report: Informe de Pulpas Preparadas (Stock en Bodega) -->
     <div class="card-section-box report-card">
       <div class="report-card-header">
         <div class="card-title-group">
@@ -357,7 +327,6 @@
         </a>
       </div>
 
-      <!-- Mini Summary Strip -->
       <div class="report-summary-strip">
         <div class="summary-mini-stat">
           <span class="mini-stat-label">Total pulpas hechas</span>
@@ -373,7 +342,6 @@
         </div>
       </div>
 
-      <!-- Grammage Totals Bar -->
       <div class="grammage-pills-row">
         <div class="gram-pill">
           <span class="gram-pill-tag">140g</span>
@@ -393,7 +361,6 @@
         </div>
       </div>
 
-      <!-- Prepared Pulps Table by Fruit -->
       <div class="prepared-pulps-table-wrap">
         <table class="prepared-pulps-table">
           <thead>
@@ -446,15 +413,9 @@
         </a>
       </div>
     </div>
-
   </div>
 
-  <!-- ========================================== -->
-  <!-- ROW 4: FLUJO DE PEDIDOS & ATENCIÓN EN BODEGA -->
-  <!-- ========================================== -->
   <div class="bottom-two-cards-grid">
-
-    <!-- Left Card: Flujo de pedidos -->
     <div class="card-section-box">
       <div class="card-title-group" style="margin-bottom: 4px;">
         <div class="card-title-icon">
@@ -469,7 +430,6 @@
       </div>
 
       <div class="items-list-container">
-        <!-- 0. Pedidos por Audio WhatsApp (Real-time SignalR) -->
         <div class="order-status-item wa-voice-dashboard-card" [class.has-alert]="voiceOrdersService.pendingCount() > 0">
           <div class="status-left-group">
             <div class="status-icon-wrapper wa-icon-wrapper">
@@ -503,7 +463,6 @@
           </div>
         </div>
 
-        <!-- 1. Pendientes de aprobación -->
         <div class="order-status-item neutral-card">
           <div class="status-left-group">
             <div class="status-icon-wrapper">
@@ -522,7 +481,6 @@
           <span class="status-count">{{ ordersByStatus().pending }}</span>
         </div>
 
-        <!-- 2. En alistamiento (Amber card) -->
         <div class="order-status-item amber-card">
           <div class="status-left-group">
             <div class="status-icon-wrapper" style="color: #b45309;">
@@ -539,7 +497,6 @@
           <span class="status-count">{{ ordersByStatus().picking }}</span>
         </div>
 
-        <!-- 3. En ruta (Purple card) -->
         <div class="order-status-item purple-card">
           <div class="status-left-group">
             <div class="status-icon-wrapper" style="color: #7c3aed;">
@@ -559,7 +516,6 @@
         </div>
       </div>
 
-      <!-- Action buttons -->
       <div class="card-actions-bottom">
         <a routerLink="/orders" class="btn-dgl-green-pill">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
@@ -576,7 +532,6 @@
       </div>
     </div>
 
-    <!-- Right Card: Atención en bodega -->
     <div class="card-section-box">
       <div class="card-title-group" style="margin-bottom: 4px;">
         <div class="card-title-icon" style="color: #dc2626;">
@@ -616,7 +571,6 @@
         }
       </div>
 
-      <!-- Action link at bottom -->
       <div class="card-actions-bottom">
         <a routerLink="/settings" [queryParams]="{ tab: 'variants' }" class="dgl-text-link">
           <span>Ir a Inventario y Stock</span>
@@ -624,14 +578,9 @@
         </a>
       </div>
     </div>
-
   </div>
-
 </div>
 
-<!-- ========================================== -->
-<!-- MODAL: AJUSTAR META COMERCIAL              -->
-<!-- ========================================== -->
 @if (showEditTargetModal()) {
   <div class="modal-overlay" (click)="showEditTargetModal.set(false)">
     <div class="modal-content" style="max-width: 440px;" (click)="$event.stopPropagation()">

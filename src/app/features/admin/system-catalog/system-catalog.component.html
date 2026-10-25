@@ -1,0 +1,453 @@
+<div style="display: flex; flex-direction: column; gap: 24px;">
+
+  <div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 16px;">
+    <div>
+      <div style="display: inline-flex; align-items: center; gap: 8px; margin-bottom: 6px;">
+        <span class="badge badge-purple">Circuito Exclusivo SuperAdmin / Developer</span>
+        <span class="badge badge-emerald">{{ modules().length }} Módulos · {{ totalActionsCount() }} Acciones</span>
+      </div>
+      <h1 style="font-size: 1.85rem; font-weight: 800; margin-bottom: 4px;">
+        Catálogo Maestro de Módulos Dinámicos y Copias de Seguridad (Server-Driven UI)
+      </h1>
+      <p style="color: var(--text-muted); font-size: 0.92rem; margin: 0;">
+        Administra en tiempo real las pantallas, carpetas de menú (<code>MenuSection</code>), rutas de Angular (<code>FrontendRoute</code>), acciones granulares y respaldos <code>.sql</code> de la base de datos.
+      </p>
+    </div>
+
+    <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+      <button
+        type="button"
+        class="btn"
+        [class.btn-primary]="activeTab() === 'catalog'"
+        [class.btn-outline]="activeTab() !== 'catalog'"
+        (click)="activeTab.set('catalog')">
+        <span>Módulos y Acciones Dinámicas</span>
+      </button>
+
+      <button
+        type="button"
+        class="btn"
+        [class.btn-primary]="activeTab() === 'backups'"
+        [class.btn-outline]="activeTab() !== 'backups'"
+        (click)="activeTab.set('backups')">
+        <span>Copias de Seguridad BD (.SQL)</span>
+      </button>
+
+      @if (activeTab() === 'catalog') {
+        <button type="button" class="btn btn-outline" style="gap: 8px;" (click)="loadSystemCatalog()">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+            <polyline points="23 4 23 10 17 10"></polyline>
+            <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
+          </svg>
+          <span>Sincronizar Catálogo</span>
+        </button>
+
+        <button type="button" class="btn btn-primary" style="gap: 8px;" (click)="openCreateModuleModal()">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <line x1="12" y1="5" x2="12" y2="19"></line>
+            <line x1="5" y1="12" x2="19" y2="12"></line>
+          </svg>
+          <span>Nuevo Módulo Dinámico</span>
+        </button>
+      }
+    </div>
+  </div>
+
+  @if (activeTab() === 'backups') {
+    <app-backups />
+  } @else {
+    <div class="card">
+      <div class="card-body" style="padding: 14px 20px; display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 12px;">
+        <div style="position: relative; flex: 1; min-width: 240px; max-width: 420px;">
+          <input
+            type="text"
+            class="form-control"
+            style="padding-left: 36px; font-size: 0.86rem;"
+            placeholder="Buscar por nombre, slug, ruta o acción..."
+            [ngModel]="searchQuery()"
+            (ngModelChange)="searchQuery.set($event)"
+          />
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-dim)" stroke-width="2.2" style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); pointer-events: none;">
+            <circle cx="11" cy="11" r="8"></circle>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+          </svg>
+        </div>
+
+        <div style="display: flex; gap: 6px; align-items: center; flex-wrap: wrap;">
+          <span style="font-size: 0.78rem; font-weight: 700; color: var(--text-muted); margin-right: 4px;">Sección del Menú:</span>
+          <button
+            type="button"
+            class="btn btn-sm"
+            [class.btn-primary]="sectionFilter() === 'ALL'"
+            [class.btn-outline]="sectionFilter() !== 'ALL'"
+            style="padding: 5px 12px; font-size: 0.76rem; font-weight: 700;"
+            (click)="sectionFilter.set('ALL')"
+          >
+            Todas ({{ modules().length }})
+          </button>
+          @for (sec of availableMenuSections(); track sec) {
+            <button
+              type="button"
+              class="btn btn-sm"
+              [class.btn-primary]="sectionFilter() === sec"
+              [class.btn-outline]="sectionFilter() !== sec"
+              style="padding: 5px 12px; font-size: 0.76rem; font-weight: 700;"
+              (click)="sectionFilter.set(sec)"
+            >
+              {{ sec }}
+            </button>
+          }
+        </div>
+      </div>
+    </div>
+
+    <div style="display: grid; grid-template-columns: minmax(320px, 1fr) minmax(420px, 1.35fr); gap: 20px; align-items: start;">
+
+      <div class="card">
+        <div class="card-header" style="justify-content: space-between;">
+          <h3 class="card-title">1. Gestor de Módulos Dinámicos ({{ filteredModules().length }})</h3>
+        </div>
+
+        <div class="card-body" style="padding: 12px; display: flex; flex-direction: column; gap: 10px;">
+          @for (mod of filteredModules(); track mod.id) {
+            <div
+              (click)="selectModule(mod.id)"
+              style="padding: 14px; border-radius: var(--radius-sm); border: 1.5px solid; cursor: pointer; transition: all 0.18s ease;"
+              [style.borderColor]="selectedModule()?.id === mod.id ? 'var(--color-primary)' : 'var(--border-subtle)'"
+              [style.background]="selectedModule()?.id === mod.id ? 'rgba(16, 185, 129, 0.08)' : 'transparent'"
+            >
+              <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 8px;">
+                <div>
+                  <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                    <span style="font-size: 0.94rem; font-weight: 800; color: var(--text-main);">
+                      {{ mod.displayOrder }}. {{ mod.name }}
+                    </span>
+                    <span class="badge" [ngClass]="mod.isActive ? 'badge-success' : 'badge-danger'">
+                      {{ mod.isActive ? 'Activo' : 'Inactivo' }}
+                    </span>
+                  </div>
+                  <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 4px; display: flex; flex-wrap: wrap; gap: 8px;">
+                    <span>Carpeta: <strong>{{ mod.menuSection }}</strong></span>
+                    <span>·</span>
+                    <span style="font-family: monospace; color: var(--color-primary);">{{ mod.frontendRoute }}</span>
+                  </div>
+                  <div style="font-size: 0.72rem; font-family: monospace; color: var(--text-dim); margin-top: 2px;">
+                    slug: {{ mod.slug }} · icon: {{ mod.icon }} · {{ mod.actions.length }} acciones
+                  </div>
+                </div>
+
+                <div style="display: flex; gap: 6px; flex-shrink: 0;">
+                  <button
+                    type="button"
+                    class="btn btn-outline"
+                    style="padding: 4px 8px; font-size: 0.74rem;"
+                    (click)="openEditModuleModal(mod); $event.stopPropagation()"
+                    title="Editar módulo"
+                  >
+                    Editar
+                  </button>
+                  <button
+                    type="button"
+                    class="btn btn-outline"
+                    style="padding: 4px 8px; font-size: 0.74rem;"
+                    [style.color]="mod.isActive ? '#ef4444' : '#10b981'"
+                    (click)="toggleModuleStatus(mod, $event)"
+                  >
+                    {{ mod.isActive ? 'Desactivar' : 'Activar' }}
+                  </button>
+                </div>
+              </div>
+            </div>
+          } @empty {
+            <div style="padding: 32px; text-align: center; color: var(--text-muted);">
+              No se encontraron módulos con el filtro actual.
+            </div>
+          }
+        </div>
+      </div>
+
+      <div class="card">
+        @if (selectedModule(); as activeMod) {
+          <div class="card-header" style="justify-content: space-between; flex-wrap: wrap; gap: 12px;">
+            <div>
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <h3 class="card-title" style="margin: 0;">2. Acciones del Módulo: {{ activeMod.name }}</h3>
+                <span class="badge badge-info">{{ activeMod.actions.length }} acciones</span>
+              </div>
+              <p style="font-size: 0.8rem; color: var(--text-muted); margin: 4px 0 0 0;">
+                Ruta: <code>{{ activeMod.frontendRoute }}</code> · Carpeta: <strong>{{ activeMod.menuSection }}</strong>
+              </p>
+            </div>
+
+            <button type="button" class="btn btn-primary" style="gap: 6px; padding: 8px 14px; font-size: 0.84rem;" (click)="openCreateActionModal(activeMod)">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <line x1="12" y1="5" x2="12" y2="19"></line>
+                <line x1="5" y1="12" x2="19" y2="12"></line>
+              </svg>
+              <span>Agregar Acción</span>
+            </button>
+          </div>
+
+          <div class="card-body" style="padding: 0;">
+            <div class="table-container">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Nombre de Acción</th>
+                    <th>Código Único (Slug)</th>
+                    <th>Verbo HTTP</th>
+                    <th>Descripción</th>
+                    <th>Estado</th>
+                    <th>Acciones</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (act of activeMod.actions; track act.id) {
+                    <tr>
+                      <td data-label="Nombre de Acción" style="font-weight: 700;">{{ act.name }}</td>
+                      <td data-label="Código Único (Slug)">
+                        <span style="font-family: monospace; font-weight: 700; color: var(--color-primary); font-size: 0.82rem;">
+                          {{ act.slug }}
+                        </span>
+                      </td>
+                      <td data-label="Verbo HTTP">
+                        <span class="badge" [ngClass]="getHttpMethodBadgeClass(act.httpMethod)" style="font-family: monospace;">
+                          {{ act.httpMethod || 'GET' }}
+                        </span>
+                      </td>
+                      <td data-label="Descripción" style="font-size: 0.82rem; color: var(--text-muted);">
+                        {{ act.description }}
+                      </td>
+                      <td data-label="Estado">
+                        <span class="badge" [ngClass]="act.isActive ? 'badge-success' : 'badge-danger'">
+                          {{ act.isActive ? 'Activa' : 'Inactiva' }}
+                        </span>
+                      </td>
+                      <td data-label="Acciones">
+                        <div style="display: flex; gap: 6px;">
+                          <button
+                            type="button"
+                            class="btn btn-outline"
+                            style="padding: 4px 8px; font-size: 0.74rem;"
+                            (click)="openEditActionModal(act)"
+                          >
+                            Editar
+                          </button>
+                          <button
+                            type="button"
+                            class="btn btn-outline"
+                            style="padding: 4px 8px; font-size: 0.74rem;"
+                            [style.color]="act.isActive ? '#ef4444' : '#10b981'"
+                            (click)="toggleActionStatus(act)"
+                          >
+                            {{ act.isActive ? 'Desactivar' : 'Activar' }}
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  } @empty {
+                    <tr>
+                      <td colspan="6" style="text-align: center; padding: 28px; color: var(--text-muted);">
+                        Este módulo aún no tiene acciones registradas. Haz clic en "Agregar Acción" para definir sus permisos granulares.
+                      </td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          </div>
+        }
+      </div>
+
+    </div>
+  }
+</div>
+
+@if (showModuleModal()) {
+  <div class="modal-overlay" (click)="showModuleModal.set(false)">
+    <div class="modal-content" style="max-width: 540px;" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3 class="modal-title">
+          {{ isEditingModule() ? 'Editar Módulo Dinámico' : 'Registrar Nuevo Módulo Dinámico' }}
+        </h3>
+        <button type="button" class="modal-close" (click)="showModuleModal.set(false)">&times;</button>
+      </div>
+
+      <div class="modal-body">
+        <div class="form-group">
+          <label class="form-label">Nombre Visible del Módulo (Name) *</label>
+          <input
+            type="text"
+            class="form-control"
+            [ngModel]="moduleName()"
+            (ngModelChange)="onModuleNameChange($event)"
+            placeholder="Ej: Control de Calidad & Laboratorio"
+          />
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+          <div class="form-group">
+            <label class="form-label">Identificador Único (Slug) *</label>
+            <input
+              type="text"
+              class="form-control"
+              [ngModel]="moduleSlug()"
+              (ngModelChange)="moduleSlug.set($event)"
+              placeholder="ej: quality-lab"
+            />
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Carpeta / Sección del Menú (MenuSection) *</label>
+            <input
+              type="text"
+              class="form-control"
+              [ngModel]="moduleMenuSection()"
+              (ngModelChange)="moduleMenuSection.set($event)"
+              placeholder="Ej: GESTIÓN DIARIA"
+            />
+          </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1.4fr 0.8fr 0.6fr; gap: 12px;">
+          <div class="form-group">
+            <label class="form-label">Ruta en Angular (FrontendRoute) *</label>
+            <input
+              type="text"
+              class="form-control"
+              [ngModel]="moduleFrontendRoute()"
+              (ngModelChange)="moduleFrontendRoute.set($event)"
+              placeholder="Ej: /calidad-laboratorio"
+            />
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Ícono (Icon)</label>
+            <input
+              type="text"
+              class="form-control"
+              [ngModel]="moduleIcon()"
+              (ngModelChange)="moduleIcon.set($event)"
+              placeholder="grid, box, truck..."
+            />
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Orden</label>
+            <input
+              type="number"
+              class="form-control"
+              [ngModel]="moduleDisplayOrder()"
+              (ngModelChange)="moduleDisplayOrder.set(+$event)"
+            />
+          </div>
+        </div>
+
+        <div style="display: flex; align-items: center; gap: 8px; margin-top: 6px;">
+          <input
+            type="checkbox"
+            id="moduleIsActiveCheck"
+            [ngModel]="moduleIsActive()"
+            (ngModelChange)="moduleIsActive.set($event)"
+            style="accent-color: var(--color-primary); width: 16px; height: 16px; cursor: pointer;"
+          />
+          <label for="moduleIsActiveCheck" style="font-size: 0.85rem; font-weight: 600; cursor: pointer;">
+            Módulo activo y visible en el árbol de navegación RBAC
+          </label>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline" (click)="showModuleModal.set(false)">Cancelar</button>
+        <button type="button" class="btn btn-primary" (click)="saveModule()">
+          {{ isEditingModule() ? 'Guardar Cambios' : 'Crear Módulo' }}
+        </button>
+      </div>
+    </div>
+  </div>
+}
+
+@if (showActionModal()) {
+  <div class="modal-overlay" (click)="showActionModal.set(false)">
+    <div class="modal-content" style="max-width: 500px;" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3 class="modal-title">
+          {{ isEditingAction() ? 'Editar Acción del Módulo' : 'Registrar Nueva Acción del Módulo' }}
+        </h3>
+        <button type="button" class="modal-close" (click)="showActionModal.set(false)">&times;</button>
+      </div>
+
+      <div class="modal-body">
+        <div class="form-group">
+          <label class="form-label">Nombre de la Acción (Name) *</label>
+          <input
+            type="text"
+            class="form-control"
+            [ngModel]="actionName()"
+            (ngModelChange)="actionName.set($event)"
+            placeholder="Ej: Aprobar Lote de Calidad"
+          />
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1.4fr 0.8fr; gap: 12px;">
+          <div class="form-group">
+            <label class="form-label">Código Único (Slug) *</label>
+            <input
+              type="text"
+              class="form-control"
+              [ngModel]="actionSlug()"
+              (ngModelChange)="actionSlug.set($event)"
+              placeholder="ej: quality.approve"
+            />
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Verbo HTTP (HttpMethod)</label>
+            <select
+              class="form-control"
+              [ngModel]="actionHttpMethod()"
+              (ngModelChange)="actionHttpMethod.set($event)"
+            >
+              <option value="GET">GET</option>
+              <option value="POST">POST</option>
+              <option value="PUT">PUT</option>
+              <option value="PATCH">PATCH</option>
+              <option value="DELETE">DELETE</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Descripción Operativa (Description)</label>
+          <input
+            type="text"
+            class="form-control"
+            [ngModel]="actionDescription()"
+            (ngModelChange)="actionDescription.set($event)"
+            placeholder="Ej: Permite certificar grados Brix y pH del lote antes de cava"
+          />
+        </div>
+
+        <div style="display: flex; align-items: center; gap: 8px; margin-top: 6px;">
+          <input
+            type="checkbox"
+            id="actionIsActiveCheck"
+            [ngModel]="actionIsActive()"
+            (ngModelChange)="actionIsActive.set($event)"
+            style="accent-color: var(--color-primary); width: 16px; height: 16px; cursor: pointer;"
+          />
+          <label for="actionIsActiveCheck" style="font-size: 0.85rem; font-weight: 600; cursor: pointer;">
+            Acción activa en la matriz de permisos
+          </label>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline" (click)="showActionModal.set(false)">Cancelar</button>
+        <button type="button" class="btn btn-primary" (click)="saveAction()">
+          {{ isEditingAction() ? 'Guardar Acción' : 'Agregar Acción' }}
+        </button>
+      </div>
+    </div>
+  </div>
+}

@@ -2,6 +2,9 @@ import { Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { NotificationService } from '../../../core/services/notification.service';
 
+/**
+ * Floating toast notification container component bound to `NotificationService.toasts()`.
+ */
 @Component({
   selector: 'app-toast-container',
   standalone: true,
@@ -45,7 +48,7 @@ import { NotificationService } from '../../../core/services/notification.service
             <div class="toast-title">{{ toast.title }}</div>
             <div class="toast-message" *ngIf="toast.message">{{ toast.message }}</div>
           </div>
-          <button class="toast-close" (click)="notificationService.remove(toast.id)" aria-label="Cerrar">
+          <button class="toast-close" (click)="onDismissToast(toast.id)" aria-label="Cerrar">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <line x1="18" y1="6" x2="6" y2="18"></line>
               <line x1="6" y1="6" x2="18" y2="18"></line>
@@ -58,4 +61,15 @@ import { NotificationService } from '../../../core/services/notification.service
 })
 export class ToastContainerComponent {
   readonly notificationService = inject(NotificationService);
+
+  /**
+   * Dismisses a toast notification by identifier.
+   */
+  onDismissToast(id: string): void {
+    try {
+      this.notificationService.remove(id);
+    } catch {
+      return;
+    }
+  }
 }

@@ -1,11 +1,7 @@
 <div class="orders-module-container">
 
-  <!-- ========================================================= -->
-  <!-- VIEW 1: ALISTAMIENTO DE PEDIDOS (PICKING) - FIGMA DESIGN  -->
-  <!-- ========================================================= -->
-  @if (activeSubTab() === 'picking') {
-  <!-- Page Title & Subtitle -->
-  <div class="picking-page-header">
+        @if (activeSubTab() === 'picking') {
+    <div class="picking-page-header">
     <h1 class="picking-main-title">
       Alistamiento de Pedidos
     </h1>
@@ -14,8 +10,7 @@
     </p>
   </div>
 
-  <!-- 7 Day-of-Week Cards Strip -->
-  <div class="picking-days-grid">
+    <div class="picking-days-grid">
     @for (day of weekDays(); track day.name; let i = $index) {
     <div class="picking-day-card" [class.is-active]="day.active" [class.is-drop-target]="dragOverDay() === day.name"
       [class.is-drop-candidate]="draggingOrderId() !== null && dragOverDay() !== day.name" (click)="toggleDayCard(i)"
@@ -42,8 +37,7 @@
     }
   </div>
 
-  <!-- Search Input Row -->
-  <div class="picking-toolbar-row" style="justify-content: flex-end;">
+    <div class="picking-toolbar-row" style="justify-content: flex-end;">
     <div class="picking-search-box">
       <svg class="search-box-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"
         stroke-width="2">
@@ -55,14 +49,12 @@
     </div>
   </div>
 
-  <!-- Picking Order Cards Grid -->
-  <div class="picking-cards-grid">
+    <div class="picking-cards-grid">
     @for (order of tabOrders(); track order.orderId) {
     <div class="picking-order-card" draggable="true" [class.is-dragging]="draggingOrderId() === order.orderId"
       [class.mobile-card-expanded]="isMobileCardExpanded('pick-' + order.orderId)"
       (dragstart)="onOrderDragStart($event, order)" (dragend)="onOrderDragEnd()">
-      <!-- Resumen Compacto Mobile PWA -->
-      <div class="mobile-summary-header" (click)="toggleMobileCard('pick-' + order.orderId, $event)">
+            <div class="mobile-summary-header" (click)="toggleMobileCard('pick-' + order.orderId, $event)">
         <div class="ms-left">
           <span class="ms-code-badge">{{ order.clientName }}</span>
           <span class="ms-subtitle">#{{ order.orderNumber }} • {{ getOrderDay(order) }}</span>
@@ -83,8 +75,7 @@
 
       <div class="mobile-collapsible-content">
         <div class="picking-card-top">
-          <!-- Header: Order Code + Client Name + Edit Button & Status Pill -->
-          <div class="picking-card-header">
+                    <div class="picking-card-header">
             <div class="picking-header-left">
               <div class="picking-code-row">
                 <span class="drag-grip" title="Arrastra esta tarjeta hacia un día de la semana">⋮⋮</span>
@@ -108,8 +99,7 @@
             </div>
           </div>
 
-          <!-- Address, Phone & Optional Note -->
-          <div class="picking-client-details">
+                    <div class="picking-client-details">
             <div class="detail-row">
               <span class="detail-icon" style="display: inline-flex; align-items: center; color: var(--text-muted);">
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -136,8 +126,7 @@
             }
           </div>
 
-          <!-- Checklist Section -->
-          <div class="picking-checklist-heading">
+                    <div class="picking-checklist-heading">
             CHECKLIST DE PULPA EN CAVA:
           </div>
 
@@ -162,8 +151,7 @@
           </div>
         </div>
 
-        <!-- Card Footer: Total + Completar Alistamiento Button -->
-        <div class="picking-card-footer">
+                <div class="picking-card-footer">
           <div class="footer-total-block">
             <div class="footer-total-label">TOTAL PEDIDO</div>
             <div class="footer-total-value">{{ formatCOP(order.totalAmount) }}</div>
@@ -198,10 +186,7 @@
   </div>
   }
 
-  <!-- ========================================================= -->
-  <!-- VIEW 2: FACTURACIÓN & POS - PRO CORPORATE INVOICE STUDIO  -->
-  <!-- ========================================================= -->
-  @if (activeSubTab() === 'facturacion') {
+        @if (activeSubTab() === 'facturacion') {
   <div class="separated-view-header">
     <div>
       <h1 class="picking-main-title">Facturación & POS</h1>
@@ -211,8 +196,7 @@
     </div>
 
     <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 12px;">
-      <!-- Quick Tax Rate Toggle -->
-      <div class="billing-tax-pill">
+            <div class="billing-tax-pill">
         <span class="tax-pill-label">Impuesto:</span>
         <button type="button" class="tax-pill-btn" [class.active]="invoiceTaxRate() === 19"
           (click)="invoiceTaxRate.set(19)">
@@ -243,8 +227,7 @@
   <div class="billing-cards-grid">
     @for (order of tabOrders(); track order.orderId) {
     <div class="billing-queue-card" [class.mobile-card-expanded]="isMobileCardExpanded('bill-' + order.orderId)">
-      <!-- Resumen Compacto Mobile PWA -->
-      <div class="mobile-summary-header" (click)="toggleMobileCard('bill-' + order.orderId, $event)">
+            <div class="mobile-summary-header" (click)="toggleMobileCard('bill-' + order.orderId, $event)">
         <div class="ms-left">
           <span class="ms-code-badge">{{ order.clientName }}</span>
           <span class="ms-subtitle">#{{ getInvoiceCode(order) }} • {{ getOriginCode(order) }}</span>
@@ -280,8 +263,7 @@
           <span>{{ order.paymentMethodName || 'Contado' }}</span>
         </div>
 
-        <!-- Items summary inside the card -->
-        <div class="queue-card-items-summary">
+                <div class="queue-card-items-summary">
           @for (item of order.items; track (item.fruitName || '') + item.grammage) {
           <div class="queue-item-row">
             <span>[{{ item.grammage }}g] Pulpa de {{ item.fruitName }} <strong>× {{ item.quantity }}</strong></span>
@@ -334,10 +316,7 @@
   </div>
   }
 
-  <!-- ========================================================= -->
-  <!-- VIEW 3: DESPACHOS & RUTAS                                 -->
-  <!-- ========================================================= -->
-  @if (activeSubTab() === 'despachos') {
+        @if (activeSubTab() === 'despachos') {
   <div class="separated-view-header">
     <div>
       <h1 class="picking-main-title">Despachos & Rutas</h1>
@@ -347,15 +326,10 @@
     </div>
   </div>
 
-  <!-- Real-time Interactive Delivery Simulation Map & Route Sequencer -->
-  <app-delivery-map #deliveryMapRef></app-delivery-map>
+    <app-delivery-map #deliveryMapRef></app-delivery-map>
 
-  <!-- ========================================================================= -->
-  <!-- HISTÓRICO DE ENTREGAS & DESPACHOS DEL DÍA (LISTA / MANIFIESTO EJECUTIVO)    -->
-  <!-- ========================================================================= -->
-  <div class="delivery-history-container">
-    <!-- Header Card with Title, KPIs & Filters -->
-    <div class="history-header-card">
+        <div class="delivery-history-container">
+        <div class="history-header-card">
       <div class="history-top-row">
         <div class="history-title-group">
           <div>
@@ -366,8 +340,7 @@
           </div>
         </div>
 
-        <!-- KPI Summary Counters (Filtered Actions) -->
-        <div class="history-kpis-deck">
+                <div class="history-kpis-deck">
           <div
             class="kpi-mini-card total-kpi"
             [class.active]="historyFilter() === 'ALL'"
@@ -418,8 +391,7 @@
         </div>
       </div>
 
-      <!-- Search Toolbar Row -->
-      <div class="history-toolbar-row">
+            <div class="history-toolbar-row">
         <div class="history-search-shell">
           <svg class="search-box-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3">
             <circle cx="11" cy="11" r="8"></circle>
@@ -435,10 +407,8 @@
       </div>
     </div>
 
-    <!-- Main Ledger List Card -->
-    <div class="history-ledger-card">
-      <!-- Table Column Headers (Desktop) -->
-      <div class="ledger-header-row">
+        <div class="history-ledger-card">
+            <div class="ledger-header-row">
         <div class="col-head col-guide">GUÍA</div>
         <div class="col-head col-order" style="text-align: center;">PEDIDO</div>
         <div class="col-head col-client">CLIENTE & DESTINO</div>
@@ -448,15 +418,13 @@
         <div class="col-head col-actions">ACCIONES</div>
       </div>
 
-      <!-- Ledger Rows List -->
-      <div class="ledger-rows-wrapper">
+            <div class="ledger-rows-wrapper">
         @for (order of paginatedHistoryOrders(); track order.orderId) {
         <div class="ledger-row-item" [class.row-delivered]="order.status === 'DELIVERED'"
           [class.row-transit]="order.status === 'DISPATCHED'"
           [class.row-pending]="order.status !== 'DELIVERED' && order.status !== 'DISPATCHED'"
           [class.mobile-card-expanded]="isMobileCardExpanded('hist-' + order.orderId)">
-          <!-- Resumen Compacto Mobile PWA -->
-          <div class="mobile-summary-header" (click)="toggleMobileCard('hist-' + order.orderId, $event)">
+                    <div class="mobile-summary-header" (click)="toggleMobileCard('hist-' + order.orderId, $event)">
             <div class="ms-left">
               <span class="ms-code-badge">{{ order.clientName }}</span>
               <span class="ms-subtitle">#{{ order.orderNumber }}</span>
@@ -477,13 +445,11 @@
             </div>
           </div>
 
-          <!-- 1. GUÍA -->
-          <div class="ledger-cell cell-guide">
+                    <div class="ledger-cell cell-guide">
             <span class="guide-code-tag">GUÍA · {{ order.orderNumber }}</span>
           </div>
 
-          <!-- 2. PEDIDO (Icono de Ojo) -->
-          <div class="ledger-cell cell-order">
+                    <div class="ledger-cell cell-order">
             <button type="button" class="btn-eye-order" title="Ver detalle del pedido"
               (click)="viewOrderDetails(order)">
               <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
@@ -494,17 +460,16 @@
             </button>
           </div>
 
-          <!-- 2. CLIENTE & DESTINO -->
-          <div class="ledger-cell cell-client">
+                    <div class="ledger-cell cell-client">
             <div class="client-title-row">
               <strong class="client-name-text">{{ order.clientName }}</strong>
             </div>
             <div class="client-address-text" [title]="order.clientAddress">
-              {{ order.clientAddress || 'Bogotá D.C.' }}
+              {{ order.clientAddress || 'Sin dirección registrada' }}
             </div>
             <div class="client-phone-text">
               <a [href]="'tel:' + order.clientPhone" class="phone-link">
-                {{ order.clientPhone || '300 123 4567' }}
+                {{ order.clientPhone || '' }}
               </a>
               @if (order.notes) {
               <span class="order-notes-chip" [title]="order.notes">
@@ -514,8 +479,7 @@
             </div>
           </div>
 
-          <!-- 3. DOMICILIARIO & RUTA -->
-          <div class="ledger-cell cell-courier">
+                    <div class="ledger-cell cell-courier">
             @if (getCourierForOrder(order); as courier) {
             <div class="courier-card-mini">
               <div class="courier-mini-avatar" [style.background]="courier.colorLight" [style.color]="courier.color">
@@ -541,7 +505,7 @@
             } @else {
             <div class="unassigned-courier-box">
               <span class="unassigned-badge">Sin Domiciliario Asignado</span>
-              <select class="quick-assign-select" (change)="assignCourierToOrder(order, $any($event.target).value)">
+              <select #courierSel class="quick-assign-select" (change)="assignCourierToOrder(order, courierSel.value)">
                 <option value="" disabled selected>+ Asignar a ruta...</option>
                 @for (c of COURIER_CATALOG; track c.id) {
                 <option [value]="c.id">
@@ -553,8 +517,7 @@
             }
           </div>
 
-          <!-- 4. RECAUDO / PAGO -->
-          <div class="ledger-cell cell-amount">
+                    <div class="ledger-cell cell-amount">
             <div class="amount-main-val">
               {{ formatCOP(order.totalAmount) }}
             </div>
@@ -563,8 +526,7 @@
             </div>
           </div>
 
-          <!-- 5. ESTADO DE ENTREGA -->
-          <div class="ledger-cell cell-status">
+                    <div class="ledger-cell cell-status">
             @if (order.status === 'DELIVERED') {
             <span class="status-badge-chip badge-delivered">
               <span class="badge-icon">✓</span>
@@ -586,8 +548,7 @@
             }
           </div>
 
-          <!-- 6. ACCIONES -->
-          <div class="ledger-cell cell-actions">
+                    <div class="ledger-cell cell-actions">
             @if (order.status === 'DISPATCHED') {
             <button type="button" class="btn-ledger-action btn-confirm-delivery"
               title="Confirmar entrega y recaudo de este pedido" (click)="advanceOrderStatus(order, 'DELIVERED')">
@@ -632,8 +593,7 @@
         </div>
         }
 
-        <!-- History Pagination Bar -->
-        @if (filteredHistoryOrders().length > 0) {
+                @if (filteredHistoryOrders().length > 0) {
         <div class="history-pagination-bar">
           <div class="pagination-summary">
             Mostrando <strong>{{ historyPaginationInfo().start }}</strong> a <strong>{{ historyPaginationInfo().end
@@ -685,7 +645,6 @@
 
 </div>
 
-<!-- WHATSAPP SIMULATOR MODAL -->
 @if (showWhatsAppModal()) {
 <div class="modal-overlay" (click)="showWhatsAppModal.set(false)">
   <div class="modal-content" style="max-width: 580px;" (click)="$event.stopPropagation()">
@@ -728,7 +687,6 @@
 </div>
 }
 
-<!-- NEW / EDIT MANUAL ORDER MODAL -->
 @if (showNewOrderModal()) {
 <div class="modal-overlay" (click)="showNewOrderModal.set(false)">
   <div class="modal-content" style="max-width: 680px;" (click)="$event.stopPropagation()">
@@ -766,8 +724,7 @@
             }
           </div>
 
-          <!-- Sugerencias de clientes ya registrados -->
-          @if (showClientSuggestions() && filteredClientSuggestions().length > 0) {
+                    @if (showClientSuggestions() && filteredClientSuggestions().length > 0) {
           <div class="client-suggestions-dropdown">
             <div
               style="padding: 6px 12px; font-size: 0.68rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase; background: var(--bg-surface-elevated, #f8fafc); border-bottom: 1px solid var(--border-subtle, #e2e8f0);">
@@ -865,8 +822,7 @@
         }
       </div>
 
-      <!-- Pago del Pedido & Observaciones -->
-      <div style="display: grid; grid-template-columns: 1fr 1.3fr; gap: 14px; align-items: start;">
+            <div style="display: grid; grid-template-columns: 1fr 1.3fr; gap: 14px; align-items: start;">
         <div class="form-group">
           <label class="form-label" style="display: flex; justify-content: space-between; align-items: center;">
             <span>¿El pedido ya fue pagado?</span>
@@ -908,8 +864,7 @@
         </div>
       </div>
 
-      <!-- Items Table -->
-      <div style="margin-top: 8px;">
+            <div style="margin-top: 8px;">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
           <label class="form-label" style="margin-bottom: 0; font-weight: 800;">Productos del Pedido</label>
           <button type="button" class="btn btn-outline" style="padding: 4px 10px; font-size: 0.76rem; font-weight: 700;"
@@ -996,12 +951,10 @@
 </div>
 }
 
-<!-- FULL SCREEN MAP ADDRESS PICKER MODAL -->
 @if (showAddressMapPickerModal()) {
 <div class="map-picker-backdrop" (click)="closeMapAddressPicker()">
   <div class="map-picker-container" (click)="$event.stopPropagation()">
-    <!-- Top Header Bar -->
-    <div class="map-picker-header">
+        <div class="map-picker-header">
       <div class="map-picker-header-left">
         <div class="map-picker-title-row">
           <span class="map-picker-badge">ENRUTAMIENTO LOGÍSTICO</span>
@@ -1013,8 +966,7 @@
         </p>
       </div>
 
-      <!-- Quick Search inside Map -->
-      <div class="map-picker-search-bar">
+            <div class="map-picker-search-bar">
         <input type="text" class="map-picker-search-input" [ngModel]="pickerSearchText()"
           (ngModelChange)="pickerSearchText.set($event)" (keyup.enter)="searchPickerAddress()"
           placeholder="Escribe una dirección (ej: Cra 15 # 93-40) y presiona Enter..." />
@@ -1028,8 +980,7 @@
         </button>
       </div>
 
-      <!-- Close Button with Sleek Design -->
-      <button type="button" class="map-picker-close-btn" (click)="closeMapAddressPicker()" title="Cerrar mapa">
+            <button type="button" class="map-picker-close-btn" (click)="closeMapAddressPicker()" title="Cerrar mapa">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
           stroke-linecap="round" stroke-linejoin="round">
           <line x1="18" y1="6" x2="6" y2="18"></line>
@@ -1038,12 +989,10 @@
       </button>
     </div>
 
-    <!-- Map Canvas Body -->
-    <div class="map-picker-body">
+        <div class="map-picker-body">
       <div id="picker-leaflet-map" class="picker-leaflet-canvas"></div>
 
-      <!-- Floating Bottom Bar with Address & Confirmation -->
-      <div class="map-picker-floating-bar">
+            <div class="map-picker-floating-bar">
         <div class="map-picker-info-group">
           <div class="map-picker-info-icon" style="color: #10b981;">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -1086,7 +1035,6 @@
 </div>
 }
 
-<!-- PRO CORPORATE INVOICE MODAL -->
 @if (showInvoiceModal() && selectedOrderForInvoice(); as modalOrder) {
 <div class="modal-overlay invoice-modal-overlay" (click)="showInvoiceModal.set(false)">
   <div class="modal-content invoice-modal-container" style="max-width: 880px;" (click)="$event.stopPropagation()">
@@ -1100,8 +1048,7 @@
     </div>
 
     <div class="modal-body" style="padding: 16px 20px;">
-      <!-- A4 PRO CORPORATE INVOICE SHEET -->
-      <div class="pro-invoice-sheet modal-sheet-print">
+            <div class="pro-invoice-sheet modal-sheet-print">
         <div class="pro-invoice-top-accent"></div>
 
         <div class="pro-invoice-header">
@@ -1218,8 +1165,7 @@
               Comunicación de pago: <strong>{{ getInvoiceCode(modalOrder) }}</strong>
             </div>
             <div class="comm-sub-box">
-              <div><strong>Método de pago:</strong> {{ modalOrder.paymentMethodName || 'Transferencia Bancolombia /
-                Contado' }}</div>
+              <div><strong>Método de pago:</strong> {{ modalOrder.paymentMethodName || 'Contado' }}</div>
               <div><strong>Orden asociada:</strong> {{ modalOrder.orderNumber }} ({{ getOriginCode(modalOrder) }})</div>
               @if (stateService.companyInfo().dianResolution) {
               <div><strong>Resolución:</strong> {{ stateService.companyInfo().dianResolution }}</div>
@@ -1279,7 +1225,6 @@
 </div>
 }
 
-<!-- MODAL: DETALLE DEL PEDIDO (VISTA LUPA) -->
 @if (showOrderViewModal() && selectedOrderForView(); as viewOrder) {
 <div class="modal-overlay" (click)="showOrderViewModal.set(false)">
   <div class="modal-content modal-lg" style="max-width: 720px; border-radius: 18px; overflow: hidden;"
@@ -1320,10 +1265,8 @@
 
     <div class="modal-body"
       style="padding: 18px 20px 24px; background: #f8fafc; display: flex; flex-direction: column; gap: 14px; flex: 1 1 auto; min-height: 0; overflow-y: auto; -webkit-overflow-scrolling: touch; touch-action: pan-y;">
-      <!-- Info Cards Grid: Cliente & Domiciliario -->
-      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 14px;">
-        <!-- Cliente Card -->
-        <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 14px 16px;">
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 14px;">
+                <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 14px 16px;">
           <div
             style="font-size: 0.72rem; font-weight: 800; text-transform: uppercase; color: #94a3b8; letter-spacing: 0.04em; margin-bottom: 6px;">
             Datos del Cliente
@@ -1359,8 +1302,7 @@
           }
         </div>
 
-        <!-- Domiciliario & Pago Card -->
-        <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 14px 16px;">
+                <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 14px 16px;">
           <div
             style="font-size: 0.72rem; font-weight: 800; text-transform: uppercase; color: #94a3b8; letter-spacing: 0.04em; margin-bottom: 6px;">
             Domiciliario & Recaudo
@@ -1403,8 +1345,7 @@
         </div>
       </div>
 
-      <!-- Tabla de Productos del Pedido -->
-      <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; overflow-x: auto; -webkit-overflow-scrolling: touch; touch-action: pan-y pan-x;">
+            <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; overflow-x: auto; -webkit-overflow-scrolling: touch; touch-action: pan-y pan-x;">
         <div
           style="padding: 10px 16px; background: #f1f5f9; border-bottom: 1px solid #e2e8f0; font-size: 0.75rem; font-weight: 800; color: #475569; text-transform: uppercase;">
           Productos Solicitados ({{ viewOrder.items.length }})
