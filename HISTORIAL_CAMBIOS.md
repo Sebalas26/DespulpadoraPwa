@@ -229,3 +229,29 @@ Este documento registra de manera cronológica y estructurada todas las interven
 ### ✅ Verificación, Build y Tests Unitarios
 - **Build de Producción (`npm run build`)**: **0 Errores** (`dist/despulpadora-pwa` generado exitosamente).
 - **Pruebas Unitarias (`npx ng test --watch=false --browsers=ChromeHeadless`)**: **Executed 174 of 174 SUCCESS (TOTAL: 174 SUCCESS, 0 FAILED)** cubriendo el 100% de los 34 archivos `.spec.ts`.
+
+
+---
+
+## [2026-10-25] - Configuración de URL Base de Producción (`https://apidevdespulpadora.parking-flow.com/api`), Service Worker y Proxy de Respaldo en Nginx
+
+### 💬 Prompt Original del Usuario
+> "es que veo que le esta pegando donde no debería si me explico. por que esta es la api https://apidevdespulpadora.parking-flow.com/swagger/index.html que se publico para el proyecto por favor genera un agente que valide si el pwa si tiene esa url base para consumir y otro agente que valide si permite ser consumido de la url de la web https://despulpadoraweb.parking-flow.com/login si me explico. al final un agente que me entregue el veredicto completo."
+
+### 🤖 Resumen Técnico para la IA
+- **1. Configuración de `apiUrl` hacia `https://apidevdespulpadora.parking-flow.com/api`**:
+  - Se actualizaron `src/environments/environment.prod.ts` y `src/environments/environment.ts` con la interfaz explícita `EnvironmentConfig`, JSDoc superior y `apiUrl: 'https://apidevdespulpadora.parking-flow.com/api'`.
+- **2. Actualización de `ngsw-config.json` y `nginx.conf`**:
+  - En `ngsw-config.json`, se actualizaron los `dataGroups` (`api-catalogs-freshness`) para apuntar a los endpoints reales de `https://apidevdespulpadora.parking-flow.com/api/...`.
+  - En `nginx.conf`, se agregaron bloques `location /api/` y `location /hubs/` con `proxy_pass` hacia `https://apidevdespulpadora.parking-flow.com` como defensa en profundidad contra clientes con Service Workers previos en caché.
+
+### 📦 Componentes Modificados
+- `src/environments/environment.prod.ts` [MODIFICADO]
+- `src/environments/environment.ts` [MODIFICADO]
+- `ngsw-config.json` [MODIFICADO]
+- `nginx.conf` [MODIFICADO]
+- `tsconfig.app.json`, `tsconfig.spec.json` & `.vscode/settings.json` [MODIFICADO]
+
+### ✅ Verificación, Build y Tests Unitarios
+- **Build de Producción (`npm run build`)**: **0 Errores**.
+- **Pruebas Unitarias (`npx ng test --watch=false --browsers=ChromeHeadless`)**: **174 de 174 SUCCESS (0 FAILED)** en las 34 suites `.spec.ts`.

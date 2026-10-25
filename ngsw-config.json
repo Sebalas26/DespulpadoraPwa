@@ -35,12 +35,12 @@
     {
       "name": "api-catalogs-freshness",
       "urls": [
-        "/api/fruit",
-        "/api/stock",
-        "/api/companybranch",
-        "/api/department",
-        "/api/position",
-        "/api/accountcategory",
+        "https://apidevdespulpadora.parking-flow.com/api/fruits",
+        "https://apidevdespulpadora.parking-flow.com/api/company-settings",
+        "https://apidevdespulpadora.parking-flow.com/api/paymentmethod",
+        "https://apidevdespulpadora.parking-flow.com/api/identificationtypes",
+        "/api/fruits",
+        "/api/company-settings",
         "/api/paymentmethod",
         "/api/identificationtypes"
       ],
@@ -61,4 +61,3 @@
     "!/hubs/**"
   ]
 }
-
