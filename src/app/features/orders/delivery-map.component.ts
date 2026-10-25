@@ -224,26 +224,26 @@ export interface MapStyleOption {
 
 export const MAP_STYLES: MapStyleOption[] = [
   {
-    id: 'osm-white',
-    name: 'OpenStreetMap White Smooth',
-    shortName: 'White Smooth',
+    id: 'arcgis-white',
+    name: 'ArcGIS White Minimalist',
+    shortName: 'ArcGIS White',
     badge: '100% GRATIS',
     icon: '',
-    description: 'Cartografía blanca minimalista 100% gratuita y sin API Key con todas las vías y barrios de Colombia.',
-    url: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+    description: 'Cartografía blanca minimalista nativa de Esri ArcGIS con calles, sentidos viales y edificios hasta zoom 19 (sin cuenta ni API Key).',
+    url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}',
     maxZoom: 20,
     maxNativeZoom: 19
   },
   {
     id: 'osm-dark',
-    name: 'OpenStreetMap Dark Smooth',
+    name: 'Dark Smooth Mode',
     shortName: 'Dark Smooth',
     badge: 'MODO NOCHE',
     icon: '',
     description: 'Modo oscuro elegante de alto contraste 100% gratuito y sin API Key para visibilidad nocturna.',
-    url: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-    maxZoom: 20,
-    maxNativeZoom: 19,
+    url: 'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}',
+    maxZoom: 19,
+    maxNativeZoom: 16,
     isDark: true
   },
   {
@@ -5608,16 +5608,15 @@ export class DeliveryMapComponent implements OnInit, AfterViewInit, OnDestroy {
   private zoneVertexMarkers: L.Marker[] = [];
   private zonePolygonLayer?: L.Polygon | L.Polyline;
 
-  // Active Map Tile Style Signal (Defaults to OpenStreetMap White Smooth)
+  // Active Map Tile Style Signal (Defaults to ArcGIS White Minimalist)
   readonly selectedMapStyleId = signal<string>(
     (() => {
       try {
-        const stored = localStorage.getItem('despulpadora_map_style');
-        if (!stored || stored === 'stadia-smooth' || stored === 'carto-positron') return 'osm-white';
-        if (stored === 'stadia-dark' || stored === 'carto-dark') return 'osm-dark';
+        const stored = localStorage.getItem('despulpadora_map_style_v3');
+        if (!stored || !MAP_STYLES.some(s => s.id === stored)) return 'arcgis-white';
         return stored;
       } catch {
-        return 'osm-white';
+        return 'arcgis-white';
       }
     })()
   );
@@ -5919,23 +5918,22 @@ export class DeliveryMapComponent implements OnInit, AfterViewInit, OnDestroy {
       this.currentRefLayer = undefined;
     }
 
-    const tileClassName =
-      style.id === 'osm-white'
-        ? 'osm-tile-white-smooth'
-        : style.id === 'osm-dark'
-          ? 'osm-tile-dark-smooth'
-          : '';
-
     const options: L.TileLayerOptions = {
       maxZoom: style.maxZoom,
       maxNativeZoom: style.maxNativeZoom,
-      className: tileClassName,
-      attribution: style.id === 'esri-gray'
-        ? 'Tiles &copy; Esri &mdash; Esri, DeLorme, NAVTEQ'
+      attribution: style.id.startsWith('arcgis') || style.id.startsWith('esri')
+        ? 'Tiles &copy; Esri &mdash; Esri, HERE, Garmin, OpenStreetMap'
         : '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap</a> contributors'
     };
 
     this.currentTileLayer = L.tileLayer(style.url, options).addTo(this.map);
+
+    const tilePane = this.map.getPane('tilePane');
+    if (tilePane) {
+      tilePane.style.filter = 'none';
+      (tilePane.style as any).webkitFilter = 'none';
+    }
+    this.map.getContainer().style.backgroundColor = style.id === 'osm-dark' ? '#0f172a' : '#f4f6f8';
 
     // If Esri Canvas is active, also add official reference labels
     if (style.id === 'esri-gray') {
@@ -5943,12 +5941,17 @@ export class DeliveryMapComponent implements OnInit, AfterViewInit, OnDestroy {
         'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Reference/MapServer/tile/{z}/{y}/{x}',
         { maxZoom: 19, maxNativeZoom: 16 }
       ).addTo(this.map);
+    } else if (style.id === 'osm-dark') {
+      this.currentRefLayer = L.tileLayer(
+        'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Reference/MapServer/tile/{z}/{y}/{x}',
+        { maxZoom: 19, maxNativeZoom: 16 }
+      ).addTo(this.map);
     }
 
     this.updatePolylineStylesForActiveMap();
 
     try {
-      localStorage.setItem('despulpadora_map_style', styleId);
+      localStorage.setItem('despulpadora_map_style_v3', style.id);
     } catch { }
   }
 

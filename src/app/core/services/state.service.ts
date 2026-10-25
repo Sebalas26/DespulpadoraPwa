@@ -31,6 +31,8 @@ import {
 } from '../models/business.models';
 import {
   FruitConfig,
+  PortalCmsConfig,
+  DEFAULT_PORTAL_CMS_CONFIG,
   INITIAL_BATCHES_SAMPLE,
   INITIAL_CLIENTS_SAMPLE,
   INITIAL_EMPLOYEES_SAMPLE,
@@ -70,6 +72,7 @@ export class StateService {
   readonly payrollPeriods = signal<PayrollPeriodDto[]>(this.loadPayrollPeriodsFromStorage());
   readonly payrollSettlements = signal<PayrollSettlementDto[]>(this.loadPayrollSettlementsFromStorage());
   readonly companyInfo = signal<CompanyConfig>(this.loadCompanyInfoFromStorage());
+  readonly portalCmsConfig = signal<PortalCmsConfig>(this.loadPortalCmsConfigFromStorage());
   readonly paymentMethods = signal<PaymentMethodDto[]>(this.loadPaymentMethodsFromStorage());
   readonly activePaymentMethods = computed(() => this.paymentMethods().filter(p => p.isActive));
 
@@ -433,6 +436,7 @@ export class StateService {
     localStorage.setItem('despulpadora_payroll_settlements', JSON.stringify(this.payrollSettlements()));
     localStorage.setItem('despulpadora_shifts', JSON.stringify(this.shifts()));
     localStorage.setItem('despulpadora_company_info', JSON.stringify(this.companyInfo()));
+    localStorage.setItem('despulpadora_portal_cms_config', JSON.stringify(this.portalCmsConfig()));
     localStorage.setItem('despulpadora_payment_methods', JSON.stringify(this.paymentMethods()));
   }
 
@@ -1134,6 +1138,131 @@ export class StateService {
     if (target) {
       this.notification.info('Personal Eliminado', `${target.fullName} fue retirado del personal de la empresa.`);
     }
+  }
+
+  // ==========================================
+  // PORTAL CLIENTES CMS & CATALOG CARDS ADMIN
+  // ==========================================
+  private loadPortalCmsConfigFromStorage(): PortalCmsConfig {
+    try {
+      const data = localStorage.getItem('despulpadora_portal_cms_config');
+      if (data) {
+        return { ...DEFAULT_PORTAL_CMS_CONFIG, ...JSON.parse(data) };
+      }
+    } catch {}
+    return DEFAULT_PORTAL_CMS_CONFIG;
+  }
+
+  updatePortalCmsConfig(updates: Partial<PortalCmsConfig>) {
+    this.portalCmsConfig.update(prev => ({ ...prev, ...updates }));
+    this.saveAllToStorage();
+    this.notification.success('Portal Clientes Actualizado', 'Los textos del encabezado y banner han sido guardados.');
+  }
+
+  updateFruitCatalogCard(idOrFruitId: string | number, updates: Partial<FruitConfig>, silent = false) {
+    let updatedFruit: FruitConfig | undefined;
+
+    this.fruits.update(list =>
+      list.map(f => {
+        if (f.id === idOrFruitId || f.fruitId === idOrFruitId) {
+          updatedFruit = {
+            ...f,
+            ...updates,
+            prices: updates.prices ? { ...f.prices, ...updates.prices } : f.prices
+          };
+          return updatedFruit;
+        }
+        return f;
+      })
+    );
+
+    // Sincronizar también con productVariants para que el Portal Clientes y el POS usen el nuevo precio/nombre de inmediato
+    if (updatedFruit && updatedFruit.fruitId) {
+      const fId = updatedFruit.fruitId;
+      const newPrices = updatedFruit.prices;
+      const newName = updatedFruit.name;
+      this.productVariants.update(variants =>
+        variants.map(v => {
+          if (v.fruitId === fId) {
+            const gKey = ('g' + v.grammage) as 'g140' | 'g250' | 'g500' | 'g1000';
+            const nextPrice = newPrices && newPrices[gKey] !== undefined ? newPrices[gKey] : v.basePrice;
+            return {
+              ...v,
+              fruitName: newName,
+              name: `Pulpa de ${newName} ${v.grammage}g`,
+              basePrice: nextPrice
+            };
+          }
+          return v;
+        })
+      );
+    }
+
+    this.saveAllToStorage();
+    if (!silent && updatedFruit) {
+      this.notification.success('Card Actualizada', `Se guardaron los cambios de "${updatedFruit.name}" en el Portal Clientes.`);
+    }
+  }
+
+  createFruitCatalogCard(payload: {
+    name: string;
+    scientificName: string;
+    description: string;
+    category: string;
+    color: string;
+    imageUrl?: string;
+    prices: { g140: number; g250: number; g500: number; g1000: number };
+  }): FruitConfig {
+    const nextFruitId = Math.max(0, ...this.fruits().map(f => f.fruitId || 0)) + 1;
+    const slug = payload.name
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^a-z0-9]+/g, '_')
+      .replace(/^_|_$/g, '') || `fruta_${nextFruitId}`;
+
+    const newCard: FruitConfig = {
+      id: `${slug}_${nextFruitId}`,
+      fruitId: nextFruitId,
+      name: payload.name.trim(),
+      scientificName: payload.scientificName.trim() || '100% Fruta Seleccionada',
+      description: payload.description.trim() || '100% pulpa natural pura pasteurizada, sin agua añadida ni conservantes artificiales.',
+      imageUrl: payload.imageUrl || '/fruits/maracuya.jpg',
+      isVisibleInPortal: true,
+      color: payload.color || '#10b981',
+      bgColor: 'rgba(16, 185, 129, 0.15)',
+      borderColor: payload.color || '#059669',
+      emoji: '',
+      yieldRate: 0.65,
+      waterAdditionDefault: 0.08,
+      freshStockKg: 100,
+      stock: { g140: 50, g250: 40, g500: 30, g1000: 20 },
+      minStock: { g140: 25, g250: 20, g500: 15, g1000: 10 },
+      prices: { ...payload.prices },
+      category: payload.category.trim() || '100% Natural'
+    };
+
+    this.fruits.update(list => [newCard, ...list]);
+    this.saveAllToStorage();
+    this.notification.success('Nueva Card Creada', `"${newCard.name}" ya está publicada en el Portal Clientes.`);
+    return newCard;
+  }
+
+  deleteFruitCatalogCard(id: string) {
+    const target = this.fruits().find(f => f.id === id);
+    this.fruits.update(list => list.filter(f => f.id !== id));
+    this.saveAllToStorage();
+    if (target) {
+      this.notification.info('Card Eliminada', `"${target.name}" fue retirada del catálogo.`);
+    }
+  }
+
+  resetPortalCatalogToDefault() {
+    this.fruits.set(INITIAL_FRUITS);
+    this.productVariants.set(INITIAL_PRODUCT_VARIANTS);
+    this.portalCmsConfig.set(DEFAULT_PORTAL_CMS_CONFIG);
+    this.saveAllToStorage();
+    this.notification.info('Portal Restablecido', 'Se restauraron todas las fotos, textos y precios predeterminados del catálogo.');
   }
 }
 

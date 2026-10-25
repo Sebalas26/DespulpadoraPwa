@@ -5,6 +5,9 @@ export interface FruitConfig {
   fruitId?: number;
   name: string;
   scientificName: string;
+  description?: string;
+  imageUrl?: string;
+  isVisibleInPortal?: boolean;
   color: string;
   bgColor: string;
   borderColor: string;
@@ -21,6 +24,17 @@ export interface FruitConfig {
   minStock: { g140: number; g250: number; g500: number; g1000: number };
   prices: { g140: number; g250: number; g500: number; g1000: number };
   category: string;
+}
+
+export interface PortalCmsConfig {
+  brandTagline: string;
+  heroBadge: string;
+  heroTitle: string;
+  heroDescription: string;
+  chip1Text: string;
+  chip2Text: string;
+  chip3Text: string;
+  whatsappPhone: string;
 }
 
 export const INITIAL_FRUITS: FruitConfig[] = [
@@ -1110,5 +1124,17 @@ export const INITIAL_PAYMENT_METHODS: PaymentMethodDto[] = [
     description: 'Facturación a crédito autorizada a 15 días calendario'
   }
 ];
+
+export const DEFAULT_PORTAL_CMS_CONFIG: PortalCmsConfig = {
+  brandTagline: 'Pulpas 100% Puras de Fruta Natural · Pedidos Directos de Fábrica',
+  heroBadge: 'CALIDAD CERTIFICADA DGL · 100% NATURAL',
+  heroTitle: 'Pulpas Pasteurizadas de Fruta Seleccionada',
+  heroDescription: 'Explora nuestras variedades en 4 presentaciones (140g, 250g, 500g y 1000g). Sin agua añadida ni conservantes artificiales.',
+  chip1Text: 'Pura Fruta',
+  chip2Text: 'Congelación Rápida',
+  chip3Text: 'Despacho el Mismo Día',
+  whatsappPhone: '573154567890'
+};
+
 
 

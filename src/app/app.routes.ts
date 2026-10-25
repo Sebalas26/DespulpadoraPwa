@@ -50,6 +50,13 @@ export const routes: Routes = [
     children: [
       { path: '', redirectTo: 'dashboard', pathMatch: 'full' },
       { path: 'dashboard', component: DashboardComponent },
+      {
+        path: 'portal-admin',
+        loadComponent: () =>
+          import('./features/client-portal/client-portal-admin.component').then(
+            m => m.ClientPortalAdminComponent
+          )
+      },
       { path: 'calculator', component: CalculatorComponent },
       { path: 'orders', component: OrdersComponent },
       { path: 'shifts', component: ShiftsComponent },

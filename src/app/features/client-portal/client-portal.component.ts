@@ -41,14 +41,14 @@ interface CartItem {
                 <span class="brand-name">DGL Despulpadora</span>
                 <span class="portal-badge">PORTAL CLIENTES</span>
               </div>
-              <p class="brand-tagline">Pulpas 100% Puras de Fruta Natural · Pedidos Directos de Fábrica</p>
+              <p class="brand-tagline">{{ stateService.portalCmsConfig().brandTagline }}</p>
             </div>
           </div>
 
           <div class="header-actions">
             <!-- Contact / WhatsApp pill -->
             <a
-              href="https://wa.me/573154567890?text=Hola%20DGL%20Despulpadora,%20tengo%20una%20consulta%20sobre%20mi%20pedido"
+              [href]="'https://wa.me/' + stateService.portalCmsConfig().whatsappPhone + '?text=Hola%20DGL%20Despulpadora,%20tengo%20una%20consulta%20sobre%20mi%20pedido'"
               target="_blank"
               class="contact-pill"
               title="Atención directa por WhatsApp"
@@ -82,25 +82,25 @@ interface CartItem {
             <div class="hero-main-info">
               <span class="hero-badge">
                 <img src="/logo-dgl.png" alt="DGL" class="hero-logo-mini" />
-                CALIDAD CERTIFICADA DGL · 100% NATURAL
+                {{ stateService.portalCmsConfig().heroBadge }}
               </span>
-              <h2 class="hero-title">Pulpas Pasteurizadas de Fruta Seleccionada</h2>
+              <h2 class="hero-title">{{ stateService.portalCmsConfig().heroTitle }}</h2>
               <p class="hero-desc">
-                Explora nuestras 16 variedades en 4 presentaciones (140g, 250g, 500g y 1000g). Sin agua añadida ni conservantes artificiales.
+                {{ stateService.portalCmsConfig().heroDescription }}
               </p>
             </div>
             <div class="hero-features-chips">
               <div class="feature-chip">
                 <span class="chip-icon">✨</span>
-                <span>Pura Fruta</span>
+                <span>{{ stateService.portalCmsConfig().chip1Text }}</span>
               </div>
               <div class="feature-chip">
                 <span class="chip-icon">🧊</span>
-                <span>Congelación Rápida</span>
+                <span>{{ stateService.portalCmsConfig().chip2Text }}</span>
               </div>
               <div class="feature-chip">
                 <span class="chip-icon">⚡</span>
-                <span>Despacho el Mismo Día</span>
+                <span>{{ stateService.portalCmsConfig().chip3Text }}</span>
               </div>
             </div>
           </div>
@@ -164,7 +164,7 @@ interface CartItem {
                 <!-- Food Photography Product Image -->
                 <div class="product-media-container">
                   <img
-                    [src]="'/fruits/' + fruit.id + '.jpg'"
+                    [src]="fruit.imageUrl || ('/fruits/' + fruit.id + '.jpg')"
                     [alt]="fruit.name"
                     class="fruit-main-img"
                     loading="lazy"
@@ -197,7 +197,7 @@ interface CartItem {
                 <!-- Card Body: Description & Presentation Tabs -->
                 <div class="card-body">
                   <p class="fruit-desc">
-                    100% pulpa natural pura pasteurizada, sin agua añadida ni conservantes artificiales.
+                    {{ fruit.description || '100% pulpa natural pura pasteurizada, sin agua añadida ni conservantes artificiales.' }}
                   </p>
 
                   <!-- Presentation Selector Tabs (140g, 250g, 500g, 1000g) -->
@@ -1922,13 +1922,14 @@ export class ClientPortalComponent implements OnInit {
   readonly categories = computed(() => {
     const set = new Set<string>();
     for (const f of this.stateService.fruits()) {
+      if (f.isVisibleInPortal === false) continue;
       if (f.category) set.add(f.category);
     }
     return Array.from(set);
   });
 
   readonly filteredFruits = computed(() => {
-    let list = this.stateService.fruits();
+    let list = this.stateService.fruits().filter(f => f.isVisibleInPortal !== false);
     const cat = this.selectedCategory();
     if (cat !== 'ALL') {
       list = list.filter(f => f.category === cat);
@@ -1937,7 +1938,8 @@ export class ClientPortalComponent implements OnInit {
     if (q) {
       list = list.filter(f =>
         f.name.toLowerCase().includes(q) ||
-        (f.scientificName && f.scientificName.toLowerCase().includes(q))
+        (f.scientificName && f.scientificName.toLowerCase().includes(q)) ||
+        (f.description && f.description.toLowerCase().includes(q))
       );
     }
     return list;
@@ -2012,18 +2014,18 @@ export class ClientPortalComponent implements OnInit {
   }
 
   getPrice(fruit: FruitConfig, grammage: 140 | 250 | 500 | 1000): number {
-    // 1. Check if configured in productVariants
+    // 1. Check fruit prices map (administered from Portal Clientes Admin)
+    const pKey = ('g' + grammage) as 'g140' | 'g250' | 'g500' | 'g1000';
+    if (fruit.prices && fruit.prices[pKey]) {
+      return fruit.prices[pKey];
+    }
+
+    // 2. Check if configured in productVariants
     const variant = this.stateService.productVariants().find(
       v => v.fruitId === (fruit.fruitId || 1) && v.grammage === grammage
     );
     if (variant && variant.basePrice) {
       return variant.basePrice;
-    }
-
-    // 2. Check fruit prices map
-    const pKey = ('g' + grammage) as 'g140' | 'g250' | 'g500' | 'g1000';
-    if (fruit.prices && fruit.prices[pKey]) {
-      return fruit.prices[pKey];
     }
 
     // 3. Fallback standard default

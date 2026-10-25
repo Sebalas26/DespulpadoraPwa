@@ -478,12 +478,12 @@ Pago por Transferencia Bancolombia`);
       zoomControl: true
     });
 
-    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}', {
       maxZoom: 20,
       maxNativeZoom: 19,
-      className: 'osm-tile-white-smooth',
-      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+      attribution: 'Tiles &copy; Esri &mdash; Esri, HERE, Garmin, OpenStreetMap'
     }).addTo(this.pickerMap);
+    this.pickerMap.getContainer().style.backgroundColor = '#f4f6f8';
 
     const customIcon = L.divIcon({
       className: 'picker-pin-wrapper',

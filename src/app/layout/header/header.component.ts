@@ -711,6 +711,7 @@ export class HeaderComponent implements OnInit, OnDestroy {
   readonly currentRouteTitle = computed(() => {
     const url = this.urlSignal();
     if (url.startsWith('/dashboard')) return 'Panel general';
+    if (url.startsWith('/portal-admin')) return 'Portal Clientes · Administración';
     if (url.startsWith('/orders')) {
       if (url.includes('tab=facturacion')) return 'Facturación & POS';
       if (url.includes('tab=despachos')) return 'Despachos & Rutas';
