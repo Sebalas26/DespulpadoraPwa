@@ -66,6 +66,33 @@ export class SettingsComponent {
   readonly activeTab = signal<'general' | 'inventory' | 'users' | 'roles' | 'parameters'>('general');
   readonly inventorySubTab = signal<'variants' | 'fruits'>('variants');
   readonly parametersSubTab = signal<'paymentMethods' | 'grammages' | 'categories'>('paymentMethods');
+  readonly mobileConfigModuleSelected = signal<boolean>(false);
+
+  openMobileConfigModule(
+    tab: 'general' | 'users' | 'roles' | 'parameters',
+    subTab?: 'paymentMethods' | 'grammages' | 'categories'
+  ) {
+    this.activeTab.set(tab);
+    if (subTab) {
+      this.parametersSubTab.set(subTab);
+    }
+    this.mobileConfigModuleSelected.set(true);
+    this.router.navigate(['/settings'], {
+      queryParams: {
+        tab: subTab === 'paymentMethods' ? 'pagos' : tab,
+        view: 'module'
+      }
+    });
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  backToMobileConfigHub() {
+    this.mobileConfigModuleSelected.set(false);
+    this.router.navigate(['/settings'], {
+      queryParams: { tab: 'general' }
+    });
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
 
   // ==========================================
   // PARAMETERS CONFIGURATION: PAYMENT METHODS
@@ -302,21 +329,31 @@ export class SettingsComponent {
   constructor() {
     this.route.queryParams.subscribe(params => {
       const tab = params['tab'];
-      if (tab === 'general' || tab === 'empresa') {
-        this.activeTab.set('general');
-      } else if (tab === 'users' || tab === 'usuarios') {
-        this.activeTab.set('users');
-      } else if (tab === 'roles') {
-        this.activeTab.set('roles');
-      } else if (tab === 'parameters' || tab === 'parametros' || tab === 'pagos' || tab === 'metodos-pago') {
-        this.activeTab.set('parameters');
-      } else if (tab === 'inventory' || tab === 'cava' || tab === 'variants' || tab === 'fruits' || tab === 'stock') {
+      const view = params['view'];
+      if (tab === 'inventory' || tab === 'cava' || tab === 'variants' || tab === 'fruits' || tab === 'stock') {
         this.activeTab.set('inventory');
+        this.mobileConfigModuleSelected.set(false);
         if (tab === 'variants' || tab === 'cava' || tab === 'stock') {
           this.inventorySubTab.set('variants');
         } else {
           this.inventorySubTab.set('fruits');
         }
+      } else {
+        if (tab === 'general' || tab === 'empresa') {
+          this.activeTab.set('general');
+        } else if (tab === 'users' || tab === 'usuarios') {
+          this.activeTab.set('users');
+        } else if (tab === 'roles') {
+          this.activeTab.set('roles');
+        } else if (tab === 'parameters' || tab === 'parametros' || tab === 'pagos' || tab === 'metodos-pago') {
+          this.activeTab.set('parameters');
+          if (tab === 'pagos' || tab === 'metodos-pago') {
+            this.parametersSubTab.set('paymentMethods');
+          }
+        } else {
+          this.activeTab.set('general');
+        }
+        this.mobileConfigModuleSelected.set(view === 'module');
       }
     });
   }

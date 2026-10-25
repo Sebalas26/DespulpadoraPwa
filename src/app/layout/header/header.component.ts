@@ -103,7 +103,11 @@ import { VoiceOrdersService } from '../../core/services/voice-orders.service';
         </button>
 
         <!-- Status Indicator • En línea (Figma style) -->
-        <div class="online-pill" [title]="stateService.isOnline() ? 'Sistema conectado a la red' : 'Sin conexión'">
+        <div
+          class="online-pill"
+          [class.offline]="!stateService.isOnline()"
+          [title]="stateService.isOnline() ? 'Sistema conectado a la red' : 'Sin conexión'"
+        >
           <span class="online-dot" [style.background]="stateService.isOnline() ? '#1e5e3a' : '#dc2626'"></span>
           <span class="online-text">{{ stateService.isOnline() ? 'En línea' : 'Desconectado' }}</span>
         </div>
@@ -426,10 +430,23 @@ import { VoiceOrdersService } from '../../core/services/voice-orders.service';
       gap: 6px;
       padding: 4px 10px;
       background: #f0f7f2;
+      border: 1px solid #d1e7d8;
       border-radius: 9999px;
       font-size: 0.78rem;
       color: #1e5e3a;
       font-weight: 600;
+      transition: all 0.2s ease;
+
+      &.offline {
+        background: #fef2f2;
+        border-color: #fecaca;
+        color: #dc2626;
+        font-weight: 700;
+
+        .online-dot {
+          background: #dc2626;
+        }
+      }
     }
 
     .online-dot {

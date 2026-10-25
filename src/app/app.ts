@@ -31,7 +31,7 @@ export class AppComponent implements OnInit {
       return;
     }
     const collapsibleEl = target.closest(
-      '.table-responsive tbody tr, .table-container tbody tr, .clients-table tbody tr, .dgl-table tbody tr, .data-table tbody tr, .active-shift-card'
+      '.table-responsive tbody tr, .table-container tbody tr, .clients-table tbody tr, .dgl-table tbody tr, .data-table tbody tr, .active-shift-card, .pm-card, .param-card'
     ) as HTMLElement | null;
     if (collapsibleEl && !collapsibleEl.querySelector('td[colspan]') && !collapsibleEl.closest('.pro-invoice-table')) {
       collapsibleEl.classList.toggle('mobile-row-expanded');
