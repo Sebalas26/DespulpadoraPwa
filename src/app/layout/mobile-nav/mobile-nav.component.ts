@@ -31,7 +31,7 @@ import { environment } from '../../../environments/environment';
           <line x1="16" y1="13" x2="8" y2="13"></line>
           <line x1="16" y1="17" x2="8" y2="17"></line>
         </svg>
-        <span>Picking</span>
+        <span>Alistamiento</span>
         @if (stateService.pendingOrdersCount() > 0) {
           <span class="dgl-mobile-badge">{{ stateService.pendingOrdersCount() }}</span>
         }
@@ -72,7 +72,7 @@ import { environment } from '../../../environments/environment';
 
           <div class="mobile-drawer-body">
             <a routerLink="/portal-admin" class="drawer-link-item" (click)="showMoreDrawer.set(false)">
-              <span class="drawer-icon" style="background: rgba(16, 185, 129, 0.12); color: #10b981;">
+              <span class="drawer-icon" style="background: rgba(30, 94, 58, 0.12); color: #1e5e3a;">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <circle cx="9" cy="21" r="1"></circle>
                   <circle cx="20" cy="21" r="1"></circle>
@@ -80,7 +80,7 @@ import { environment } from '../../../environments/environment';
                 </svg>
               </span>
               <div>
-                <div class="drawer-title" style="color: #059669; font-weight: 800;">Admin. Portal Clientes</div>
+                <div class="drawer-title" style="color: #164a2d; font-weight: 800;">Admin. Portal Clientes</div>
                 <div class="drawer-desc">Editar fotos, precios y textos de las cards</div>
               </div>
             </a>
@@ -95,7 +95,7 @@ import { environment } from '../../../environments/environment';
               </span>
               <div>
                 <div class="drawer-title">Alistamiento</div>
-                <div class="drawer-desc">Checklist de pulpa en cava</div>
+                <div class="drawer-desc">Lista de alistamiento en cava</div>
               </div>
             </a>
 

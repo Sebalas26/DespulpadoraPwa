@@ -177,7 +177,7 @@ interface CartItem {
                   </div>
 
                   <!-- Floating Category Badge -->
-                  <span class="media-category-badge" [style.background]="fruit.color || '#10b981'">
+                  <span class="media-category-badge" [style.background]="fruit.color || '#1e5e3a'">
                     {{ fruit.category || '100% Natural' }}
                   </span>
 
@@ -728,8 +728,8 @@ interface CartItem {
           font-size: 0.65rem;
           font-weight: 900;
           background: #ecfdf5;
-          color: #059669;
-          border: 1px solid #a7f3d0;
+          color: #164a2d;
+          border: 1px solid #d1e7d8;
           padding: 2px 7px;
           border-radius: 9999px;
           letter-spacing: 0.05em;
@@ -808,19 +808,19 @@ interface CartItem {
       align-items: center;
       gap: 12px;
       padding: 11px 22px;
-      background: #10b981;
+      background: #1e5e3a;
       border: 2px solid rgba(255, 255, 255, 0.45);
       border-radius: 9999px;
       color: #ffffff;
       font-weight: 800;
       cursor: pointer;
-      box-shadow: 0 8px 24px rgba(16, 185, 129, 0.45), 0 2px 8px rgba(0, 0, 0, 0.15);
+      box-shadow: 0 8px 24px rgba(30, 94, 58, 0.45), 0 2px 8px rgba(0, 0, 0, 0.15);
       transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
 
       &:hover {
-        background: #059669;
+        background: #164a2d;
         transform: translateY(-2px) scale(1.04);
-        box-shadow: 0 12px 30px rgba(16, 185, 129, 0.55);
+        box-shadow: 0 12px 30px rgba(30, 94, 58, 0.55);
       }
 
       &:active {
@@ -859,7 +859,7 @@ interface CartItem {
     }
 
     .hero-card {
-      background: linear-gradient(135deg, #064e3b 0%, #065f46 50%, #047857 100%);
+      background: linear-gradient(135deg, #064e3b 0%, #164a2d 50%, #1e5e3a 100%);
       border-radius: 14px;
       padding: 12px 22px;
       color: #ffffff;
@@ -984,7 +984,7 @@ interface CartItem {
           box-sizing: border-box;
 
           &:focus {
-            border-color: #10b981;
+            border-color: #1e5e3a;
           }
         }
 
@@ -1022,15 +1022,15 @@ interface CartItem {
         transition: all 0.15s ease;
 
         &:hover {
-          border-color: #10b981;
+          border-color: #1e5e3a;
           color: #0f172a;
         }
 
         &.active {
-          background: #10b981;
-          border-color: #10b981;
+          background: #1e5e3a;
+          border-color: #1e5e3a;
           color: #ffffff;
-          box-shadow: 0 2px 8px rgba(16, 185, 129, 0.35);
+          box-shadow: 0 2px 8px rgba(30, 94, 58, 0.35);
         }
       }
     }
@@ -1055,13 +1055,13 @@ interface CartItem {
 
       &:hover {
         transform: translateY(-3px);
-        border-color: #10b981;
-        box-shadow: 0 8px 24px rgba(16, 185, 129, 0.12);
+        border-color: #1e5e3a;
+        box-shadow: 0 8px 24px rgba(30, 94, 58, 0.12);
       }
 
       &.in-cart {
-        border-color: #10b981;
-        box-shadow: 0 4px 18px rgba(16, 185, 129, 0.16);
+        border-color: #1e5e3a;
+        box-shadow: 0 4px 18px rgba(30, 94, 58, 0.16);
       }
     }
 
@@ -1129,13 +1129,13 @@ interface CartItem {
         position: absolute;
         bottom: 12px;
         right: 12px;
-        background: #10b981;
+        background: #1e5e3a;
         color: #ffffff;
         font-size: 0.72rem;
         font-weight: 800;
         padding: 4px 10px;
         border-radius: 9999px;
-        box-shadow: 0 2px 8px rgba(16, 185, 129, 0.4);
+        box-shadow: 0 2px 8px rgba(30, 94, 58, 0.4);
         z-index: 2;
       }
     }
@@ -1217,15 +1217,15 @@ interface CartItem {
           transition: all 0.15s ease;
 
           &:hover {
-            border-color: #10b981;
+            border-color: #1e5e3a;
             color: #0f172a;
           }
 
           &.active {
-            background: #10b981;
-            border-color: #10b981;
+            background: #1e5e3a;
+            border-color: #1e5e3a;
             color: #ffffff;
-            box-shadow: 0 2px 6px rgba(16, 185, 129, 0.35);
+            box-shadow: 0 2px 6px rgba(30, 94, 58, 0.35);
           }
         }
       }
@@ -1251,7 +1251,7 @@ interface CartItem {
       .stock-pill {
         font-size: 0.72rem;
         font-weight: 800;
-        color: #059669;
+        color: #164a2d;
         background: #ecfdf5;
         padding: 2px 8px;
         border-radius: 9999px;
@@ -1320,8 +1320,8 @@ interface CartItem {
 
           &:hover {
             background: #f0fdf4;
-            border-color: #10b981;
-            color: #059669;
+            border-color: #1e5e3a;
+            color: #164a2d;
           }
         }
       }
@@ -1501,7 +1501,7 @@ interface CartItem {
           .price-subtotal {
             font-size: 0.95rem;
             font-weight: 800;
-            color: #059669;
+            color: #164a2d;
           }
         }
       }
@@ -1606,8 +1606,8 @@ interface CartItem {
           box-sizing: border-box;
 
           &:focus {
-            border-color: #10b981;
-            box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.15);
+            border-color: #1e5e3a;
+            box-shadow: 0 0 0 3px rgba(30, 94, 58, 0.15);
           }
         }
       }
@@ -1657,7 +1657,7 @@ interface CartItem {
         .total-highlight {
           font-size: 1.35rem;
           font-weight: 900;
-          color: #059669;
+          color: #164a2d;
         }
       }
     }
@@ -1665,20 +1665,20 @@ interface CartItem {
     .btn-submit-order {
       width: 100%;
       padding: 14px;
-      background: #10b981;
+      background: #1e5e3a;
       border: none;
       border-radius: 12px;
       color: #ffffff;
       font-size: 1rem;
       font-weight: 900;
       cursor: pointer;
-      box-shadow: 0 4px 16px rgba(16, 185, 129, 0.4);
+      box-shadow: 0 4px 16px rgba(30, 94, 58, 0.4);
       transition: all 0.2s ease;
 
       &:hover:not(:disabled) {
-        background: #059669;
+        background: #164a2d;
         transform: translateY(-2px);
-        box-shadow: 0 6px 20px rgba(16, 185, 129, 0.5);
+        box-shadow: 0 6px 20px rgba(30, 94, 58, 0.5);
       }
 
       &:disabled {
@@ -1754,21 +1754,21 @@ interface CartItem {
         justify-content: space-between;
         align-items: center;
         background: #ecfdf5;
-        border: 1px solid #a7f3d0;
+        border: 1px solid #d1e7d8;
         padding: 8px 12px;
         border-radius: 8px;
 
         .code-lbl {
           font-size: 0.78rem;
           font-weight: 700;
-          color: #047857;
+          color: #1e5e3a;
         }
 
         .code-val {
           font-family: monospace;
           font-size: 1rem;
           font-weight: 900;
-          color: #065f46;
+          color: #164a2d;
         }
       }
 
@@ -1816,7 +1816,7 @@ interface CartItem {
             border-top: 1px solid #e2e8f0;
             font-size: 0.95rem;
             font-weight: 900;
-            color: #059669;
+            color: #164a2d;
           }
         }
       }

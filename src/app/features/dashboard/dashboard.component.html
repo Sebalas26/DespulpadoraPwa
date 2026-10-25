@@ -13,26 +13,6 @@
         <span>Bodega principal • En línea</span>
       </div>
     </div>
-
-    <!-- Capsule Toggle: [ Hoy | Este mes ] (Matches Figma) -->
-    <div class="time-toggle-capsule">
-      <button
-        type="button"
-        class="time-capsule-btn"
-        [class.active]="timeFilter() === 'today'"
-        (click)="timeFilter.set('today')"
-      >
-        Hoy
-      </button>
-      <button
-        type="button"
-        class="time-capsule-btn"
-        [class.active]="timeFilter() === 'month'"
-        (click)="timeFilter.set('month')"
-      >
-        Este mes
-      </button>
-    </div>
   </div>
 
   <!-- ========================================== -->
@@ -533,7 +513,7 @@
             </div>
             <div>
               <div class="status-title">En alistamiento</div>
-              <div class="status-subtitle">Picking en bodega • Prioridad de despacho</div>
+              <div class="status-subtitle">Alistamiento en bodega • Prioridad de despacho</div>
             </div>
           </div>
           <span class="status-count">{{ ordersByStatus().picking }}</span>
@@ -637,7 +617,7 @@
     <div class="modal-content" style="max-width: 440px;" (click)="$event.stopPropagation()">
       <div class="modal-header">
         <div style="display: flex; align-items: center; gap: 8px;">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#1e5e3a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <circle cx="12" cy="12" r="10"></circle>
             <circle cx="12" cy="12" r="6"></circle>
             <circle cx="12" cy="12" r="2"></circle>
@@ -655,12 +635,13 @@
         <div class="form-group">
           <label class="form-label">Meta de Ventas del Mes (COP)</label>
           <input
-            type="number"
-            min="1000000"
-            step="500000"
+            type="text"
+            inputmode="numeric"
             class="form-control"
-            [ngModel]="editTargetAmount()"
-            (ngModelChange)="editTargetAmount.set($event)"
+            style="font-weight: 800; font-size: 1.05rem; letter-spacing: 0.01em;"
+            placeholder="$ 18.000.000"
+            [value]="editTargetAmount() > 0 ? formatCOP(editTargetAmount()) : ''"
+            (input)="onTargetAmountInput($event)"
           />
         </div>
       </div>

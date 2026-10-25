@@ -29,7 +29,7 @@
       </div>
       <div class="day-card-bottom">
         <span class="day-card-sub">
-          {{ dragOverDay() === day.name ? 'Soltar aquí' : (day.active ? 'Grouped / Activo' : day.count + ' pedidos') }}
+          {{ dragOverDay() === day.name ? 'Soltar aquí' : (day.active ? 'Agrupado / Activo' : day.count + ' pedidos') }}
         </span>
         @if (day.hasIndicator && !day.active) {
         <span class="day-mini-indicator">
@@ -77,7 +77,7 @@
               </svg>
             </span>
           </div>
-          <span class="ms-status-pill">{{ order.status === 'PICKING' ? 'En Picking' : 'Pendiente' }}</span>
+          <span class="ms-status-pill">{{ order.status === 'PICKING' ? 'En Alistamiento' : 'Pendiente' }}</span>
         </div>
       </div>
 
@@ -103,7 +103,7 @@
                 <span>Editar</span>
               </button>
               <span class="picking-status-pill">
-                {{ order.status === 'PICKING' ? 'EN PICKING' : 'PENDIENTE' }}
+                {{ order.status === 'PICKING' ? 'EN ALISTAMIENTO' : 'PENDIENTE' }}
               </span>
             </div>
           </div>
@@ -129,16 +129,11 @@
               </span>
               <span>{{ order.clientPhone }}</span>
             </div>
-            @if (order.notes) {
-            <div class="picking-note-highlight">
-              {{ order.notes }}
-            </div>
-            }
           </div>
 
           <!-- Checklist Section -->
           <div class="picking-checklist-heading">
-            CHECKLIST DE PULPA EN CAVA:
+            LISTA DE ALISTAMIENTO EN CAVA:
           </div>
 
           <div class="picking-checklist-items">
@@ -182,7 +177,7 @@
     <div class="card" style="grid-column: 1 / -1; text-align: center; padding: 48px 24px;">
       <div style="display: flex; justify-content: center; margin-bottom: 8px;">
         <div
-          style="width: 52px; height: 52px; border-radius: 50%; background: rgba(16, 185, 129, 0.15); display: flex; align-items: center; justify-content: center; color: #10b981;">
+          style="width: 52px; height: 52px; border-radius: 50%; background: rgba(30, 94, 58, 0.15); display: flex; align-items: center; justify-content: center; color: #1e5e3a;">
           <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
             stroke-linecap="round" stroke-linejoin="round">
             <polyline points="20 6 9 17 4 12"></polyline>
@@ -1045,7 +1040,7 @@
       <!-- Floating Bottom Bar with Address & Confirmation -->
       <div class="map-picker-floating-bar">
         <div class="map-picker-info-group">
-          <div class="map-picker-info-icon" style="color: #10b981;">
+          <div class="map-picker-info-icon" style="color: #1e5e3a;">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
               <circle cx="12" cy="10" r="3"></circle>

@@ -19,8 +19,8 @@ export class DashboardComponent {
   readonly voiceOrdersService = inject(VoiceOrdersService);
   private readonly route = inject(ActivatedRoute);
 
-  // Time filter toggle capsule: [ Hoy | Este mes ] (Matches Figma)
-  readonly timeFilter = signal<'today' | 'month'>('month');
+  // Siempre carga los datos de hoy por defecto
+  readonly timeFilter = signal<'today' | 'month'>('today');
 
   // Modal states
   readonly showEditTargetModal = signal(false);
@@ -40,6 +40,14 @@ export class DashboardComponent {
   openTargetModal() {
     this.editTargetAmount.set(this.stateService.salesPerformance().monthTargetRevenue);
     this.showEditTargetModal.set(true);
+  }
+
+  onTargetAmountInput(event: Event) {
+    const input = event.target as HTMLInputElement;
+    const digitsOnly = (input.value || '').replace(/\D/g, '');
+    const numericVal = digitsOnly ? parseInt(digitsOnly, 10) : 0;
+    this.editTargetAmount.set(numericVal);
+    input.value = numericVal > 0 ? this.formatCOP(numericVal) : '';
   }
 
   saveTarget() {
@@ -302,7 +310,7 @@ export class DashboardComponent {
           list.push({
             fruitName: f.name,
             emoji: f.emoji || '🟢',
-            color: f.color || '#10b981',
+            color: f.color || '#1e5e3a',
             presentation: presLabel,
             currentUnits: curr,
             minUnits: min

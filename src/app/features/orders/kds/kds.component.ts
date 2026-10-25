@@ -229,10 +229,6 @@ interface OrderTimer {
                       </div>
                       <div class="priority-msg">Alistamiento prioritario solicitado desde Despacho / Entregas</div>
                     </div>
-                  } @else if (order.notes && !order.notes.includes('simulado') && !order.notes.includes('URGENTE')) {
-                    <div class="ticket-note">
-                      {{ order.notes }}
-                    </div>
                   }
 
                   <footer class="ticket-footer">
@@ -1363,7 +1359,7 @@ export class KdsComponent implements OnInit, OnDestroy {
       clientName: client.name,
       clientPhone: '315 ' + Math.floor(1000000 + Math.random() * 9000000),
       clientAddress: client.address,
-      notes: 'Comanda generada para alistamiento en cava',
+      notes: '',
       paymentMethodName: 'Contra Entrega Efectivo',
       items
     });

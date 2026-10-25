@@ -229,7 +229,7 @@ interface EditableCardDraft {
               </div>
 
               <!-- Badge de Categoría con el color configurado -->
-              <span class="category-floating-badge" [style.background]="fruit.color || '#10b981'">
+              <span class="category-floating-badge" [style.background]="fruit.color || '#1e5e3a'">
                 {{ fruit.category || '100% Natural' }}
               </span>
 
@@ -327,7 +327,7 @@ interface EditableCardDraft {
                   <label>Color</label>
                   <input
                     type="color"
-                    [ngModel]="fruit.color || '#10b981'"
+                    [ngModel]="fruit.color || '#1e5e3a'"
                     (ngModelChange)="updateInlineField(fruit, 'color', $event)"
                     title="Color de la etiqueta de la card"
                   />
@@ -453,7 +453,7 @@ interface EditableCardDraft {
                     <div class="preview-seal">
                       <img src="/logo-dgl.png" alt="DGL" />
                     </div>
-                    <span class="preview-badge" [style.background]="activeDraft()!.color || '#10b981'">
+                    <span class="preview-badge" [style.background]="activeDraft()!.color || '#1e5e3a'">
                       {{ activeDraft()!.category || '100% Natural' }}
                     </span>
                   </div>
@@ -683,20 +683,20 @@ interface EditableCardDraft {
       &:hover,
       &.active {
         background: #f0fdf4;
-        border-color: #10b981;
-        color: #065f46;
+        border-color: #1e5e3a;
+        color: #164a2d;
       }
     }
 
     .btn-new-card {
-      background: #10b981;
-      border: 1.5px solid #10b981;
+      background: #1e5e3a;
+      border: 1.5px solid #1e5e3a;
       color: #ffffff;
-      box-shadow: 0 3px 10px rgba(16, 185, 129, 0.25);
+      box-shadow: 0 3px 10px rgba(30, 94, 58, 0.25);
 
       &:hover {
-        background: #059669;
-        border-color: #059669;
+        background: #164a2d;
+        border-color: #164a2d;
         transform: translateY(-1px);
       }
     }
@@ -716,10 +716,10 @@ interface EditableCardDraft {
     /* BANNER CMS EDITOR */
     .banner-cms-card {
       background: #ffffff;
-      border: 1.5px solid #a7f3d0;
+      border: 1.5px solid #d1e7d8;
       border-radius: 18px;
       padding: 20px 24px;
-      box-shadow: 0 6px 20px rgba(16, 185, 129, 0.08);
+      box-shadow: 0 6px 20px rgba(30, 94, 58, 0.08);
     }
 
     .banner-cms-header {
@@ -736,7 +736,7 @@ interface EditableCardDraft {
     .banner-cms-title {
       font-size: 1.05rem;
       font-weight: 800;
-      color: #065f46;
+      color: #164a2d;
       margin: 0;
     }
 
@@ -747,7 +747,7 @@ interface EditableCardDraft {
     }
 
     .btn-save-banner {
-      background: #10b981;
+      background: #1e5e3a;
       color: #ffffff;
       border: none;
       border-radius: 10px;
@@ -757,7 +757,7 @@ interface EditableCardDraft {
       cursor: pointer;
 
       &:hover {
-        background: #059669;
+        background: #164a2d;
       }
     }
 
@@ -795,7 +795,7 @@ interface EditableCardDraft {
         outline: none;
 
         &:focus {
-          border-color: #10b981;
+          border-color: #1e5e3a;
         }
       }
     }
@@ -832,7 +832,7 @@ interface EditableCardDraft {
         outline: none;
 
         &:focus {
-          border-color: #10b981;
+          border-color: #1e5e3a;
         }
       }
 
@@ -869,8 +869,8 @@ interface EditableCardDraft {
       transition: all 0.15s ease;
 
       &.active {
-        background: #10b981;
-        border-color: #10b981;
+        background: #1e5e3a;
+        border-color: #1e5e3a;
         color: #ffffff;
       }
     }
@@ -910,8 +910,8 @@ interface EditableCardDraft {
       transition: all 0.2s ease;
 
       &:hover {
-        border-color: #10b981;
-        box-shadow: 0 8px 24px rgba(16, 185, 129, 0.1);
+        border-color: #1e5e3a;
+        box-shadow: 0 8px 24px rgba(30, 94, 58, 0.1);
       }
 
       &.is-hidden-portal {
@@ -997,7 +997,7 @@ interface EditableCardDraft {
         transition: all 0.15s ease;
 
         &:hover {
-          background: #10b981;
+          background: #1e5e3a;
           color: #ffffff;
         }
       }
@@ -1035,7 +1035,7 @@ interface EditableCardDraft {
       user-select: none;
 
       input {
-        accent-color: #10b981;
+        accent-color: #1e5e3a;
         width: 15px;
         height: 15px;
         cursor: pointer;
@@ -1110,7 +1110,7 @@ interface EditableCardDraft {
         outline: none;
 
         &:focus {
-          border-color: #10b981;
+          border-color: #1e5e3a;
         }
       }
 
@@ -1203,7 +1203,7 @@ interface EditableCardDraft {
       justify-content: center;
       gap: 6px;
       padding: 9px;
-      background: #10b981;
+      background: #1e5e3a;
       color: #ffffff;
       border: none;
       border-radius: 10px;
@@ -1213,7 +1213,7 @@ interface EditableCardDraft {
       transition: background 0.15s ease;
 
       &:hover {
-        background: #059669;
+        background: #164a2d;
       }
     }
 
@@ -1252,7 +1252,7 @@ interface EditableCardDraft {
       .modal-kicker {
         font-size: 0.68rem;
         font-weight: 800;
-        color: #10b981;
+        color: #1e5e3a;
         letter-spacing: 0.05em;
       }
 
@@ -1391,7 +1391,7 @@ interface EditableCardDraft {
             }
             strong {
               font-size: 0.78rem;
-              color: #059669;
+              color: #164a2d;
               font-weight: 900;
             }
           }
@@ -1412,7 +1412,7 @@ interface EditableCardDraft {
         padding: 10px;
         background: #eaf5ee;
         color: #1e5e3a;
-        border: 1.5px dashed #10b981;
+        border: 1.5px dashed #1e5e3a;
         border-radius: 12px;
         font-size: 0.8rem;
         font-weight: 800;
@@ -1487,7 +1487,7 @@ interface EditableCardDraft {
       .section-lbl {
         font-size: 0.72rem;
         font-weight: 800;
-        color: #065f46;
+        color: #164a2d;
         text-transform: uppercase;
         display: block;
         margin-bottom: 10px;
@@ -1512,7 +1512,7 @@ interface EditableCardDraft {
         gap: 8px;
         font-size: 0.82rem;
         font-weight: 700;
-        color: #065f46;
+        color: #164a2d;
         cursor: pointer;
       }
     }
@@ -1556,7 +1556,7 @@ interface EditableCardDraft {
 
       .btn-save-modal {
         padding: 9px 20px;
-        background: #10b981;
+        background: #1e5e3a;
         color: #ffffff;
         border: none;
         border-radius: 10px;
@@ -1565,7 +1565,7 @@ interface EditableCardDraft {
         cursor: pointer;
 
         &:hover {
-          background: #059669;
+          background: #164a2d;
         }
       }
     }
@@ -1780,7 +1780,7 @@ export class ClientPortalAdminComponent {
       scientificName: fruit.scientificName,
       description: fruit.description || this.defaultCardDescription,
       category: fruit.category || '100% Natural',
-      color: fruit.color || '#10b981',
+      color: fruit.color || '#1e5e3a',
       imageUrl: fruit.imageUrl || `/fruits/${fruit.id}.jpg`,
       isVisibleInPortal: fruit.isVisibleInPortal !== false,
       prices: { ...fruit.prices }
@@ -1796,7 +1796,7 @@ export class ClientPortalAdminComponent {
       scientificName: '100% Fruta Seleccionada',
       description: this.defaultCardDescription,
       category: 'Especial DGL',
-      color: '#10b981',
+      color: '#1e5e3a',
       imageUrl: '/fruits/maracuya.jpg',
       isVisibleInPortal: true,
       prices: {

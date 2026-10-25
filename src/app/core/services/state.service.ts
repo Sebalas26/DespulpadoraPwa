@@ -289,7 +289,10 @@ export class StateService {
 
   private loadOrdersFromStorage(): OrderDto[] {
     const data = localStorage.getItem('despulpadora_orders');
-    return data ? JSON.parse(data) : INITIAL_ORDERS_SAMPLE;
+    const list: OrderDto[] = data ? JSON.parse(data) : INITIAL_ORDERS_SAMPLE;
+    return list.map(o =>
+      o.notes === 'Comanda generada para alistamiento en cava' ? { ...o, notes: '' } : o
+    );
   }
 
   private loadEmployeesFromStorage(): EmployeeDto[] {
@@ -801,7 +804,7 @@ export class StateService {
 
     const statusLabels: Record<OrderStatus, string> = {
       PENDING: 'Pendiente',
-      PICKING: 'En Picking (Alistamiento)',
+      PICKING: 'En Alistamiento',
       BILLED: 'Facturado',
       DISPATCHED: 'En Ruta de Despacho',
       DELIVERED: 'Entregado con Éxito',
@@ -1229,9 +1232,9 @@ export class StateService {
       description: payload.description.trim() || '100% pulpa natural pura pasteurizada, sin agua añadida ni conservantes artificiales.',
       imageUrl: payload.imageUrl || '/fruits/maracuya.jpg',
       isVisibleInPortal: true,
-      color: payload.color || '#10b981',
-      bgColor: 'rgba(16, 185, 129, 0.15)',
-      borderColor: payload.color || '#059669',
+      color: payload.color || '#1e5e3a',
+      bgColor: 'rgba(30, 94, 58, 0.15)',
+      borderColor: payload.color || '#164a2d',
       emoji: '',
       yieldRate: 0.65,
       waterAdditionDefault: 0.08,

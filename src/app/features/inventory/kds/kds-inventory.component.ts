@@ -612,8 +612,8 @@ interface InventoryTransaction {
           color: #475569;
 
           &.active {
-            background: #10b981;
-            border-color: #10b981;
+            background: #1e5e3a;
+            border-color: #1e5e3a;
             color: #ffffff;
           }
         }
@@ -634,7 +634,7 @@ interface InventoryTransaction {
           box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
 
           &:hover {
-            border-color: #10b981;
+            border-color: #1e5e3a;
             box-shadow: 0 6px 18px rgba(0, 0, 0, 0.08);
           }
         }
@@ -692,7 +692,7 @@ interface InventoryTransaction {
         font-weight: 900;
         letter-spacing: -0.03em;
         line-height: 1;
-        color: #10b981;
+        color: #1e5e3a;
       }
 
       .clock-date {
@@ -752,8 +752,8 @@ interface InventoryTransaction {
       }
 
       &.metric-fruit .metric-icon {
-        background: rgba(16, 185, 129, 0.15);
-        color: #10b981;
+        background: rgba(30, 94, 58, 0.15);
+        color: #1e5e3a;
       }
 
       &.metric-pulp .metric-icon {
@@ -821,9 +821,9 @@ interface InventoryTransaction {
         transition: all 0.15s ease;
 
         &.active {
-          background: #10b981;
+          background: #1e5e3a;
           color: #ffffff;
-          box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
+          box-shadow: 0 2px 8px rgba(30, 94, 58, 0.3);
         }
       }
     }
@@ -910,7 +910,7 @@ interface InventoryTransaction {
         outline: none;
 
         &:focus {
-          border-color: #10b981;
+          border-color: #1e5e3a;
         }
       }
 
@@ -956,10 +956,10 @@ interface InventoryTransaction {
       }
 
       &.active {
-        background: #10b981;
-        border-color: #10b981;
+        background: #1e5e3a;
+        border-color: #1e5e3a;
         color: #ffffff;
-        box-shadow: 0 2px 8px rgba(16, 185, 129, 0.35);
+        box-shadow: 0 2px 8px rgba(30, 94, 58, 0.35);
 
         .chip-badge {
           background: rgba(255, 255, 255, 0.25);
@@ -1017,8 +1017,8 @@ interface InventoryTransaction {
         flex-shrink: 0;
 
         &.fruit-color {
-          background: rgba(16, 185, 129, 0.15);
-          color: #10b981;
+          background: rgba(30, 94, 58, 0.15);
+          color: #1e5e3a;
         }
 
         &.pulp-color {
@@ -1068,7 +1068,7 @@ interface InventoryTransaction {
       transition: all 0.2s ease;
 
       &:hover {
-        border-color: #10b981;
+        border-color: #1e5e3a;
         transform: translateY(-2px);
         box-shadow: 0 6px 20px rgba(0, 0, 0, 0.35);
       }
@@ -1104,9 +1104,9 @@ interface InventoryTransaction {
         font-weight: 800;
         padding: 3px 8px;
         border-radius: 9999px;
-        background: rgba(16, 185, 129, 0.15);
-        color: #10b981;
-        border: 1px solid rgba(16, 185, 129, 0.3);
+        background: rgba(30, 94, 58, 0.15);
+        color: #1e5e3a;
+        border: 1px solid rgba(30, 94, 58, 0.3);
         white-space: nowrap;
 
         &.low-stock {
@@ -1177,7 +1177,7 @@ interface InventoryTransaction {
       }
 
       &.positive-row .keypad-row-lbl {
-        color: #10b981;
+        color: #1e5e3a;
       }
 
       &.negative-row .keypad-row-lbl {
@@ -1202,17 +1202,17 @@ interface InventoryTransaction {
       }
 
       &.btn-pos {
-        background: rgba(16, 185, 129, 0.15);
-        color: #34d399;
-        border-color: rgba(16, 185, 129, 0.35);
+        background: rgba(30, 94, 58, 0.15);
+        color: #1e5e3a;
+        border-color: rgba(30, 94, 58, 0.35);
 
         &:hover {
-          background: #10b981;
+          background: #1e5e3a;
           color: #ffffff;
         }
 
         &.btn-bold {
-          background: rgba(16, 185, 129, 0.28);
+          background: rgba(30, 94, 58, 0.28);
           font-weight: 900;
         }
       }
@@ -1276,8 +1276,8 @@ interface InventoryTransaction {
         width: 8px;
         height: 8px;
         border-radius: 50%;
-        background: #10b981;
-        box-shadow: 0 0 10px #10b981;
+        background: #1e5e3a;
+        box-shadow: 0 0 10px #1e5e3a;
       }
 
       .audit-title {
@@ -1324,7 +1324,7 @@ interface InventoryTransaction {
       }
 
       &.pos .tx-delta {
-        color: #10b981;
+        color: #1e5e3a;
       }
 
       &.neg .tx-delta {
@@ -1419,15 +1419,15 @@ interface InventoryTransaction {
         transition: all 0.15s ease;
 
         &.op-add {
-          background: rgba(16, 185, 129, 0.12);
-          color: #34d399;
-          border-color: rgba(16, 185, 129, 0.3);
+          background: rgba(30, 94, 58, 0.12);
+          color: #1e5e3a;
+          border-color: rgba(30, 94, 58, 0.3);
 
           &.selected {
-            background: #10b981;
+            background: #1e5e3a;
             color: #ffffff;
-            border-color: #10b981;
-            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.35);
+            border-color: #1e5e3a;
+            box-shadow: 0 4px 12px rgba(30, 94, 58, 0.35);
           }
         }
 
@@ -1561,17 +1561,17 @@ interface InventoryTransaction {
         flex: 2;
         padding: 12px;
         border-radius: 10px;
-        background: #10b981;
+        background: #1e5e3a;
         border: none;
         color: #ffffff;
         font-size: 0.95rem;
         font-weight: 900;
         cursor: pointer;
-        box-shadow: 0 4px 16px rgba(16, 185, 129, 0.4);
+        box-shadow: 0 4px 16px rgba(30, 94, 58, 0.4);
         transition: all 0.15s ease;
 
         &:hover {
-          background: #059669;
+          background: #164a2d;
         }
 
         &.confirm-neg {

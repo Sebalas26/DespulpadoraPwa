@@ -316,22 +316,22 @@ import { VoiceOrdersService } from '../../core/services/voice-orders.service';
       align-items: center;
       gap: 7px;
       padding: 5px 12px;
-      background: #f0fdf4;
-      border: 1.5px solid #86efac;
+      background: #eaf5ee;
+      border: 1.5px solid #bbf7d0;
       border-radius: 9999px;
-      color: #15803d;
+      color: #1e5e3a;
       font-size: 0.78rem;
       font-weight: 700;
       cursor: pointer;
       transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-      box-shadow: 0 1px 3px rgba(22, 163, 74, 0.1);
+      box-shadow: 0 1px 3px rgba(30, 94, 58, 0.1);
 
       &:hover {
-        background: #16a34a;
-        border-color: #16a34a;
+        background: #1e5e3a;
+        border-color: #1e5e3a;
         color: #ffffff;
         transform: translateY(-1px);
-        box-shadow: 0 4px 12px rgba(22, 163, 74, 0.28);
+        box-shadow: 0 4px 12px rgba(30, 94, 58, 0.28);
 
         .kds-access-badge {
           background: rgba(255, 255, 255, 0.25);
@@ -603,9 +603,18 @@ import { VoiceOrdersService } from '../../core/services/voice-orders.service';
         flex-shrink: 0;
       }
       .btn-kds-access {
-        padding: 3px 7px;
-        gap: 4px;
+        width: 30px;
+        height: 30px;
+        padding: 0;
+        gap: 0;
+        border-radius: 50%;
+        justify-content: center;
         flex-shrink: 0;
+
+        .kds-access-label,
+        .kds-access-badge {
+          display: none !important;
+        }
       }
       .topbar-icon-btn,
       .mobile-user-avatar {

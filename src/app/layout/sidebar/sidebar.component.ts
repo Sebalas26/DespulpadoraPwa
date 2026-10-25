@@ -61,7 +61,7 @@ import { environment } from '../../../environments/environment';
             </svg>
           </span>
           <span class="dgl-nav-text">Portal Clientes</span>
-          <span class="dgl-nav-badge" style="background: #10b981; color: white; font-weight: 800;">CATÁLOGO</span>
+          <span class="dgl-nav-badge" style="background: #1e5e3a; color: white; font-weight: 800;">CATÁLOGO</span>
         </a>
 
         <!-- Admin Catálogo (Fotos, Textos y Precios) -->
@@ -201,7 +201,7 @@ import { environment } from '../../../environments/environment';
         <!-- 4. Promotional / Informational Box (Figma style) -->
         <div class="dgl-callout-card">
           <div class="callout-header">
-            <span class="callout-icon" style="display: inline-flex; align-items: center; justify-content: center; color: #10b981;">
+            <span class="callout-icon" style="display: inline-flex; align-items: center; justify-content: center; color: #1e5e3a;">
               <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor">
                 <path d="M12 2l2.4 7.4h7.6l-6.1 4.5 2.3 7.1-6.2-4.6-6.2 4.6 2.3-7.1-6.1-4.5h7.6z"/>
               </svg>

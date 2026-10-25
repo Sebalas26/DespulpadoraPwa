@@ -103,7 +103,7 @@
           type="button"
           class="btn btn-outline"
           (click)="showInvoicePreviewModal.set(true)"
-          style="margin-left: auto; gap: 8px; font-size: 0.85rem; border-color: #10b981; color: #047857; background: #ecfdf5; font-weight: 700; flex-shrink: 0;"
+          style="margin-left: auto; gap: 8px; font-size: 0.85rem; border-color: #1e5e3a; color: #1e5e3a; background: #ecfdf5; font-weight: 700; flex-shrink: 0;"
           title="Ver cómo queda la Factura de Venta con estos datos"
         >
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -400,7 +400,7 @@
             <button
               type="button"
               class="btn btn-outline"
-              style="gap: 6px; font-size: 0.8rem; font-weight: 600; padding: 6px 12px; border-color: #10b981; color: #047857;"
+              style="gap: 6px; font-size: 0.8rem; font-weight: 600; padding: 6px 12px; border-color: #1e5e3a; color: #1e5e3a;"
               (click)="showInvoicePreviewModal.set(true)"
             >
               <span>Previsualizar Factura</span>
@@ -481,7 +481,7 @@
           <button
             type="button"
             class="btn btn-outline"
-            style="gap: 8px; font-weight: 600; padding: 12px 18px; border-color: #10b981; color: #047857;"
+            style="gap: 8px; font-weight: 600; padding: 12px 18px; border-color: #1e5e3a; color: #1e5e3a;"
             (click)="showInvoicePreviewModal.set(true)"
           >
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -1391,7 +1391,7 @@
                   }
 
                   @if (isColumnVisible('margin')) {
-                    <td data-label="Margen Unitario" style="text-align: right; font-weight: 700; color: #10b981;">
+                    <td data-label="Margen Unitario" style="text-align: right; font-weight: 700; color: #1e5e3a;">
                       {{ formatCOP(v.basePrice - v.unitCost) }}
                       <span style="font-size: 0.72rem; color: var(--text-dim); display: block;">
                         ({{ Math.round(((v.basePrice - v.unitCost) / (v.basePrice || 1)) * 100) }}%)
@@ -1403,7 +1403,7 @@
                     <td data-label="Stock en Cava" style="text-align: center;">
                       <span
                         style="font-size: 1.05rem; font-weight: 800;"
-                        [style.color]="v.currentStock <= v.minStockAlert ? '#ef4444' : '#10b981'"
+                        [style.color]="v.currentStock <= v.minStockAlert ? '#ef4444' : '#1e5e3a'"
                       >
                         {{ v.currentStock }} uds
                       </span>
@@ -1718,7 +1718,7 @@
     <div class="modal-content modal-lg" (click)="$event.stopPropagation()">
       <div class="modal-header">
         <div style="display: flex; align-items: center; gap: 10px;">
-          <div style="width: 32px; height: 32px; border-radius: 8px; background: rgba(16, 185, 129, 0.12); color: var(--primary); display: flex; align-items: center; justify-content: center;">
+          <div style="width: 32px; height: 32px; border-radius: 8px; background: rgba(30, 94, 58, 0.12); color: var(--primary); display: flex; align-items: center; justify-content: center;">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <circle cx="12" cy="12" r="3"></circle>
               <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
@@ -2437,7 +2437,7 @@
     <div class="modal-content" style="max-width: 500px;" (click)="$event.stopPropagation()">
       <div class="modal-header">
         <div style="display: flex; align-items: center; gap: 10px;">
-          <div style="width: 34px; height: 34px; border-radius: 8px; background: rgba(16, 185, 129, 0.12); color: var(--primary); display: flex; align-items: center; justify-content: center;">
+          <div style="width: 34px; height: 34px; border-radius: 8px; background: rgba(30, 94, 58, 0.12); color: var(--primary); display: flex; align-items: center; justify-content: center;">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <rect x="2" y="5" width="20" height="14" rx="2"></rect>
               <line x1="2" y1="10" x2="22" y2="10"></line>

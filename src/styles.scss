@@ -87,7 +87,7 @@
   --bg-table-hover: rgba(255, 255, 255, 0.02);
 
   --border-subtle: rgba(255, 255, 255, 0.08);
-  --border-focus: rgba(16, 185, 129, 0.5);
+  --border-focus: rgba(30, 94, 58, 0.5);
   --border-highlight: rgba(255, 255, 255, 0.14);
 
   --text-main: #f8fafc;
@@ -95,12 +95,12 @@
   --text-dim: #64748b;
   --text-inverse: #0b0f19;
 
-  --color-primary: #10b981;
-  --color-primary-hover: #059669;
-  --color-primary-light: rgba(16, 185, 129, 0.08);
-  --color-primary-text: #10b981;
+  --color-primary: #1e5e3a;
+  --color-primary-hover: #164a2d;
+  --color-primary-light: rgba(30, 94, 58, 0.08);
+  --color-primary-text: #1e5e3a;
 
-  --status-success: #10b981;
+  --status-success: #1e5e3a;
   --status-warning: #f59e0b;
   --status-danger: #ef4444;
   --status-info: #64748b;
@@ -206,7 +206,7 @@ h1, h2, h3, h4, h5, h6 {
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.2);
+  box-shadow: 0 2px 8px rgba(30, 94, 58, 0.2);
   flex-shrink: 0;
   color: #ffffff;
 }
@@ -426,13 +426,13 @@ h1, h2, h3, h4, h5, h6 {
 
     .nav-subicon {
       color: var(--color-primary);
-      background: rgba(16, 185, 129, 0.15);
+      background: rgba(30, 94, 58, 0.15);
     }
   }
 
   &.active {
-    color: #10b981;
-    background: rgba(16, 185, 129, 0.12);
+    color: #1e5e3a;
+    background: rgba(30, 94, 58, 0.12);
     font-weight: 600;
 
     .nav-subicon {
@@ -443,12 +443,12 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 [data-theme="light"] .nav-subitem.active {
-  color: #047857;
-  background: rgba(5, 150, 105, 0.1);
+  color: #1e5e3a;
+  background: rgba(22, 74, 45, 0.1);
 
   .nav-subicon {
     color: #ffffff;
-    background: #059669;
+    background: #164a2d;
   }
 }
 
@@ -887,13 +887,13 @@ body:has(.mobile-drawer-overlay) .map-canvas-card {
 .btn-primary {
   background: var(--color-primary);
   color: #ffffff;
-  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.2);
+  box-shadow: 0 2px 8px rgba(30, 94, 58, 0.2);
 }
 
 .btn-primary:hover {
   background: var(--color-primary-hover);
   transform: translateY(-1px);
-  box-shadow: 0 4px 14px rgba(16, 185, 129, 0.3);
+  box-shadow: 0 4px 14px rgba(30, 94, 58, 0.3);
 }
 
 .btn-secondary {
@@ -985,7 +985,7 @@ input[type="text"], input[type="number"], input[type="email"], input[type="passw
   &:focus {
     border-color: var(--color-primary);
     background: var(--bg-input-focus);
-    box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.15);
+    box-shadow: 0 0 0 3px rgba(30, 94, 58, 0.15);
   }
 
   &:disabled {
@@ -2109,9 +2109,9 @@ td.mobile-tr-summary-cell {
   color: var(--text-muted);
 
   &.badge-emerald {
-    background: rgba(16, 185, 129, 0.1);
+    background: rgba(30, 94, 58, 0.1);
     color: var(--color-primary-text);
-    border: 1px solid rgba(16, 185, 129, 0.2);
+    border: 1px solid rgba(30, 94, 58, 0.2);
   }
   &.badge-amber {
     background: rgba(245, 158, 11, 0.1);
@@ -2269,13 +2269,13 @@ td.mobile-tr-summary-cell {
 
 /* Themed Specialized Cards */
 .mass-balance-card {
-  background: linear-gradient(135deg, rgba(15, 23, 42, 0.9) 0%, rgba(16, 185, 129, 0.08) 100%);
+  background: linear-gradient(135deg, rgba(15, 23, 42, 0.9) 0%, rgba(30, 94, 58, 0.08) 100%);
   border: 1px solid var(--border-subtle);
 }
 
 [data-theme="light"] .mass-balance-card {
   background: linear-gradient(135deg, #ffffff 0%, #f0fdf4 100%);
-  border-color: #a7f3d0;
+  border-color: #d1e7d8;
   box-shadow: var(--shadow-sm);
 }
 

@@ -659,7 +659,7 @@ Pago por Transferencia Bancolombia`);
       vehiclePlate: 'HND-45F',
       vehicleModel: 'Honda CB190R Térmica',
       phone: '311 889 0012',
-      color: '#10b981',
+      color: '#1e5e3a',
       colorLight: '#ecfdf5',
       routeCode: 'RUTA-2026-CR1'
     },
