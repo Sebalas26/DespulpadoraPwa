@@ -34,6 +34,11 @@ export const routes: Routes = [
     loadComponent: () => import('./features/client-portal/client-portal.component').then(m => m.ClientPortalComponent)
   },
   {
+    path: 'portal-cliente',
+    redirectTo: 'portal-clientes',
+    pathMatch: 'full'
+  },
+  {
     path: 'pedidos-cliente',
     redirectTo: 'portal-clientes',
     pathMatch: 'full'

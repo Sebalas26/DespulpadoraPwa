@@ -51,8 +51,8 @@ import { environment } from '../../../environments/environment';
           <span class="dgl-nav-text">Panel general</span>
         </a>
 
-        <!-- Portal Clientes (Administración de Catálogo, Fotos, Textos y Precios) -->
-        <a routerLink="/portal-admin" routerLinkActive="active" class="dgl-nav-item" title="Administrar fotos, precios y textos de las cards del Portal Clientes">
+        <!-- Portal Clientes (Catálogo Público & Pedidos) -->
+        <a routerLink="/portal-clientes" routerLinkActive="active" class="dgl-nav-item" title="Ver catálogo digital de clientes y autopedido">
           <span class="dgl-nav-icon">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <circle cx="9" cy="21" r="1"></circle>
@@ -62,6 +62,19 @@ import { environment } from '../../../environments/environment';
           </span>
           <span class="dgl-nav-text">Portal Clientes</span>
           <span class="dgl-nav-badge" style="background: #10b981; color: white; font-weight: 800;">CATÁLOGO</span>
+        </a>
+
+        <!-- Admin Catálogo (Fotos, Textos y Precios) -->
+        <a routerLink="/portal-admin" routerLinkActive="active" class="dgl-nav-item" title="Administrar fotos, precios y textos de las cards del Portal Clientes">
+          <span class="dgl-nav-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+              <circle cx="8.5" cy="8.5" r="1.5"></circle>
+              <polyline points="21 15 16 10 5 21"></polyline>
+            </svg>
+          </span>
+          <span class="dgl-nav-text">Admin Catálogo</span>
+          <span class="dgl-nav-badge" style="background: #0284c7; color: white; font-weight: 700;">CMS</span>
         </a>
 
         <!-- Alistamiento -->
