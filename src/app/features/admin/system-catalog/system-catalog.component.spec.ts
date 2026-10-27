@@ -82,7 +82,12 @@ describe('SystemCatalogComponent', () => {
 
     authServiceMock = {
       isSystemDeveloper: signal<boolean>(true) as unknown as AuthService['isSystemDeveloper'],
-      syncNavigationModules: jasmine.createSpy('syncNavigationModules')
+      syncNavigationModules: jasmine.createSpy('syncNavigationModules'),
+      isRemovedCalculatorModule: (mod: { frontendRoute?: string; slug?: string; name?: string }) =>
+        mod.frontendRoute === '/calculator' ||
+        mod.slug === 'calculator' ||
+        mod.name === 'Planta e Inventario' ||
+        mod.name === 'Control de Producción & Mermas'
     };
 
     notificationSpy = jasmine.createSpyObj<NotificationService>('NotificationService', [

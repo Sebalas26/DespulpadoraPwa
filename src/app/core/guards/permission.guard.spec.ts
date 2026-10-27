@@ -7,7 +7,7 @@ import { AuthService } from '../services/auth.service';
 import { LoginResponseDto } from '../models/auth.models';
 
 /**
- * Unit test suite for `permissionGuard` verifying dynamic Server-Driven RBAC route protection.
+ * Unit test suite for `permissionGuard` verifying dynamic Server-Driven permission route protection.
  */
 describe('permissionGuard', () => {
   let authService: AuthService;
@@ -39,13 +39,13 @@ describe('permissionGuard', () => {
       },
       {
         moduleId: 2,
-        name: 'Planta e Inventario',
-        slug: 'inventory',
+        name: 'Pedidos y Despacho',
+        slug: 'orders',
         menuSection: 'Operación',
-        frontendRoute: '/calculator',
-        icon: 'package',
+        frontendRoute: '/orders',
+        icon: 'truck',
         displayOrder: 2,
-        allowedActionSlugs: ['inventory.view', 'batches.create']
+        allowedActionSlugs: ['orders.view', 'orders.create']
       }
     ]
   };
@@ -67,7 +67,7 @@ describe('permissionGuard', () => {
   it('should allow navigation when the route exists in navigationModules', () => {
     authService.persistLoginSession(sampleSession, false);
     const route = new ActivatedRouteSnapshot();
-    const state = { url: '/calculator' } as RouterStateSnapshot;
+    const state = { url: '/orders' } as RouterStateSnapshot;
 
     const allowed = TestBed.runInInjectionContext(() => permissionGuard(route, state));
     expect(allowed).toBeTrue();

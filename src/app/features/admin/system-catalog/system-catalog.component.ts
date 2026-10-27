@@ -152,12 +152,20 @@ export class SystemCatalogComponent implements OnInit {
         next: (response: SystemModuleCatalogDto[]) => {
           this.isLoading.set(false);
           if (Array.isArray(response) && response.length > 0) {
-            const sorted = [...response].sort(
-              (a: SystemModuleCatalogDto, b: SystemModuleCatalogDto) => a.displayOrder - b.displayOrder
-            );
+            const sorted = [...response]
+              .filter((m: SystemModuleCatalogDto) => !this.auth.isRemovedCalculatorModule(m))
+              .map((m: SystemModuleCatalogDto) => ({
+                ...m,
+                actions: (m.actions || []).filter(
+                  a => !this.auth.isRemovedCalculatorActionSlug?.(a.slug)
+                )
+              }))
+              .sort(
+                (a: SystemModuleCatalogDto, b: SystemModuleCatalogDto) => a.displayOrder - b.displayOrder
+              );
             this.modules.set(sorted);
             this.saveCatalogToStorage(sorted);
-            if (!this.selectedModuleId()) {
+            if (!this.selectedModuleId() && sorted.length > 0) {
               this.selectedModuleId.set(sorted[0].id);
             }
           } else {

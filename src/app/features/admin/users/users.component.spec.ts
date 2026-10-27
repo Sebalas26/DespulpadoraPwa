@@ -45,6 +45,7 @@ describe('AdminUsersComponent', () => {
       'getRoles',
       'createUser',
       'assignUserRole',
+      'updateUser',
       'updateUserStatus',
       'deleteUser'
     ]);
@@ -151,5 +152,40 @@ describe('AdminUsersComponent', () => {
 
     component.deleteUser(mockUsers[0]);
     expect(apiSpy.deleteUser).toHaveBeenCalledWith(10);
+  });
+
+  it('should toggle and close action menu and handle edit user modal successfully', () => {
+    const editedUser: UserAdminDto = {
+      ...mockUsers[0],
+      fullName: 'Juan Editado',
+      phone: '3159998877',
+      roleId: 2,
+      roleName: 'Administrador General'
+    };
+    apiSpy.updateUser.and.returnValue(of(editedUser));
+
+    component.toggleActionMenu(10);
+    expect(component.activeActionMenuUserId()).toBe(10);
+
+    component.onDocumentClick();
+    expect(component.activeActionMenuUserId()).toBeNull();
+
+    component.openEditModal(mockUsers[0]);
+    expect(component.showEditModal()).toBeTrue();
+    expect(component.editingUserId()).toBe(10);
+    expect(component.editFullName()).toBe('Juan Pérez');
+
+    component.editFullName.set('Juan Editado');
+    component.editPhone.set('3159998877');
+    component.submitEditUser();
+
+    expect(apiSpy.updateUser).toHaveBeenCalled();
+    expect(component.users()[0].fullName).toBe('Juan Editado');
+    expect(component.showEditModal()).toBeFalse();
+    expect(notificationSpy.success).toHaveBeenCalled();
+
+    component.openEditModal(mockUsers[0]);
+    component.closeEditModal();
+    expect(component.showEditModal()).toBeFalse();
   });
 });

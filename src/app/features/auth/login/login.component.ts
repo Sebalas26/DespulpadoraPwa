@@ -64,7 +64,7 @@ export class LoginComponent {
   }
 
   /**
-   * Submits user credentials to `POST /api/auth/login` and initializes the RBAC session.
+   * Submits user credentials to `POST /api/auth/login` and initializes the role-based session.
    */
   onSubmit(): void {
     try {

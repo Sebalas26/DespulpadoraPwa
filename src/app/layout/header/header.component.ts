@@ -821,7 +821,6 @@ export class HeaderComponent implements OnInit, OnDestroy {
         if (url.includes('tab=despachos')) return 'Despachos & Rutas';
         return 'Alistamiento de Pedidos';
       }
-      if (url.startsWith('/calculator')) return 'Inventario y Stock';
       if (url.startsWith('/settings')) {
         if (
           url.includes('tab=inventory') ||

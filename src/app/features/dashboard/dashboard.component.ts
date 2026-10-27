@@ -155,6 +155,32 @@ export interface LowStockAlertItem {
 }
 
 /**
+ * Trend direction for KPI mini-sparkline charts.
+ */
+export type SparklineTrend = 'up' | 'flat' | 'down';
+
+/**
+ * SVG geometry and trend metadata for a single KPI mini-sparkline (`viewBox="0 0 68 34"`).
+ */
+export interface KpiSparklineData {
+  trend: SparklineTrend;
+  linePath: string;
+  areaPath: string;
+  endX: number;
+  endY: number;
+}
+
+/**
+ * Reactive map of mini-sparkline geometries for the 4 top KPI cards in the dashboard.
+ */
+export interface KpiSparklinesMap {
+  billing: KpiSparklineData;
+  pulpStock: KpiSparklineData;
+  pulpsSoldToday: KpiSparklineData;
+  freshFruit: KpiSparklineData;
+}
+
+/**
  * Main executive dashboard component displaying financial performance, inventory reports, and order pipelines.
  */
 @Component({
@@ -225,6 +251,130 @@ export class DashboardComponent {
       };
     } catch {
       return { revenue: 0, ordersCount: 0, unitsSold: 0, orders: [] };
+    }
+  });
+
+  readonly kpiSparklines = computed<KpiSparklinesMap>(() => {
+    try {
+      const todayStats = this.todayBillingStats();
+      const validOrders = this.stateService.orders().filter(o => o.status !== 'CANCELLED');
+      const dailyTotalsMap = new Map<string, { revenue: number; units: number }>();
+
+      for (const order of validOrders) {
+        const dateKey = (order.orderDate || order.createdAt || '').substring(0, 10);
+        if (!dateKey) {
+          continue;
+        }
+        const current = dailyTotalsMap.get(dateKey) ?? { revenue: 0, units: 0 };
+        const orderUnits = order.items.reduce((sum, item) => sum + (item.quantity || 0), 0);
+        current.revenue += order.totalAmount || 0;
+        current.units += orderUnits;
+        dailyTotalsMap.set(dateKey, current);
+      }
+
+      const sortedDates = Array.from(dailyTotalsMap.keys()).sort();
+      const previousDates = sortedDates.length > 1 ? sortedDates.slice(0, -1) : [];
+
+      const avgPrevRevenue =
+        previousDates.length > 0
+          ? previousDates.reduce((sum, d) => sum + (dailyTotalsMap.get(d)?.revenue ?? 0), 0) /
+            previousDates.length
+          : (this.stateService.salesPerformance()?.monthTargetRevenue ?? 0) / 26;
+
+      let billingTrend: SparklineTrend = 'down';
+      if (todayStats.revenue <= 0) {
+        billingTrend = 'down';
+      } else if (avgPrevRevenue > 0) {
+        if (todayStats.revenue < avgPrevRevenue * 0.85) {
+          billingTrend = 'down';
+        } else if (todayStats.revenue <= avgPrevRevenue * 1.15) {
+          billingTrend = 'flat';
+        } else {
+          billingTrend = 'up';
+        }
+      } else {
+        billingTrend = 'up';
+      }
+
+      const totalStockKg = this.stateService.totalStockKg();
+      const fruits = this.stateService.fruits();
+      const minStockKg = fruits.reduce(
+        (sum, f) =>
+          sum +
+          ((f.minStock?.g140 ?? 0) * 0.14 +
+            (f.minStock?.g250 ?? 0) * 0.25 +
+            (f.minStock?.g500 ?? 0) * 0.5 +
+            (f.minStock?.g1000 ?? 0) * 1.0),
+        0
+      );
+
+      let pulpStockTrend: SparklineTrend = 'down';
+      if (totalStockKg <= 0) {
+        pulpStockTrend = 'down';
+      } else if (minStockKg > 0) {
+        if (totalStockKg < minStockKg) {
+          pulpStockTrend = 'down';
+        } else if (totalStockKg < minStockKg * 1.5) {
+          pulpStockTrend = 'flat';
+        } else {
+          pulpStockTrend = 'up';
+        }
+      } else if (totalStockKg < 25) {
+        pulpStockTrend = 'flat';
+      } else {
+        pulpStockTrend = 'up';
+      }
+
+      const avgPrevUnits =
+        previousDates.length > 0
+          ? previousDates.reduce((sum, d) => sum + (dailyTotalsMap.get(d)?.units ?? 0), 0) /
+            previousDates.length
+          : 0;
+
+      let pulpsSoldTrend: SparklineTrend = 'down';
+      if (todayStats.unitsSold <= 0) {
+        pulpsSoldTrend = 'down';
+      } else if (avgPrevUnits > 0) {
+        if (todayStats.unitsSold < avgPrevUnits * 0.85) {
+          pulpsSoldTrend = 'down';
+        } else if (todayStats.unitsSold <= avgPrevUnits * 1.15) {
+          pulpsSoldTrend = 'flat';
+        } else {
+          pulpsSoldTrend = 'up';
+        }
+      } else if (todayStats.unitsSold < 8) {
+        pulpsSoldTrend = 'flat';
+      } else {
+        pulpsSoldTrend = 'up';
+      }
+
+      const totalFreshKg = this.stateService.totalFreshStockKg();
+      const activeFruitsCount = Math.max(fruits.length, 1);
+      const avgFreshPerFruit = totalFreshKg / activeFruitsCount;
+
+      let freshFruitTrend: SparklineTrend = 'down';
+      if (totalFreshKg <= 0 || avgFreshPerFruit < 120) {
+        freshFruitTrend = 'down';
+      } else if (avgFreshPerFruit < 200) {
+        freshFruitTrend = 'flat';
+      } else {
+        freshFruitTrend = 'up';
+      }
+
+      return {
+        billing: this.buildSparklineGeometry(billingTrend),
+        pulpStock: this.buildSparklineGeometry(pulpStockTrend),
+        pulpsSoldToday: this.buildSparklineGeometry(pulpsSoldTrend),
+        freshFruit: this.buildSparklineGeometry(freshFruitTrend)
+      };
+    } catch {
+      const fallbackDown = this.buildSparklineGeometry('down');
+      return {
+        billing: fallbackDown,
+        pulpStock: fallbackDown,
+        pulpsSoldToday: fallbackDown,
+        freshFruit: fallbackDown
+      };
     }
   });
 
@@ -669,6 +819,52 @@ export class DashboardComponent {
       }).format(val || 0);
     } catch {
       return '$0';
+    }
+  }
+
+  /**
+   * Builds the SVG Bézier curve and area path for a KPI sparkline (`viewBox="0 0 68 34"`)
+   * based on whether the statistic is rising (`'up'`), steady/regular (`'flat'`), or falling/zero (`'down'`).
+   */
+  private buildSparklineGeometry(trend: SparklineTrend): KpiSparklineData {
+    try {
+      const endX = 63;
+      if (trend === 'up') {
+        const linePath = 'M2 25 C 14 23, 24 19, 36 14 C 46 10, 54 11, 63 7';
+        return {
+          trend: 'up',
+          linePath,
+          areaPath: `${linePath} L 63 32 L 2 32 Z`,
+          endX,
+          endY: 7
+        };
+      }
+      if (trend === 'flat') {
+        const linePath = 'M2 18 C 14 16, 26 19, 38 17 C 48 15, 55 18, 63 17';
+        return {
+          trend: 'flat',
+          linePath,
+          areaPath: `${linePath} L 63 32 L 2 32 Z`,
+          endX,
+          endY: 17
+        };
+      }
+      const linePath = 'M2 11 C 14 14, 26 18, 38 22 C 48 25, 55 26, 63 27';
+      return {
+        trend: 'down',
+        linePath,
+        areaPath: `${linePath} L 63 32 L 2 32 Z`,
+        endX,
+        endY: 27
+      };
+    } catch {
+      return {
+        trend: 'down',
+        linePath: 'M2 11 C 14 14, 26 18, 38 22 C 48 25, 55 26, 63 27',
+        areaPath: 'M2 11 C 14 14, 26 18, 38 22 C 48 25, 55 26, 63 27 L 63 32 L 2 32 Z',
+        endX: 63,
+        endY: 27
+      };
     }
   }
 }

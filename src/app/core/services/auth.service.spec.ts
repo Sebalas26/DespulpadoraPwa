@@ -8,7 +8,7 @@ import { environment } from '../../../environments/environment';
 
 /**
  * Unit test suite for `AuthService` covering JWT login, token refresh, logout,
- * Server-Driven RBAC navigation grouping, route access, and action permissions.
+ * Server-Driven dynamic navigation grouping, route access, and action permissions.
  */
 describe('AuthService', () => {
   let service: AuthService;
@@ -148,5 +148,81 @@ describe('AuthService', () => {
     expect(service.isAuthenticated()).toBeFalse();
     expect(service.user()).toBeNull();
     expect(navigateSpy).toHaveBeenCalledWith(['/login']);
+  });
+
+  it('should filter out removed calculator module and calculator/batches action slugs', () => {
+    const responseWithCalculator: LoginResponseDto = {
+      ...sampleLoginResponse,
+      navigationModules: [
+        ...(sampleLoginResponse.navigationModules ?? []),
+        {
+          moduleId: 99,
+          name: 'Planta e Inventario',
+          slug: 'calculator',
+          menuSection: 'Operations',
+          frontendRoute: '/calculator',
+          icon: 'package',
+          displayOrder: 3,
+          allowedActionSlugs: ['calculator.view', 'batches.create']
+        }
+      ]
+    };
+
+    service.persistLoginSession(responseWithCalculator, false);
+
+    expect(service.navigationModules().some(m => m.frontendRoute === '/calculator')).toBeFalse();
+    expect(service.hasModuleAccess('/calculator')).toBeFalse();
+    expect(service.hasPermission('calculator.view')).toBeFalse();
+    expect(service.hasPermission('batches.create')).toBeFalse();
+  });
+
+  it('should hide SEGURIDAD RBAC modules (users and roles) from groupedNavigationSections while preserving permissions and /settings access', () => {
+    const responseWithRbacMenu: LoginResponseDto = {
+      ...sampleLoginResponse,
+      navigationModules: [
+        {
+          moduleId: 1,
+          name: 'Dashboard Module',
+          slug: 'dashboard',
+          menuSection: 'Operación',
+          frontendRoute: '/dashboard',
+          icon: 'grid',
+          displayOrder: 1,
+          allowedActionSlugs: ['dashboard.view']
+        },
+        {
+          moduleId: 8,
+          name: 'Gestión de Usuarios',
+          slug: 'users',
+          menuSection: 'SEGURIDAD RBAC',
+          frontendRoute: '/admin/users',
+          icon: 'users',
+          displayOrder: 8,
+          allowedActionSlugs: ['users.view', 'users.manage']
+        },
+        {
+          moduleId: 9,
+          name: 'Roles y Matriz de Permisos',
+          slug: 'roles',
+          menuSection: 'SEGURIDAD RBAC',
+          frontendRoute: '/admin/roles',
+          icon: 'shield',
+          displayOrder: 9,
+          allowedActionSlugs: ['roles.view', 'roles.manage']
+        }
+      ]
+    };
+
+    service.persistLoginSession(responseWithRbacMenu, false);
+
+    const groups = service.groupedNavigationSections();
+    expect(groups.some(g => g.sectionName === 'SEGURIDAD RBAC')).toBeFalse();
+    expect(groups.length).toBe(1);
+    expect(groups[0].modules.length).toBe(1);
+
+    expect(service.navigationModules().length).toBe(3);
+    expect(service.hasPermission('users.manage')).toBeTrue();
+    expect(service.hasPermission('roles.manage')).toBeTrue();
+    expect(service.hasModuleAccess('/settings')).toBeTrue();
   });
 });

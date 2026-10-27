@@ -22,7 +22,7 @@ export const authGuard: CanActivateFn = (): boolean => {
 };
 
 /**
- * Guard that validates administrative module access dynamically through RBAC permissions.
+ * Guard that validates administrative module access dynamically through role-based permissions.
  */
 export const adminGuard: CanActivateFn = (): boolean => {
   try {

@@ -1,4 +1,4 @@
-import { Component, inject, signal, OnInit } from '@angular/core';
+import { Component, HostListener, inject, signal, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { forkJoin } from 'rxjs';
@@ -35,6 +35,19 @@ export class AdminUsersComponent implements OnInit {
   readonly newPassword = signal<string>('');
   readonly newRoleId = signal<number>(0);
   readonly newIsSystemDeveloper = signal<boolean>(false);
+
+  readonly showEditModal = signal<boolean>(false);
+  readonly editingUserId = signal<number>(0);
+  readonly editUsername = signal<string>('');
+  readonly editFullName = signal<string>('');
+  readonly editEmail = signal<string>('');
+  readonly editPhone = signal<string>('');
+  readonly editDocumentNumber = signal<string>('');
+  readonly editRoleId = signal<number>(0);
+  readonly editIsActive = signal<boolean>(true);
+  readonly editIsSystemDeveloper = signal<boolean>(false);
+
+  readonly activeActionMenuUserId = signal<number | null>(null);
 
   /**
    * Initializes users and roles from the backend API.
@@ -175,6 +188,7 @@ export class AdminUsersComponent implements OnInit {
    */
   toggleUserStatus(user: UserAdminDto): void {
     try {
+      this.activeActionMenuUserId.set(null);
       if (user.userId === 1) {
         this.notification.warning('Usuario Protegido', 'No se puede desactivar la cuenta Super Administrador.');
         return;
@@ -202,6 +216,7 @@ export class AdminUsersComponent implements OnInit {
    */
   deleteUser(user: UserAdminDto): void {
     try {
+      this.activeActionMenuUserId.set(null);
       if (user.userId === 1) {
         this.notification.warning('Usuario Protegido', 'No se puede eliminar la cuenta Super Administrador.');
         return;
@@ -225,6 +240,128 @@ export class AdminUsersComponent implements OnInit {
           );
         }
       });
+    } catch {
+      return;
+    }
+  }
+
+  /**
+   * Toggles the action menu dropdown for a specific user row.
+   * @param userId The unique user identifier.
+   * @param event The mouse click event.
+   */
+  toggleActionMenu(userId: number, event?: MouseEvent): void {
+    try {
+      if (event) {
+        event.stopPropagation();
+      }
+      this.activeActionMenuUserId.update((current: number | null) =>
+        current === userId ? null : userId
+      );
+    } catch {
+      return;
+    }
+  }
+
+  /**
+   * Closes open action menus on document click.
+   */
+  @HostListener('document:click')
+  onDocumentClick(): void {
+    try {
+      this.activeActionMenuUserId.set(null);
+    } catch {
+      return;
+    }
+  }
+
+  /**
+   * Opens the edit modal with current user data.
+   * @param user The user entity to edit.
+   */
+  openEditModal(user: UserAdminDto): void {
+    try {
+      this.activeActionMenuUserId.set(null);
+      this.editingUserId.set(user.userId);
+      this.editUsername.set(user.username);
+      this.editFullName.set(user.fullName);
+      this.editEmail.set(user.email);
+      this.editPhone.set(user.phone ?? '');
+      this.editDocumentNumber.set(user.documentNumber ?? '');
+      this.editRoleId.set(user.roleId);
+      this.editIsActive.set(user.isActive);
+      this.editIsSystemDeveloper.set(Boolean(user.isSystemDeveloper));
+      this.showEditModal.set(true);
+    } catch {
+      return;
+    }
+  }
+
+  /**
+   * Closes the edit user modal.
+   */
+  closeEditModal(): void {
+    try {
+      this.showEditModal.set(false);
+    } catch {
+      return;
+    }
+  }
+
+  /**
+   * Submits user modifications via `PUT /api/users/{id}`.
+   */
+  submitEditUser(): void {
+    try {
+      const userId = this.editingUserId();
+      const fullName = this.editFullName().trim();
+      const email = this.editEmail().trim();
+
+      if (!fullName || !email) {
+        this.notification.warning('Campos incompletos', 'Completa el nombre completo y correo electrónico.');
+        return;
+      }
+
+      const roleId = Number(this.editRoleId());
+
+      this.api
+        .updateUser(userId, {
+          username: this.editUsername().trim() || undefined,
+          fullName,
+          email,
+          phone: this.editPhone().trim() || undefined,
+          documentNumber: this.editDocumentNumber().trim() || undefined,
+          roleId,
+          isSystemDeveloper: this.editIsSystemDeveloper(),
+          isActive: this.editIsActive()
+        })
+        .subscribe({
+          next: (updated: UserAdminDto) => {
+            const matchingRole = this.roles().find((r: UserRoleDto) => r.roleId === roleId);
+            const resolvedRoleName = matchingRole?.name ?? updated.roleName;
+            const updatedUser: UserAdminDto = {
+              ...updated,
+              roleName: resolvedRoleName,
+              roleId
+            };
+            const updatedList = this.users().map((u: UserAdminDto) =>
+              u.userId === userId ? { ...u, ...updatedUser } : u
+            );
+            this.users.set(updatedList);
+            this.saveUsersToStorage(updatedList);
+            this.showEditModal.set(false);
+            this.notification.success(
+              'Usuario Actualizado',
+              `La información de @${updated.username} ha sido actualizada exitosamente.`
+            );
+          },
+          error: () => {
+            this.notification.error(
+              'Error al Actualizar',
+              'No se pudo actualizar la información del usuario en el servidor.'
+            );
+          }
+        });
     } catch {
       return;
     }

@@ -44,17 +44,17 @@ export interface PermissionModule {
 export type SystemModuleCatalog = PermissionModule;
 
 /**
- * Empty initial system roles list populated from the backend RBAC API.
+ * Empty initial system roles list populated from the backend roles API.
  */
 export const SYSTEM_ROLES: UserRoleDto[] = [];
 
 /**
- * Empty initial system modules list populated from the backend RBAC API.
+ * Empty initial system modules list populated from the backend modules API.
  */
 export const SYSTEM_MODULES: PermissionModule[] = [];
 
 /**
- * Empty initial role-permissions mapping populated from the backend RBAC API.
+ * Empty initial role-permissions mapping populated from the backend permissions API.
  */
 export const DEFAULT_ROLE_PERMISSIONS: Record<number, number[]> = {};
 
@@ -62,7 +62,7 @@ const STORAGE_ROLES_KEY = 'dgl_roles_v2';
 const STORAGE_PERMISSIONS_KEY = 'dgl_role_permissions_v2';
 
 /**
- * RBAC Roles and Permissions Matrix administration component connected to
+ * Roles and Permissions Matrix administration component connected to
  * `/api/roles`, `/api/modules`, and `PUT /api/roles/{roleId}/permissions`.
  */
 @Component({
@@ -185,7 +185,10 @@ export class AdminRolesComponent implements OnInit {
       }).subscribe({
         next: (result: { roles: UserRoleDto[]; modules: SystemModuleCatalogDto[] }) => {
           if (Array.isArray(result.modules)) {
-            const mappedModules: PermissionModule[] = result.modules.map((m: SystemModuleCatalogDto) => ({
+            const visibleModules = result.modules.filter(
+              (m: SystemModuleCatalogDto) => !this.auth.isRemovedCalculatorModule(m)
+            );
+            const mappedModules: PermissionModule[] = visibleModules.map((m: SystemModuleCatalogDto) => ({
               moduleId: m.id,
               name: m.name,
               slug: m.slug,
@@ -193,13 +196,18 @@ export class AdminRolesComponent implements OnInit {
               frontendRoute: m.frontendRoute,
               scope: 'PWA',
               description: `Sección: ${m.menuSection} · Ruta: ${m.frontendRoute}`,
-              actions: (m.actions || []).map((a: SystemActionCatalogDto) => ({
-                actionId: a.id,
-                name: a.name,
-                slug: a.slug,
-                httpMethod: a.httpMethod || 'GET',
-                description: a.description || ''
-              }))
+              actions: (m.actions || [])
+                .filter((a: SystemActionCatalogDto) => {
+                  const actionSlug = (a.slug || '').trim().toLowerCase();
+                  return !actionSlug.startsWith('calculator.') && !actionSlug.startsWith('batches.');
+                })
+                .map((a: SystemActionCatalogDto) => ({
+                  actionId: a.id,
+                  name: a.name,
+                  slug: a.slug,
+                  httpMethod: a.httpMethod || 'GET',
+                  description: a.description || ''
+                }))
             }));
             this.modules.set(mappedModules);
           } else {
@@ -250,8 +258,18 @@ export class AdminRolesComponent implements OnInit {
 
       this.api.getRolePermissionsMatrix(roleId).subscribe({
         next: (matrix: RolePermissionsMatrixDto) => {
-          const modSet = new Set<number>(matrix.assignedModuleIds || []);
-          const actSet = new Set<number>(matrix.assignedActionIds || []);
+          const validModuleIds = new Set<number>(this.modules().map((m: PermissionModule) => m.moduleId));
+          const validActionIds = new Set<number>();
+          this.modules().forEach((m: PermissionModule) => {
+            m.actions.forEach((a: PermissionAction) => validActionIds.add(a.actionId));
+          });
+
+          const modSet = new Set<number>(
+            (matrix.assignedModuleIds || []).filter((id: number) => validModuleIds.size === 0 || validModuleIds.has(id))
+          );
+          const actSet = new Set<number>(
+            (matrix.assignedActionIds || []).filter((id: number) => validActionIds.size === 0 || validActionIds.has(id))
+          );
           this.assignedModuleIds.set(modSet);
           this.assignedActionIds.set(actSet);
         },
@@ -364,8 +382,18 @@ export class AdminRolesComponent implements OnInit {
   savePermissions(): void {
     try {
       const roleId = this.selectedRoleId();
-      const actionSet = this.assignedActionIds();
-      const moduleSet = new Set<number>(this.assignedModuleIds());
+      const validModuleIds = new Set<number>(this.modules().map((m: PermissionModule) => m.moduleId));
+      const validActionIds = new Set<number>();
+      this.modules().forEach((m: PermissionModule) => {
+        m.actions.forEach((a: PermissionAction) => validActionIds.add(a.actionId));
+      });
+
+      const actionSet = new Set<number>(
+        Array.from(this.assignedActionIds()).filter((id: number) => validActionIds.has(id))
+      );
+      const moduleSet = new Set<number>(
+        Array.from(this.assignedModuleIds()).filter((id: number) => validModuleIds.has(id))
+      );
 
       this.modules().forEach((m: PermissionModule) => {
         if (m.actions.some((a: PermissionAction) => actionSet.has(a.actionId))) {
@@ -386,7 +414,7 @@ export class AdminRolesComponent implements OnInit {
           localStorage.setItem(STORAGE_PERMISSIONS_KEY, JSON.stringify(permsMap));
           this.syncCurrentRoleNavigationIfNeeded(roleId, moduleSet, actionSet);
           this.notification.success(
-            'Matriz RBAC Guardada',
+            'Matriz de Privilegios Guardada',
             `Se actualizaron ${moduleIds.length} módulos y ${actionIds.length} acciones para "${this.currentRole().name}".`
           );
         },

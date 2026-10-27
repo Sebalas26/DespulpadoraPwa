@@ -29,8 +29,9 @@
               <stop offset="100%" stop-color="#22c55e" stop-opacity="0.0" />
             </linearGradient>
           </defs>
-          <path d="M2 22 C 16 22, 24 20, 34 11 C 42 4, 52 8, 65 20 L 65 32 L 2 32 Z" fill="url(#sparkGreen1)" />
-          <path d="M2 22 C 16 22, 24 20, 34 11 C 42 4, 52 8, 65 20" stroke="#22c55e" stroke-width="1.8" stroke-linecap="round" />
+          <path [attr.d]="kpiSparklines().billing.areaPath" fill="url(#sparkGreen1)" />
+          <path [attr.d]="kpiSparklines().billing.linePath" stroke="#22c55e" stroke-width="1.8" stroke-linecap="round" />
+          <circle [attr.cx]="kpiSparklines().billing.endX" [attr.cy]="kpiSparklines().billing.endY" r="2.6" fill="#15803d" />
         </svg>
       </div>
     </div>
@@ -52,9 +53,9 @@
               <stop offset="100%" stop-color="#22c55e" stop-opacity="0.0" />
             </linearGradient>
           </defs>
-          <path d="M2 24 C 10 24, 15 15, 22 17 C 29 19, 34 25, 42 13 C 48 4, 55 15, 63 9 L 63 32 L 2 32 Z" fill="url(#sparkGreen2)" />
-          <path d="M2 24 C 10 24, 15 15, 22 17 C 29 19, 34 25, 42 13 C 48 4, 55 15, 63 9" stroke="#22c55e" stroke-width="1.8" stroke-linecap="round" />
-          <circle cx="63" cy="9" r="2.6" fill="#15803d" />
+          <path [attr.d]="kpiSparklines().pulpStock.areaPath" fill="url(#sparkGreen2)" />
+          <path [attr.d]="kpiSparklines().pulpStock.linePath" stroke="#22c55e" stroke-width="1.8" stroke-linecap="round" />
+          <circle [attr.cx]="kpiSparklines().pulpStock.endX" [attr.cy]="kpiSparklines().pulpStock.endY" r="2.6" fill="#15803d" />
         </svg>
       </div>
     </div>
@@ -77,9 +78,9 @@
               <stop offset="100%" stop-color="#f59e0b" stop-opacity="0.0" />
             </linearGradient>
           </defs>
-          <path d="M2 22 C 12 18, 20 20, 30 14 C 40 8, 50 12, 63 7 L 63 32 L 2 32 Z" fill="url(#sparkAmber3)" />
-          <path d="M2 22 C 12 18, 20 20, 30 14 C 40 8, 50 12, 63 7" stroke="#d97706" stroke-width="1.8" stroke-linecap="round" />
-          <circle cx="63" cy="7" r="2.6" fill="#b45309" />
+          <path [attr.d]="kpiSparklines().pulpsSoldToday.areaPath" fill="url(#sparkAmber3)" />
+          <path [attr.d]="kpiSparklines().pulpsSoldToday.linePath" stroke="#d97706" stroke-width="1.8" stroke-linecap="round" />
+          <circle [attr.cx]="kpiSparklines().pulpsSoldToday.endX" [attr.cy]="kpiSparklines().pulpsSoldToday.endY" r="2.6" fill="#b45309" />
         </svg>
       </div>
     </div>
@@ -102,9 +103,9 @@
               <stop offset="100%" stop-color="#8b5cf6" stop-opacity="0.0" />
             </linearGradient>
           </defs>
-          <path d="M2 18 C 14 14, 26 16, 36 12 C 44 9, 52 14, 63 10 L 63 32 L 2 32 Z" fill="url(#sparkPurple4)" />
-          <path d="M2 18 C 14 14, 26 16, 36 12 C 44 9, 52 14, 63 10" stroke="#7c3aed" stroke-width="1.8" stroke-linecap="round" />
-          <circle cx="63" cy="10" r="2.6" fill="#4c1d95" />
+          <path [attr.d]="kpiSparklines().freshFruit.areaPath" fill="url(#sparkPurple4)" />
+          <path [attr.d]="kpiSparklines().freshFruit.linePath" stroke="#7c3aed" stroke-width="1.8" stroke-linecap="round" />
+          <circle [attr.cx]="kpiSparklines().freshFruit.endX" [attr.cy]="kpiSparklines().freshFruit.endY" r="2.6" fill="#4c1d95" />
         </svg>
       </div>
     </div>

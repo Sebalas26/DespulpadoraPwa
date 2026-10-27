@@ -17,7 +17,7 @@ import {
 } from '../../../core/models/business.models';
 
 /**
- * Unit tests for AdminRolesComponent verifying RBAC role and permission management without hardcoded fallbacks.
+ * Unit tests for AdminRolesComponent verifying role and permission management without hardcoded fallbacks.
  */
 describe('AdminRolesComponent', () => {
   let component: AdminRolesComponent;
@@ -79,7 +79,12 @@ describe('AdminRolesComponent', () => {
     authMock = {
       user: signal(null) as unknown as AuthService['user'],
       currentUser: signal(null) as unknown as AuthService['currentUser'],
-      syncNavigationModules: jasmine.createSpy('syncNavigationModules')
+      syncNavigationModules: jasmine.createSpy('syncNavigationModules'),
+      isRemovedCalculatorModule: (mod: { frontendRoute?: string; slug?: string; name?: string }) =>
+        mod.frontendRoute === '/calculator' ||
+        mod.slug === 'calculator' ||
+        mod.name === 'Planta e Inventario' ||
+        mod.name === 'Control de Producción & Mermas'
     };
     notificationSpy = jasmine.createSpyObj<NotificationService>('NotificationService', [
       'success',
@@ -170,5 +175,39 @@ describe('AdminRolesComponent', () => {
     const mouseEvent = new MouseEvent('click');
     component.deleteCustomRole(newRole, mouseEvent);
     expect(apiSpy.deleteRole).toHaveBeenCalledWith(5);
+  });
+
+  it('should filter out removed calculator module and calculator/batches actions from permissions matrix', () => {
+    apiSpy.getSystemModules.and.returnValue(
+      of([
+        ...mockSystemModules,
+        {
+          id: 99,
+          name: 'Planta e Inventario',
+          slug: 'calculator',
+          icon: 'package',
+          menuSection: 'OPERACIÓN',
+          frontendRoute: '/calculator',
+          displayOrder: 2,
+          isActive: true,
+          actions: [
+            {
+              id: 991,
+              moduleId: 99,
+              name: 'Registrar Lote',
+              slug: 'batches.create',
+              httpMethod: 'POST',
+              description: '',
+              isActive: true
+            }
+          ]
+        }
+      ])
+    );
+
+    component.loadRolesAndCatalog();
+
+    expect(component.modules().length).toBe(1);
+    expect(component.modules().some(m => m.frontendRoute === '/calculator')).toBeFalse();
   });
 });

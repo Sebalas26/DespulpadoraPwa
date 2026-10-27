@@ -52,7 +52,7 @@ import {
 } from '../models/business.models';
 
 /**
- * Unified HTTP client service connecting all operational modules and RBAC catalog views
+ * Unified HTTP client service connecting all operational modules and permissions catalog views
  * with the .NET 10 Hexagonal Backend (`ApiDespulpadora`).
  */
 @Injectable({

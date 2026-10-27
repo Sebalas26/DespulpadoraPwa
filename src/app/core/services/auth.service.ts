@@ -22,7 +22,7 @@ import {
 import { NotificationService } from './notification.service';
 
 /**
- * Central reactive authentication and Server-Driven RBAC navigation service.
+ * Central reactive authentication and Server-Driven dynamic navigation service.
  */
 @Injectable({
   providedIn: 'root'
@@ -79,15 +79,20 @@ export class AuthService {
     const slugs = new Set<string>();
     const modules = this.navigationModules();
     for (const mod of modules) {
+      if (this.isRemovedCalculatorModule(mod)) {
+        continue;
+      }
       if (Array.isArray(mod.allowedActionSlugs)) {
         for (const slug of mod.allowedActionSlugs) {
-          slugs.add(slug);
+          if (!this.isRemovedCalculatorActionSlug(slug)) {
+            slugs.add(slug);
+          }
         }
       }
     }
     const directPermissions = this.currentUser()?.permissions ?? [];
     for (const perm of directPermissions) {
-      if (perm.actionSlug) {
+      if (perm.actionSlug && !this.isRemovedCalculatorActionSlug(perm.actionSlug)) {
         slugs.add(perm.actionSlug);
       }
     }
@@ -96,7 +101,12 @@ export class AuthService {
 
   readonly groupedNavigationSections = computed<NavigationSectionGroup[]>(() => {
     try {
-      const modules = [...this.navigationModules()].sort((a, b) => a.displayOrder - b.displayOrder);
+      const modules = [...this.navigationModules()]
+        .filter(
+          (mod: NavigationModuleDto) =>
+            !this.isRemovedCalculatorModule(mod) && !this.isEmbeddedSettingsRbacModule(mod)
+        )
+        .sort((a, b) => a.displayOrder - b.displayOrder);
       const sectionMap = new Map<string, NavigationModuleDto[]>();
 
       for (const mod of modules) {
@@ -187,7 +197,9 @@ export class AuthService {
       };
 
       const sortedModules = Array.isArray(response.navigationModules)
-        ? [...response.navigationModules].sort((a, b) => a.displayOrder - b.displayOrder)
+        ? [...response.navigationModules]
+            .filter((mod: NavigationModuleDto) => !this.isRemovedCalculatorModule(mod))
+            .sort((a, b) => a.displayOrder - b.displayOrder)
         : [];
 
       const flatPermissions: PermissionDto[] = [];
@@ -195,6 +207,9 @@ export class AuthService {
       for (const mod of sortedModules) {
         const slugs = Array.isArray(mod.allowedActionSlugs) ? mod.allowedActionSlugs : [];
         for (const slug of slugs) {
+          if (this.isRemovedCalculatorActionSlug(slug)) {
+            continue;
+          }
           flatPermissions.push({
             actionId: syntheticId++,
             actionName: slug,
@@ -282,7 +297,9 @@ export class AuthService {
    */
   syncNavigationModules(modules: NavigationModuleDto[]): void {
     try {
-      const sorted = [...modules].sort((a, b) => a.displayOrder - b.displayOrder);
+      const sorted = [...modules]
+        .filter((mod: NavigationModuleDto) => !this.isRemovedCalculatorModule(mod))
+        .sort((a, b) => a.displayOrder - b.displayOrder);
       this.navigationModules.set(sorted);
       localStorage.setItem(this.NAV_MODULES_KEY, JSON.stringify(sorted));
       const current = this.currentUser();
@@ -317,11 +334,15 @@ export class AuthService {
         return false;
       }
 
+      const normalizedTarget = this.normalizeRouteKey(routeOrSlug);
+      if (normalizedTarget === 'calculator') {
+        return false;
+      }
+
       if (this.isSystemDeveloper()) {
         return true;
       }
 
-      const normalizedTarget = this.normalizeRouteKey(routeOrSlug);
       if (!normalizedTarget || normalizedTarget === 'dashboard') {
         return true;
       }
@@ -340,6 +361,15 @@ export class AuthService {
 
       if (hasDirectMatch) {
         return true;
+      }
+
+      if (normalizedTarget === 'settings') {
+        return (
+          this.hasModuleAccess('admin/users') ||
+          this.hasModuleAccess('admin/roles') ||
+          this.hasModuleAccess('users') ||
+          this.hasModuleAccess('roles')
+        );
       }
 
       if (normalizedTarget === 'portal-admin') {
@@ -362,6 +392,12 @@ export class AuthService {
   findNavigationModuleByRoute(routeUrl: string): NavigationModuleDto | null {
     try {
       const normalizedTarget = this.normalizeRouteKey(routeUrl);
+      if (
+        !normalizedTarget ||
+        this.isRemovedCalculatorModule({ frontendRoute: normalizedTarget, slug: normalizedTarget })
+      ) {
+        return null;
+      }
       const modules = this.navigationModules();
       const exactMatch = modules.find(
         (m: NavigationModuleDto) =>
@@ -391,11 +427,15 @@ export class AuthService {
         return false;
       }
 
+      const cleanSlug = (actionSlug || '').trim();
+      if (this.isRemovedCalculatorActionSlug(cleanSlug)) {
+        return false;
+      }
+
       if (this.isSystemDeveloper()) {
         return true;
       }
 
-      const cleanSlug = (actionSlug || '').trim();
       if (!cleanSlug) {
         return true;
       }
@@ -560,14 +600,16 @@ export class AuthService {
       if (raw) {
         const parsed = JSON.parse(raw) as NavigationModuleDto[];
         if (Array.isArray(parsed)) {
-          return parsed;
+          return parsed.filter((mod: NavigationModuleDto) => !this.isRemovedCalculatorModule(mod));
         }
       }
       const sessionRaw = localStorage.getItem(this.SESSION_KEY);
       if (sessionRaw) {
         const parsedSession = JSON.parse(sessionRaw) as AuthResponseDto;
         if (Array.isArray(parsedSession.navigationModules)) {
-          return parsedSession.navigationModules;
+          return parsedSession.navigationModules.filter(
+            (mod: NavigationModuleDto) => !this.isRemovedCalculatorModule(mod)
+          );
         }
       }
       return [];
@@ -577,12 +619,88 @@ export class AuthService {
   }
 
   /**
+   * Determines whether a navigation or system module corresponds to the removed
+   * "Control de Producción & Mermas" (`/calculator` / `Planta e Inventario`) module.
+   */
+  isRemovedCalculatorModule(mod: {
+    frontendRoute?: string;
+    slug?: string;
+    name?: string;
+  }): boolean {
+    const normalizedRoute = this.normalizeRouteKey(mod.frontendRoute || '');
+    const normalizedSlug = (mod.slug || '').trim().toLowerCase();
+    const normalizedName = (mod.name || '').trim().toLowerCase();
+    return (
+      normalizedRoute === 'calculator' ||
+      normalizedSlug === 'calculator' ||
+      normalizedName === 'control de producción & mermas' ||
+      normalizedName === 'planta e inventario' ||
+      normalizedName === 'producción, formulación & mermas'
+    );
+  }
+
+  /**
+   * Determines whether a module corresponds to "Gestión de Usuarios" or "Roles y Matriz de Permisos"
+   * (`SEGURIDAD RBAC`) which are already embedded as tabs inside `/settings` (Configuración)
+   * and therefore should be omitted from the sidebar/drawer navigation menu.
+   */
+  isEmbeddedSettingsRbacModule(mod: {
+    frontendRoute?: string;
+    slug?: string;
+    name?: string;
+    menuSection?: string;
+  }): boolean {
+    try {
+      const normalizedRoute = this.normalizeRouteKey(mod.frontendRoute || '');
+      const normalizedSlug = (mod.slug || '').trim().toLowerCase();
+      const normalizedName = (mod.name || '').trim().toLowerCase();
+      const normalizedSection = (mod.menuSection || '').trim().toLowerCase();
+      return (
+        normalizedRoute === 'admin/users' ||
+        normalizedRoute === 'admin/roles' ||
+        normalizedSlug === 'users' ||
+        normalizedSlug === 'roles' ||
+        normalizedSlug === 'admin-users' ||
+        normalizedSlug === 'admin-roles' ||
+        normalizedName === 'gestión de usuarios' ||
+        normalizedName === 'gestion de usuarios' ||
+        normalizedName === 'roles y matriz de permisos' ||
+        normalizedSection === 'seguridad rbac'
+      );
+    } catch {
+      return false;
+    }
+  }
+
+  /**
+   * Determines whether an action slug belongs to the removed calculator/batches module.
+   */
+  isRemovedCalculatorActionSlug(slug: string): boolean {
+    const normalized = (slug || '').trim().toLowerCase();
+    return normalized.startsWith('calculator.') || normalized.startsWith('batches.');
+  }
+
+  /**
    * Loads the unified `AuthResponseDto` from `localStorage`.
    */
   private loadStoredSession(): AuthResponseDto | null {
     try {
       const data = localStorage.getItem(this.SESSION_KEY);
-      return data ? (JSON.parse(data) as AuthResponseDto) : null;
+      if (!data) {
+        return null;
+      }
+      const parsed = JSON.parse(data) as AuthResponseDto;
+      if (Array.isArray(parsed.navigationModules)) {
+        parsed.navigationModules = parsed.navigationModules.filter(
+          (mod: NavigationModuleDto) => !this.isRemovedCalculatorModule(mod)
+        );
+      }
+      if (Array.isArray(parsed.permissions)) {
+        parsed.permissions = parsed.permissions.filter(
+          (perm: PermissionDto) => !this.isRemovedCalculatorActionSlug(perm.actionSlug)
+        );
+      }
+      return parsed;
     } catch {
       return null;
     }

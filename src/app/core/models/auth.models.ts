@@ -179,7 +179,7 @@ export interface PermissionActionItemDto {
 }
 
 /**
- * Permission module catalog representation for RBAC management.
+ * Permission module catalog representation for role and permission management.
  */
 export interface PermissionModule {
   moduleId: number;
@@ -197,7 +197,7 @@ export interface PermissionModule {
 }
 
 /**
- * Role summary representation for RBAC role listings.
+ * Role summary representation for system role listings.
  */
 export interface RoleSummaryDto {
   roleId: number;
@@ -209,7 +209,7 @@ export interface RoleSummaryDto {
 }
 
 /**
- * Role permissions response payload for RBAC assignment views.
+ * Role permissions response payload for role and permission assignment views.
  */
 export interface RolePermissionsResponseDto {
   roleId: number;

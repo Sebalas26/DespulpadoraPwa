@@ -4,7 +4,6 @@ import { permissionGuard } from './core/guards/permission.guard';
 import { LoginComponent } from './features/auth/login/login.component';
 import { MainLayoutComponent } from './layout/main-layout/main-layout.component';
 import { DashboardComponent } from './features/dashboard/dashboard.component';
-import { CalculatorComponent } from './features/calculator/calculator.component';
 import { OrdersComponent } from './features/orders/orders.component';
 import { ShiftsComponent } from './features/shifts/shifts.component';
 import { HrComponent } from './features/hr/hr.component';
@@ -18,7 +17,7 @@ import { BackupsComponent } from './features/admin/backups/backups.component';
 import { DynamicModulePlaceholderComponent } from './features/dynamic-module-placeholder/dynamic-module-placeholder.component';
 
 /**
- * Application routing configuration with Server-Driven RBAC guards and intelligent fallback
+ * Application routing configuration with Server-Driven permission guards and intelligent fallback
  * (`DynamicModulePlaceholderComponent`) for newly registered database modules.
  */
 export const routes: Routes = [
@@ -71,7 +70,6 @@ export const routes: Routes = [
           ),
         canActivate: [permissionGuard]
       },
-      { path: 'calculator', component: CalculatorComponent, canActivate: [permissionGuard] },
       { path: 'orders', component: OrdersComponent, canActivate: [permissionGuard] },
       { path: 'shifts', component: ShiftsComponent, canActivate: [permissionGuard] },
       { path: 'hr', component: HrComponent, canActivate: [permissionGuard] },

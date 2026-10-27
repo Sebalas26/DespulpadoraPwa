@@ -75,16 +75,21 @@ describe('DashboardComponent', () => {
     averageTicketValue: 35000
   });
 
+  const mockTotalStockKg = signal<number>(17.2);
+  const mockTotalFreshStockKg = signal<number>(250);
+
   beforeEach(async () => {
     upsertTargetSpy = jasmine.createSpy('upsertSalesTarget');
+    mockTotalStockKg.set(17.2);
+    mockTotalFreshStockKg.set(250);
 
     const stateServiceMock: Partial<StateService> = {
       isOnline: signal<boolean>(true) as unknown as StateService['isOnline'],
       fruits: mockFruits,
       orders: mockOrders,
       salesPerformance: mockSalesPerformance,
-      totalStockKg: signal<number>(17.2) as unknown as StateService['totalStockKg'],
-      totalFreshStockKg: signal<number>(250) as unknown as StateService['totalFreshStockKg'],
+      totalStockKg: mockTotalStockKg as unknown as StateService['totalStockKg'],
+      totalFreshStockKg: mockTotalFreshStockKg as unknown as StateService['totalFreshStockKg'],
       upsertSalesTarget: upsertTargetSpy
     };
 
@@ -170,5 +175,31 @@ describe('DashboardComponent', () => {
   it('should return currentMonthName and formatCOP strings', () => {
     expect(component.currentMonthName().length).toBeGreaterThan(0);
     expect(component.formatCOP(15000)).toContain('15.000');
+  });
+
+  it('should dynamically compute kpiSparklines trends (up, flat, down) based on real statistics', () => {
+    const initialSparks = component.kpiSparklines();
+    expect(initialSparks.billing.trend).toBe('down');
+    expect(initialSparks.billing.endY).toBe(27);
+    expect(initialSparks.pulpStock.trend).toBe('flat');
+    expect(initialSparks.pulpStock.endY).toBe(17);
+    expect(initialSparks.pulpsSoldToday.trend).toBe('up');
+    expect(initialSparks.pulpsSoldToday.endY).toBe(7);
+    expect(initialSparks.freshFruit.trend).toBe('up');
+    expect(initialSparks.freshFruit.endY).toBe(7);
+
+    mockTotalStockKg.set(0);
+    mockTotalFreshStockKg.set(0);
+    expect(component.kpiSparklines().pulpStock.trend).toBe('down');
+    expect(component.kpiSparklines().pulpStock.endY).toBe(27);
+    expect(component.kpiSparklines().freshFruit.trend).toBe('down');
+    expect(component.kpiSparklines().freshFruit.endY).toBe(27);
+
+    mockTotalStockKg.set(40);
+    mockTotalFreshStockKg.set(150);
+    expect(component.kpiSparklines().pulpStock.trend).toBe('up');
+    expect(component.kpiSparklines().pulpStock.endY).toBe(7);
+    expect(component.kpiSparklines().freshFruit.trend).toBe('flat');
+    expect(component.kpiSparklines().freshFruit.endY).toBe(17);
   });
 });

@@ -6,7 +6,7 @@
         Gestión de Usuarios del Sistema
       </h1>
       <p style="color: var(--text-muted); font-size: 0.92rem;">
-        Administración de cuentas corporativas, asignación de roles RBAC y control de estado activo/inactivo.
+        Administración de cuentas corporativas, asignación de roles y control de estado activo/inactivo.
       </p>
     </div>
 
@@ -29,7 +29,7 @@
   <div class="card">
     <div class="card-header" style="justify-content: space-between;">
       <h3 class="card-title">Usuarios Registrados</h3>
-      <span class="badge badge-purple">{{ users().length }} cuentas registradas</span>
+      <span style="font-size: 0.85rem; font-weight: 700; color: var(--text-muted);">{{ users().length }} cuentas registradas</span>
     </div>
     <div class="card-body" style="padding: 0;">
       <div class="table-container">
@@ -39,10 +39,9 @@
               <th>Usuario</th>
               <th>Nombre Completo</th>
               <th>Correo Electrónico</th>
-              <th>Rol Asignado (RBAC)</th>
-              <th>Nivel de Acceso</th>
+              <th>Rol Asignado</th>
               <th>Estado</th>
-              <th>Acción</th>
+              <th style="text-align: right; min-width: 110px;">Acción</th>
             </tr>
           </thead>
           <tbody>
@@ -58,7 +57,7 @@
                       <div class="ms-top-right">
                         <span class="ms-value">{{ user.roleName }}</span>
                       </div>
-                      <span class="ms-status-pill">{{ user.isActive ? 'Activo' : 'Inactivo' }}</span>
+                      <span [style.color]="user.isActive ? '#1e5e3a' : '#ef4444'" style="font-weight: 700; font-size: 0.76rem;">{{ user.isActive ? 'Activo' : 'Inactivo' }}</span>
                     </div>
                   </div>
                 </td>
@@ -67,55 +66,72 @@
                 </td>
                 <td data-label="Nombre Completo" style="font-weight: 600;">{{ user.fullName }}</td>
                 <td data-label="Correo Electrónico" style="font-size: 0.85rem; color: var(--text-muted);">{{ user.email }}</td>
-                <td data-label="Rol Asignado (RBAC)">
-                  <select
-                    class="form-control"
-                    style="padding: 4px 10px; font-size: 0.82rem; font-weight: 700; min-width: 180px;"
-                    [ngModel]="user.roleId"
-                    [disabled]="user.userId === 1"
-                    (ngModelChange)="onUserRoleChange(user, $event)"
-                  >
-                    @for (role of roles(); track role.roleId) {
-                      <option [ngValue]="role.roleId">{{ role.name }}</option>
-                    }
-                  </select>
+                <td data-label="Rol Asignado" style="font-weight: 600; font-size: 0.85rem; color: var(--text-main);">
+                  {{ user.roleName }}
                 </td>
-                <td data-label="Nivel de Acceso">
-                  @if (user.isSystemDeveloper || user.userId === 1) {
-                    <span class="badge badge-purple">System Developer</span>
-                  } @else {
-                    <span class="badge badge-emerald">Operación Planta</span>
-                  }
+                <td data-label="Estado" style="font-size: 0.85rem; font-weight: 700;" [style.color]="user.isActive ? '#1e5e3a' : '#ef4444'">
+                  {{ user.isActive ? 'Activo' : 'Inactivo' }}
                 </td>
-                <td data-label="Estado">
-                  <span class="badge" [ngClass]="user.isActive ? 'badge-success' : 'badge-danger'">
-                    {{ user.isActive ? 'Activo' : 'Inactivo' }}
-                  </span>
-                </td>
-                <td data-label="Acción">
-                  <div style="display: flex; gap: 6px; align-items: center;">
+                <td data-label="Acción" style="text-align: right;">
+                  <div style="position: relative; display: inline-block;">
                     <button
                       type="button"
                       class="btn btn-outline"
-                      style="padding: 4px 8px; font-size: 0.75rem;"
-                      [style.color]="user.isActive ? '#ef4444' : '#1e5e3a'"
-                      (click)="toggleUserStatus(user)"
+                      style="padding: 4px 10px; font-size: 0.78rem; font-weight: 700; gap: 6px; display: inline-flex; align-items: center;"
+                      (click)="toggleActionMenu(user.userId, $event)"
                     >
-                      {{ user.isActive ? 'Desactivar' : 'Activar' }}
+                      <span>Acciones</span>
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                        <polyline points="6 9 12 15 18 9"></polyline>
+                      </svg>
                     </button>
-                    @if (user.userId !== 1) {
-                      <button
-                        type="button"
-                        class="btn btn-outline"
-                        style="padding: 4px 6px; font-size: 0.75rem; color: #ef4444;"
-                        (click)="deleteUser(user)"
-                        title="Eliminar usuario"
+
+                    @if (activeActionMenuUserId() === user.userId) {
+                      <div
+                        style="position: absolute; right: 0; top: 100%; margin-top: 4px; background: #ffffff; border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); box-shadow: 0 10px 25px rgba(0,0,0,0.12); z-index: 100; min-width: 140px; padding: 4px 0;"
+                        (click)="$event.stopPropagation()"
                       >
-                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                          <polyline points="3 6 5 6 21 6"></polyline>
-                          <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-                        </svg>
-                      </button>
+                        <button
+                          type="button"
+                          style="width: 100%; text-align: left; padding: 8px 14px; font-size: 0.82rem; font-weight: 600; background: none; border: none; cursor: pointer; display: flex; align-items: center; gap: 8px; color: var(--text-main);"
+                          (click)="openEditModal(user)"
+                        >
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                          </svg>
+                          <span>Editar</span>
+                        </button>
+
+                        <button
+                          type="button"
+                          style="width: 100%; text-align: left; padding: 8px 14px; font-size: 0.82rem; font-weight: 600; background: none; border: none; cursor: pointer; display: flex; align-items: center; gap: 8px;"
+                          [style.color]="user.isActive ? '#d97706' : '#1e5e3a'"
+                          [disabled]="user.userId === 1"
+                          (click)="toggleUserStatus(user)"
+                        >
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="10"></circle>
+                            <line x1="4.93" y1="4.93" x2="19.07" y2="19.07"></line>
+                          </svg>
+                          <span>{{ user.isActive ? 'Inactivar' : 'Activar' }}</span>
+                        </button>
+
+                        @if (user.userId !== 1) {
+                          <div style="height: 1px; background: var(--border-subtle); margin: 4px 0;"></div>
+                          <button
+                            type="button"
+                            style="width: 100%; text-align: left; padding: 8px 14px; font-size: 0.82rem; font-weight: 600; background: none; border: none; cursor: pointer; display: flex; align-items: center; gap: 8px; color: #dc2626;"
+                            (click)="deleteUser(user)"
+                          >
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                              <polyline points="3 6 5 6 21 6"></polyline>
+                              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                            </svg>
+                            <span>Eliminar</span>
+                          </button>
+                        }
+                      </div>
                     }
                   </div>
                 </td>
@@ -200,6 +216,86 @@
       <div class="modal-footer">
         <button class="btn btn-outline" (click)="showCreateModal.set(false)">Cancelar</button>
         <button class="btn btn-primary" (click)="submitNewUser()">Guardar Usuario</button>
+      </div>
+    </div>
+  </div>
+}
+
+@if (showEditModal()) {
+  <div class="modal-overlay" (click)="closeEditModal()">
+    <div class="modal-content" style="max-width: 500px;" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3 class="modal-title">Editar Usuario (&#64;{{ editUsername() }})</h3>
+        <button class="modal-close" (click)="closeEditModal()">&times;</button>
+      </div>
+
+      <div class="modal-body">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+          <div class="form-group">
+            <label class="form-label">Nombre de Usuario</label>
+            <input type="text" class="form-control" [ngModel]="editUsername()" (ngModelChange)="editUsername.set($event)" [disabled]="editingUserId() === 1" />
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Documento / Cédula</label>
+            <input type="text" class="form-control" [ngModel]="editDocumentNumber()" (ngModelChange)="editDocumentNumber.set($event)" placeholder="ej: 1020304050" />
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Nombre Completo *</label>
+          <input type="text" class="form-control" [ngModel]="editFullName()" (ngModelChange)="editFullName.set($event)" />
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1.2fr 0.8fr; gap: 12px;">
+          <div class="form-group">
+            <label class="form-label">Correo Electrónico *</label>
+            <input type="email" class="form-control" [ngModel]="editEmail()" (ngModelChange)="editEmail.set($event)" />
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Teléfono</label>
+            <input type="text" class="form-control" [ngModel]="editPhone()" (ngModelChange)="editPhone.set($event)" placeholder="300 000 0000" />
+          </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+          <div class="form-group">
+            <label class="form-label">Rol del Sistema *</label>
+            <select class="form-control" [ngModel]="editRoleId()" (ngModelChange)="editRoleId.set(+$event)" [disabled]="editingUserId() === 1">
+              @for (role of roles(); track role.roleId) {
+                <option [ngValue]="role.roleId">{{ role.name }}</option>
+              }
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Estado de la Cuenta</label>
+            <select class="form-control" [ngModel]="editIsActive()" (ngModelChange)="editIsActive.set($event === true || $event === 'true')" [disabled]="editingUserId() === 1">
+              <option [ngValue]="true">Activo</option>
+              <option [ngValue]="false">Inactivo</option>
+            </select>
+          </div>
+        </div>
+
+        <div style="display: flex; align-items: center; gap: 8px; margin-top: 4px;">
+          <input
+            type="checkbox"
+            id="editIsSystemDevCheck"
+            [ngModel]="editIsSystemDeveloper()"
+            (ngModelChange)="editIsSystemDeveloper.set($event)"
+            [disabled]="editingUserId() === 1"
+            style="accent-color: var(--color-primary); width: 16px; height: 16px; cursor: pointer;"
+          />
+          <label for="editIsSystemDevCheck" style="font-size: 0.83rem; font-weight: 600; cursor: pointer;">
+            Habilitar privilegio maestro <code>IsSystemDeveloper</code> (Catálogo de Módulos)
+          </label>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn btn-outline" (click)="closeEditModal()">Cancelar</button>
+        <button class="btn btn-primary" (click)="submitEditUser()">Guardar Cambios</button>
       </div>
     </div>
   </div>

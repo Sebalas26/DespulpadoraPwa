@@ -255,3 +255,196 @@ Este documento registra de manera cronológica y estructurada todas las interven
 ### ✅ Verificación, Build y Tests Unitarios
 - **Build de Producción (`npm run build`)**: **0 Errores**.
 - **Pruebas Unitarias (`npx ng test --watch=false --browsers=ChromeHeadless`)**: **174 de 174 SUCCESS (0 FAILED)** en las 34 suites `.spec.ts`.
+
+---
+
+## [2026-10-26] - Eliminación del Slug Técnico (`action.slug`) en las Tarjetas de la Matriz RBAC
+
+### 💬 Prompt Original del Usuario
+> "Ayudame a eliminar este texto" (adjuntando imagen señalando el slug técnico `inventory.view` en la matriz de roles).
+
+### 🤖 Resumen Técnico para la IA
+- **1. Modificación Quirúrgica de Plantilla**:
+  - Se eliminó el bloque `<div style="font-size: 0.7rem; font-family: monospace; color: var(--color-primary); margin-top: 2px;">{{ action.slug }}</div>` en `src/app/features/admin/roles/roles.component.html`.
+  - Se preservó íntegra la lógica de filtrado reactivo por término de búsqueda en `roles.component.ts`.
+  - Cero alteraciones en estilos globales ni contratos de datos.
+- **2. Agente Auditor Punto por Punto**:
+  - Verificó que únicamente se retiró la visualización del slug técnico en la UI de las tarjetas de permisos.
+  - Comprobó cumplimiento de la regla de no datos quemados, documentación JSDoc y tipado estricto.
+- **3. Agente de Revisión Par (Peer Reviewer)**:
+  - Validó que no existen referencias rotas ni impactos en la interacción con el usuario.
+
+### 📦 Componentes Modificados
+- `src/app/features/admin/roles/roles.component.html` [MODIFICADO]
+
+### ✅ Verificación, Build y Tests Unitarios
+- **Build de Producción (`npm run build`)**: **0 Errores** (`dist/despulpadora-pwa` generado correctamente).
+- **Pruebas Unitarias (`npx ng test --watch=false --browsers=ChromeHeadless`)**: **171 de 171 SUCCESS (0 FAILED)**.
+
+---
+
+## [2026-10-26] - Eliminación Completa del Módulo "Control de Producción & Mermas" (`Planta e Inventario` / `/calculator`) de la PWA y de la Matriz de Permisos RBAC
+
+### 💬 Prompt Original del Usuario
+> "En la pwa , no quiero que tenga ese modulo, eliminalo recuerda que se elimina, tambien debe ser de los permisos para que no salga ese modulo para darle permisos"
+
+### 🤖 Resumen Técnico para la IA
+- **1. Eliminación Física de `CalculatorComponent` y Desvinculación de la URL Interna `/calculator`**:
+  - Se eliminaron físicamente `src/app/features/calculator/calculator.component.ts`, `.html`, `.scss` y `.spec.ts`.
+  - Se retiró la ruta `{ path: 'calculator', component: CalculatorComponent, canActivate: [permissionGuard] }` de `src/app/app.routes.ts` preservando intactos los módulos de `Despachos & Rutas`, `KdsInventoryComponent` (`/kds-inventory`) e `Inventario y Stock` (`/settings?tab=inventory`).
+- **2. Filtrado en `AuthService`, Navegación Dinámica (`Server-Driven UI`), `AdminRolesComponent` y `SystemCatalogComponent`**:
+  - En `src/app/core/services/auth.service.ts`: Se implementaron `isRemovedCalculatorModule()` e `isRemovedCalculatorActionSlug()` para filtrar el módulo eliminado (`/calculator`, `Planta e Inventario`, `Control de Producción & Mermas`) y sus acciones (`calculator.*`, `batches.*`) en `persistLoginSession()`, `loadStoredNavigationModules()`, `loadStoredSession()`, `syncNavigationModules()`, `groupedNavigationSections`, `allowedActionSlugsSet`, `hasModuleAccess()`, `hasPermission()` y `findNavigationModuleByRoute()`.
+  - En `src/app/features/admin/roles/roles.component.ts`: Se filtró el módulo y sus acciones en `loadRolesAndCatalog()`, y se intersectaron `assignedModuleIds` y `assignedActionIds` en `selectRole()` y `savePermissions()` contra los IDs válidos del catálogo depurado.
+  - En `src/app/features/admin/system-catalog/system-catalog.component.ts`: Se filtró el módulo y sus acciones anidadas en `loadSystemCatalog()`.
+  - En `src/app/core/guards/permission.guard.ts`: Se bloqueó cualquier intento de navegación directa hacia `/calculator` redirigiendo a `/dashboard`.
+  - En `src/app/layout/mobile-nav/mobile-nav.component.ts` y `src/app/layout/header/header.component.ts`: Se reemplazó el enlace móvil de `/calculator` por `/settings?tab=inventory` y se limpió la referencia en `currentRouteTitle`.
+- **3. Informes del Agente Verificador, Agente Auditor Punto por Punto y Agente de Revisión Par**:
+  - Certificados con 100% de cumplimiento de `AGENTS.md` (código 100% en inglés, tipado explícito sin `any`, manejo de errores con `try-catch`, comentarios exclusivamente JSDoc y cero datos quemados).
+
+### 📦 Componentes Modificados y Eliminados
+- `src/app/features/calculator/calculator.component.ts`, `.html`, `.scss`, `.spec.ts` [ELIMINADOS]
+- `src/app/app.routes.ts` [MODIFICADO]
+- `src/app/core/services/auth.service.ts` & `src/app/core/services/auth.service.spec.ts` [MODIFICADO]
+- `src/app/core/guards/permission.guard.ts` & `src/app/core/guards/permission.guard.spec.ts` [MODIFICADO]
+- `src/app/features/admin/roles/roles.component.ts` & `src/app/features/admin/roles/roles.component.spec.ts` [MODIFICADO]
+- `src/app/features/admin/system-catalog/system-catalog.component.ts` & `src/app/features/admin/system-catalog/system-catalog.component.spec.ts` [MODIFICADO]
+- `src/app/layout/mobile-nav/mobile-nav.component.ts` [MODIFICADO]
+- `src/app/layout/header/header.component.ts` [MODIFICADO]
+
+### ✅ Verificación, Build y Tests Unitarios
+- **Build de Producción (`npm run build`)**: **0 Errores** (`dist/despulpadora-pwa` generado exitosamente).
+- **Pruebas Unitarias (`npx ng test --watch=false --browsers=ChromeHeadless`)**: **Executed 171 of 171 SUCCESS (TOTAL: 171 SUCCESS, 0 FAILED)**.
+
+---
+
+## [2026-10-26] - Eliminación Integral de la Palabra "RBAC" en DespulpadoraPwa
+
+### 💬 Prompt Original del Usuario
+> "eliminame la palabra RBAC de todo el pwa"
+
+### 🤖 Resumen Técnico para la IA
+- **1. Reemplazo en Vistas de Usuario (UI)**:
+  - `src/app/features/admin/roles/roles.component.html`: `"Roles & Matriz de Privilegios RBAC"` -> `"Roles & Matriz de Privilegios"`.
+  - `src/app/features/admin/roles/roles.component.ts`: Notificación toast `"Matriz RBAC Guardada"` -> `"Matriz de Privilegios Guardada"`.
+  - `src/app/features/admin/users/users.component.html`: `"roles RBAC"` -> `"roles"`, `"Rol Asignado (RBAC)"` -> `"Rol Asignado"` (tanto en `<th>` como en `<td data-label>`).
+  - `src/app/features/settings/settings.component.html`: `"Roles & Permisos (RBAC)"` -> `"Roles & Permisos"` en botón y tarjeta hub.
+  - `src/app/features/admin/system-catalog/system-catalog.component.html`: `"en el árbol de navegación RBAC"` -> `"en el árbol de navegación"`.
+- **2. Reemplazo en Documentación JSDoc y Suites de Pruebas**:
+  - `src/app/app.routes.ts`, `auth.guard.ts`, `permission.guard.ts`, `permission.guard.spec.ts`, `auth.service.ts`, `auth.service.spec.ts`, `auth.models.ts`, `api.service.ts`, `login.component.ts` y `roles.component.spec.ts`: Sustitución de "RBAC" por terminología estándar descriptiva en inglés (`role-based`, `roles and permissions`, `permissions matrix`).
+- **3. Certificación de Agentes Calidad**:
+  - **Agente Auditor Punto por Punto**: Confirmó la eliminación de toda ocurrencia de "RBAC" en el código fuente de la PWA (`0 ocurrencias en src/`).
+  - **Agente de Revisión Par (Peer Reviewer)**: Comprobó integridad visual, compatibilidad de contratos y estabilidad total.
+
+### 📦 Componentes Modificados
+- `src/app/features/admin/roles/roles.component.html` [MODIFICADO]
+- `src/app/features/admin/roles/roles.component.ts` [MODIFICADO]
+- `src/app/features/admin/roles/roles.component.spec.ts` [MODIFICADO]
+- `src/app/features/admin/users/users.component.html` [MODIFICADO]
+- `src/app/features/settings/settings.component.html` [MODIFICADO]
+- `src/app/features/admin/system-catalog/system-catalog.component.html` [MODIFICADO]
+- `src/app/app.routes.ts` [MODIFICADO]
+- `src/app/core/guards/permission.guard.ts` & `src/app/core/guards/permission.guard.spec.ts` [MODIFICADO]
+- `src/app/core/guards/auth.guard.ts` [MODIFICADO]
+- `src/app/core/services/auth.service.ts` & `src/app/core/services/auth.service.spec.ts` [MODIFICADO]
+- `src/app/core/models/auth.models.ts` [MODIFICADO]
+- `src/app/core/services/api.service.ts` [MODIFICADO]
+- `src/app/features/auth/login/login.component.ts` [MODIFICADO]
+
+### ✅ Verificación, Build y Tests Unitarios
+- **Build de Producción (`npm run build`)**: **0 Errores** (`dist/despulpadora-pwa` generado exitosamente).
+- **Pruebas Unitarias (`npx ng test --watch=false --browsers=ChromeHeadless`)**: **171 de 171 SUCCESS (TOTAL: 171 SUCCESS, 0 FAILED)**.
+
+---
+
+## [2026-10-26] - Ocultación de `Gestión de Usuarios` y `Roles y Matriz de Permisos` del Menú Desplegable/Lateral (Preservados dentro de Configuración `/settings`)
+
+### 💬 Prompt Original del Usuario
+> "elimina estas opciones del meni despledables , estos modudlos ya estan en configuracion"
+
+### 🤖 Resumen Técnico para la IA
+- **1. Filtrado Quirúrgico en `groupedNavigationSections()` (`AuthService`)**:
+  - En `src/app/core/services/auth.service.ts`: Se implementó `isEmbeddedSettingsRbacModule()` con JSDoc superior y manejo de errores `try-catch` para identificar los módulos `Gestión de Usuarios` (`/admin/users`, `users`) y `Roles y Matriz de Permisos` (`/admin/roles`, `roles`) o la sección `SEGURIDAD RBAC`, excluyéndolos únicamente del árbol visual `groupedNavigationSections()` consumido por `SidebarComponent` y `MobileNavComponent`.
+  - Se conservaron íntegros los módulos y sus permisos (`users.*`, `roles.*`) en `navigationModules()`, `allowedActionSlugsSet()`, `AdminRolesComponent`, `SystemCatalogComponent` y dentro de las pestañas de `SettingsComponent` (`/settings`), habilitando además en `hasModuleAccess('settings')` el ingreso a `/settings` cuando el usuario posee acceso a `users` o `roles`.
+- **2. Certificación de Agentes de Calidad**:
+  - **Agente Verificador de Impacto**, **Agente Auditor Punto por Punto** y **Agente de Revisión Par (Peer Reviewer)**: Aprobaron el 100% de la implementación sin desviaciones ni regresiones.
+
+### 📦 Componentes Modificados
+- `src/app/core/services/auth.service.ts` [MODIFICADO]
+- `src/app/core/services/auth.service.spec.ts` [MODIFICADO]
+
+### ✅ Verificación, Build y Tests Unitarios
+- **Build de Producción (`npm run build`)**: **0 Errores** (`dist/despulpadora-pwa` generado exitosamente).
+- **Pruebas Unitarias (`npx ng test --watch=false --browsers=ChromeHeadless`)**: **Executed 174 of 174 SUCCESS (TOTAL: 174 SUCCESS, 0 FAILED)**.
+
+---
+
+## [2026-10-26] - Refactorización de Tabla de Usuarios: Eliminación de Badges Ovalados, Retiro de Columna Nivel de Acceso, Bloqueo de Rol Inline, Menú de Acciones y Diálogo de Edición Completa
+
+### 💬 Prompt Original del Usuario
+> "Para este modulo, no quiero que muestre los cicurclos de colores
+adicional quieor que elimines la columna de nivel de acceso, eso no me sirve
+por otr lado, la columna de accion dejamelo mejor, puede ser un lista desplegable con esas opciones 'inactivar, editar y eliminar', bloquea la columna de editar el rol desde vista de Gestión de Usuarios del Sistema , mas bien que si le dan en la opcion de editar , despliegue un dialog y ahi me permita editar toda la info del usuario"
+
+### 🤖 Resumen Técnico para la IA
+- **1. Limpieza Visual y Remoción de Badges Ovalados de Color**:
+  - En `src/app/features/admin/users/users.component.html`: Se retiró la píldora ovalada `.badge.badge-purple` en el contador de cuentas registradas dejándolo como texto plano sobrio (`font-weight: 700; color: var(--text-muted)`).
+  - En la columna **Estado**: Se eliminaron las clases `.badge.badge-success` y `.badge.badge-danger`, sustituyéndolas por texto limpio y color semántico directo (`#1e5e3a` para Activo / `#ef4444` para Inactivo).
+- **2. Eliminación de la Columna "Nivel de Acceso"**:
+  - Se suprimió completamente el encabezado `<th>Nivel de Acceso</th>` y su correspondiente celda de datos `<td>` en la tabla.
+- **3. Bloqueo de Edición Inline de Rol**:
+  - Se reemplazó el control `<select>` inline en la celda de la tabla por la visualización del nombre de rol como texto plano no editable (`{{ user.roleName }}`), garantizando que las modificaciones se realicen controladamente a través del diálogo de edición.
+- **4. Menú Desplegable Flotante de Acciones**:
+  - Se sustituyeron los botones individuales por un botón **"Acciones ▾"** con panel emergente desplegable que contiene las opciones:
+    - ✏️ **Editar**: Despliega el diálogo de edición completa.
+    - ⏸️ **Inactivar / Activar**: Alterna el estado activo con validación de cuenta protegida (Super Admin).
+    - 🗑️ **Eliminar**: Confirmación y borrado mediante `DELETE /api/users/{id}` (protegido para Super Admin).
+  - Se implementó cierre automático con `@HostListener('document:click')`.
+- **5. Diálogo / Modal de Edición Completa de Usuario**:
+  - Nuevo modal interactivo que permite editar `fullName`, `email`, `phone`, `documentNumber`, `roleId`, `isActive` y privilegios `isSystemDeveloper`, conectándose con `PUT /api/users/{id}` a través de `this.api.updateUser()`.
+- **6. Certificación de Agentes de Calidad y Pruebas Unitarias**:
+  - **Agente Auditor Punto por Punto**: Certificó que se cubrieron todos los requerimientos del usuario y se mantuvo el cumplimiento de tipado estricto, JSDoc y cero comentarios internos.
+  - **Agente de Revisión Par (Peer Reviewer)**: Comprobó que el modal y el menú operan de forma reactiva y sin regresiones.
+  - Se actualizaron las suites unitarias en `src/app/features/admin/users/users.component.spec.ts` agregando cobertura para `updateUser`, apertura/cierre de modal y menú de acciones.
+
+### 📦 Componentes Modificados
+- `src/app/features/admin/users/users.component.html` [MODIFICADO]
+- `src/app/features/admin/users/users.component.ts` [MODIFICADO]
+- `src/app/features/admin/users/users.component.spec.ts` [MODIFICADO]
+
+### ✅ Verificación, Build y Tests Unitarios
+- **Build de Producción (`npm run build`)**: **0 Errores** (`dist/despulpadora-pwa` generado exitosamente).
+- **Pruebas Unitarias (`npx ng test --watch=false --browsers=ChromeHeadless`)**: **174 de 174 SUCCESS (TOTAL: 174 SUCCESS, 0 FAILED)**.
+
+---
+
+## [2026-10-26] - Mini Gráficas Dinámicas (`kpiSparklines`) en las 4 Tarjetas KPI del `Dashboard general`
+
+### 💬 Prompt Original del Usuario
+> "estas mini graficas de la dashboard, quiero que sea real y dinamica segun si la estadistica , si se baja es porque ha bajado el reporte, si sube que sea vea hacia arriba y si se ve en el medio es regular"
+
+### 🤖 Resumen Técnico para la IA
+- **1. Cálculo Reactivo de Tendencia y Curvas SVG (`kpiSparklines` y `buildSparklineGeometry`)**:
+  - En `src/app/features/dashboard/dashboard.component.ts`: Se definieron `SparklineTrend` (`'up' | 'flat' | 'down'`), `KpiSparklineData` y `KpiSparklinesMap`, junto con el `computed<KpiSparklinesMap>` `kpiSparklines` y el generador `buildSparklineGeometry()`.
+  - Cada una de las 4 tarjetas (`Facturación hoy`, `Pulpa total en bodega`, `Pulpas vendidas hoy` y `Fruta total en bodega`) calcula su tendencia en tiempo real a partir de `stateService.orders()`, `stateService.fruits()`, `stateService.totalStockKg()`, `stateService.totalFreshStockKg()` y `stateService.salesPerformance()`:
+    - `'down'` (`endY = 27`, curva descendente) cuando el indicador está en `0` o por debajo del umbral/promedio del reporte.
+    - `'flat'` (`endY = 17`, curva en el medio) cuando el indicador se encuentra en rango regular/medio.
+    - `'up'` (`endY = 7`, curva ascendente) cuando el indicador sube o supera el nivel óptimo.
+- **2. Vinculación Dinámica en Plantilla HTML**:
+  - En `src/app/features/dashboard/dashboard.component.html`: Se reemplazaron los atributos SVG estáticos por `[attr.d]`, `[attr.cx]` y `[attr.cy]` vinculados a `kpiSparklines()`.
+- **3. Certificación de Agentes de Calidad**:
+  - **Agente Verificador de Impacto**, **Agente Auditor Punto por Punto** y **Agente de Revisión Par (Peer Reviewer)**: Aprobaron el 100% de la implementación sin desviaciones ni regresiones.
+
+### 📦 Componentes Modificados
+- `src/app/features/dashboard/dashboard.component.ts` [MODIFICADO]
+- `src/app/features/dashboard/dashboard.component.html` [MODIFICADO]
+- `src/app/features/dashboard/dashboard.component.spec.ts` [MODIFICADO]
+
+### ✅ Verificación, Build y Tests Unitarios
+- **Build de Producción (`npm run build`)**: **0 Errores** (`dist/despulpadora-pwa` generado exitosamente).
+- **Pruebas Unitarias (`npx ng test --watch=false --browsers=ChromeHeadless`)**: **Executed 174 of 174 SUCCESS (TOTAL: 174 SUCCESS, 0 FAILED)**.
+
+
+
+
+
+

@@ -4,7 +4,7 @@ import { AuthService } from '../services/auth.service';
 import { NotificationService } from '../services/notification.service';
 
 /**
- * Dynamic Server-Driven RBAC guard that verifies whether the requested route or module slug
+ * Dynamic Server-Driven permission guard that verifies whether the requested route or module slug
  * exists within the authenticated user's authorized `navigationModules` tree.
  */
 export const permissionGuard: CanActivateFn = (
@@ -18,6 +18,14 @@ export const permissionGuard: CanActivateFn = (
 
     if (!authService.isAuthenticated()) {
       router.navigate(['/login']);
+      return false;
+    }
+
+    const configuredModuleSlug = route.data?.['moduleSlug'] as string | undefined;
+    const targetRoute = configuredModuleSlug || state.url || route.routeConfig?.path || '';
+
+    if (authService.isRemovedCalculatorModule({ frontendRoute: targetRoute, slug: targetRoute })) {
+      router.navigateByUrl('/dashboard');
       return false;
     }
 
@@ -47,9 +55,6 @@ export const permissionGuard: CanActivateFn = (
       router.navigate(['/dashboard']);
       return false;
     }
-
-    const configuredModuleSlug = route.data?.['moduleSlug'] as string | undefined;
-    const targetRoute = configuredModuleSlug || state.url || route.routeConfig?.path || '';
 
     if (authService.hasModuleAccess(targetRoute)) {
       return true;
