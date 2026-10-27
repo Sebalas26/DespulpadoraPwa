@@ -41,7 +41,7 @@ const DEFAULT_COLUMNS: InventoryColumnConfig[] = [
   { key: 'unitCost', label: 'Costo Producción', description: 'Costo unitario directo estimado', visible: true },
   { key: 'basePrice', label: 'Precio Venta', description: 'Precio comercial de venta al público en COP', visible: true },
   { key: 'margin', label: 'Margen Unitario', description: 'Ganancia neta y margen porcentual', visible: true },
-  { key: 'currentStock', label: 'Stock en Cava', description: 'Existencias físicas en bodega/cava en tiempo real', visible: true },
+  { key: 'currentStock', label: 'Stock en Inventario', description: 'Existencias físicas en inventario en tiempo real', visible: true },
   { key: 'status', label: 'Alerta Stock', description: 'Aviso visual cuando el inventario está bajo el mínimo', visible: true },
   { key: 'quickAdjust', label: 'Ajuste Rápido', description: 'Botones instantáneos para sumar o restar existencias (-10, +10, +50)', visible: true },
   { key: 'actions', label: 'Acciones', description: 'Opciones de edición rápida y retiro de presentaciones', visible: true }
@@ -133,13 +133,38 @@ export class SettingsComponent {
   readonly adjustDelta = signal<number>(10);
   readonly adjustReason = signal<string>('Inventario físico de control');
 
+  readonly confirmDialogState = signal<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    confirmButtonText: string;
+    cancelButtonText: string;
+    isDanger: boolean;
+    action: (() => void) | null;
+  }>({
+    isOpen: false,
+    title: '',
+    message: '',
+    confirmButtonText: 'Confirmar',
+    cancelButtonText: 'Cancelar',
+    isDanger: true,
+    action: null
+  });
+
+  readonly showNewGrammageModal = signal<boolean>(false);
+  readonly showNewCategoryModal = signal<boolean>(false);
+
+  readonly newGrammageAmount = signal<number | null>(null);
+  readonly newGrammageUnit = signal<'g' | 'kg'>('g');
+  readonly newGrammageCustomLabel = signal<string>('');
+
   readonly newCategoryName = signal<string>('');
   readonly newCategoryCode = signal<string>('');
   readonly newCategoryIcon = signal<string>('');
   readonly newCategoryBadge = signal<string>('badge-info');
 
-  readonly newGrammageValue = signal<number>(300);
-  readonly newGrammageLabel = signal<string>('300g');
+  readonly newGrammageValue = signal<number | null>(null);
+  readonly newGrammageLabel = signal<string>('');
 
   readonly newVariantName = signal<string>('');
   readonly newVariantSku = signal<string>('');
@@ -313,7 +338,7 @@ export class SettingsComponent {
         if (tab === 'inventory' || tab === 'cava' || tab === 'variants' || tab === 'fruits' || tab === 'stock') {
           this.activeTab.set('inventory');
           this.mobileConfigModuleSelected.set(false);
-          if (tab === 'variants' || tab === 'cava' || tab === 'stock') {
+          if (tab === 'variants' || tab === 'cava' || tab === 'stock' || tab === 'inventory') {
             this.inventorySubTab.set('variants');
           } else {
             this.inventorySubTab.set('fruits');
@@ -508,9 +533,18 @@ export class SettingsComponent {
    */
   deletePaymentMethod(id: number): void {
     try {
-      if (confirm('¿Estás seguro de eliminar este método de pago?')) {
-        this.stateService.deletePaymentMethod(id);
-      }
+      const pm = this.stateService.paymentMethods().find(p => p.paymentMethodId === id);
+      const name = pm ? pm.name : 'este método de pago';
+      this.openConfirmDialog({
+        title: '¿Eliminar Forma de Pago?',
+        message: `¿Estás seguro de que deseas eliminar permanentemente el método "${name}"?`,
+        confirmButtonText: 'Eliminar',
+        cancelButtonText: 'Cancelar',
+        isDanger: true,
+        action: () => {
+          this.stateService.deletePaymentMethod(id);
+        }
+      });
     } catch {
       return;
     }
@@ -532,9 +566,16 @@ export class SettingsComponent {
    */
   resetPaymentMethodsToDefault(): void {
     try {
-      if (confirm('¿Deseas restaurar la lista de métodos de pago predeterminados?')) {
-        this.stateService.resetPaymentMethodsToDefault();
-      }
+      this.openConfirmDialog({
+        title: '¿Restaurar Métodos de Pago?',
+        message: '¿Deseas restaurar la lista de formas de pago originales de fábrica? Se restablecerán los métodos predeterminados.',
+        confirmButtonText: 'Restaurar',
+        cancelButtonText: 'Cancelar',
+        isDanger: false,
+        action: () => {
+          this.stateService.resetPaymentMethodsToDefault();
+        }
+      });
     } catch {
       return;
     }
@@ -628,10 +669,17 @@ export class SettingsComponent {
    */
   resetCompanyDefaults(): void {
     try {
-      if (confirm('¿Deseas restaurar la información predeterminada de la empresa?')) {
-        this.companyForm.set({ ...DEFAULT_COMPANY_CONFIG });
-        this.stateService.updateCompanyInfo(DEFAULT_COMPANY_CONFIG);
-      }
+      this.openConfirmDialog({
+        title: '¿Restaurar Datos de Empresa?',
+        message: '¿Deseas restaurar la información predeterminada de la empresa a los valores originales?',
+        confirmButtonText: 'Restaurar',
+        cancelButtonText: 'Cancelar',
+        isDanger: false,
+        action: () => {
+          this.companyForm.set({ ...DEFAULT_COMPANY_CONFIG });
+          this.stateService.updateCompanyInfo(DEFAULT_COMPANY_CONFIG);
+        }
+      });
     } catch {
       return;
     }
@@ -823,6 +871,90 @@ export class SettingsComponent {
   }
 
   /**
+   * Opens the confirmation dialog with the given configuration options.
+   */
+  openConfirmDialog(options: {
+    title: string;
+    message: string;
+    confirmButtonText?: string;
+    cancelButtonText?: string;
+    isDanger?: boolean;
+    action: () => void;
+  }): void {
+    try {
+      this.confirmDialogState.set({
+        isOpen: true,
+        title: options.title,
+        message: options.message,
+        confirmButtonText: options.confirmButtonText || 'Confirmar',
+        cancelButtonText: options.cancelButtonText || 'Cancelar',
+        isDanger: options.isDanger ?? true,
+        action: options.action
+      });
+    } catch {
+      return;
+    }
+  }
+
+  /**
+   * Closes the confirmation dialog and clears state.
+   */
+  closeConfirmDialog(): void {
+    try {
+      this.confirmDialogState.set({
+        isOpen: false,
+        title: '',
+        message: '',
+        confirmButtonText: 'Confirmar',
+        cancelButtonText: 'Cancelar',
+        isDanger: true,
+        action: null
+      });
+    } catch {
+      return;
+    }
+  }
+
+  /**
+   * Executes the pending confirmation action.
+   */
+  onConfirmDialog(): void {
+    try {
+      const pendingAction = this.confirmDialogState().action;
+      this.closeConfirmDialog();
+      if (pendingAction) {
+        pendingAction();
+      }
+    } catch {
+      return;
+    }
+  }
+
+  /**
+   * Opens the modal dialog to create a new category with empty fields.
+   */
+  openNewCategoryModal(): void {
+    try {
+      this.newCategoryName.set('');
+      this.newCategoryCode.set('');
+      this.showNewCategoryModal.set(true);
+    } catch {
+      return;
+    }
+  }
+
+  /**
+   * Closes the new category modal dialog.
+   */
+  closeNewCategoryModal(): void {
+    try {
+      this.showNewCategoryModal.set(false);
+    } catch {
+      return;
+    }
+  }
+
+  /**
    * Creates and persists a new custom product category.
    */
   addCustomCategory(): void {
@@ -855,9 +987,37 @@ export class SettingsComponent {
       this.saveCategories();
       this.notification.success('Categoría Agregada', `La línea "${name}" ahora está disponible en el inventario.`);
 
-      this.newCategoryName.set('');
-      this.newCategoryCode.set('');
-      this.newCategoryIcon.set('');
+      this.closeNewCategoryModal();
+    } catch {
+      return;
+    }
+  }
+
+  /**
+   * Prompts user confirmation to delete a category.
+   */
+  confirmDeleteCategory(cat: InventoryCategoryConfig): void {
+    try {
+      const assignedCount = this.stateService.productVariants().filter(v => v.category === cat.id).length;
+      const confirmMsg = assignedCount > 0
+        ? `Hay ${assignedCount} presentaciones asignadas a "${cat.name}". ¿Deseas eliminar la categoría de todos modos?`
+        : `¿Estás seguro de eliminar la categoría "${cat.name}"?`;
+
+      this.openConfirmDialog({
+        title: '¿Eliminar Categoría de Producto?',
+        message: confirmMsg,
+        confirmButtonText: 'Eliminar',
+        cancelButtonText: 'Cancelar',
+        isDanger: true,
+        action: () => {
+          this.categoriesConfig.update(cats => cats.filter(c => c.id !== cat.id));
+          if (this.categoryFilter() === cat.id) {
+            this.categoryFilter.set('ALL');
+          }
+          this.saveCategories();
+          this.notification.info('Categoría Eliminada', `Línea "${cat.name}" retirada.`);
+        }
+      });
     } catch {
       return;
     }
@@ -870,32 +1030,53 @@ export class SettingsComponent {
     try {
       const cat = this.categoriesConfig().find(c => c.id === id);
       if (!cat) return;
-
-      const count = this.stateService.productVariants().filter(v => v.category === id).length;
-      if (count > 0) {
-        const confirmMsg = `Hay ${count} presentaciones asignadas a "${cat.name}". ¿Deseas eliminar la categoría de todos modos?`;
-        if (!confirm(confirmMsg)) return;
-      }
-
-      this.categoriesConfig.update(cats => cats.filter(c => c.id !== id));
-      if (this.categoryFilter() === id) {
-        this.categoryFilter.set('ALL');
-      }
-      this.saveCategories();
-      this.notification.info('Categoría Eliminada', `Línea "${cat.name}" retirada.`);
+      this.confirmDeleteCategory(cat);
     } catch {
       return;
     }
   }
 
   /**
-   * Creates and persists a new custom grammage configuration.
+   * Opens the modal dialog to create a new grammage with empty fields and default unit.
+   */
+  openNewGrammageModal(): void {
+    try {
+      this.newGrammageAmount.set(null);
+      this.newGrammageUnit.set('g');
+      this.newGrammageCustomLabel.set('');
+      this.showNewGrammageModal.set(true);
+    } catch {
+      return;
+    }
+  }
+
+  /**
+   * Closes the new grammage modal dialog.
+   */
+  closeNewGrammageModal(): void {
+    try {
+      this.showNewGrammageModal.set(false);
+    } catch {
+      return;
+    }
+  }
+
+  /**
+   * Creates and persists a new custom grammage configuration with automatic unit formatting.
    */
   addCustomGrammage(): void {
     try {
-      const val = Number(this.newGrammageValue());
-      if (!val || val <= 0) {
-        this.notification.error('Valor Inválido', 'Ingresa un gramaje mayor a cero.');
+      const rawAmount = this.newGrammageAmount();
+      if (!rawAmount || rawAmount <= 0) {
+        this.notification.error('Campo Requerido', 'Ingresa una cantidad numérica mayor a cero.');
+        return;
+      }
+
+      const unit = this.newGrammageUnit();
+      const val = unit === 'kg' ? Math.round(rawAmount * 1000) : Math.round(rawAmount);
+
+      if (val <= 0) {
+        this.notification.error('Valor Inválido', 'El peso debe ser mayor a 0 gramos.');
         return;
       }
 
@@ -905,7 +1086,15 @@ export class SettingsComponent {
         return;
       }
 
-      const label = this.newGrammageLabel().trim() || `${val}g`;
+      let label = this.newGrammageCustomLabel().trim();
+      if (!label) {
+        if (unit === 'kg') {
+          label = `${rawAmount} Kg (${val}g)`;
+        } else {
+          label = `${val}g`;
+        }
+      }
+
       const newGram: InventoryGrammageConfig = {
         key,
         value: val,
@@ -916,10 +1105,29 @@ export class SettingsComponent {
 
       this.grammagesConfig.update(grams => [...grams, newGram]);
       this.saveGrammages();
-      this.notification.success('Gramaje Agregado', `Presentación de ${label} disponible para configuración.`);
+      this.notification.success('Presentación Agregada', `Presentación de ${label} agregada exitosamente.`);
 
-      this.newGrammageValue.set(val + 100);
-      this.newGrammageLabel.set(`${val + 100}g`);
+      this.closeNewGrammageModal();
+    } catch {
+      return;
+    }
+  }
+
+  /**
+   * Prompts user confirmation to delete a grammage.
+   */
+  confirmDeleteGrammage(gram: InventoryGrammageConfig): void {
+    try {
+      this.openConfirmDialog({
+        title: '¿Eliminar Presentación / Kilo?',
+        message: `¿Estás seguro de eliminar la presentación "${gram.label}" (${gram.value}g)?`,
+        confirmButtonText: 'Eliminar',
+        cancelButtonText: 'Cancelar',
+        isDanger: true,
+        action: () => {
+          this.deleteCustomGrammage(gram.key);
+        }
+      });
     } catch {
       return;
     }
@@ -1093,9 +1301,16 @@ export class SettingsComponent {
    */
   deleteVariant(variantId: number, name: string): void {
     try {
-      if (confirm(`¿Estás seguro de eliminar "${name}" del inventario?`)) {
-        this.stateService.deleteProductVariant(variantId);
-      }
+      this.openConfirmDialog({
+        title: '¿Eliminar Presentación de Inventario?',
+        message: `¿Estás seguro de eliminar permanentemente "${name}" del inventario?`,
+        confirmButtonText: 'Eliminar',
+        cancelButtonText: 'Cancelar',
+        isDanger: true,
+        action: () => {
+          this.stateService.deleteProductVariant(variantId);
+        }
+      });
     } catch {
       return;
     }
@@ -1106,19 +1321,26 @@ export class SettingsComponent {
    */
   resetAllSettingsToDefault(): void {
     try {
-      if (confirm('¿Deseas restablecer todas las configuraciones de columnas, categorías y opciones de visualización a los valores originales?')) {
-        this.categoriesConfig.set(DEFAULT_CATEGORIES);
-        this.grammagesConfig.set(DEFAULT_GRAMMAGES);
-        this.columnsConfig.set(DEFAULT_COLUMNS);
-        this.pageSize.set(10);
-        this.saveCategories();
-        this.saveGrammages();
-        this.saveColumns();
-        this.savePageSize(10);
-        this.categoryFilter.set('ALL');
-        this.grammageFilter.set('ALL');
-        this.notification.info('Ajustes Restablecidos', 'Se aplicó la configuración predeterminada del sistema.');
-      }
+      this.openConfirmDialog({
+        title: '¿Restablecer Preferencias?',
+        message: '¿Deseas restablecer todas las configuraciones de columnas, categorías y opciones de visualización a los valores originales?',
+        confirmButtonText: 'Restablecer',
+        cancelButtonText: 'Cancelar',
+        isDanger: false,
+        action: () => {
+          this.categoriesConfig.set(DEFAULT_CATEGORIES);
+          this.grammagesConfig.set(DEFAULT_GRAMMAGES);
+          this.columnsConfig.set(DEFAULT_COLUMNS);
+          this.pageSize.set(10);
+          this.saveCategories();
+          this.saveGrammages();
+          this.saveColumns();
+          this.savePageSize(10);
+          this.categoryFilter.set('ALL');
+          this.grammageFilter.set('ALL');
+          this.notification.info('Ajustes Restablecidos', 'Se aplicó la configuración predeterminada del sistema.');
+        }
+      });
     } catch {
       return;
     }

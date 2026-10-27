@@ -1306,7 +1306,7 @@ export class ReportsComponent {
             this.getFruitCommercialValue(f)
           ];
         });
-        this.downloadCsv(`reporte_inventario_cava_${now}.csv`, headers, rows);
+        this.downloadCsv(`reporte_inventario_${now}.csv`, headers, rows);
       } else if (tab === 'expenses') {
         const headers = ['Fecha', 'Categoría', 'Descripción', 'Medio Pago', 'Comprobante', 'Monto COP'];
         const rows = this.filteredExpenses().map((e: ExpenseDto) => [

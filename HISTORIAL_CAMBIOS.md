@@ -4,6 +4,139 @@ Este documento registra de manera cronológica y estructurada todas las interven
 
 ---
 
+## [2026-10-27] - Módulo Desplegable de Inventario de Pulpas y Frutas en Menú y Super-Acceso Universal para Administradores
+
+### 💬 Prompt Original del Usuario
+> "No veo en el menu desplegable el modulo de inventario de pulpas y frutas ,estoy con el administrador, recuerda que el pude ver todo sin depender de un permiso, haz el plan e implementalo de una por solo esta ocasion"
+
+### 🤖 Resumen Técnico para la IA
+- **1. Super-Acceso Universal del Administrador (`auth.service.ts` y `permission.guard.ts`)**:
+  - Se configuró la señal computada `isAdmin` para validar roles administrativos universales (`Administrador Operativo`, `Administrador General`, `Super Administrador`, `Gerente`) de manera reactiva e inmune a recursiones circulares.
+  - Se implementó el bypass universal en `hasModuleAccess()` y `hasPermission()`, de modo que cualquier usuario con rol administrativo posee acceso total a todos los módulos y operaciones del sistema sin depender de asignaciones granulares de slugs en base de datos.
+  - Se ajustó `permission.guard.ts` para autorizar el paso inmediato a usuarios administradores sin emitir alertas de restricción ni desviar a rutas de fallback.
+- **2. Incorporación Canónica de Inventario en `groupedNavigationSections()`**:
+  - Se corrigió el filtro de módulos retirados para evitar la exclusión accidental de módulos de inventario (`isRemovedCalculatorModule` solo descarta la ruta y slug explícitos de `calculator`).
+  - Se normalizó el módulo a su estructura canónica: `name: 'Inventario de Pulpas y Frutas'`, `slug: 'inventory'`, `menuSection: 'Operación'`, `frontendRoute: '/settings?tab=inventory'`, `icon: 'package'`, `displayOrder: 2`.
+  - Si el módulo no está registrado o asignado en base de datos, `groupedNavigationSections()` lo inyecta automáticamente en la sección `OPERACIÓN` (entre *Dashboard Operativo* y *Pedidos y Despacho*) para perfiles administradores y usuarios con acceso.
+- **3. Menú Desplegable con Sub-ítems en Sidebar (`sidebar.component.ts`)**:
+  - Se agregó la sección desplegable sangrada bajo el módulo de inventario, con estructura homóloga a la de *Pedidos y Despacho*:
+    - `↳ Stock de Pulpas`: `[routerLink]="['/settings']"` con `queryParams: { tab: 'variants' }`
+    - `↳ Fruta Fresca`: `[routerLink]="['/settings']"` con `queryParams: { tab: 'fruits' }`
+    - `↳ Pantalla KDS Planta`: `[routerLink]="['/kds-inventory']"`
+  - Se desarrollaron los métodos `isInventoryTabActive()` e `isModuleActive()` para controlar el resaltado visual verde del menú de forma quirúrgica sin colisiones con la sección de *Configuración general*.
+- **4. Sincronización en Vista de Inventario y Navegación Móvil**:
+  - En `SettingsComponent` (`settings.component.ts`), al recibir `tab=inventory` o `tab=variants`, se activa por defecto la pestaña de *Stock de Pulpas Hechas*, y con `tab=fruits` la de *Fruta Fresca*.
+  - En `MobileNavComponent` (`mobile-nav.component.ts`), se añadió soporte para `queryParams` en las cards del drawer desplegable mediante `getRoutePath()` y `getRouteQueryParams()`.
+- **5. Calidad, Tipado y Pruebas Unitarias**:
+  - 100% tipado explícito (cero `any`/`var`), cero comentarios internos (`//`), documentación JSDoc completa.
+  - Se ampliaron las suites de pruebas unitarias (`auth.service.spec.ts`, `sidebar.component.spec.ts`, `mobile-nav.component.spec.ts`) cubriendo el super-acceso de administrador, los helpers de sub-pestañas de inventario y el parsing de rutas con query parameters.
+
+### 📦 Componentes Modificados
+- `src/app/core/services/auth.service.ts`
+- `src/app/core/services/auth.service.spec.ts`
+- `src/app/core/guards/permission.guard.ts`
+- `src/app/layout/sidebar/sidebar.component.ts`
+- `src/app/layout/sidebar/sidebar.component.spec.ts`
+- `src/app/layout/mobile-nav/mobile-nav.component.ts`
+- `src/app/layout/mobile-nav/mobile-nav.component.spec.ts`
+- `src/app/features/settings/settings.component.ts`
+- `implementation_plan.md`
+
+### ✅ Verificación, Compilación y Tests
+- **Build de Producción (`npm run build`)**: Exitoso (0 Errores, código de salida 0).
+- **Pruebas Unitarias (`npm test`)**: 188 de 188 pruebas aprobadas (100% SUCCESS, 0 Fallos).
+
+---
+
+## [2026-10-27] - Modernización de Modal de Confirmación, Rediseño de Cards de Parámetros y Creación por Diálogo Limpio con Manejo Automático de Unidades
+
+### 💬 Prompt Original del Usuario
+> "mejorame la modal de confirmacion
+> adicional mejorame las cards de presentaciones/kilos y lineas y categorias , porque se ve montado y ademas no veo la opcion para eliminarlas
+> mejorame que el agregar presentacion y categoria sean por un dialog , no por esa opcion ya precargada cuando a paraemetros del sistema, recuerda que los editext deben cargarme vacio la info, por ejemplo el de agregar presentacion muestra "300kg" pero el kg debe ponerse solo y no dejar que el usuario lo escriba"
+
+### 🤖 Resumen Técnico para la IA
+- **1. Modal de Confirmación Centralizada (`confirmDialogState`)**:
+  - Se eliminó por completo el uso de la ventana nativa del navegador `window.confirm(...)` en todos los flujos de eliminación y restauración de `SettingsComponent`.
+  - Se implementó una modal de confirmación moderna con backdrop blur, icono circular de alerta (peligro/advertencia), mensajes claros y contextuales, y botones "Cancelar" y "Eliminar" / "Restaurar".
+- **2. Rediseño Estructural de Tarjetas de Presentaciones y Categorías (`.param-card`)**:
+  - Se reemplazó el contenedor flex horizontal estrecho por una estructura de tarjeta vertical con altura mínima y padding generoso, evitando que los títulos, IDs y switches colisionen ("montados").
+  - Se añadieron badges de color temáticos para presentaciones (`grammage-badge` púrpura) y categorías (`category-badge` azul).
+  - Se incorporó en cada tarjeta el botón de eliminación directa con icono de papelera, conectado a la nueva modal de confirmación.
+- **3. Diálogos de Creación Limpia con Gestión Automática de Unidades**:
+  - Se eliminaron las cajas inline fijas al pie de las secciones de gramajes y categorías.
+  - Se agregaron los botones `+ Nueva Presentación` y `+ Nueva Categoría` en la barra superior de acciones.
+  - Se configuraron los campos de entrada para que inicien 100% vacíos (`null` o `''`), eliminando cualquier valor precargado arbitrario.
+  - En la modal de presentación, se implementó un campo numérico con selector toggle de unidad (`Gramos (g)` vs `Kilos (Kg)`), calculando y formateando el sufijo (`g` o `Kg`) de manera automática sin permitir que el usuario deba escribirlo manualmente.
+- **4. Calidad, Tipado y Pruebas Unitarias**:
+  - Tipado 100% explícito sin `any` ni `var`, `try-catch` estructurado en cada método y documentación JSDoc completa sin comentarios internos de línea.
+  - Se añadieron 9 pruebas unitarias nuevas cubriendo la modal de confirmación, creación de gramaje en gramos y kilos, creación de categoría y eliminaciones.
+
+### 📦 Componentes Modificados
+- `src/app/features/settings/settings.component.ts`
+- `src/app/features/settings/settings.component.html`
+- `src/app/features/settings/settings.component.scss`
+- `src/app/features/settings/settings.component.spec.ts`
+
+### ✅ Verificación, Compilación y Tests
+- **Build de Producción (`npm run build`)**: Exitoso (0 Errores).
+- **Pruebas Unitarias (`npm test`)**: 185 de 185 pruebas superadas (100% SUCCESS, 0 Fallos).
+
+---
+
+## [2026-10-27] - Estandarización Terminológica: Reemplazo Estricto de "Cava" por "Inventario" en Todo el Frontend
+
+### 💬 Prompt Original del Usuario
+> "elimina la palabra "cava""
+> Confirmación de requerimiento: "Reemplazar la palabra 'Cava' estrictamente por 'Inventario' en todo el sistema"
+
+### 🤖 Resumen Técnico para la IA
+- **1. Auditoría y Análisis de Impacto**:
+  - Se analizó la presencia del término "Cava" en títulos, tooltips, etiquetas, botones, modales, placeholders, leyendas, avisos KDS y nombres de descarga de archivos CSV.
+  - Se preservó quirúrgicamente la compatibilidad de enrutamiento por query params (`tab === 'cava'`) y los identificadores de señales internas (`cavaTotalStockKg`, `cavaCommercialValue`, etc.) requeridas por la suite de pruebas unitarias (`reports.component.spec.ts`) para garantizar cero regresiones funcionales y de testing.
+- **2. Estandarización de Textos en Vistas y Componentes**:
+  - `orders.component.html`: Actualizado banner de alistamiento a `LISTA DE ALISTAMIENTO EN INVENTARIO:`, `¡Inventario al día!`, `requeridos en inventario` e `Inventario Frigorífico`.
+  - `kds.component.ts`: Cambiado a `Alistando en Inventario`, `Inventario sin picking activo`, `productos alistados en inventario` y `alistamiento en inventario`.
+  - `delivery-map.component.ts`: Actualizados tooltips y badges operativos a `prioridad urgente en inventario`, `Aún en inventario`, `Inventario Matriz Cundinamarca` y `pantalla de Inventario (KDS)`.
+  - `voice-order-modal.component.html` & `.ts`: Actualizadas instrucciones a `Verifica los sabores y gramajes en el inventario`, `Alistamiento en Inventario` y `en preparación en inventario`.
+  - `kds-inventory.component.ts`: Ajustado encabezado a `KDS PLANTA & INVENTARIO`, `Pulpas en Inventario`, `Stock de Pulpas Hechas en Inventario`.
+  - `reports.component.html` & `.ts`: Cambiado encabezado a `Inventario & Valoración`, `Pulpa Congelada en Inventario`, `Valorización Comercial de Inventario`, `Estado de Inventario`, `Energía inventario frigorífico` y nombre de descarga de exportación a `reporte_inventario_${now}.csv`.
+  - `settings.component.html` & `.ts`: Actualizados tooltips KDS a `Planta & Inventario`, `Sede Principal · Inventario Frigorífico (-18°C)`, descripciones de gramajes a `calcular el stock en inventario`, encabezados y celdas de tabla a `Stock en Inventario`, y etiquetas de modales a `Stock Inicial en Inventario (uds)` y `Stock en Inventario (uds)`.
+  - `shifts.component.html`: Actualizado placeholder a `ej: Despulpado de maracuyá, inventario, saneamiento...` y métrica a `Líneas de extracción e inventario operando`.
+  - `dashboard.component.html`: Subtítulo de modal actualizado a `Existencias empacadas listas en inventario por fruta y gramaje`.
+  - `client-portal.component.ts`: Modal de éxito de pedido actualizado a `Tu solicitud ya entró a la línea de preparación y alistamiento en inventario.`
+  - `roles.component.html`: Placeholder actualizado a `ej: Supervisor de Inventario`.
+  - `system-catalog.component.html`: Placeholder de descripción operativa actualizado a `Ej: Permite certificar grados Brix y pH del lote antes de inventario`.
+  - `header.component.ts`: Tooltips actualizados a `(KDS en Inventario)` y `planta/inventario`.
+- **3. Verificación de Reglas y Calidad**:
+  - Cero datos quemados de negocio o mocks.
+  - Tipado 100% explícito sin `any` ni `var`.
+  - JSDoc estricto y cero comentarios sueltos internos (`//`).
+
+### 📦 Componentes Modificados
+- `src/app/features/orders/orders.component.html`
+- `src/app/features/orders/kds/kds.component.ts`
+- `src/app/features/orders/delivery-map.component.ts`
+- `src/app/features/orders/voice-orders/voice-order-modal.component.html`
+- `src/app/features/orders/voice-orders/voice-order-modal.component.ts`
+- `src/app/features/inventory/kds/kds-inventory.component.ts`
+- `src/app/features/reports/reports.component.html`
+- `src/app/features/reports/reports.component.ts`
+- `src/app/features/settings/settings.component.html`
+- `src/app/features/settings/settings.component.ts`
+- `src/app/features/shifts/shifts.component.html`
+- `src/app/features/dashboard/dashboard.component.html`
+- `src/app/features/client-portal/client-portal.component.ts`
+- `src/app/features/admin/roles/roles.component.html`
+- `src/app/features/admin/system-catalog/system-catalog.component.html`
+- `src/app/layout/header/header.component.ts`
+
+### ✅ Verificación, Compilación y Tests
+- **Build de Producción (`npm run build`)**: Exitoso (0 Errores).
+- **Pruebas Unitarias (`npm test`)**: 176 de 176 pruebas superadas (100% SUCCESS, 0 Fallos).
+
+---
+
 ## [2026-10-25] - Integración de Autenticación Real, Navegación Dinámica RBAC (Server-Driven UI), Circuito Maestro (`SystemCatalog`) y Conexión 100% Full-Stack con `ApiDespulpadora` (.NET 10)
 
 ### 💬 Prompt Original del Usuario
@@ -443,8 +576,104 @@ por otr lado, la columna de accion dejamelo mejor, puede ser un lista desplegabl
 - **Build de Producción (`npm run build`)**: **0 Errores** (`dist/despulpadora-pwa` generado exitosamente).
 - **Pruebas Unitarias (`npx ng test --watch=false --browsers=ChromeHeadless`)**: **Executed 174 of 174 SUCCESS (TOTAL: 174 SUCCESS, 0 FAILED)**.
 
+---
 
+## [2026-10-26] - Filtro de Períodos (`Hoy | Ayer | Mes | Año | Rango`) y Limpieza de Estado Vacío en Histórico de Entregas (`Despachos & Rutas`)
 
+### 💬 Prompt Original del Usuario
+> "elimina la frase No hay pedidos que coincidan con el filtro \"ALL\" o el texto buscado.
+> Quisiera ademas qe agregues filtro de fechas al historico , hoy , ayer, mes o rango fecha del mismo estilo que se tiene en el modulo de Centro de Reportes Gerenciales
+> valida porque no creo qu eexista un micro servicio para eso"
 
+### 🤖 Resumen Técnico para la IA
+- **1. Validación de Microservicio / API (`GET /api/orders`) y Filtrado Reactivo en Cliente**:
+  - El **Agente Verificador de Impacto** comprobó que `GET /api/orders` en `ApiService` retorna todos los pedidos con sus fechas (`createdAt` / `orderDate`), sin existir un microservicio separado para rangos de fecha. Al igual que en `ReportsComponent`, se implementó el motor reactivo sobre `stateService.orders()` en `OrdersComponent` (`allHistoryOrders`), actualizando tanto la tabla como los 4 KPIs superiores (`Total Envíos`, `Entregadas`, `En Camino`, `Sin Gestionar`).
+- **2. Selector de Período y Limpieza del Estado Vacío en `OrdersComponent`**:
+  - En `src/app/features/orders/orders.component.html`: Se eliminó el párrafo `<p>No hay pedidos que coincidan con el filtro "{{ historyFilter() }}" o el texto buscado.</p>` en `.ledger-empty-box`, vinculando `Limpiar Filtros` a `resetHistoryFilters()`, y se incorporó en `.history-toolbar-row` la barra `.period-filter-container` (`Hoy`, `Ayer`, `Mes`, `Año`, `Rango`) junto con `.selected-date-capsule`.
+  - En `src/app/features/orders/orders.component.ts`: Se agregaron los tipos `HistoryDateFilter` y `HistoryMonthOption`, las señales `historyDateFilter`, `historySelectedMonthNumber`, `historySelectedYear`, `historyRangeStartDate`, `historyRangeEndDate`, `historyAvailableYears`, `todayFormattedDisplay`, `yesterdayFormattedDisplay`, y los métodos `setHistoryDateFilter()`, `resetHistoryFilters()` y `formatHumanDateES()`.
+- **3. Arquitectura Global de Estilos (`AGENTS.md` Regla 2.2)**:
+  - Las clases `.period-filter-container`, `.period-label`, `.period-Segmented-group`, `.period-pill-btn`, `.selected-date-capsule` y `.capsule-*` se centralizaron en `src/styles.scss` (eliminando su duplicado en `reports.component.scss`), y se ajustó `.history-toolbar-row` con `justify-content: space-between` en `orders.component.scss`.
+- **4. Certificación de Agentes de Calidad**:
+  - **Agente Verificador de Impacto**, **Agente Auditor Punto por Punto** y **Agente de Revisión Par (Peer Reviewer)**: Aprobaron el 100% de la implementación sin desviaciones ni regresiones.
 
+### 📦 Componentes Modificados
+- `src/styles.scss` [MODIFICADO]
+- `src/app/features/reports/reports.component.scss` [MODIFICADO]
+- `src/app/features/orders/orders.component.scss` [MODIFICADO]
+- `src/app/features/orders/orders.component.ts` [MODIFICADO]
+- `src/app/features/orders/orders.component.html` [MODIFICADO]
+- `src/app/features/orders/orders.component.spec.ts` [MODIFICADO]
+
+### ✅ Verificación, Build y Tests Unitarios
+- **Build de Producción (`npm run build`)**: **0 Errores** (`dist/despulpadora-pwa` generado exitosamente).
+- **Pruebas Unitarias (`npx ng test --watch=false --browsers=ChromeHeadless`)**: **Executed 176 of 176 SUCCESS (TOTAL: 176 SUCCESS, 0 FAILED)**.
+
+---
+
+## [2026-10-27] - Filtrado de Usuarios Operativos en `Control de Turnos & Marcación` y Aislamiento de `Super Administrador` frente a Usuarios Administradores
+
+### 💬 Prompt Original del Usuario
+> "aca me deberia salir los usuario que tengo creados a excepto con el que estoy logeado y menos los usuarios que tenga con rol de administrador"
+> "los usuarios administradores no pueden ver permisos y cosas del super administrador"
+
+### 🤖 Resumen Técnico para la IA
+- **1. Usuarios Creados en `Control de Turnos & Marcación` (`ShiftsComponent` y `StateService`)**:
+  - En `src/app/features/shifts/shifts.component.ts` y `shifts.component.html`: Se inyectaron `ApiService` y `AuthService`, cargando los usuarios creados desde `GET /api/users` (`loadSystemUsers()`). La señal computada `selectableUsers()` filtra usuarios activos excluyendo al usuario autenticado en sesión (`authService.user()` / `authService.currentUser()`) y excluyendo cualquier cuenta con rol de Administrador (`isSystemDeveloper`, `roleId === 1` o `roleName` que contenga `admin`, `developer` o `desarrollador`).
+  - En `src/app/core/services/state.service.ts`: Se añadió el parámetro opcional `employeeName?: string` en `startWorkShift()` para registrar el nombre completo real del usuario seleccionado.
+- **2. Restricción de Visibilidad de `Super Administrador` para Usuarios Administradores**:
+  - En `src/app/core/services/auth.service.ts`: Se ajustó `isSuperAdmin` para evaluar estrictamente `isSystemDeveloper()`, `roleName.includes('super')` o `hasPermission('system.catalog')` (removiendo `roles.manage`), y se definieron los métodos `isSuperAdminRole()`, `isSuperAdminUser()`, `isSuperAdminOnlyModule()` e `isSuperAdminOnlyActionSlug()`.
+  - En `src/app/features/admin/roles/roles.component.ts` y `.html`: `visibleRoles()` y `visibleModules()` ocultan el rol `Super Administrador` y los módulos/acciones exclusivas de Super Administrador cuando `!auth.isSuperAdmin()`, seleccionando por defecto el primer rol visible.
+  - En `src/app/features/admin/users/users.component.ts` y `.html`: `visibleUsers()` y `visibleRoles()` ocultan usuarios y roles de `Super Administrador` y protegen los checkboxes `IsSystemDeveloper` con `@if (authService.isSuperAdmin())`.
+- **3. Certificación de Agentes de Calidad**:
+  - **Agente Verificador de Impacto**, **Agente Auditor Punto por Punto** y **Agente de Revisión Par (Peer Reviewer)**: Aprobaron el 100% de la implementación sin desviaciones ni regresiones.
+
+### 📦 Componentes Modificados
+- `src/app/core/services/auth.service.ts` [MODIFICADO]
+- `src/app/core/guards/permission.guard.ts` [MODIFICADO]
+- `src/app/core/services/state.service.ts` [MODIFICADO]
+- `src/app/features/shifts/shifts.component.ts` [MODIFICADO]
+- `src/app/features/shifts/shifts.component.html` [MODIFICADO]
+- `src/app/features/shifts/shifts.component.spec.ts` [MODIFICADO]
+- `src/app/features/admin/roles/roles.component.ts` [MODIFICADO]
+- `src/app/features/admin/roles/roles.component.html` [MODIFICADO]
+- `src/app/features/admin/roles/roles.component.spec.ts` [MODIFICADO]
+- `src/app/features/admin/users/users.component.ts` [MODIFICADO]
+- `src/app/features/admin/users/users.component.html` [MODIFICADO]
+- `src/app/features/admin/users/users.component.spec.ts` [MODIFICADO]
+
+### ✅ Verificación, Build y Tests Unitarios
+- **Build de Producción (`npm run build`)**: **0 Errores** (`dist/despulpadora-pwa` generado exitosamente).
+- **Pruebas Unitarias (`npx ng test --watch=false --browsers=ChromeHeadless`)**: **Executed 185 of 185 SUCCESS (TOTAL: 185 SUCCESS, 0 FAILED)**.
+
+---
+
+## [2026-10-27] - Selección Automática del Día Actual y Rediseño Tipográfico de Tarjetas de Días en `Alistamiento de Pedidos`
+
+### 💬 Prompt Original del Usuario
+> "cuandoingrese a alistamiento de pedidos me debera cargar el dia en el que estoy
+> adicional elimina eso lo contadores de colores en todos los dias de la semana, adicional cuando tenga dia seleccionado, que no me reemplace el texto de # pedidos por Agrupado / Activo, deja el de pedidos
+> Adicional como quitaras ls contadores de colores, dejame el texto mas grandes para que se vea mejor la ui"
+
+### 🤖 Resumen Técnico para la IA
+- **1. Selección Automática del Día en Curso (`src/app/features/orders/orders.component.ts`)**:
+  - Se creó el método `getCurrentWeekDayName(date: Date = new Date()): string` con bloque `try-catch` y JSDoc superior que convierte `date.getDay()` (`0`–`6`) al nombre del día en español (`Domingo` a `Sábado`).
+  - Se inicializó `readonly selectedDay = signal<string>(this.getCurrentWeekDayName());` (eliminando el valor quemado `'Jueves'`), y en la suscripción a `queryParams` dentro del `constructor()` se sincroniza `this.selectedDay.set(this.getCurrentWeekDayName())` siempre que el usuario ingresa a la pestaña `picking`.
+- **2. Eliminación de Contadores de Colores y Preservación de `# pedidos` (`src/app/features/orders/orders.component.html`)**:
+  - Se eliminó `<span class="day-card-badge" [ngClass]="day.active ? 'badge-active' : 'badge-' + day.color">{{ day.count }}</span>` de las 7 tarjetas de días en `.picking-days-grid`.
+  - En `.day-card-sub`, se reemplazó la expresión `{{ dragOverDay() === day.name ? 'Soltar aquí' : (day.active ? 'Agrupado / Activo' : day.count + ' pedidos') }}` por `{{ dragOverDay() === day.name ? 'Soltar aquí' : day.count + ' pedidos' }}`, conservando el conteo de pedidos incluso en el día activo.
+- **3. Rediseño Tipográfico de las Tarjetas de Días (`src/app/features/orders/orders.component.scss`)**:
+  - Se eliminaron las reglas obsoletas de `.day-card-badge` y sus variantes de color.
+  - Se incrementó el tamaño y peso tipográfico de `.day-card-name` (`font-size: 1.12rem; font-weight: 800; line-height: 1.2;`) y `.day-card-sub` (`font-size: 0.95rem; font-weight: 700; line-height: 1.25;`, con `color: rgba(255, 255, 255, 0.95)` en estado `.is-active`).
+- **4. Certificación de Agentes de Calidad**:
+  - **Agente Verificador de Impacto**, **Agente Auditor Punto por Punto** y **Agente de Revisión Par (Peer Reviewer)**: Aprobaron el 100% de la implementación sin desviaciones ni regresiones.
+
+### 📦 Componentes Modificados
+- `src/app/features/orders/orders.component.ts` [MODIFICADO]
+- `src/app/features/orders/orders.component.html` [MODIFICADO]
+- `src/app/features/orders/orders.component.scss` [MODIFICADO]
+- `src/app/features/orders/orders.component.spec.ts` [MODIFICADO]
+
+### ✅ Verificación, Build y Tests Unitarios
+- **Build de Producción (`npm run build`)**: **0 Errores** (`dist/despulpadora-pwa` generado exitosamente).
+- **Pruebas Unitarias (`npx ng test --watch=false --browsers=ChromeHeadless`)**: **Executed 190 of 190 SUCCESS (TOTAL: 190 SUCCESS, 0 FAILED)**.
 

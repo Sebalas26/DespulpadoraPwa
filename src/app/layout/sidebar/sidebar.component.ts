@@ -201,6 +201,38 @@ import { environment } from '../../../environments/environment';
                 <span class="dgl-nav-text">↳ Despachos & Rutas</span>
               </a>
             }
+
+            @if (mod.slug === 'inventory' || mod.frontendRoute.includes('tab=inventory')) {
+              <a
+                routerLink="/settings"
+                [queryParams]="{ tab: 'variants' }"
+                [class.active]="isInventoryTabActive('variants')"
+                class="dgl-nav-item"
+                style="padding-left: 34px; font-size: 0.82rem;"
+                title="Stock de pulpas congeladas listas para despacho por gramaje"
+              >
+                <span class="dgl-nav-text">↳ Stock de Pulpas</span>
+              </a>
+              <a
+                routerLink="/settings"
+                [queryParams]="{ tab: 'fruits' }"
+                [class.active]="isInventoryTabActive('fruits')"
+                class="dgl-nav-item"
+                style="padding-left: 34px; font-size: 0.82rem;"
+                title="Inventario de fruta fresca disponible en planta"
+              >
+                <span class="dgl-nav-text">↳ Fruta Fresca</span>
+              </a>
+              <a
+                routerLink="/kds-inventory"
+                [class.active]="isInventoryTabActive('kds')"
+                class="dgl-nav-item"
+                style="padding-left: 34px; font-size: 0.82rem;"
+                title="Pantalla táctil KDS de inventario para operarios de planta"
+              >
+                <span class="dgl-nav-text">↳ Pantalla KDS Planta</span>
+              </a>
+            }
           }
         }
 
@@ -680,6 +712,17 @@ export class SidebarComponent {
         return !currentUrl.includes('tab=facturacion') && !currentUrl.includes('tab=despachos');
       }
 
+      if (mod.slug === 'inventory' || mod.frontendRoute.includes('tab=inventory')) {
+        return (
+          (currentPath === '/settings' && this.isSettingsTabActive('inventory')) ||
+          currentPath === '/kds-inventory'
+        );
+      }
+
+      if (modPath === '/settings' && !mod.frontendRoute.includes('tab=inventory')) {
+        return currentPath === '/settings' && !this.isSettingsTabActive('inventory');
+      }
+
       return currentPath === modPath;
     } catch {
       return false;
@@ -738,6 +781,34 @@ export class SidebarComponent {
           !url.includes('tab=usuarios') &&
           !url.includes('tab=roles'))
       );
+    } catch {
+      return false;
+    }
+  }
+
+  /**
+   * Checks whether a specific sub-tab of inventory or KDS screen is active.
+   */
+  isInventoryTabActive(subTab: 'variants' | 'fruits' | 'kds'): boolean {
+    try {
+      const url = this.urlSignal() || '';
+      if (subTab === 'kds') {
+        return url.startsWith('/kds-inventory');
+      }
+      if (!url.startsWith('/settings')) {
+        return false;
+      }
+      if (subTab === 'fruits') {
+        return url.includes('tab=fruits');
+      }
+      if (subTab === 'variants') {
+        return (
+          url.includes('tab=variants') ||
+          url.includes('tab=cava') ||
+          (url.includes('tab=inventory') && !url.includes('tab=fruits'))
+        );
+      }
+      return false;
     } catch {
       return false;
     }

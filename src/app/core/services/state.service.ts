@@ -1598,20 +1598,22 @@ export class StateService {
   }
 
   /**
-   * Starts a work shift for an employee.
+   * Starts a work shift for an employee or operator user.
    */
   startWorkShift(
     employeeId: number,
     shiftType: 'MORNING' | 'AFTERNOON' | 'NIGHT',
-    notes?: string
+    notes?: string,
+    employeeName?: string
   ): WorkShiftDto {
     try {
       const emp = this.employees().find(e => e.employeeId === employeeId);
+      const resolvedName = (employeeName && employeeName.trim()) ? employeeName.trim() : (emp ? emp.fullName : '');
       const branchId = this.auth.selectedBranch()?.branchId || 0;
       const newShift: WorkShiftDto = {
         shiftId: Date.now(),
         employeeId,
-        employeeName: emp ? emp.fullName : '',
+        employeeName: resolvedName,
         branchId,
         branchName: this.auth.selectedBranch()?.name || '',
         startTime: new Date().toISOString(),

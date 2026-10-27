@@ -62,14 +62,23 @@ export class AuthService {
     if (this.isSystemDeveloper()) {
       return true;
     }
-    return this.hasPermission('roles.manage') || this.hasPermission('system.catalog');
+    const roleName = (this.user()?.roleName || this.currentUser()?.roleName || '').trim().toLowerCase();
+    if (roleName.includes('super')) {
+      return true;
+    }
+    return this.allowedActionSlugsSet().has('system.catalog');
   });
 
   readonly isAdmin = computed<boolean>(() => {
     if (this.isSuperAdmin()) {
       return true;
     }
-    return this.hasModuleAccess('/settings') || this.hasPermission('users.manage');
+    const roleName = (this.user()?.roleName || this.currentUser()?.roleName || '').trim().toLowerCase();
+    return (
+      roleName.includes('admin') ||
+      roleName.includes('administrador') ||
+      roleName.includes('gerente')
+    );
   });
 
   readonly branches = computed<BranchDto[]>(() => this.currentUser()?.branches ?? []);
@@ -101,16 +110,59 @@ export class AuthService {
 
   readonly groupedNavigationSections = computed<NavigationSectionGroup[]>(() => {
     try {
-      const modules = [...this.navigationModules()]
-        .filter(
-          (mod: NavigationModuleDto) =>
-            !this.isRemovedCalculatorModule(mod) && !this.isEmbeddedSettingsRbacModule(mod)
-        )
-        .sort((a, b) => a.displayOrder - b.displayOrder);
+      const rawModules = [...this.navigationModules()];
+      const modules: NavigationModuleDto[] = [];
+
+      for (const mod of rawModules) {
+        if (this.isRemovedCalculatorModule(mod) || this.isEmbeddedSettingsRbacModule(mod)) {
+          continue;
+        }
+        if (!this.isSuperAdmin() && this.isSuperAdminOnlyModule(mod)) {
+          continue;
+        }
+        const normSlug = (mod.slug || '').trim().toLowerCase();
+        const normName = (mod.name || '').trim().toLowerCase();
+        if (normSlug === 'inventory' || normName.includes('inventario') || normName === 'planta e inventario') {
+          modules.push({
+            ...mod,
+            name: 'Inventario de Pulpas y Frutas',
+            slug: 'inventory',
+            frontendRoute: '/settings?tab=inventory',
+            icon: 'package',
+            menuSection: 'Operación',
+            displayOrder: 2
+          });
+        } else {
+          modules.push(mod);
+        }
+      }
+
+      const hasInventory = modules.some(
+        (m: NavigationModuleDto) =>
+          m.slug === 'inventory' ||
+          m.frontendRoute.includes('tab=inventory') ||
+          m.frontendRoute.includes('/kds-inventory')
+      );
+
+      if (!hasInventory && (this.isAdmin() || this.allowedActionSlugsSet().has('inventory.view'))) {
+        modules.push({
+          moduleId: 2,
+          name: 'Inventario de Pulpas y Frutas',
+          slug: 'inventory',
+          menuSection: 'Operación',
+          frontendRoute: '/settings?tab=inventory',
+          icon: 'package',
+          displayOrder: 2,
+          allowedActionSlugs: ['inventory.view', 'inventory.adjust', 'inventory.manage']
+        });
+      }
+
+      modules.sort((a, b) => a.displayOrder - b.displayOrder);
+
       const sectionMap = new Map<string, NavigationModuleDto[]>();
 
       for (const mod of modules) {
-        const section = (mod.menuSection || 'OPERACIÓN GENERAL').trim();
+        const section = (mod.menuSection || 'OPERACIÓN').trim();
         const existing = sectionMap.get(section) ?? [];
         existing.push(mod);
         sectionMap.set(section, existing);
@@ -339,7 +391,7 @@ export class AuthService {
         return false;
       }
 
-      if (this.isSystemDeveloper()) {
+      if (this.isSystemDeveloper() || this.isAdmin() || this.isSuperAdmin()) {
         return true;
       }
 
@@ -432,7 +484,7 @@ export class AuthService {
         return false;
       }
 
-      if (this.isSystemDeveloper()) {
+      if (this.isSystemDeveloper() || this.isAdmin() || this.isSuperAdmin()) {
         return true;
       }
 
@@ -630,11 +682,11 @@ export class AuthService {
     const normalizedRoute = this.normalizeRouteKey(mod.frontendRoute || '');
     const normalizedSlug = (mod.slug || '').trim().toLowerCase();
     const normalizedName = (mod.name || '').trim().toLowerCase();
+    if (normalizedRoute === 'calculator' || normalizedSlug === 'calculator') {
+      return true;
+    }
     return (
-      normalizedRoute === 'calculator' ||
-      normalizedSlug === 'calculator' ||
       normalizedName === 'control de producción & mermas' ||
-      normalizedName === 'planta e inventario' ||
       normalizedName === 'producción, formulación & mermas'
     );
   }
@@ -678,6 +730,93 @@ export class AuthService {
   isRemovedCalculatorActionSlug(slug: string): boolean {
     const normalized = (slug || '').trim().toLowerCase();
     return normalized.startsWith('calculator.') || normalized.startsWith('batches.');
+  }
+
+  /**
+   * Determines whether a role corresponds to the protected Super Administrator role.
+   */
+  isSuperAdminRole(role: { roleId?: number; name?: string; isSystemRole?: boolean }): boolean {
+    try {
+      const normalizedName = (role.name || '').trim().toLowerCase();
+      if (normalizedName.includes('super')) {
+        return true;
+      }
+      if (
+        Boolean(role.isSystemRole) &&
+        role.roleId === 1 &&
+        !normalizedName.includes('general') &&
+        !normalizedName.includes('operativo')
+      ) {
+        return true;
+      }
+      return false;
+    } catch {
+      return false;
+    }
+  }
+
+  /**
+   * Determines whether a user account belongs to a Super Administrator or System Developer.
+   */
+  isSuperAdminUser(user: {
+    userId?: number;
+    roleId?: number;
+    roleName?: string;
+    isSystemDeveloper?: boolean;
+  }): boolean {
+    try {
+      if (Boolean(user.isSystemDeveloper)) {
+        return true;
+      }
+      const normalizedRole = (user.roleName || '').trim().toLowerCase();
+      return normalizedRole.includes('super');
+    } catch {
+      return false;
+    }
+  }
+
+  /**
+   * Determines whether a module is restricted exclusively to the Super Administrator.
+   */
+  isSuperAdminOnlyModule(mod: {
+    frontendRoute?: string;
+    slug?: string;
+    name?: string;
+    menuSection?: string;
+  }): boolean {
+    try {
+      const normalizedRoute = this.normalizeRouteKey(mod.frontendRoute || '');
+      const normalizedSlug = (mod.slug || '').trim().toLowerCase();
+      const normalizedName = (mod.name || '').trim().toLowerCase();
+      const normalizedSection = (mod.menuSection || '').trim().toLowerCase();
+      return (
+        normalizedRoute === 'admin/catalog' ||
+        normalizedRoute === 'admin/backups' ||
+        normalizedSlug === 'system-catalog' ||
+        normalizedSlug === 'database-backups' ||
+        normalizedSlug === 'catalog' ||
+        normalizedSlug === 'backups' ||
+        normalizedSection.includes('configuración maestra') ||
+        normalizedSection.includes('configuracion maestra') ||
+        normalizedName.includes('catálogo maestro') ||
+        normalizedName.includes('catalogo maestro') ||
+        normalizedName.includes('copias de seguridad')
+      );
+    } catch {
+      return false;
+    }
+  }
+
+  /**
+   * Determines whether an action slug is restricted exclusively to the Super Administrator.
+   */
+  isSuperAdminOnlyActionSlug(slug: string): boolean {
+    try {
+      const normalized = (slug || '').trim().toLowerCase();
+      return normalized.startsWith('system.');
+    } catch {
+      return false;
+    }
   }
 
   /**

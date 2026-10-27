@@ -115,7 +115,7 @@ export class VoiceOrderModalComponent {
         `💰 *Total:* ${totalStr}\n` +
         `📍 *Entrega:* ${addressStr} (${timeStr})\n` +
         `💳 *Pago:* ${paymentStr}\n\n` +
-        `¡Tu pedido ya está en preparación en cava! Muchas gracias por confiar en DGL.`;
+        `¡Tu pedido ya está en preparación en inventario! Muchas gracias por confiar en DGL.`;
     } catch (error: unknown) {
       console.error('Error computing WhatsApp message preview:', error);
       return '';

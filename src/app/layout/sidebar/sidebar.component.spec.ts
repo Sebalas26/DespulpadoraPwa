@@ -59,4 +59,22 @@ describe('SidebarComponent', () => {
     expect(component.getRouteQueryParams('/orders?tab=picking')).toEqual({ tab: 'picking' });
     expect(component.getRouteQueryParams('/dashboard')).toBeNull();
   });
+
+  it('should correctly evaluate active inventory module and sub-tab helpers', () => {
+    const inventoryMod = {
+      moduleId: 2,
+      name: 'Inventario de Pulpas y Frutas',
+      slug: 'inventory',
+      menuSection: 'Operación',
+      frontendRoute: '/settings?tab=inventory',
+      icon: 'package',
+      displayOrder: 2,
+      allowedActionSlugs: ['inventory.view']
+    };
+
+    expect(component.isModuleActive(inventoryMod)).toBeFalse();
+    expect(component.isInventoryTabActive('variants')).toBeFalse();
+    expect(component.isInventoryTabActive('fruits')).toBeFalse();
+    expect(component.isInventoryTabActive('kds')).toBeFalse();
+  });
 });

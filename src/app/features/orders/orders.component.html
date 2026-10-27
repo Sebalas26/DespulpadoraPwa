@@ -18,13 +18,10 @@
       (dragleave)="onDayDragLeave($event, day.name)" (drop)="onDayDrop($event, day.name)">
       <div class="day-card-top">
         <span class="day-card-name">{{ day.name }}</span>
-        <span class="day-card-badge" [ngClass]="day.active ? 'badge-active' : 'badge-' + day.color">
-          {{ day.count }}
-        </span>
       </div>
       <div class="day-card-bottom">
         <span class="day-card-sub">
-          {{ dragOverDay() === day.name ? 'Soltar aquí' : (day.active ? 'Agrupado / Activo' : day.count + ' pedidos') }}
+          {{ dragOverDay() === day.name ? 'Soltar aquí' : day.count + ' pedidos' }}
         </span>
         @if (day.hasIndicator && !day.active) {
         <span class="day-mini-indicator">
@@ -122,7 +119,7 @@
           </div>
 
           <div class="picking-checklist-heading">
-            LISTA DE ALISTAMIENTO EN CAVA:
+            LISTA DE ALISTAMIENTO EN INVENTARIO:
           </div>
 
           <div class="picking-checklist-items">
@@ -172,7 +169,7 @@
           </svg>
         </div>
       </div>
-      <h3 style="margin-top: 12px; font-size: 1.25rem;">¡Cava al día! No hay pedidos pendientes de alistamiento</h3>
+      <h3 style="margin-top: 12px; font-size: 1.25rem;">¡Inventario al día! No hay pedidos pendientes de alistamiento</h3>
       <p style="color: var(--text-muted); font-size: 0.88rem; margin-top: 6px;">
         Utilice el botón "+ Nuevo pedido" en la barra superior o "Audios WA" para ingresar órdenes al sistema.
       </p>
@@ -386,7 +383,139 @@
         </div>
       </div>
 
-            <div class="history-toolbar-row">
+      <div class="history-toolbar-row">
+        <div class="period-filter-container no-print">
+          <span class="period-label">Período:</span>
+
+          <div class="period-Segmented-group">
+            <button
+              type="button"
+              class="period-pill-btn"
+              [class.active]="historyDateFilter() === 'today'"
+              (click)="setHistoryDateFilter('today')"
+            >
+              Hoy
+            </button>
+
+            <button
+              type="button"
+              class="period-pill-btn"
+              [class.active]="historyDateFilter() === 'yesterday'"
+              (click)="setHistoryDateFilter('yesterday')"
+            >
+              Ayer
+            </button>
+
+            <button
+              type="button"
+              class="period-pill-btn"
+              [class.active]="historyDateFilter() === 'month'"
+              (click)="setHistoryDateFilter('month')"
+            >
+              Mes
+            </button>
+
+            <button
+              type="button"
+              class="period-pill-btn"
+              [class.active]="historyDateFilter() === 'year'"
+              (click)="setHistoryDateFilter('year')"
+            >
+              Año
+            </button>
+
+            <button
+              type="button"
+              class="period-pill-btn"
+              [class.active]="historyDateFilter() === 'range'"
+              (click)="setHistoryDateFilter('range')"
+            >
+              Rango
+            </button>
+          </div>
+
+          <div class="selected-date-capsule">
+            <span class="capsule-cal-icon">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                <line x1="16" y1="2" x2="16" y2="6"></line>
+                <line x1="8" y1="2" x2="8" y2="6"></line>
+                <line x1="3" y1="10" x2="21" y2="10"></line>
+              </svg>
+            </span>
+
+            @if (historyDateFilter() === 'today') {
+              <span class="capsule-date-text">Hoy · {{ todayFormattedDisplay() }}</span>
+            }
+
+            @if (historyDateFilter() === 'yesterday') {
+              <span class="capsule-date-text">Ayer · {{ yesterdayFormattedDisplay() }}</span>
+            }
+
+            @if (historyDateFilter() === 'month') {
+              <div class="capsule-select-pair">
+                <select
+                  class="capsule-inline-select"
+                  [ngModel]="historySelectedMonthNumber()"
+                  (ngModelChange)="historySelectedMonthNumber.set($event); historyCurrentPage.set(1)"
+                  title="Seleccionar mes"
+                >
+                  @for (m of monthsList; track m.value) {
+                    <option [value]="m.value">{{ m.label }}</option>
+                  }
+                </select>
+                <span class="capsule-dot">·</span>
+                <select
+                  class="capsule-inline-select year-select"
+                  [ngModel]="historySelectedYear()"
+                  (ngModelChange)="historySelectedYear.set($event); historyCurrentPage.set(1)"
+                  title="Seleccionar año"
+                >
+                  @for (yr of historyAvailableYears(); track yr) {
+                    <option [value]="yr">{{ yr }}</option>
+                  }
+                </select>
+              </div>
+            }
+
+            @if (historyDateFilter() === 'year') {
+              <div class="capsule-select-pair">
+                <span class="capsule-sub-label">Año</span>
+                <select
+                  class="capsule-inline-select year-select"
+                  [ngModel]="historySelectedYear()"
+                  (ngModelChange)="historySelectedYear.set($event); historyCurrentPage.set(1)"
+                  title="Seleccionar año"
+                >
+                  @for (yr of historyAvailableYears(); track yr) {
+                    <option [value]="yr">{{ yr }}</option>
+                  }
+                </select>
+              </div>
+            }
+
+            @if (historyDateFilter() === 'range') {
+              <div class="capsule-range-pair">
+                <input
+                  type="date"
+                  class="capsule-date-input"
+                  [ngModel]="historyRangeStartDate()"
+                  (ngModelChange)="historyRangeStartDate.set($event); historyCurrentPage.set(1)"
+                  title="Fecha inicial"
+                />
+                <span class="capsule-range-arrow">→</span>
+                <input
+                  type="date"
+                  class="capsule-date-input"
+                  [ngModel]="historyRangeEndDate()"
+                  (ngModelChange)="historyRangeEndDate.set($event); historyCurrentPage.set(1)"
+                  title="Fecha final"
+                />
+              </div>
+            }
+          </div>
+        </div>
+
         <div class="history-search-shell">
           <svg class="search-box-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3">
             <circle cx="11" cy="11" r="8"></circle>
@@ -626,9 +755,8 @@
             </svg>
           </span>
           <h4>No se encontraron entregas en el histórico</h4>
-          <p>No hay pedidos que coincidan con el filtro "{{ historyFilter() }}" o el texto buscado.</p>
           <button type="button" class="btn btn-secondary" style="margin-top: 10px; font-size: 0.8rem;"
-            (click)="historyFilter.set('ALL'); historySearchQuery.set('')">
+            (click)="resetHistoryFilters()">
             Limpiar Filtros
           </button>
         </div>
@@ -692,7 +820,7 @@
         </h3>
         <p style="font-size: 0.78rem; color: var(--text-muted); margin-top: 2px;">
           {{ editingOrderId() !== null ? 'Corrija cliente, dirección, observaciones, cantidades o precios unitarios.' :
-          'Registre los datos del cliente y los productos requeridos en cava.' }}
+          'Registre los datos del cliente y los productos requeridos en inventario.' }}
         </p>
       </div>
       <button type="button" class="modal-close-btn" (click)="showNewOrderModal.set(false)" title="Cerrar modal">
@@ -1067,7 +1195,7 @@
         <div class="pro-recipient-row">
           <div class="pro-sender-meta">
             <div class="sender-label">PLANTA DE DESPACHO</div>
-            <div class="sender-val">Sede Principal · Cava Frigorífica (-18°C)</div>
+            <div class="sender-val">Sede Principal · Inventario Frigorífico (-18°C)</div>
             <div class="sender-sub">{{ stateService.companyInfo().address }}</div>
           </div>
 

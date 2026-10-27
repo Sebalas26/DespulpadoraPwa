@@ -110,7 +110,12 @@ import { environment } from '../../../environments/environment';
                 {{ section.sectionName }}
               </div>
               @for (mod of section.modules; track mod.moduleId) {
-                <a [routerLink]="mod.frontendRoute.split('?')[0]" class="drawer-link-item" (click)="closeDrawer()">
+                <a
+                  [routerLink]="getRoutePath(mod.frontendRoute)"
+                  [queryParams]="getRouteQueryParams(mod.frontendRoute)"
+                  class="drawer-link-item"
+                  (click)="closeDrawer()"
+                >
                   <span class="drawer-icon">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                       <rect x="3" y="3" width="7" height="7" rx="1.5"></rect>
@@ -385,6 +390,37 @@ export class MobileNavComponent {
       this.showMoreDrawer.set(false);
     } catch {
       return;
+    }
+  }
+
+  /**
+   * Extracts the clean router path from a `frontendRoute` string.
+   */
+  getRoutePath(frontendRoute: string): string {
+    try {
+      return (frontendRoute || '/dashboard').split('?')[0];
+    } catch {
+      return '/dashboard';
+    }
+  }
+
+  /**
+   * Parses query parameters embedded in a `frontendRoute` string if present.
+   */
+  getRouteQueryParams(frontendRoute: string): Record<string, string> | null {
+    try {
+      const parts = (frontendRoute || '').split('?');
+      if (parts.length < 2 || !parts[1]) {
+        return null;
+      }
+      const params: Record<string, string> = {};
+      const searchParams = new URLSearchParams(parts[1]);
+      searchParams.forEach((val, key) => {
+        params[key] = val;
+      });
+      return params;
+    } catch {
+      return null;
     }
   }
 }

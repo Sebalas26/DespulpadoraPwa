@@ -29,7 +29,7 @@
   <div class="card">
     <div class="card-header" style="justify-content: space-between;">
       <h3 class="card-title">Usuarios Registrados</h3>
-      <span style="font-size: 0.85rem; font-weight: 700; color: var(--text-muted);">{{ users().length }} cuentas registradas</span>
+      <span style="font-size: 0.85rem; font-weight: 700; color: var(--text-muted);">{{ visibleUsers().length }} cuentas registradas</span>
     </div>
     <div class="card-body" style="padding: 0;">
       <div class="table-container">
@@ -45,7 +45,7 @@
             </tr>
           </thead>
           <tbody>
-            @for (user of users(); track user.userId) {
+            @for (user of visibleUsers(); track user.userId) {
               <tr>
                 <td class="mobile-tr-summary-cell">
                   <div class="mobile-summary-header">
@@ -192,25 +192,27 @@
           <div class="form-group">
             <label class="form-label">Rol del Sistema *</label>
             <select class="form-control" [ngModel]="newRoleId()" (ngModelChange)="newRoleId.set(+$event)">
-              @for (role of roles(); track role.roleId) {
+              @for (role of visibleRoles(); track role.roleId) {
                 <option [ngValue]="role.roleId">{{ role.name }}</option>
               }
             </select>
           </div>
         </div>
 
-        <div style="display: flex; align-items: center; gap: 8px; margin-top: 4px;">
-          <input
-            type="checkbox"
-            id="newIsSystemDevCheck"
-            [ngModel]="newIsSystemDeveloper()"
-            (ngModelChange)="newIsSystemDeveloper.set($event)"
-            style="accent-color: var(--color-primary); width: 16px; height: 16px; cursor: pointer;"
-          />
-          <label for="newIsSystemDevCheck" style="font-size: 0.83rem; font-weight: 600; cursor: pointer;">
-            Habilitar privilegio maestro <code>IsSystemDeveloper</code> (Catálogo de Módulos)
-          </label>
-        </div>
+        @if (authService.isSuperAdmin()) {
+          <div style="display: flex; align-items: center; gap: 8px; margin-top: 4px;">
+            <input
+              type="checkbox"
+              id="newIsSystemDevCheck"
+              [ngModel]="newIsSystemDeveloper()"
+              (ngModelChange)="newIsSystemDeveloper.set($event)"
+              style="accent-color: var(--color-primary); width: 16px; height: 16px; cursor: pointer;"
+            />
+            <label for="newIsSystemDevCheck" style="font-size: 0.83rem; font-weight: 600; cursor: pointer;">
+              Habilitar privilegio maestro <code>IsSystemDeveloper</code> (Catálogo de Módulos)
+            </label>
+          </div>
+        }
       </div>
 
       <div class="modal-footer">
@@ -263,7 +265,7 @@
           <div class="form-group">
             <label class="form-label">Rol del Sistema *</label>
             <select class="form-control" [ngModel]="editRoleId()" (ngModelChange)="editRoleId.set(+$event)" [disabled]="editingUserId() === 1">
-              @for (role of roles(); track role.roleId) {
+              @for (role of visibleRoles(); track role.roleId) {
                 <option [ngValue]="role.roleId">{{ role.name }}</option>
               }
             </select>
@@ -278,19 +280,21 @@
           </div>
         </div>
 
-        <div style="display: flex; align-items: center; gap: 8px; margin-top: 4px;">
-          <input
-            type="checkbox"
-            id="editIsSystemDevCheck"
-            [ngModel]="editIsSystemDeveloper()"
-            (ngModelChange)="editIsSystemDeveloper.set($event)"
-            [disabled]="editingUserId() === 1"
-            style="accent-color: var(--color-primary); width: 16px; height: 16px; cursor: pointer;"
-          />
-          <label for="editIsSystemDevCheck" style="font-size: 0.83rem; font-weight: 600; cursor: pointer;">
-            Habilitar privilegio maestro <code>IsSystemDeveloper</code> (Catálogo de Módulos)
-          </label>
-        </div>
+        @if (authService.isSuperAdmin()) {
+          <div style="display: flex; align-items: center; gap: 8px; margin-top: 4px;">
+            <input
+              type="checkbox"
+              id="editIsSystemDevCheck"
+              [ngModel]="editIsSystemDeveloper()"
+              (ngModelChange)="editIsSystemDeveloper.set($event)"
+              [disabled]="editingUserId() === 1"
+              style="accent-color: var(--color-primary); width: 16px; height: 16px; cursor: pointer;"
+            />
+            <label for="editIsSystemDevCheck" style="font-size: 0.83rem; font-weight: 600; cursor: pointer;">
+              Habilitar privilegio maestro <code>IsSystemDeveloper</code> (Catálogo de Módulos)
+            </label>
+          </div>
+        }
       </div>
 
       <div class="modal-footer">

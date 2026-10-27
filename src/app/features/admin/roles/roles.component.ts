@@ -92,9 +92,38 @@ export class AdminRolesComponent implements OnInit {
 
   readonly modules = signal<SystemModuleCatalog[]>([]);
 
+  readonly visibleRoles = computed<UserRoleDto[]>(() => {
+    try {
+      const list = this.roles();
+      if (this.auth.isSuperAdmin()) {
+        return list;
+      }
+      return list.filter((r: UserRoleDto) => !this.auth.isSuperAdminRole(r));
+    } catch {
+      return [];
+    }
+  });
+
+  readonly visibleModules = computed<SystemModuleCatalog[]>(() => {
+    try {
+      const list = this.modules();
+      if (this.auth.isSuperAdmin()) {
+        return list;
+      }
+      return list
+        .filter((m: SystemModuleCatalog) => !this.auth.isSuperAdminOnlyModule(m))
+        .map((m: SystemModuleCatalog) => ({
+          ...m,
+          actions: m.actions.filter((a: PermissionAction) => !this.auth.isSuperAdminOnlyActionSlug(a.slug))
+        }));
+    } catch {
+      return [];
+    }
+  });
+
   readonly totalActionsCount = computed<number>(() => {
     try {
-      return this.modules().reduce((acc: number, m: SystemModuleCatalog) => acc + m.actions.length, 0);
+      return this.visibleModules().reduce((acc: number, m: SystemModuleCatalog) => acc + m.actions.length, 0);
     } catch {
       return 0;
     }
@@ -103,9 +132,10 @@ export class AdminRolesComponent implements OnInit {
   readonly currentRole = computed<UserRoleDto>(() => {
     try {
       const id = this.selectedRoleId();
+      const available = this.visibleRoles();
       return (
-        this.roles().find((r: UserRoleDto) => r.roleId === id) ||
-        this.roles()[0] || {
+        available.find((r: UserRoleDto) => r.roleId === id) ||
+        available[0] || {
           roleId: 0,
           name: '',
           description: '',
@@ -127,7 +157,7 @@ export class AdminRolesComponent implements OnInit {
       const term = this.searchTerm().trim().toLowerCase();
       const scope = this.scopeFilter();
 
-      return this.modules()
+      return this.visibleModules()
         .filter((m: PermissionModule) => {
           if (scope === 'ALL') {
             return true;
@@ -186,7 +216,9 @@ export class AdminRolesComponent implements OnInit {
         next: (result: { roles: UserRoleDto[]; modules: SystemModuleCatalogDto[] }) => {
           if (Array.isArray(result.modules)) {
             const visibleModules = result.modules.filter(
-              (m: SystemModuleCatalogDto) => !this.auth.isRemovedCalculatorModule(m)
+              (m: SystemModuleCatalogDto) =>
+                !this.auth.isRemovedCalculatorModule(m) &&
+                (this.auth.isSuperAdmin() || !this.auth.isSuperAdminOnlyModule(m))
             );
             const mappedModules: PermissionModule[] = visibleModules.map((m: SystemModuleCatalogDto) => ({
               moduleId: m.id,
@@ -199,7 +231,13 @@ export class AdminRolesComponent implements OnInit {
               actions: (m.actions || [])
                 .filter((a: SystemActionCatalogDto) => {
                   const actionSlug = (a.slug || '').trim().toLowerCase();
-                  return !actionSlug.startsWith('calculator.') && !actionSlug.startsWith('batches.');
+                  if (actionSlug.startsWith('calculator.') || actionSlug.startsWith('batches.')) {
+                    return false;
+                  }
+                  if (!this.auth.isSuperAdmin() && this.auth.isSuperAdminOnlyActionSlug(actionSlug)) {
+                    return false;
+                  }
+                  return true;
                 })
                 .map((a: SystemActionCatalogDto) => ({
                   actionId: a.id,
@@ -215,9 +253,18 @@ export class AdminRolesComponent implements OnInit {
           }
 
           if (Array.isArray(result.roles) && result.roles.length > 0) {
-            this.roles.set(result.roles);
-            this.saveRolesToStorage(result.roles);
-            this.selectRole(result.roles[0].roleId);
+            const filteredRoles = this.auth.isSuperAdmin()
+              ? result.roles
+              : result.roles.filter((r: UserRoleDto) => !this.auth.isSuperAdminRole(r));
+            this.roles.set(filteredRoles);
+            this.saveRolesToStorage(filteredRoles);
+            if (filteredRoles.length > 0) {
+              this.selectRole(filteredRoles[0].roleId);
+            } else {
+              this.selectedRoleId.set(0);
+              this.assignedModuleIds.set(new Set<number>());
+              this.assignedActionIds.set(new Set<number>());
+            }
           } else {
             this.roles.set([]);
             this.assignedModuleIds.set(new Set<number>());
@@ -254,6 +301,10 @@ export class AdminRolesComponent implements OnInit {
    */
   selectRole(roleId: number): void {
     try {
+      const targetRole = this.roles().find((r: UserRoleDto) => r.roleId === roleId);
+      if (targetRole && !this.auth.isSuperAdmin() && this.auth.isSuperAdminRole(targetRole)) {
+        return;
+      }
       this.selectedRoleId.set(roleId);
 
       this.api.getRolePermissionsMatrix(roleId).subscribe({

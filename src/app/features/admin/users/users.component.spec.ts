@@ -1,7 +1,9 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { signal } from '@angular/core';
 import { of, throwError } from 'rxjs';
 import { AdminUsersComponent } from './users.component';
 import { ApiService } from '../../../core/services/api.service';
+import { AuthService } from '../../../core/services/auth.service';
 import { NotificationService } from '../../../core/services/notification.service';
 import { UserAdminDto, UserRoleDto } from '../../../core/models/business.models';
 
@@ -59,10 +61,19 @@ describe('AdminUsersComponent', () => {
     apiSpy.getUsers.and.returnValue(of(mockUsers));
     apiSpy.getRoles.and.returnValue(of(mockRoles));
 
+    const authMock: Partial<AuthService> = {
+      isSuperAdmin: signal<boolean>(false) as unknown as AuthService['isSuperAdmin'],
+      isSuperAdminRole: (role: { roleId?: number; name?: string; isSystemRole?: boolean }) =>
+        (role.name || '').toLowerCase().includes('super'),
+      isSuperAdminUser: (user: { roleName?: string; isSystemDeveloper?: boolean }) =>
+        Boolean(user.isSystemDeveloper) || (user.roleName || '').toLowerCase().includes('super')
+    };
+
     await TestBed.configureTestingModule({
       imports: [AdminUsersComponent],
       providers: [
         { provide: ApiService, useValue: apiSpy },
+        { provide: AuthService, useValue: authMock },
         { provide: NotificationService, useValue: notificationSpy }
       ]
     }).compileComponents();
@@ -187,5 +198,42 @@ describe('AdminUsersComponent', () => {
     component.openEditModal(mockUsers[0]);
     component.closeEditModal();
     expect(component.showEditModal()).toBeFalse();
+  });
+
+  it('should filter out Super Administrador users and roles when logged-in user is not Super Admin', () => {
+    apiSpy.getRoles.and.returnValue(
+      of([
+        {
+          roleId: 1,
+          name: 'Super Administrador',
+          description: 'Control maestro',
+          isSystemRole: true,
+          isActive: true
+        },
+        ...mockRoles
+      ])
+    );
+    apiSpy.getUsers.and.returnValue(
+      of([
+        {
+          userId: 1,
+          username: 'root',
+          fullName: 'Super Administrador',
+          email: 'root@dgl.com',
+          roleId: 1,
+          roleName: 'Super Administrador',
+          companyId: 1,
+          isSystemDeveloper: true,
+          isActive: true,
+          branches: []
+        },
+        ...mockUsers
+      ])
+    );
+
+    component.loadUsersAndRoles();
+
+    expect(component.visibleRoles().map(r => r.name)).toEqual(['Administrador General']);
+    expect(component.visibleUsers().map(u => u.username)).toEqual(['jperez']);
   });
 });

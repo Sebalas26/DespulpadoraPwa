@@ -65,4 +65,10 @@ describe('MobileNavComponent', () => {
     expect(logoutSpy).toHaveBeenCalledTimes(1);
     expect(component.showMoreDrawer()).toBeFalse();
   });
+
+  it('should parse route paths and query parameters correctly', () => {
+    expect(component.getRoutePath('/settings?tab=inventory')).toBe('/settings');
+    expect(component.getRouteQueryParams('/settings?tab=inventory')).toEqual({ tab: 'inventory' });
+    expect(component.getRouteQueryParams('/dashboard')).toBeNull();
+  });
 });

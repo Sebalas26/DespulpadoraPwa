@@ -24,6 +24,8 @@ describe('SettingsComponent', () => {
   let routerSpy: jasmine.SpyObj<Router>;
   let addVariantSpy: jasmine.Spy;
   let createPaymentMethodSpy: jasmine.Spy;
+  let deletePaymentMethodSpy: jasmine.Spy;
+  let deleteVariantSpy: jasmine.Spy;
   let updateCompanyInfoSpy: jasmine.Spy;
 
   const mockCompany = signal<CompanyConfig>({
@@ -84,6 +86,9 @@ describe('SettingsComponent', () => {
     createPaymentMethodSpy = jasmine.createSpy('createPaymentMethod');
     updateCompanyInfoSpy = jasmine.createSpy('updateCompanyInfo');
 
+    deletePaymentMethodSpy = jasmine.createSpy('deletePaymentMethod');
+    deleteVariantSpy = jasmine.createSpy('deleteProductVariant');
+
     const stateServiceMock: Partial<StateService> = {
       companyInfo: mockCompany,
       fruits: mockFruits,
@@ -93,10 +98,10 @@ describe('SettingsComponent', () => {
       totalFreshStockKg: signal<number>(100) as unknown as StateService['totalFreshStockKg'],
       addProductVariant: addVariantSpy,
       updateProductVariant: jasmine.createSpy('updateProductVariant'),
-      deleteProductVariant: jasmine.createSpy('deleteProductVariant'),
+      deleteProductVariant: deleteVariantSpy,
       createPaymentMethod: createPaymentMethodSpy,
       updatePaymentMethod: jasmine.createSpy('updatePaymentMethod'),
-      deletePaymentMethod: jasmine.createSpy('deletePaymentMethod'),
+      deletePaymentMethod: deletePaymentMethodSpy,
       togglePaymentMethodStatus: jasmine.createSpy('togglePaymentMethodStatus'),
       syncCompanyInfoSilent: jasmine.createSpy('syncCompanyInfoSilent'),
       updateCompanyInfo: updateCompanyInfoSpy
@@ -212,5 +217,99 @@ describe('SettingsComponent', () => {
 
     component.backToMobileConfigHub();
     expect(component.mobileConfigModuleSelected()).toBeFalse();
+  });
+
+  it('should open confirmation dialog and execute action on confirm', () => {
+    let executed = false;
+    component.openConfirmDialog({
+      title: 'Test Title',
+      message: 'Test Message',
+      confirmButtonText: 'Confirmar',
+      isDanger: true,
+      action: () => {
+        executed = true;
+      }
+    });
+
+    expect(component.confirmDialogState().isOpen).toBeTrue();
+    expect(component.confirmDialogState().title).toBe('Test Title');
+    expect(component.confirmDialogState().message).toBe('Test Message');
+
+    component.onConfirmDialog();
+    expect(executed).toBeTrue();
+    expect(component.confirmDialogState().isOpen).toBeFalse();
+  });
+
+  it('should prompt confirmation dialog when deleting a payment method', () => {
+    component.deletePaymentMethod(1);
+    expect(component.confirmDialogState().isOpen).toBeTrue();
+    expect(component.confirmDialogState().title).toBe('¿Eliminar Forma de Pago?');
+
+    component.onConfirmDialog();
+    expect(deletePaymentMethodSpy).toHaveBeenCalledWith(1);
+  });
+
+  it('should open new grammage modal with empty fields and add custom grammage with auto unit suffix', () => {
+    component.openNewGrammageModal();
+    expect(component.showNewGrammageModal()).toBeTrue();
+    expect(component.newGrammageAmount()).toBeNull();
+    expect(component.newGrammageUnit()).toBe('g');
+    expect(component.newGrammageCustomLabel()).toBe('');
+
+    component.newGrammageAmount.set(400);
+    component.newGrammageUnit.set('g');
+    component.addCustomGrammage();
+
+    const addedGram = component.grammagesConfig().find(g => g.key === 'g400');
+    expect(addedGram).toBeDefined();
+    expect(addedGram?.value).toBe(400);
+    expect(addedGram?.label).toBe('400g');
+    expect(component.showNewGrammageModal()).toBeFalse();
+  });
+
+  it('should add custom grammage when unit is kg and compute net grams and label', () => {
+    component.openNewGrammageModal();
+    component.newGrammageAmount.set(2);
+    component.newGrammageUnit.set('kg');
+    component.addCustomGrammage();
+
+    const addedKg = component.grammagesConfig().find(g => g.key === 'g2000');
+    expect(addedKg).toBeDefined();
+    expect(addedKg?.value).toBe(2000);
+    expect(addedKg?.label).toBe('2 Kg (2000g)');
+  });
+
+  it('should open new category modal with empty fields and save new category', () => {
+    component.openNewCategoryModal();
+    expect(component.showNewCategoryModal()).toBeTrue();
+    expect(component.newCategoryName()).toBe('');
+    expect(component.newCategoryCode()).toBe('');
+
+    component.newCategoryName.set('Línea Gourmet');
+    component.newCategoryCode.set('GOURMET');
+    component.addCustomCategory();
+
+    const addedCat = component.categoriesConfig().find(c => c.id === 'GOURMET');
+    expect(addedCat).toBeDefined();
+    expect(addedCat?.name).toBe('Línea Gourmet');
+    expect(component.showNewCategoryModal()).toBeFalse();
+  });
+
+  it('should prompt confirmation dialog and delete grammage and category', () => {
+    const testGram = { key: 'g140', value: 140, label: '140g', isActive: true };
+    component.confirmDeleteGrammage(testGram);
+    expect(component.confirmDialogState().isOpen).toBeTrue();
+    expect(component.confirmDialogState().title).toBe('¿Eliminar Presentación / Kilo?');
+
+    component.onConfirmDialog();
+    expect(component.grammagesConfig().some(g => g.key === 'g140')).toBeFalse();
+
+    const testCat = { id: 'PULPAS', name: 'Pulpas Puras', icon: '', badgeClass: 'badge-warning', isActive: true };
+    component.confirmDeleteCategory(testCat);
+    expect(component.confirmDialogState().isOpen).toBeTrue();
+    expect(component.confirmDialogState().title).toBe('¿Eliminar Categoría de Producto?');
+
+    component.onConfirmDialog();
+    expect(component.categoriesConfig().some(c => c.id === 'PULPAS')).toBeFalse();
   });
 });

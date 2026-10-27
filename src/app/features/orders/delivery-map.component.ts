@@ -622,7 +622,7 @@ export const MAP_STYLES: MapStyleOption[] = [
                         type="button"
                         class="btn-alert-priority"
                         (click)="requestPriorityFromBanner()"
-                        title="Solicitar prioridad urgente en cava para este pedido"
+                        title="Solicitar prioridad urgente en inventario para este pedido"
                       >
                         <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
                           <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
@@ -699,7 +699,7 @@ export const MAP_STYLES: MapStyleOption[] = [
                         <span
                           class="stop-billed-badge"
                           [class.is-billed]="isStopBilled(stop)"
-                          [title]="isStopBilled(stop) ? 'Pedido Facturado' : 'Pedido No Facturado (Aún en cava)'"
+                          [title]="isStopBilled(stop) ? 'Pedido Facturado' : 'Pedido No Facturado (Aún en inventario)'"
                         >
                           @if (isStopBilled(stop)) {
                             <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
@@ -744,7 +744,7 @@ export const MAP_STYLES: MapStyleOption[] = [
                             type="button"
                             class="drawer-stop-priority-btn"
                             [class.is-active-priority]="isStopPriority(stop)"
-                            [title]="isStopPriority(stop) ? 'Quitar alerta de prioridad' : 'Marcar alerta de prioridad urgente en cava'"
+                            [title]="isStopPriority(stop) ? 'Quitar alerta de prioridad' : 'Marcar alerta de prioridad urgente en inventario'"
                             (click)="toggleStopPriority(stop)"
                           >
                             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
@@ -1226,7 +1226,7 @@ export const MAP_STYLES: MapStyleOption[] = [
                       </svg>
                     </div>
                     <div>
-                      <div class="node-title">Punto de Partida: Cava Matriz Cundinamarca</div>
+                      <div class="node-title">Punto de Partida: Inventario Matriz Cundinamarca</div>
                       <div class="node-desc">Parque Industrial Calle 80 / Cota · Bodega de Pulpa Congelada</div>
                     </div>
                   </div>
@@ -6115,7 +6115,7 @@ export class DeliveryMapComponent implements OnInit, AfterViewInit, OnDestroy {
       const marker = L.marker([PLANTA_MATRIZ_LAT, PLANTA_MATRIZ_LNG], { icon: plantaIcon }).addTo(this.map);
       marker.bindPopup(`
         <div style="font-family: var(--font-body); padding: 4px;">
-          <strong style="color: #1e5e3a; font-size: 0.95rem;">CAVA MATRIZ CUNDINAMARCA</strong>
+          <strong style="color: #1e5e3a; font-size: 0.95rem;">INVENTARIO MATRIZ CUNDINAMARCA</strong>
           <p style="margin: 4px 0 0 0; font-size: 0.8rem; color: #475569;">
             Parque Industrial Calle 80 / Cota<br/>
             Hub Central de Almacenamiento & Despacho de Pulpa Congelada.
@@ -7912,7 +7912,7 @@ export class DeliveryMapComponent implements OnInit, AfterViewInit, OnDestroy {
         this.stateService.setOrderPriority(alert.orderNumber, true);
         this.notification.warning(
           'Alerta de Prioridad Activada',
-          `Pedido ${alert.orderNumber} marcado con ALTA PRIORIDAD en Cava / KDS.`
+          `Pedido ${alert.orderNumber} marcado con ALTA PRIORIDAD en Inventario / KDS.`
         );
       }
       this.dismissUnbilledAlert();
@@ -7969,7 +7969,7 @@ export class DeliveryMapComponent implements OnInit, AfterViewInit, OnDestroy {
       if (nextVal) {
         this.notification.warning(
           'Alerta de Prioridad Activada',
-          `El pedido ${stop.orderNumber} se marcó con ALTA PRIORIDAD. Se resaltó con borde rojo en la pantalla de Cava (KDS).`
+          `El pedido ${stop.orderNumber} se marcó con ALTA PRIORIDAD. Se resaltó con borde rojo en la pantalla de Inventario (KDS).`
         );
       } else {
         this.notification.info(
@@ -8678,7 +8678,7 @@ export class DeliveryMapComponent implements OnInit, AfterViewInit, OnDestroy {
 
       this.renderStopMarkers();
       this.buildAndRenderRealRoadRoutes();
-      this.notification.info('Simulación Reiniciada', 'Todos los mensajeros han regresado a la Cava Matriz Cundinamarca.');
+      this.notification.info('Simulación Reiniciada', 'Todos los mensajeros han regresado a la Inventario Matriz Cundinamarca.');
     } catch (error: unknown) {
       console.error('Error resetting simulation:', error);
     }

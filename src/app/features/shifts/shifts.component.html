@@ -31,9 +31,12 @@
       <div class="card-body">
         <div class="form-group">
           <label class="form-label">Seleccione Empleado / Operario</label>
-          <select class="form-control" [ngModel]="selectedEmployeeId()" (ngModelChange)="selectedEmployeeId.set($event)">
-            @for (emp of stateService.employees(); track emp.employeeId) {
-              <option [value]="emp.employeeId">{{ emp.fullName }} · ({{ emp.position }})</option>
+          <select class="form-control" [ngModel]="selectedEmployeeId()" (ngModelChange)="selectedEmployeeId.set(+$event)">
+            @if (selectableUsers().length === 0) {
+              <option [ngValue]="0" disabled>No hay operarios disponibles</option>
+            }
+            @for (op of selectableUsers(); track op.id) {
+              <option [ngValue]="op.id">{{ op.fullName }}{{ op.roleLabel ? ' · (' + op.roleLabel + ')' : '' }}</option>
             }
           </select>
         </div>
@@ -54,7 +57,7 @@
             class="form-control"
             [ngModel]="shiftNotes()"
             (ngModelChange)="shiftNotes.set($event)"
-            placeholder="ej: Despulpado de maracuyá, cava, saneamiento..."
+            placeholder="ej: Despulpado de maracuyá, inventario, saneamiento..."
           />
         </div>
 
@@ -89,7 +92,7 @@
             <div style="font-size: 1.8rem; font-weight: 800; color: #1e5e3a;">
               {{ activeShiftsCount() }} activos
             </div>
-            <div style="font-size: 0.75rem; color: var(--text-dim);">Líneas de extracción y cava operando</div>
+            <div style="font-size: 0.75rem; color: var(--text-dim);">Líneas de extracción e inventario operando</div>
           </div>
         </div>
       </div>

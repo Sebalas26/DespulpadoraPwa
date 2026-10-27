@@ -47,6 +47,20 @@ export interface ClientSuggestionEntry {
 }
 
 /**
+ * Supported date period filters for the delivery history section.
+ */
+export type HistoryDateFilter = 'today' | 'yesterday' | 'month' | 'year' | 'range';
+
+/**
+ * Month selector item for the delivery history date filter capsule.
+ */
+export interface HistoryMonthOption {
+  value: string;
+  label: string;
+  shortLabel: string;
+}
+
+/**
  * Component responsible for managing orders, weekly picking, billing studio, and delivery dispatches.
  */
 @Component({
@@ -81,7 +95,7 @@ export class OrdersComponent {
     { name: 'Domingo', color: 'green' }
   ];
 
-  readonly selectedDay = signal<string>('Jueves');
+  readonly selectedDay = signal<string>(this.getCurrentWeekDayName());
   readonly draggingOrderId = signal<number | null>(null);
   readonly dragOverDay = signal<string | null>(null);
 
@@ -134,6 +148,72 @@ export class OrdersComponent {
   readonly historySearchQuery = signal<string>('');
   readonly historyCurrentPage = signal<number>(1);
   readonly historyPageSize = signal<number>(10);
+
+  readonly monthsList: HistoryMonthOption[] = [
+    { value: '01', label: 'Enero', shortLabel: 'Ene' },
+    { value: '02', label: 'Febrero', shortLabel: 'Feb' },
+    { value: '03', label: 'Marzo', shortLabel: 'Mar' },
+    { value: '04', label: 'Abril', shortLabel: 'Abr' },
+    { value: '05', label: 'Mayo', shortLabel: 'May' },
+    { value: '06', label: 'Junio', shortLabel: 'Jun' },
+    { value: '07', label: 'Julio', shortLabel: 'Jul' },
+    { value: '08', label: 'Agosto', shortLabel: 'Ago' },
+    { value: '09', label: 'Septiembre', shortLabel: 'Sep' },
+    { value: '10', label: 'Octubre', shortLabel: 'Oct' },
+    { value: '11', label: 'Noviembre', shortLabel: 'Nov' },
+    { value: '12', label: 'Diciembre', shortLabel: 'Dic' }
+  ];
+
+  readonly historyDateFilter = signal<HistoryDateFilter>('today');
+  readonly historySelectedMonthNumber = signal<string>(
+    String(new Date().getMonth() + 1).padStart(2, '0')
+  );
+  readonly historySelectedYear = signal<string>(String(new Date().getFullYear()));
+  readonly historyRangeStartDate = signal<string>(
+    new Date(Date.now() - 7 * 86400000).toISOString().substring(0, 10)
+  );
+  readonly historyRangeEndDate = signal<string>(new Date().toISOString().substring(0, 10));
+
+  readonly historyAvailableYears = computed<string[]>(() => {
+    try {
+      const currentYear = new Date().getFullYear();
+      const yearsSet = new Set<string>([
+        String(currentYear),
+        String(currentYear - 1),
+        String(currentYear - 2)
+      ]);
+      this.stateService.orders().forEach((o: OrderDto) => {
+        const y = (o.createdAt || o.orderDate || '').substring(0, 4);
+        if (/^\d{4}$/.test(y)) {
+          yearsSet.add(y);
+        }
+      });
+      return Array.from(yearsSet).sort((a: string, b: string) => Number(b) - Number(a));
+    } catch (error: unknown) {
+      console.error('Error computing history available years:', error);
+      return [];
+    }
+  });
+
+  readonly todayFormattedDisplay = computed<string>(() => {
+    try {
+      const todayStr = new Date().toISOString().substring(0, 10);
+      return this.formatHumanDateES(todayStr);
+    } catch (error: unknown) {
+      console.error('Error computing today formatted display:', error);
+      return '';
+    }
+  });
+
+  readonly yesterdayFormattedDisplay = computed<string>(() => {
+    try {
+      const yesterdayStr = new Date(Date.now() - 86400000).toISOString().substring(0, 10);
+      return this.formatHumanDateES(yesterdayStr);
+    } catch (error: unknown) {
+      console.error('Error computing yesterday formatted display:', error);
+      return '';
+    }
+  });
 
   readonly showOrderViewModal = signal<boolean>(false);
   readonly selectedOrderForView = signal<OrderDto | null>(null);
@@ -339,7 +419,40 @@ export class OrdersComponent {
 
   readonly allHistoryOrders = computed<OrderDto[]>(() => {
     try {
-      return this.stateService.orders().filter((o: OrderDto) => o.status !== 'CANCELLED');
+      const orders = this.stateService.orders().filter((o: OrderDto) => o.status !== 'CANCELLED');
+      const filter = this.historyDateFilter();
+      const todayStr = new Date().toISOString().substring(0, 10);
+      const yesterdayStr = new Date(Date.now() - 86400000).toISOString().substring(0, 10);
+
+      if (filter === 'today') {
+        return orders.filter((o: OrderDto) => (o.createdAt || o.orderDate || '').substring(0, 10) === todayStr);
+      }
+
+      if (filter === 'yesterday') {
+        return orders.filter((o: OrderDto) => (o.createdAt || o.orderDate || '').substring(0, 10) === yesterdayStr);
+      }
+
+      if (filter === 'month') {
+        const targetMonth = `${this.historySelectedYear()}-${this.historySelectedMonthNumber()}`;
+        return orders.filter((o: OrderDto) => (o.createdAt || o.orderDate || '').substring(0, 7) === targetMonth);
+      }
+
+      if (filter === 'year') {
+        const targetYear = this.historySelectedYear() || todayStr.substring(0, 4);
+        return orders.filter((o: OrderDto) => (o.createdAt || o.orderDate || '').substring(0, 4) === targetYear);
+      }
+
+      if (filter === 'range') {
+        const start = this.historyRangeStartDate() || '0000-01-01';
+        const end = this.historyRangeEndDate() || '9999-12-31';
+        const [minDate, maxDate] = start <= end ? [start, end] : [end, start];
+        return orders.filter((o: OrderDto) => {
+          const d = (o.createdAt || o.orderDate || '').substring(0, 10);
+          return d >= minDate && d <= maxDate;
+        });
+      }
+
+      return orders;
     } catch (error: unknown) {
       console.error('Error computing all history orders:', error);
       return [];
@@ -505,8 +618,12 @@ export class OrdersComponent {
         const tab = params['tab'] as 'picking' | 'facturacion' | 'despachos' | undefined;
         if (tab && ['picking', 'facturacion', 'despachos'].includes(tab)) {
           this.activeSubTab.set(tab);
+          if (tab === 'picking') {
+            this.selectedDay.set(this.getCurrentWeekDayName());
+          }
         } else {
           this.activeSubTab.set('picking');
+          this.selectedDay.set(this.getCurrentWeekDayName());
         }
         if (params['planner'] === 'true') {
           this.openPlannerFromParent();
@@ -523,6 +640,29 @@ export class OrdersComponent {
       }
     } catch (error: unknown) {
       console.error('Error initializing OrdersComponent:', error);
+    }
+  }
+
+  /**
+   * Returns the Spanish weekday name ('Lunes' to 'Domingo') for a given Date instance.
+   */
+  getCurrentWeekDayName(date: Date = new Date()): string {
+    try {
+      const weekDays: readonly string[] = [
+        'Domingo',
+        'Lunes',
+        'Martes',
+        'Miércoles',
+        'Jueves',
+        'Viernes',
+        'Sábado'
+      ];
+      const dayIndex: number = date instanceof Date && !Number.isNaN(date.getTime())
+        ? date.getDay()
+        : new Date().getDay();
+      return weekDays[dayIndex] ?? 'Lunes';
+    } catch {
+      return 'Lunes';
     }
   }
 
@@ -1143,6 +1283,47 @@ export class OrdersComponent {
       this.historyCurrentPage.set(1);
     } catch (error: unknown) {
       console.error('Error setting history search query:', error);
+    }
+  }
+
+  /**
+   * Updates the selected date period filter for the delivery history table.
+   */
+  setHistoryDateFilter(mode: HistoryDateFilter): void {
+    try {
+      this.historyDateFilter.set(mode);
+      this.historyCurrentPage.set(1);
+    } catch (error: unknown) {
+      console.error('Error setting history date filter:', error);
+    }
+  }
+
+  /**
+   * Resets all delivery history filters (status, search query, date period, and page) to defaults.
+   */
+  resetHistoryFilters(): void {
+    try {
+      this.historyFilter.set('ALL');
+      this.historySearchQuery.set('');
+      this.historyDateFilter.set('today');
+      this.historyCurrentPage.set(1);
+    } catch (error: unknown) {
+      console.error('Error resetting history filters:', error);
+    }
+  }
+
+  /**
+   * Formats an ISO YYYY-MM-DD date string into a human-readable Spanish date.
+   */
+  formatHumanDateES(isoDate: string): string {
+    try {
+      if (!isoDate || isoDate.length < 10) return isoDate;
+      const [yr, mo, dy] = isoDate.substring(0, 10).split('-');
+      const mObj = this.monthsList.find((m: HistoryMonthOption) => m.value === mo);
+      return `${Number(dy)} ${mObj ? mObj.shortLabel : mo} ${yr}`;
+    } catch (error: unknown) {
+      console.error('Error formatting human date ES:', error);
+      return isoDate;
     }
   }
 

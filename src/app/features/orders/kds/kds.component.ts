@@ -51,7 +51,7 @@ interface AudioContextWindow extends Window {
 
           <div class="kds-metric-pill metric-picking">
             <span class="metric-num">{{ pickingOrders().length }}</span>
-            <span class="metric-lbl">Alistando en Cava</span>
+            <span class="metric-lbl">Alistando en Inventario</span>
           </div>
 
           <div class="kds-metric-pill metric-ready">
@@ -264,7 +264,7 @@ interface AudioContextWindow extends Window {
             <div class="kds-column-header">
               <div class="col-title-group">
                 <span class="col-dot dot-picking"></span>
-                <h2 class="col-title">2. Alistando en Cava</h2>
+                <h2 class="col-title">2. Alistando en Inventario</h2>
               </div>
               <span class="col-counter-badge">{{ pickingOrders().length }}</span>
             </div>
@@ -354,7 +354,7 @@ interface AudioContextWindow extends Window {
                     <line x1="12" y1="8" x2="12" y2="12"></line>
                     <line x1="12" y1="16" x2="12.01" y2="16"></line>
                   </svg>
-                  <p>Cava sin picking activo</p>
+                  <p>Inventario sin picking activo</p>
                   <small>Haz clic en "Iniciar Alistamiento" en un pedido pendiente para comenzarlo.</small>
                 </div>
               }
@@ -388,7 +388,7 @@ interface AudioContextWindow extends Window {
                   </div>
 
                   <div class="ticket-items-summary">
-                    {{ order.items.length }} productos alistados en cava ({{ calculateOrderKg(order) }} kg)
+                    {{ order.items.length }} productos alistados en inventario ({{ calculateOrderKg(order) }} kg)
                   </div>
 
                   <footer class="ticket-footer">
@@ -1419,7 +1419,7 @@ export class KdsComponent implements OnInit, OnDestroy {
         clientName: client.fullName || client.name || '',
         clientPhone: client.phone || '',
         clientAddress: client.address || '',
-        notes: 'Comanda generada para alistamiento en cava',
+        notes: 'Comanda generada para alistamiento en inventario',
         paymentMethodName: '',
         items
       });

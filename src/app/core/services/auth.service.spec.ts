@@ -21,11 +21,11 @@ describe('AuthService', () => {
     expiresAtUtc: '2026-12-31T23:59:59Z',
     user: {
       id: 1,
-      username: 'admin',
-      email: 'admin@example.com',
-      fullName: 'Admin User',
-      roleId: 1,
-      roleName: 'AdminRole',
+      username: 'operador',
+      email: 'operador@example.com',
+      fullName: 'Operador de Planta',
+      roleId: 3,
+      roleName: 'OperadorRole',
       isSystemDeveloper: false
     },
     navigationModules: [
@@ -83,18 +83,18 @@ describe('AuthService', () => {
   });
 
   it('should authenticate against POST /api/auth/login and store session signals without hardcoded company names', () => {
-    service.login({ usernameOrEmail: 'admin', password: 'SecretPassword1!' }).subscribe(session => {
+    service.login({ usernameOrEmail: 'operador', password: 'SecretPassword1!' }).subscribe(session => {
       expect(session.accessToken).toBe('jwt-access-token-123');
       expect(session.companyName).toBe('');
       expect(session.branches).toEqual([]);
       expect(service.isAuthenticated()).toBeTrue();
-      expect(service.user()?.username).toBe('admin');
+      expect(service.user()?.username).toBe('operador');
       expect(service.navigationModules().length).toBe(3);
     });
 
     const req = httpMock.expectOne(`${environment.apiUrl}/auth/login`);
     expect(req.request.method).toBe('POST');
-    expect(req.request.body).toEqual({ usernameOrEmail: 'admin', password: 'SecretPassword1!' });
+    expect(req.request.body).toEqual({ usernameOrEmail: 'operador', password: 'SecretPassword1!' });
     req.flush(sampleLoginResponse);
   });
 
@@ -117,6 +117,30 @@ describe('AuthService', () => {
     expect(service.hasPermission('orders.dispatch')).toBeTrue();
     expect(service.hasPermission('hr.manage')).toBeFalse();
     expect(service.findNavigationModuleByRoute('/orders')?.slug).toBe('orders');
+  });
+
+  it('should grant full module access and action permissions to administrators without granular permission dependency', () => {
+    const adminResponse: LoginResponseDto = {
+      ...sampleLoginResponse,
+      user: {
+        id: 2,
+        username: 'admin.operativo',
+        email: 'admin@despulpadora.com',
+        fullName: 'Administrador Operativo',
+        roleId: 2,
+        roleName: 'Administrador Operativo',
+        isSystemDeveloper: false
+      }
+    };
+
+    service.persistLoginSession(adminResponse, false);
+
+    expect(service.isAdmin()).toBeTrue();
+    expect(service.hasModuleAccess('/hr')).toBeTrue();
+    expect(service.hasModuleAccess('/accounting')).toBeTrue();
+    expect(service.hasPermission('hr.manage')).toBeTrue();
+    expect(service.hasPermission('inventory.adjust')).toBeTrue();
+    expect(service.groupedNavigationSections().some(g => g.modules.some(m => m.slug === 'inventory'))).toBeTrue();
   });
 
   it('should rotate session tokens via refreshSession', () => {

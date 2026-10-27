@@ -36,16 +36,20 @@ export const permissionGuard: CanActivateFn = (
     const requiresDeveloper = Boolean(route.data?.['requiresSystemDeveloper']);
     if (requiresDeveloper) {
       const hasCatalogPermission =
+        authService.isSuperAdmin() ||
         authService.hasModuleAccess('/admin/catalog') ||
         authService.hasModuleAccess('/admin/backups') ||
         authService.hasPermission('system.catalog') ||
-        authService.hasPermission('system.backups.manage') ||
-        authService.hasPermission('roles.manage');
+        authService.hasPermission('system.backups.manage');
       if (!hasCatalogPermission) {
         notification.warning('Acceso Restringido', 'Esta sección requiere permisos del Catálogo Maestro del Sistema.');
         router.navigate(['/dashboard']);
         return false;
       }
+      return true;
+    }
+
+    if (authService.isAdmin() || authService.isSuperAdmin()) {
       return true;
     }
 

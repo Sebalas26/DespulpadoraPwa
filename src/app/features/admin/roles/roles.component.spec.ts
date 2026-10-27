@@ -76,15 +76,22 @@ describe('AdminRolesComponent', () => {
       'createRole',
       'deleteRole'
     ]);
+    const isSuperAdminSignal = signal<boolean>(false);
     authMock = {
       user: signal(null) as unknown as AuthService['user'],
       currentUser: signal(null) as unknown as AuthService['currentUser'],
+      isSuperAdmin: isSuperAdminSignal as unknown as AuthService['isSuperAdmin'],
       syncNavigationModules: jasmine.createSpy('syncNavigationModules'),
       isRemovedCalculatorModule: (mod: { frontendRoute?: string; slug?: string; name?: string }) =>
         mod.frontendRoute === '/calculator' ||
         mod.slug === 'calculator' ||
         mod.name === 'Planta e Inventario' ||
-        mod.name === 'Control de Producción & Mermas'
+        mod.name === 'Control de Producción & Mermas',
+      isSuperAdminRole: (role: { roleId?: number; name?: string; isSystemRole?: boolean }) =>
+        (role.name || '').toLowerCase().includes('super') || (Boolean(role.isSystemRole) && role.roleId === 1),
+      isSuperAdminOnlyModule: (mod: { frontendRoute?: string; slug?: string; name?: string; menuSection?: string }) =>
+        mod.slug === 'system-catalog' || mod.slug === 'database-backups' || mod.frontendRoute === '/admin/catalog',
+      isSuperAdminOnlyActionSlug: (slug: string) => (slug || '').toLowerCase().startsWith('system.')
     };
     notificationSpy = jasmine.createSpyObj<NotificationService>('NotificationService', [
       'success',
@@ -209,5 +216,59 @@ describe('AdminRolesComponent', () => {
 
     expect(component.modules().length).toBe(1);
     expect(component.modules().some(m => m.frontendRoute === '/calculator')).toBeFalse();
+  });
+
+  it('should hide Super Administrador role and Super Admin exclusive modules when logged-in user is not Super Admin', () => {
+    apiSpy.getRoles.and.returnValue(
+      of([
+        {
+          roleId: 1,
+          name: 'Super Administrador',
+          description: 'Control maestro',
+          isSystemRole: true,
+          isActive: true
+        },
+        {
+          roleId: 2,
+          name: 'Administrador Operativo',
+          description: 'Gestión de planta',
+          isSystemRole: false,
+          isActive: true
+        }
+      ])
+    );
+    apiSpy.getSystemModules.and.returnValue(
+      of([
+        ...mockSystemModules,
+        {
+          id: 50,
+          name: 'Catálogo Maestro del Sistema',
+          slug: 'system-catalog',
+          icon: 'cpu',
+          menuSection: 'CONFIGURACIÓN MAESTRA',
+          frontendRoute: '/admin/catalog',
+          displayOrder: 10,
+          isActive: true,
+          actions: [
+            {
+              id: 501,
+              moduleId: 50,
+              name: 'Gestionar Catálogo',
+              slug: 'system.catalog',
+              httpMethod: 'POST',
+              description: '',
+              isActive: true
+            }
+          ]
+        }
+      ])
+    );
+
+    component.loadRolesAndCatalog();
+
+    expect(component.visibleRoles().length).toBe(1);
+    expect(component.visibleRoles()[0].name).toBe('Administrador Operativo');
+    expect(component.selectedRoleId()).toBe(2);
+    expect(component.filteredModules().some(m => m.slug === 'system-catalog')).toBeFalse();
   });
 });

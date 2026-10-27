@@ -23,10 +23,10 @@
 
     <div class="card roles-sidebar-card">
       <div class="card-header" style="justify-content: space-between;">
-        <h3 class="card-title">Perfiles y Roles ({{ roles().length }})</h3>
+        <h3 class="card-title">Perfiles y Roles ({{ visibleRoles().length }})</h3>
       </div>
       <div class="card-body" style="padding: 12px; display: flex; flex-direction: column; gap: 8px; max-height: calc(100vh - 200px); overflow-y: auto;">
-        @for (role of roles(); track role.roleId) {
+        @for (role of visibleRoles(); track role.roleId) {
           <div
             (click)="selectRole(role.roleId)"
             style="display: flex; align-items: center; justify-content: space-between; padding: 12px 14px; border-radius: var(--radius-sm); border: 1.5px solid; cursor: pointer; text-align: left; transition: all 0.2s;"
@@ -269,7 +269,7 @@
           class="form-control"
           [ngModel]="newRoleName()"
           (ngModelChange)="newRoleName.set($event)"
-          placeholder="ej: Supervisor de Cava"
+          placeholder="ej: Supervisor de Inventario"
         />
       </div>
 

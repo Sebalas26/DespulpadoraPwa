@@ -23,14 +23,14 @@
         class="btn btn-primary"
         (click)="openKdsInventory()"
         style="gap: 8px; font-weight: 800; padding: 10px 18px; border-radius: 12px; background: #2563eb; border-color: #2563eb; box-shadow: 0 4px 14px rgba(37, 99, 235, 0.35); display: inline-flex; align-items: center;"
-        title="Abrir pantalla táctil KDS de Planta & Cava para alimentación rápida"
+        title="Abrir pantalla táctil KDS de Planta & Inventario para alimentación rápida"
       >
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
           <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
           <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
           <line x1="12" y1="22.08" x2="12" y2="12"></line>
         </svg>
-        <span>Abrir Pantalla KDS (Planta & Cava)</span>
+        <span>Abrir Pantalla KDS (Planta & Inventario)</span>
       </button>
     </div>
   } @else {
@@ -755,7 +755,7 @@
                 <div class="pro-recipient-row">
                   <div class="pro-sender-meta">
                     <div class="sender-label">PLANTA DE DESPACHO</div>
-                    <div class="sender-val">Sede Principal · Cava Frigorífica (-18°C)</div>
+                    <div class="sender-val">Sede Principal · Inventario Frigorífico (-18°C)</div>
                     <div class="sender-sub">{{ companyForm().address }}</div>
                     @if (companyForm().city || companyForm().department) {
                       <div class="sender-sub" style="font-size: 0.73rem;">{{ companyForm().city }}{{ companyForm().department ? ', ' + companyForm().department : '' }}</div>
@@ -1029,6 +1029,36 @@
               <span>+ Nuevo Método de Pago</span>
             </button>
           </div>
+        } @else if (parametersSubTab() === 'grammages') {
+          <div style="display: flex; align-items: center; gap: 10px;">
+            <button
+              type="button"
+              class="btn btn-primary"
+              style="font-size: 0.82rem; gap: 6px;"
+              (click)="openNewGrammageModal()"
+            >
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <line x1="12" y1="5" x2="12" y2="19"></line>
+                <line x1="5" y1="12" x2="19" y2="12"></line>
+              </svg>
+              <span>+ Nueva Presentación</span>
+            </button>
+          </div>
+        } @else if (parametersSubTab() === 'categories') {
+          <div style="display: flex; align-items: center; gap: 10px;">
+            <button
+              type="button"
+              class="btn btn-primary"
+              style="font-size: 0.82rem; gap: 6px;"
+              (click)="openNewCategoryModal()"
+            >
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <line x1="12" y1="5" x2="12" y2="19"></line>
+                <line x1="5" y1="12" x2="19" y2="12"></line>
+              </svg>
+              <span>+ Nueva Categoría</span>
+            </button>
+          </div>
         }
       </div>
 
@@ -1168,7 +1198,7 @@
             <div>
               <h3 class="section-card-title">Gramajes & Presentaciones del Producto</h3>
               <p class="section-card-subtitle">
-                Define las presentaciones en gramos y kilogramos habilitadas en el sistema para calcular el stock en cava y los filtros de pulpas.
+                Define las presentaciones en gramos y kilogramos habilitadas en el sistema para calcular el stock en inventario y los filtros de pulpas.
               </p>
             </div>
           </div>
@@ -1179,7 +1209,7 @@
                 <div class="mobile-summary-header">
                   <div class="ms-left">
                     <span class="ms-code-badge">{{ g.label }}</span>
-                    <span class="ms-subtitle">{{ g.value }} gramos netos ({{ (g.value / 1000) }} Kg)</span>
+                    <span class="ms-subtitle">{{ g.value }}g netos ({{ (g.value / 1000) }} Kg)</span>
                   </div>
                   <div class="ms-right">
                     <div class="ms-top-right">
@@ -1194,67 +1224,55 @@
                   </div>
                 </div>
 
-                <div class="param-info">
-                  <span class="param-icon-badge" style="color: #a855f7;">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <div class="param-card-top">
+                  <span class="param-icon-badge grammage-badge">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                       <path d="M12 3v18"></path>
                       <path d="M6 7l6-4 6 4"></path>
                       <path d="M4 14l4-7 4 7H4z"></path>
                       <path d="M16 14l4-7 4 7h-8z"></path>
                     </svg>
                   </span>
-                  <div>
-                    <div style="font-weight: 700; font-size: 0.95rem; color: var(--text-main);">{{ g.label }}</div>
-                    <div style="font-size: 0.74rem; color: var(--text-dim);">{{ g.value }} gramos netos ({{ (g.value / 1000) }} Kg)</div>
+                  <div class="param-card-header-info">
+                    <div class="param-card-title">{{ g.label }}</div>
+                    <div class="param-card-meta">
+                      <span class="code-badge">{{ g.value }}g netos</span>
+                      <span class="param-meta-sub">{{ (g.value / 1000) }} Kg</span>
+                    </div>
                   </div>
                 </div>
 
-                <div style="display: flex; align-items: center; gap: 10px;">
-                  <label class="custom-switch" title="Activar / Desactivar">
-                    <input
-                      type="checkbox"
-                      [checked]="g.isActive"
-                      (change)="toggleGrammage(g.key)"
-                    />
-                    <span class="slider"></span>
-                  </label>
-                  <span style="font-size: 0.78rem; font-weight: 600;" [style.color]="g.isActive ? 'var(--primary)' : 'var(--text-dim)'">
-                    {{ g.isActive ? 'Habilitado' : 'Oculto' }}
-                  </span>
+                <div class="param-card-actions">
+                  <div class="param-status-toggle">
+                    <label class="custom-switch" title="Activar / Desactivar">
+                      <input
+                        type="checkbox"
+                        [checked]="g.isActive"
+                        (change)="toggleGrammage(g.key)"
+                      />
+                      <span class="slider"></span>
+                    </label>
+                    <span class="status-text" [class.active]="g.isActive">
+                      {{ g.isActive ? 'Habilitado' : 'Oculto' }}
+                    </span>
+                  </div>
+
+                  <div style="display: flex; gap: 6px;">
+                    <button
+                      type="button"
+                      class="btn-icon danger"
+                      title="Eliminar presentación"
+                      (click)="confirmDeleteGrammage(g)"
+                    >
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="3 6 5 6 21 6"></polyline>
+                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                      </svg>
+                    </button>
+                  </div>
                 </div>
               </div>
             }
-          </div>
-
-          
-          <div style="margin-top: 20px; padding: 16px; background: rgba(0, 0, 0, 0.02); border: 1px dashed var(--border-subtle); border-radius: var(--radius-md);">
-            <div style="font-weight: 700; font-size: 0.88rem; margin-bottom: 8px;">+ Registrar Nueva Presentación (Gramaje)</div>
-            <div style="display: flex; gap: 12px; flex-wrap: wrap;">
-              <input
-                type="text"
-                class="form-control"
-                placeholder="Etiqueta (ej: Bolsa 400g, Doypack 2 Kg)"
-                style="flex: 1; min-width: 200px;"
-                [ngModel]="newGrammageLabel()"
-                (ngModelChange)="newGrammageLabel.set($event)"
-              />
-              <input
-                type="number"
-                class="form-control"
-                placeholder="Peso en gramos (ej: 400, 2000)"
-                style="width: 220px;"
-                [ngModel]="newGrammageValue()"
-                (ngModelChange)="newGrammageValue.set($event)"
-              />
-              <button
-                type="button"
-                class="btn btn-primary"
-                style="font-size: 0.82rem;"
-                (click)="addCustomGrammage()"
-              >
-                Agregar Presentación
-              </button>
-            </div>
           </div>
         </div>
       }
@@ -1292,67 +1310,54 @@
                   </div>
                 </div>
 
-                <div class="param-info">
-                  <span class="param-icon-badge" style="color: #3b82f6;">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <div class="param-card-top">
+                  <span class="param-icon-badge category-badge">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                       <rect x="3" y="3" width="7" height="7"></rect>
                       <rect x="14" y="3" width="7" height="7"></rect>
                       <rect x="14" y="14" width="7" height="7"></rect>
                       <rect x="3" y="14" width="7" height="7"></rect>
                     </svg>
                   </span>
-                  <div>
-                    <div style="font-weight: 700; font-size: 0.95rem; color: var(--text-main);">{{ cat.name }}</div>
-                    <div style="font-size: 0.74rem; color: var(--text-dim); font-family: monospace;">ID: {{ cat.id }}</div>
+                  <div class="param-card-header-info">
+                    <div class="param-card-title">{{ cat.name }}</div>
+                    <div class="param-card-meta">
+                      <span class="code-badge">ID: {{ cat.id }}</span>
+                    </div>
                   </div>
                 </div>
 
-                <div style="display: flex; align-items: center; gap: 10px;">
-                  <label class="custom-switch" title="Activar / Desactivar">
-                    <input
-                      type="checkbox"
-                      [checked]="cat.isActive"
-                      (change)="toggleCategory(cat.id)"
-                    />
-                    <span class="slider"></span>
-                  </label>
-                  <span style="font-size: 0.78rem; font-weight: 600;" [style.color]="cat.isActive ? 'var(--primary)' : 'var(--text-dim)'">
-                    {{ cat.isActive ? 'Habilitada' : 'Oculta' }}
-                  </span>
+                <div class="param-card-actions">
+                  <div class="param-status-toggle">
+                    <label class="custom-switch" title="Activar / Desactivar">
+                      <input
+                        type="checkbox"
+                        [checked]="cat.isActive"
+                        (change)="toggleCategory(cat.id)"
+                      />
+                      <span class="slider"></span>
+                    </label>
+                    <span class="status-text" [class.active]="cat.isActive">
+                      {{ cat.isActive ? 'Habilitada' : 'Oculta' }}
+                    </span>
+                  </div>
+
+                  <div style="display: flex; gap: 6px;">
+                    <button
+                      type="button"
+                      class="btn-icon danger"
+                      title="Eliminar categoría"
+                      (click)="confirmDeleteCategory(cat)"
+                    >
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="3 6 5 6 21 6"></polyline>
+                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                      </svg>
+                    </button>
+                  </div>
                 </div>
               </div>
             }
-          </div>
-
-          
-          <div style="margin-top: 20px; padding: 16px; background: rgba(0, 0, 0, 0.02); border: 1px dashed var(--border-subtle); border-radius: var(--radius-md);">
-            <div style="font-weight: 700; font-size: 0.88rem; margin-bottom: 8px;">+ Registrar Nueva Categoría de Producto</div>
-            <div style="display: flex; gap: 12px; flex-wrap: wrap;">
-              <input
-                type="text"
-                class="form-control"
-                placeholder="Nombre (ej: Línea Gourmet, Batidos Detox)"
-                style="flex: 1; min-width: 200px;"
-                [ngModel]="newCategoryName()"
-                (ngModelChange)="newCategoryName.set($event)"
-              />
-              <input
-                type="text"
-                class="form-control"
-                placeholder="Código ID (ej: GOURMET, DETOX)"
-                style="width: 220px;"
-                [ngModel]="newCategoryCode()"
-                (ngModelChange)="newCategoryCode.set($event)"
-              />
-              <button
-                type="button"
-                class="btn btn-primary"
-                style="font-size: 0.82rem;"
-                (click)="addCustomCategory()"
-              >
-                Agregar Categoría
-              </button>
-            </div>
           </div>
         </div>
       }
@@ -1555,7 +1560,7 @@
                 @if (isColumnVisible('currentStock')) {
                   <th class="sortable-th" style="text-align: center;" (click)="setSort('currentStock')">
                     <span class="th-inner" style="justify-content: center;">
-                      Stock en Cava
+                      Stock en Inventario
                       @if (sortField() === 'currentStock') {
                         <span class="sort-indicator">{{ sortDirection() === 'asc' ? '▲' : '▼' }}</span>
                       }
@@ -1641,7 +1646,7 @@
                   }
 
                   @if (isColumnVisible('currentStock')) {
-                    <td data-label="Stock en Cava" style="text-align: center;">
+                    <td data-label="Stock en Inventario" style="text-align: center;">
                       <span
                         style="font-size: 1.05rem; font-weight: 800;"
                         [style.color]="v.currentStock <= v.minStockAlert ? '#ef4444' : '#1e5e3a'"
@@ -2470,7 +2475,7 @@
         
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
           <div class="form-group" style="margin: 0;">
-            <label class="form-label">Stock Inicial en Cava (uds)</label>
+            <label class="form-label">Stock Inicial en Inventario (uds)</label>
             <input
               type="number"
               min="0"
@@ -2585,7 +2590,7 @@
 
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
           <div class="form-group" style="margin: 0;">
-            <label class="form-label">Stock en Cava (uds)</label>
+            <label class="form-label">Stock en Inventario (uds)</label>
             <input
               type="number"
               class="form-control"
@@ -2771,6 +2776,171 @@
         </button>
         <button type="button" class="btn btn-primary" (click)="savePaymentMethod()">
           {{ isEditingPaymentMethod() ? 'Guardar Cambios' : 'Crear Método de Pago' }}
+        </button>
+      </div>
+    </div>
+  </div>
+}
+
+@if (confirmDialogState().isOpen) {
+  <div class="modal-overlay confirm-modal-overlay" (click)="closeConfirmDialog()">
+    <div class="modal-content confirm-modal-box" (click)="$event.stopPropagation()">
+      <div class="confirm-modal-icon-wrap" [class.danger]="confirmDialogState().isDanger" [class.warning]="!confirmDialogState().isDanger">
+        @if (confirmDialogState().isDanger) {
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="3 6 5 6 21 6"></polyline>
+            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+            <line x1="10" y1="11" x2="10" y2="17"></line>
+            <line x1="14" y1="11" x2="14" y2="17"></line>
+          </svg>
+        } @else {
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+            <line x1="12" y1="9" x2="12" y2="13"></line>
+            <line x1="12" y1="17" x2="12.01" y2="17"></line>
+          </svg>
+        }
+      </div>
+
+      <div class="confirm-modal-body">
+        <h3 class="confirm-modal-title">{{ confirmDialogState().title }}</h3>
+        <p class="confirm-modal-message">{{ confirmDialogState().message }}</p>
+      </div>
+
+      <div class="confirm-modal-footer">
+        <button type="button" class="btn btn-outline" (click)="closeConfirmDialog()">
+          {{ confirmDialogState().cancelButtonText }}
+        </button>
+        <button
+          type="button"
+          class="btn"
+          [class.btn-danger]="confirmDialogState().isDanger"
+          [class.btn-primary]="!confirmDialogState().isDanger"
+          (click)="onConfirmDialog()"
+        >
+          {{ confirmDialogState().confirmButtonText }}
+        </button>
+      </div>
+    </div>
+  </div>
+}
+
+@if (showNewGrammageModal()) {
+  <div class="modal-overlay" (click)="closeNewGrammageModal()">
+    <div class="modal-content" style="max-width: 480px;" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3 class="modal-title">Registrar Nueva Presentación / Kilo</h3>
+        <button class="modal-close" (click)="closeNewGrammageModal()">&times;</button>
+      </div>
+
+      <div class="modal-body">
+        <div class="form-group">
+          <label class="form-label">Cantidad / Peso *</label>
+          <div class="grammage-input-group">
+            <input
+              type="number"
+              min="1"
+              step="any"
+              class="form-control"
+              placeholder="Ej: 500"
+              [ngModel]="newGrammageAmount()"
+              (ngModelChange)="newGrammageAmount.set($event)"
+            />
+            <div class="unit-toggle-group">
+              <button
+                type="button"
+                class="unit-toggle-btn"
+                [class.active]="newGrammageUnit() === 'g'"
+                (click)="newGrammageUnit.set('g')"
+              >
+                Gramos (g)
+              </button>
+              <button
+                type="button"
+                class="unit-toggle-btn"
+                [class.active]="newGrammageUnit() === 'kg'"
+                (click)="newGrammageUnit.set('kg')"
+              >
+                Kilos (Kg)
+              </button>
+            </div>
+          </div>
+          <span class="form-text-hint">
+            El sistema asignará la unidad automáticamente al guardar sin que debas escribirla.
+          </span>
+        </div>
+
+        <div class="form-group" style="margin-top: 14px;">
+          <label class="form-label">Etiqueta o Nombre Descriptivo (Opcional)</label>
+          <input
+            type="text"
+            class="form-control"
+            placeholder="Ej: Bolsa Institucional, Doypack Familiar"
+            [ngModel]="newGrammageCustomLabel()"
+            (ngModelChange)="newGrammageCustomLabel.set($event)"
+          />
+          <span class="form-text-hint">
+            Si se deja en blanco, se generará automáticamente: 
+            <strong>
+              {{ newGrammageAmount() ? (newGrammageUnit() === 'kg' ? newGrammageAmount() + ' Kg (' + (newGrammageAmount()! * 1000) + 'g)' : newGrammageAmount() + 'g') : 'Ej: 500g' }}
+            </strong>
+          </span>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline" (click)="closeNewGrammageModal()">
+          Cancelar
+        </button>
+        <button type="button" class="btn btn-primary" (click)="addCustomGrammage()">
+          Guardar Presentación
+        </button>
+      </div>
+    </div>
+  </div>
+}
+
+@if (showNewCategoryModal()) {
+  <div class="modal-overlay" (click)="closeNewCategoryModal()">
+    <div class="modal-content" style="max-width: 480px;" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3 class="modal-title">Registrar Nueva Línea / Categoría</h3>
+        <button class="modal-close" (click)="closeNewCategoryModal()">&times;</button>
+      </div>
+
+      <div class="modal-body">
+        <div class="form-group">
+          <label class="form-label">Nombre de la Categoría *</label>
+          <input
+            type="text"
+            class="form-control"
+            placeholder="Ej: Línea Gourmet, Batidos Detox"
+            [ngModel]="newCategoryName()"
+            (ngModelChange)="newCategoryName.set($event)"
+          />
+        </div>
+
+        <div class="form-group" style="margin-top: 14px;">
+          <label class="form-label">Código Identificador (ID / SKU Prefix)</label>
+          <input
+            type="text"
+            class="form-control"
+            placeholder="Ej: GOURMET, DETOX"
+            [ngModel]="newCategoryCode()"
+            (ngModelChange)="newCategoryCode.set($event)"
+          />
+          <span class="form-text-hint">
+            Si no se especifica, se generará automáticamente a partir del nombre en mayúsculas.
+          </span>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline" (click)="closeNewCategoryModal()">
+          Cancelar
+        </button>
+        <button type="button" class="btn btn-primary" (click)="addCustomCategory()">
+          Guardar Categoría
         </button>
       </div>
     </div>

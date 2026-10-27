@@ -62,7 +62,7 @@ interface AudioContextWindow extends Window {
             <span class="clock-date">{{ currentDate() }}</span>
           </div>
           <div class="kds-title-badge">
-            <span class="badge-tag">KDS PLANTA & CAVA</span>
+            <span class="badge-tag">KDS PLANTA & INVENTARIO</span>
             <span class="kds-title">Alimentación de Inventario & Stock</span>
           </div>
         </div>
@@ -91,7 +91,7 @@ interface AudioContextWindow extends Window {
             </div>
             <div>
               <div class="metric-val">{{ totalPulpUnits() | number:'1.0-0' }} <small>uds</small></div>
-              <div class="metric-lbl">Pulpas en Cava</div>
+              <div class="metric-lbl">Pulpas en Inventario</div>
             </div>
           </div>
 
@@ -125,7 +125,7 @@ interface AudioContextWindow extends Window {
               class="view-pill"
               [class.active]="viewMode() === 'all'"
               (click)="viewMode.set('all')"
-              title="Ver Fruta fresca y Pulpas en cava"
+              title="Ver Fruta fresca y Pulpas en inventario"
             >
               Ambos
             </button>
@@ -357,7 +357,7 @@ interface AudioContextWindow extends Window {
                   </svg>
                 </span>
                 <div>
-                  <h2 class="sec-title">Stock de Pulpas Hechas en Cava</h2>
+                  <h2 class="sec-title">Stock de Pulpas Hechas en Inventario</h2>
                   <p class="sec-subtitle">Alimentación directa de producción sellada y salidas de despacho (Uds)</p>
                 </div>
               </div>

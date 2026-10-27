@@ -126,6 +126,35 @@ describe('OrdersComponent', () => {
   });
 
   beforeEach(async () => {
+    mockOrders.set([
+      {
+        orderId: 50,
+        orderNumber: 'ORD-050',
+        invoiceNumber: 'FAC-050',
+        clientId: 1,
+        clientName: 'Restaurante Central',
+        clientPhone: '3105556677',
+        clientAddress: 'Calle 50 # 10-20',
+        branchId: 1,
+        status: 'PENDING',
+        isPaid: false,
+        paymentMethodName: 'Efectivo',
+        courierName: 'Juan Domiciliario',
+        totalAmount: 24000,
+        createdAt: new Date().toISOString(),
+        orderDate: new Date().toISOString().substring(0, 10),
+        items: [
+          {
+            fruitId: 1,
+            fruitName: 'Mora',
+            grammage: 1000,
+            quantity: 2,
+            unitPrice: 12000,
+            subtotal: 24000
+          }
+        ]
+      }
+    ]);
     createOrderSpy = jasmine.createSpy('createOrder').and.callFake((dto: Partial<OrderDto>) => ({
       orderId: 99,
       orderNumber: 'ORD-099',
@@ -252,5 +281,130 @@ describe('OrdersComponent', () => {
         clientPhone: ''
       })
     );
+  });
+
+  it('should filter allHistoryOrders by today, yesterday, month, year, and range and reset via resetHistoryFilters', () => {
+    const todayStr = new Date().toISOString().substring(0, 10);
+    const yesterdayStr = new Date(Date.now() - 86400000).toISOString().substring(0, 10);
+
+    mockOrders.set([
+      {
+        orderId: 50,
+        orderNumber: 'ORD-050',
+        invoiceNumber: 'FAC-050',
+        clientId: 1,
+        clientName: 'Restaurante Central',
+        clientPhone: '3105556677',
+        clientAddress: 'Calle 50 # 10-20',
+        branchId: 1,
+        status: 'DELIVERED',
+        isPaid: true,
+        paymentMethodName: 'Efectivo',
+        courierName: 'Juan Domiciliario',
+        totalAmount: 24000,
+        createdAt: `${todayStr}T10:00:00.000Z`,
+        orderDate: todayStr,
+        items: []
+      },
+      {
+        orderId: 51,
+        orderNumber: 'ORD-051',
+        invoiceNumber: 'FAC-051',
+        clientId: 1,
+        clientName: 'Cliente Ayer',
+        clientPhone: '3105556677',
+        clientAddress: 'Calle 50 # 10-20',
+        branchId: 1,
+        status: 'DELIVERED',
+        isPaid: true,
+        paymentMethodName: 'Efectivo',
+        courierName: 'Juan Domiciliario',
+        totalAmount: 12000,
+        createdAt: `${yesterdayStr}T10:00:00.000Z`,
+        orderDate: yesterdayStr,
+        items: []
+      },
+      {
+        orderId: 52,
+        orderNumber: 'ORD-052',
+        invoiceNumber: 'FAC-052',
+        clientId: 1,
+        clientName: 'Cliente 2025',
+        clientPhone: '3105556677',
+        clientAddress: 'Calle 50 # 10-20',
+        branchId: 1,
+        status: 'DISPATCHED',
+        isPaid: false,
+        paymentMethodName: 'Efectivo',
+        courierName: 'Juan Domiciliario',
+        totalAmount: 36000,
+        createdAt: '2025-05-15T10:00:00.000Z',
+        orderDate: '2025-05-15',
+        items: []
+      }
+    ]);
+
+    component.setHistoryDateFilter('today');
+    expect(component.allHistoryOrders().map(o => o.orderNumber)).toEqual(['ORD-050']);
+
+    component.setHistoryDateFilter('yesterday');
+    expect(component.allHistoryOrders().map(o => o.orderNumber)).toEqual(['ORD-051']);
+
+    component.setHistoryDateFilter('month');
+    component.historySelectedYear.set('2025');
+    component.historySelectedMonthNumber.set('05');
+    expect(component.allHistoryOrders().map(o => o.orderNumber)).toEqual(['ORD-052']);
+
+    component.setHistoryDateFilter('year');
+    component.historySelectedYear.set('2025');
+    expect(component.allHistoryOrders().map(o => o.orderNumber)).toEqual(['ORD-052']);
+
+    component.setHistoryDateFilter('range');
+    component.historyRangeStartDate.set('2025-05-01');
+    component.historyRangeEndDate.set('2025-05-31');
+    expect(component.allHistoryOrders().map(o => o.orderNumber)).toEqual(['ORD-052']);
+
+    component.setHistoryFilter('DELIVERED');
+    component.setHistorySearchQuery('test');
+    component.resetHistoryFilters();
+    expect(component.historyFilter()).toBe('ALL');
+    expect(component.historySearchQuery()).toBe('');
+    expect(component.historyDateFilter()).toBe('today');
+    expect(component.historyCurrentPage()).toBe(1);
+  });
+
+  it('should not render the removed empty state phrase when filteredHistoryOrders is empty', () => {
+    mockOrders.set([]);
+    component.activeSubTab.set('despachos');
+    fixture.detectChanges();
+    const compiled = fixture.nativeElement as HTMLElement;
+    expect(compiled.textContent).toContain('No se encontraron entregas en el histórico');
+    expect(compiled.textContent).not.toContain('No hay pedidos que coincidan con el filtro');
+  });
+
+  it('should select the current weekday on initialization and map weekdays accurately via getCurrentWeekDayName', () => {
+    const expectedToday: string = component.getCurrentWeekDayName(new Date());
+    expect(component.selectedDay()).toBe(expectedToday);
+    expect(component.getCurrentWeekDayName(new Date('2026-10-25T12:00:00'))).toBe('Domingo');
+    expect(component.getCurrentWeekDayName(new Date('2026-10-26T12:00:00'))).toBe('Lunes');
+    expect(component.getCurrentWeekDayName(new Date('2026-10-27T12:00:00'))).toBe('Martes');
+    expect(component.getCurrentWeekDayName(new Date('2026-10-28T12:00:00'))).toBe('Miércoles');
+    expect(component.getCurrentWeekDayName(new Date('2026-10-29T12:00:00'))).toBe('Jueves');
+    expect(component.getCurrentWeekDayName(new Date('2026-10-30T12:00:00'))).toBe('Viernes');
+    expect(component.getCurrentWeekDayName(new Date('2026-10-31T12:00:00'))).toBe('Sábado');
+  });
+
+  it('should not render colored counter badges (.day-card-badge) and should keep "<N> pedidos" text on active weekday card', () => {
+    component.activeSubTab.set('picking');
+    fixture.detectChanges();
+    const compiled: HTMLElement = fixture.nativeElement as HTMLElement;
+
+    const badges: NodeListOf<Element> = compiled.querySelectorAll('.day-card-badge');
+    expect(badges.length).toBe(0);
+
+    const activeCard: HTMLElement | null = compiled.querySelector('.picking-day-card.is-active');
+    expect(activeCard).not.toBeNull();
+    expect(activeCard?.textContent).not.toContain('Agrupado / Activo');
+    expect(activeCard?.querySelector('.day-card-sub')?.textContent?.trim()).toMatch(/^\d+\s+pedidos$/);
   });
 });

@@ -1,10 +1,23 @@
-import { Component, computed, inject, signal, OnDestroy } from '@angular/core';
+import { Component, computed, inject, signal, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
 import { StateService } from '../../core/services/state.service';
+import { ApiService } from '../../core/services/api.service';
+import { AuthService } from '../../core/services/auth.service';
 import { NotificationService } from '../../core/services/notification.service';
-import { WorkShiftDto } from '../../core/models/business.models';
+import { EmployeeDto, UserAdminDto, WorkShiftDto } from '../../core/models/business.models';
+
+/**
+ * Represents a selectable operator option in the plant shift clock-in terminal.
+ */
+export interface ShiftOperatorOption {
+  id: number;
+  fullName: string;
+  roleLabel: string;
+  username?: string;
+  email?: string;
+}
 
 /**
  * Component for plant work shift clock-in/clock-out attendance tracking and active operator supervision.
@@ -16,17 +29,104 @@ import { WorkShiftDto } from '../../core/models/business.models';
   templateUrl: './shifts.component.html',
   styleUrls: ['./shifts.component.scss']
 })
-export class ShiftsComponent implements OnDestroy {
+export class ShiftsComponent implements OnInit, OnDestroy {
   readonly stateService = inject(StateService);
+  private readonly apiService = inject(ApiService);
+  private readonly authService = inject(AuthService);
   readonly notification = inject(NotificationService);
   private readonly route = inject(ActivatedRoute);
 
   readonly currentTime = signal<string>(new Date().toLocaleTimeString('es-CO'));
   private timer: ReturnType<typeof setInterval> | null = null;
 
+  readonly systemUsers = signal<UserAdminDto[]>([]);
   readonly selectedEmployeeId = signal<number>(1);
   readonly selectedShiftType = signal<'MORNING' | 'AFTERNOON' | 'NIGHT'>('MORNING');
   readonly shiftNotes = signal<string>('');
+
+  readonly selectableUsers = computed<ShiftOperatorOption[]>(() => {
+    try {
+      const currentProfile = this.authService.user();
+      const currentSession = this.authService.currentUser();
+      const loggedUserId = currentProfile?.id ?? currentSession?.userId ?? 0;
+      const loggedUsername = (currentProfile?.username || currentSession?.username || '').trim().toLowerCase();
+      const loggedEmail = (currentProfile?.email || currentSession?.email || '').trim().toLowerCase();
+      const loggedFullName = (currentProfile?.fullName || currentSession?.fullName || '').trim().toLowerCase();
+
+      const users = this.systemUsers();
+      if (users.length > 0) {
+        return users
+          .filter((u: UserAdminDto) => {
+            if (u.isActive === false) {
+              return false;
+            }
+            if (loggedUserId > 0 && u.userId === loggedUserId) {
+              return false;
+            }
+            if (loggedUsername && (u.username || '').trim().toLowerCase() === loggedUsername) {
+              return false;
+            }
+            if (loggedEmail && (u.email || '').trim().toLowerCase() === loggedEmail) {
+              return false;
+            }
+            if (loggedFullName && (u.fullName || '').trim().toLowerCase() === loggedFullName) {
+              return false;
+            }
+            if (Boolean(u.isSystemDeveloper) || u.roleId === 1) {
+              return false;
+            }
+            const roleNorm = (u.roleName || '')
+              .normalize('NFD')
+              .replace(/[\u0300-\u036f]/g, '')
+              .trim()
+              .toLowerCase();
+            if (roleNorm.includes('admin') || roleNorm.includes('developer') || roleNorm.includes('desarrollador')) {
+              return false;
+            }
+            return true;
+          })
+          .map((u: UserAdminDto) => ({
+            id: u.userId,
+            fullName: u.fullName,
+            roleLabel: u.roleName || '',
+            username: u.username,
+            email: u.email
+          }));
+      }
+
+      return this.stateService
+        .employees()
+        .filter((e: EmployeeDto) => {
+          if (e.isActive === false) {
+            return false;
+          }
+          const empName = (e.fullName || e.name || '').trim().toLowerCase();
+          const empEmail = (e.email || '').trim().toLowerCase();
+          if (loggedFullName && empName === loggedFullName) {
+            return false;
+          }
+          if (loggedEmail && empEmail && empEmail === loggedEmail) {
+            return false;
+          }
+          const posNorm = (e.position || '')
+            .normalize('NFD')
+            .replace(/[\u0300-\u036f]/g, '')
+            .trim()
+            .toLowerCase();
+          if (e.area === 'ADMINISTRACION' || posNorm.includes('admin')) {
+            return false;
+          }
+          return true;
+        })
+        .map((e: EmployeeDto) => ({
+          id: e.employeeId,
+          fullName: e.fullName || e.name || '',
+          roleLabel: e.position || e.area || ''
+        }));
+    } catch {
+      return [];
+    }
+  });
 
   readonly activeShifts = computed<WorkShiftDto[]>(() => {
     try {
@@ -67,6 +167,47 @@ export class ShiftsComponent implements OnDestroy {
   }
 
   /**
+   * Loads created system users from the backend API and selects the first eligible operator.
+   */
+  ngOnInit(): void {
+    try {
+      this.loadSystemUsers();
+    } catch {
+      return;
+    }
+  }
+
+  /**
+   * Fetches system users from `GET /api/users` and updates the operator selection.
+   */
+  loadSystemUsers(): void {
+    try {
+      this.apiService.getUsers().subscribe({
+        next: (users: UserAdminDto[]) => {
+          if (Array.isArray(users)) {
+            this.systemUsers.set(users);
+            const available = this.selectableUsers();
+            if (available.length > 0) {
+              const currentId = Number(this.selectedEmployeeId());
+              const exists = available.some((op: ShiftOperatorOption) => op.id === currentId);
+              if (!exists) {
+                this.selectedEmployeeId.set(available[0].id);
+              }
+            } else {
+              this.selectedEmployeeId.set(0);
+            }
+          }
+        },
+        error: () => {
+          return;
+        }
+      });
+    } catch {
+      return;
+    }
+  }
+
+  /**
    * Clears the digital clock interval timer when the component is destroyed.
    */
   ngOnDestroy(): void {
@@ -85,17 +226,25 @@ export class ShiftsComponent implements OnDestroy {
    */
   punchClockIn(): void {
     try {
-      const emp = this.stateService.employees().find(e => e.employeeId === Number(this.selectedEmployeeId()));
-      if (!emp) return;
-
-      const existing = this.activeShifts().find(s => s.employeeId === emp.employeeId && s.status === 'ACTIVE');
-      if (existing) {
-        this.notification.warning('Turno ya activo', `${emp.fullName} ya tiene un turno abierto.`);
+      const targetId = Number(this.selectedEmployeeId());
+      const operator = this.selectableUsers().find((op: ShiftOperatorOption) => op.id === targetId);
+      if (!operator) {
         return;
       }
 
-      this.stateService.startWorkShift(emp.employeeId, this.selectedShiftType(), this.shiftNotes());
-      this.notification.success('Turno Iniciado', `${emp.fullName} ha marcado ingreso exitosamente`);
+      const existing = this.activeShifts().find(
+        (s: WorkShiftDto) =>
+          s.status === 'ACTIVE' &&
+          (s.employeeId === operator.id ||
+            (s.employeeName && s.employeeName.trim().toLowerCase() === operator.fullName.trim().toLowerCase()))
+      );
+      if (existing) {
+        this.notification.warning('Turno ya activo', `${operator.fullName} ya tiene un turno abierto.`);
+        return;
+      }
+
+      this.stateService.startWorkShift(operator.id, this.selectedShiftType(), this.shiftNotes(), operator.fullName);
+      this.notification.success('Turno Iniciado', `${operator.fullName} ha marcado ingreso exitosamente`);
       this.shiftNotes.set('');
     } catch {
       this.notification.error('Error', 'No se pudo iniciar el turno.');

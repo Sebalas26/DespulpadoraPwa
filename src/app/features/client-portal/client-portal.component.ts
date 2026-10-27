@@ -555,7 +555,7 @@ export interface CartItem {
               <div class="success-icon-wrap">🎉</div>
               <h3 class="success-title">¡Pedido Registrado con Éxito!</h3>
               <p class="success-subtitle">
-                Tu solicitud ya entró a la línea de preparación y alistamiento en cava.
+                Tu solicitud ya entró a la línea de preparación y alistamiento en inventario.
               </p>
             </div>
 

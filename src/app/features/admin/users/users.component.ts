@@ -1,8 +1,9 @@
-import { Component, HostListener, inject, signal, OnInit } from '@angular/core';
+import { Component, HostListener, inject, signal, computed, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { forkJoin } from 'rxjs';
 import { ApiService } from '../../../core/services/api.service';
+import { AuthService } from '../../../core/services/auth.service';
 import { NotificationService } from '../../../core/services/notification.service';
 import { UserAdminDto, UserRoleDto } from '../../../core/models/business.models';
 
@@ -20,11 +21,36 @@ const STORAGE_USERS_KEY = 'dgl_users_v2';
 })
 export class AdminUsersComponent implements OnInit {
   private readonly api = inject(ApiService);
+  readonly authService = inject(AuthService);
   private readonly notification = inject(NotificationService);
 
   readonly users = signal<UserAdminDto[]>([]);
   readonly roles = signal<UserRoleDto[]>([]);
   readonly isLoading = signal<boolean>(false);
+
+  readonly visibleUsers = computed<UserAdminDto[]>(() => {
+    try {
+      const list = this.users();
+      if (this.authService.isSuperAdmin()) {
+        return list;
+      }
+      return list.filter((u: UserAdminDto) => !this.authService.isSuperAdminUser(u));
+    } catch {
+      return [];
+    }
+  });
+
+  readonly visibleRoles = computed<UserRoleDto[]>(() => {
+    try {
+      const list = this.roles();
+      if (this.authService.isSuperAdmin()) {
+        return list;
+      }
+      return list.filter((r: UserRoleDto) => !this.authService.isSuperAdminRole(r));
+    } catch {
+      return [];
+    }
+  });
 
   readonly showCreateModal = signal<boolean>(false);
   readonly newUsername = signal<string>('');
@@ -74,17 +100,23 @@ export class AdminUsersComponent implements OnInit {
         next: (res: { roles: UserRoleDto[]; users: UserAdminDto[] }) => {
           this.isLoading.set(false);
           if (Array.isArray(res.roles)) {
-            this.roles.set(res.roles);
-            if (res.roles.length > 0 && this.newRoleId() === 0) {
-              this.newRoleId.set(res.roles[0].roleId);
+            const filteredRoles = this.authService.isSuperAdmin()
+              ? res.roles
+              : res.roles.filter((r: UserRoleDto) => !this.authService.isSuperAdminRole(r));
+            this.roles.set(filteredRoles);
+            if (filteredRoles.length > 0 && this.newRoleId() === 0) {
+              this.newRoleId.set(filteredRoles[0].roleId);
             }
           } else {
             this.roles.set([]);
           }
 
           if (Array.isArray(res.users)) {
-            this.users.set(res.users);
-            this.saveUsersToStorage(res.users);
+            const filteredUsers = this.authService.isSuperAdmin()
+              ? res.users
+              : res.users.filter((u: UserAdminDto) => !this.authService.isSuperAdminUser(u));
+            this.users.set(filteredUsers);
+            this.saveUsersToStorage(filteredUsers);
           } else {
             this.users.set([]);
           }

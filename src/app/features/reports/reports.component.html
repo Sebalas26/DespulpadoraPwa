@@ -3,10 +3,10 @@
     <div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 16px;">
     <div>
       <h1 style="font-size: 1.85rem; font-weight: 800; margin-bottom: 4px; color: var(--text-main);">
-        Centro de Reportes Gerenciales
+        Centro de Reportes
       </h1>
       <p style="color: var(--text-muted); font-size: 0.92rem;">
-        Consolidado analítico de ventas, auditoría de mermas, inventario en cava, gastos operativos y nómina quincenal.
+        Consolidado analítico de ventas, auditoría de mermas, inventario, gastos operativos y nómina quincenal.
       </p>
     </div>
 
@@ -202,7 +202,7 @@
       [class.active]="activeTab() === 'stock'"
       (click)="setTab('stock')"
     >
-      <span>Inventario & Valoración Cava</span>
+      <span>Inventario & Valoración</span>
       <span class="report-tab-badge">{{ cavaTotalStockKg() | number:'1.0-0' }} Kg</span>
     </button>
 
@@ -488,7 +488,7 @@
           <div class="banner-title">Algoritmo de Control de Mermas (Venta Ideal vs. Venta Real)</div>
           <p class="banner-text">
             Este modelo matemático cruza los <strong>kilos de pulpa producidos en planta</strong> convertidos a unidades teóricas contra las <strong>unidades reales facturadas y despachadas</strong>.
-            Cualquier discrepancia negativa indica mermas de dosificado, merma por descongelamiento, degustaciones o desajuste de inventario en cava.
+            Cualquier discrepancia negativa indica mermas de dosificado, merma por descongelamiento, degustaciones o desajuste de inventario.
           </p>
         </div>
       </div>
@@ -584,7 +584,7 @@
             <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 16px;">
         <div class="card hover-lift">
           <div class="card-body">
-            <div style="font-size: 0.78rem; text-transform: uppercase; color: var(--text-muted); font-weight: 700;">Pulpa Congelada en Cava</div>
+            <div style="font-size: 0.78rem; text-transform: uppercase; color: var(--text-muted); font-weight: 700;">Pulpa Congelada en Inventario</div>
             <div style="font-size: 1.85rem; font-weight: 800; color: #0284c7; margin-top: 4px;">
               {{ formatNum(cavaTotalStockKg()) }} Kg
             </div>
@@ -608,7 +608,7 @@
 
         <div class="card hover-lift">
           <div class="card-body">
-            <div style="font-size: 0.78rem; text-transform: uppercase; color: var(--text-muted); font-weight: 700;">Valorización Comercial Cava</div>
+            <div style="font-size: 0.78rem; text-transform: uppercase; color: var(--text-muted); font-weight: 700;">Valorización Comercial de Inventario</div>
             <div style="font-size: 1.85rem; font-weight: 800; color: #1e5e3a; margin-top: 4px;">
               {{ formatCOP(cavaCommercialValue()) }}
             </div>
@@ -649,7 +649,7 @@
                   <th style="text-align: right;">Total Pulpa</th>
                   <th style="text-align: right;">Fruta Fresca</th>
                   <th style="text-align: right;">Valor Comercial</th>
-                  <th style="text-align: center;">Estado Cava</th>
+                  <th style="text-align: center;">Estado de Inventario</th>
                 </tr>
               </thead>
               <tbody>
@@ -698,7 +698,7 @@
                     <td data-label="Valor Comercial" style="text-align: right; font-weight: 800; color: #1e5e3a;">
                       {{ formatCOP(getFruitCommercialValue(fruit)) }}
                     </td>
-                    <td data-label="Estado Cava" style="text-align: center;">
+                    <td data-label="Estado de Inventario" style="text-align: center;">
                       @if (fruit.stock.g140 <= fruit.minStock.g140 || fruit.stock.g250 <= fruit.minStock.g250) {
                         <span class="badge badge-danger" style="font-size: 0.72rem;">BAJO STOCK</span>
                       } @else {
@@ -761,7 +761,7 @@
               {{ formatCOP(facilityExpensesAmount()) }}
             </div>
             <div style="font-size: 0.75rem; color: var(--text-dim); margin-top: 2px;">
-              Energía cava frigorífica y mantenimiento despulpadora
+              Energía inventario frigorífico y mantenimiento despulpadora
             </div>
           </div>
         </div>
@@ -1221,7 +1221,7 @@
           <div class="pro-recipient-row">
             <div class="pro-sender-meta">
               <div class="sender-label">PLANTA DE DESPACHO</div>
-              <div class="sender-val">Sede Principal · Cava Frigorífica (-18°C)</div>
+              <div class="sender-val">Sede Principal · Inventario Frigorífico (-18°C)</div>
               <div class="sender-sub">{{ stateService.companyInfo().address }}</div>
               <div class="sender-sub" style="margin-top: 4px; font-weight: 700; color: #1e5e3a;">
                 Mensajero: {{ getCourierName(modalOrder) }}
