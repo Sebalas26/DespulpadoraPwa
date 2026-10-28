@@ -68,4 +68,57 @@ describe('HeaderComponent', () => {
     component.navigateToClientPortal();
     expect(navSpy).toHaveBeenCalledWith(['/portal-clientes']);
   });
+
+  it('should toggle sidebar and render sidebar-toggle-btn only when sidebar is collapsed', () => {
+    stateService.isSidebarCollapsed.set(false);
+    fixture.detectChanges();
+    let compiled = fixture.nativeElement as HTMLElement;
+    expect(compiled.querySelector('.sidebar-toggle-btn')).toBeNull();
+
+    stateService.isSidebarCollapsed.set(true);
+    fixture.detectChanges();
+    compiled = fixture.nativeElement as HTMLElement;
+    const toggleBtn = compiled.querySelector('.sidebar-toggle-btn') as HTMLButtonElement | null;
+    expect(toggleBtn).toBeTruthy();
+
+    const toggleSpy = spyOn(stateService, 'toggleSidebar');
+    toggleBtn?.click();
+    expect(toggleSpy).toHaveBeenCalled();
+  });
+
+  it('should navigate to orders picking subtab on onNewOrderClick when not on orders route', () => {
+    const navSpy = spyOn(router, 'navigate').and.returnValue(Promise.resolve(true));
+    component.onNewOrderClick();
+    expect(navSpy).toHaveBeenCalledWith(['/orders'], { queryParams: { tab: 'picking' } });
+  });
+
+  it('should dispatch open-new-order-modal event on onNewOrderClick when already on orders route', () => {
+    spyOnProperty(router, 'url', 'get').and.returnValue('/orders');
+    let eventFired = false;
+    const handler = () => {
+      eventFired = true;
+    };
+    window.addEventListener('open-new-order-modal', handler);
+
+    component.onNewOrderClick();
+    window.removeEventListener('open-new-order-modal', handler);
+
+    expect(eventFired).toBeTrue();
+  });
+
+  it('should render network status pill reflecting online and offline states', () => {
+    stateService.isOnline.set(true);
+    fixture.detectChanges();
+    let compiled = fixture.nativeElement as HTMLElement;
+    let pill = compiled.querySelector('.online-pill');
+    expect(pill?.textContent).toContain('En línea');
+    expect(pill?.classList.contains('offline')).toBeFalse();
+
+    stateService.isOnline.set(false);
+    fixture.detectChanges();
+    compiled = fixture.nativeElement as HTMLElement;
+    pill = compiled.querySelector('.online-pill');
+    expect(pill?.textContent).toContain('Desconectado');
+    expect(pill?.classList.contains('offline')).toBeTrue();
+  });
 });

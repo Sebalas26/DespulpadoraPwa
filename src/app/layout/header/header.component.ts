@@ -49,12 +49,7 @@ import { VoiceOrdersService } from '../../core/services/voice-orders.service';
               <span class="header-brand-sub">{{ stateService.companyInfo().tagline }}</span>
             </div>
           </div>
-          <span class="header-brand-divider"></span>
         }
-
-        <div class="dgl-breadcrumb">
-          <span class="breadcrumb-current">{{ currentRouteTitle() }}</span>
-        </div>
       </div>
 
       <div class="mobile-only-header only-mobile">
@@ -65,50 +60,6 @@ import { VoiceOrdersService } from '../../core/services/voice-orders.service';
       </div>
 
       <div class="topbar-actions">
-        <button
-          type="button"
-          class="btn-kds-access"
-          (click)="navigateToKds()"
-          title="Abrir pantalla dedicada de alistamiento de pedidos (KDS en Inventario)"
-        >
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-            <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
-            <line x1="8" y1="21" x2="16" y2="21"></line>
-            <line x1="12" y1="17" x2="12" y2="21"></line>
-          </svg>
-          <span class="kds-access-label">Pantalla de Alistamiento</span>
-          <span class="kds-access-badge">KDS</span>
-        </button>
-
-        <button
-          type="button"
-          class="btn-kds-access btn-kds-inventory"
-          (click)="navigateToInventoryKds()"
-          title="Abrir pantalla KDS de control y alimentación de inventario y stock en planta/inventario"
-        >
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
-            <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
-            <line x1="12" y1="22.08" x2="12" y2="12"></line>
-          </svg>
-          <span class="kds-access-label">KDS Inventario & Stock</span>
-          <span class="kds-access-badge badge-inventory">PLANTA</span>
-        </button>
-
-        <button
-          type="button"
-          class="btn-kds-access btn-kds-portal"
-          (click)="navigateToClientPortal()"
-          title="Abrir portal de autopedido y catálogo digital para clientes"
-        >
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-            <circle cx="9" cy="21" r="1"></circle>
-            <circle cx="20" cy="21" r="1"></circle>
-            <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path>
-          </svg>
-          <span class="kds-access-label">Portal Clientes</span>
-          <span class="kds-access-badge badge-portal">PEDIDOS</span>
-        </button>
 
         <div
           class="online-pill"
@@ -174,18 +125,16 @@ import { VoiceOrdersService } from '../../core/services/voice-orders.service';
 
     .topbar {
       height: 64px;
-      border-bottom: 1px solid var(--border-subtle);
-      border-left: 1px solid var(--border-subtle);
-      border-top-left-radius: 20px;
-      border-bottom-left-radius: 20px;
-      background: #ffffff !important;
+      border: none !important;
+      border-radius: 0 !important;
+      background: var(--bg-app) !important;
+      box-shadow: none !important;
       display: flex;
       align-items: center;
       justify-content: space-between;
       padding: 0 24px;
       width: 100%;
       box-sizing: border-box;
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
       position: relative;
       z-index: 100;
       will-change: transform, opacity;
@@ -196,9 +145,8 @@ import { VoiceOrdersService } from '../../core/services/voice-orders.service';
 
     @media (max-width: 1024px) {
       .topbar {
-        border-left: none;
-        border-top-left-radius: 0;
-        border-bottom-left-radius: 0;
+        border: none !important;
+        border-radius: 0 !important;
       }
     }
 

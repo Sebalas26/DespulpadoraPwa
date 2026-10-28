@@ -2,13 +2,27 @@
 
         @if (activeSubTab() === 'picking') {
     <div class="picking-page-header">
-    <h1 class="picking-main-title">
-      Alistamiento de Pedidos
-    </h1>
-    <p class="picking-main-subtitle">
-      Flujo de alistamiento, facturación POS y control de repartidores.
-    </p>
-  </div>
+      <div class="picking-title-block">
+        <h1 class="picking-main-title">
+          Alistamiento de Pedidos
+        </h1>
+        <p class="picking-main-subtitle">
+          Flujo de alistamiento, facturación POS y control de repartidores.
+        </p>
+      </div>
+      <button
+        type="button"
+        class="btn btn-primary picking-mobile-create-btn"
+        (click)="openCreateOrderModal()"
+        title="Crear un nuevo pedido para alistamiento"
+      >
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <line x1="12" y1="5" x2="12" y2="19"></line>
+          <line x1="5" y1="12" x2="19" y2="12"></line>
+        </svg>
+        <span>Nuevo Pedido</span>
+      </button>
+    </div>
 
     <div class="picking-days-grid">
     @for (day of weekDays(); track day.name; let i = $index) {
@@ -173,6 +187,17 @@
       <p style="color: var(--text-muted); font-size: 0.88rem; margin-top: 6px;">
         Utilice el botón "+ Nuevo pedido" en la barra superior o "Audios WA" para ingresar órdenes al sistema.
       </p>
+      <button
+        type="button"
+        class="btn btn-primary btn-empty-create-order"
+        (click)="openCreateOrderModal()"
+      >
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <line x1="12" y1="5" x2="12" y2="19"></line>
+          <line x1="5" y1="12" x2="19" y2="12"></line>
+        </svg>
+        <span>Crear Nuevo Pedido</span>
+      </button>
     </div>
     }
   </div>

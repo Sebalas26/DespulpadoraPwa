@@ -751,14 +751,114 @@ export class OrdersComponent {
   }
 
   /**
-   * Returns the scheduled day of the week for an order.
+   * Returns the canonical Spanish weekday name ('Lunes' - 'Domingo') for an order,
+   * normalizing raw weekday names, relative customer phrases, ISO dates, and fallbacks.
    */
   getOrderDay(order: OrderDto): string {
     try {
-      return order.scheduledDay || '';
+      const validDays: readonly string[] = [
+        'Lunes',
+        'Martes',
+        'Miércoles',
+        'Jueves',
+        'Viernes',
+        'Sábado',
+        'Domingo'
+      ];
+
+      const raw = (order.scheduledDay || '').trim();
+
+      if (raw) {
+        const cleaned = raw
+          .toLowerCase()
+          .normalize('NFD')
+          .replace(/[\u0300-\u036f]/g, '');
+
+        for (const day of validDays) {
+          const canonicalCleaned = day
+            .toLowerCase()
+            .normalize('NFD')
+            .replace(/[\u0300-\u036f]/g, '');
+          if (cleaned === canonicalCleaned) {
+            return day;
+          }
+        }
+
+        if (cleaned.includes('hoy') || cleaned.includes('prioritario')) {
+          return this.getCurrentWeekDayName();
+        }
+
+        if (cleaned.includes('manana') || cleaned.includes('siguiente')) {
+          const tomorrow = new Date(Date.now() + 86400000);
+          return this.getCurrentWeekDayName(tomorrow);
+        }
+
+        if (cleaned.includes('fin de semana') || cleaned.includes('sabado')) {
+          return 'Sábado';
+        }
+
+        if (cleaned.includes('domingo')) {
+          return 'Domingo';
+        }
+
+        for (const day of validDays) {
+          const canonicalCleaned = day
+            .toLowerCase()
+            .normalize('NFD')
+            .replace(/[\u0300-\u036f]/g, '');
+          if (cleaned.includes(canonicalCleaned)) {
+            return day;
+          }
+        }
+
+        const dateMatch = /^(\d{4})-(\d{2})-(\d{2})/.exec(raw);
+        if (dateMatch) {
+          const parsed = new Date(Number(dateMatch[1]), Number(dateMatch[2]) - 1, Number(dateMatch[3]), 12, 0, 0);
+          if (!Number.isNaN(parsed.getTime())) {
+            return this.getCurrentWeekDayName(parsed);
+          }
+        }
+      }
+
+      if (order.deliveryDate) {
+        const dateMatch = /^(\d{4})-(\d{2})-(\d{2})/.exec(order.deliveryDate);
+        if (dateMatch) {
+          const parsed = new Date(Number(dateMatch[1]), Number(dateMatch[2]) - 1, Number(dateMatch[3]), 12, 0, 0);
+          if (!Number.isNaN(parsed.getTime())) {
+            return this.getCurrentWeekDayName(parsed);
+          }
+        }
+      }
+
+      if (order.createdAt) {
+        const dateMatch = /^(\d{4})-(\d{2})-(\d{2})/.exec(order.createdAt);
+        if (dateMatch && !order.createdAt.includes('T')) {
+          const parsed = new Date(Number(dateMatch[1]), Number(dateMatch[2]) - 1, Number(dateMatch[3]), 12, 0, 0);
+          if (!Number.isNaN(parsed.getTime())) {
+            return this.getCurrentWeekDayName(parsed);
+          }
+        } else {
+          const parsed = new Date(order.createdAt);
+          if (!Number.isNaN(parsed.getTime())) {
+            return this.getCurrentWeekDayName(parsed);
+          }
+        }
+      }
+
+      if (order.orderDate) {
+        const dateMatch = /^(\d{4})-(\d{2})-(\d{2})/.exec(order.orderDate);
+        if (dateMatch) {
+          const parsed = new Date(Number(dateMatch[1]), Number(dateMatch[2]) - 1, Number(dateMatch[3]), 12, 0, 0);
+          if (!Number.isNaN(parsed.getTime())) {
+            return this.getCurrentWeekDayName(parsed);
+          }
+        }
+      }
+
+      return this.getCurrentWeekDayName();
     } catch (error: unknown) {
       console.error('Error getting order day:', error);
-      return '';
+      return this.getCurrentWeekDayName();
     }
   }
 

@@ -160,5 +160,90 @@ describe('ClientPortalComponent', () => {
     component.submitClientOrder();
     expect(createOrderSpy).toHaveBeenCalled();
     expect(component.submittedOrder()?.orderNumber).toBe('ORD-501');
+    expect(component.showSuccessModal()).toBeTrue();
+  });
+
+  it('should render success modal with WhatsApp button and new order button when order is submitted', () => {
+    component.showSuccessModal.set(true);
+    component.submittedOrder.set({
+      orderId: 501,
+      orderNumber: 'ORD-501',
+      clientId: 1,
+      clientName: 'Cafe del Parque',
+      clientPhone: '3147778899',
+      clientAddress: 'Calle 93 # 12-40',
+      branchId: 1,
+      status: 'PENDING',
+      totalAmount: 138000,
+      isPaid: false,
+      isBilled: false,
+      isPriority: false,
+      orderDate: '2026-10-28',
+      createdAt: '2026-10-28',
+      paymentMethodName: 'Efectivo',
+      items: [{ fruitId: 1, fruitName: 'Fresa', grammage: 1000, quantity: 10, unitPrice: 13800, subtotal: 138000 }]
+    });
+    fixture.detectChanges();
+
+    const compiled: HTMLElement = fixture.nativeElement as HTMLElement;
+    const successModal: HTMLElement | null = compiled.querySelector('.success-modal');
+    const whatsAppBtn: HTMLButtonElement | null = compiled.querySelector('.btn-send-whatsapp');
+    const newOrderBtn: HTMLButtonElement | null = compiled.querySelector('.btn-new-order');
+
+    expect(successModal).not.toBeNull();
+    expect(whatsAppBtn).not.toBeNull();
+    expect(whatsAppBtn?.textContent).toContain('Enviar Confirmación por WhatsApp');
+    expect(newOrderBtn).not.toBeNull();
+    expect(newOrderBtn?.textContent).toContain('Hacer Otro Pedido');
+  });
+
+  it('should reset success modal state when clicking start new order button', () => {
+    component.showSuccessModal.set(true);
+    component.submittedOrder.set({
+      orderId: 501,
+      orderNumber: 'ORD-501',
+      clientId: 1,
+      clientName: 'Cafe del Parque',
+      clientPhone: '3147778899',
+      clientAddress: 'Calle 93 # 12-40',
+      branchId: 1,
+      status: 'PENDING',
+      totalAmount: 138000,
+      isPaid: false,
+      isBilled: false,
+      isPriority: false,
+      orderDate: '2026-10-28',
+      createdAt: '2026-10-28',
+      paymentMethodName: 'Efectivo',
+      items: [{ fruitId: 1, fruitName: 'Fresa', grammage: 1000, quantity: 10, unitPrice: 13800, subtotal: 138000 }]
+    });
+    fixture.detectChanges();
+
+    const compiled: HTMLElement = fixture.nativeElement as HTMLElement;
+    const newOrderBtn: HTMLButtonElement | null = compiled.querySelector('.btn-new-order');
+    newOrderBtn?.click();
+    fixture.detectChanges();
+
+    expect(component.showSuccessModal()).toBeFalse();
+    expect(component.submittedOrder()).toBeNull();
+  });
+
+  it('should resolve canonical weekday and set isPriority true when selecting Hoy mismo (Prioritario)', () => {
+    const fresa = mockFruits()[0];
+    component.updateItemQuantity(fresa, 1000, 3);
+    component.clientName.set('Restaurante Gourmet');
+    component.clientPhone.set('3159998877');
+    component.clientAddress.set('Carrera 15 # 85-30');
+    component.deliveryDay.set('Hoy mismo (Prioritario)');
+
+    component.submitClientOrder();
+
+    expect(createOrderSpy).toHaveBeenCalledWith(
+      jasmine.objectContaining({
+        clientName: 'Restaurante Gourmet',
+        isPriority: true,
+        scheduledDay: component.resolveCanonicalWeekday('Hoy mismo (Prioritario)')
+      })
+    );
   });
 });

@@ -4,6 +4,145 @@ Este documento registra de manera cronológica y estructurada todas las interven
 
 ---
 
+## [2026-10-28] - Reubicación de Accesos Rápidos al Menú Lateral y Rediseño Integrado del Header (Eliminación de Card Bordeada)
+
+### 💬 Prompt Original del Usuario
+> "Quiero que esas 3 opciones de la parte superior quede en el menu desplegable a la izquierda, ahi ya hay 2 opciones pero si es necesario reeemplazalos para que queden los 3 que te digo pasra que queden bien
+>
+> adicional veo que hay una card bordeada del que contiene el titulo alistamiento de pedidos, pero eso no lo quiero, dejalo sin eso y que toda la info que esta ahi (en linea, campana y nuevo pedido se vean cn el background de la vista el que es como gris"
+
+### 🤖 Resumen Técnico para la IA
+- **1. Reubicación de Accesos al Menú Lateral (`SidebarComponent`)**:
+  - Se incorporaron en la parte superior de `.sidebar-nav` los 3 accesos rápidos solicitados:
+    - `Pantalla de Alistamiento` (`/kds`) con badge corporativo `KDS` (`#1e5e3a`).
+    - `KDS Inventario & Stock` (`/kds-inventory`) con badge `PLANTA` (`#2563eb`).
+    - `Portal Clientes` (`/portal-clientes`) con badge `PEDIDOS` (`#d97706`).
+  - Se preservó el acceso condicional a `Admin Catálogo` (`/portal-admin`) con badge `CMS` (`#0284c7`) protegido bajo el permiso reactivo `authService.hasModuleAccess('/portal-admin')`.
+- **2. Desmantelamiento de la Card del Header (`HeaderComponent` & `styles.scss`)**:
+  - Se eliminaron el fondo blanco sólido `#ffffff`, el borde inferior, el borde izquierdo `border-left`, el radio curvado y la sombra pesada `box-shadow` de `.topbar`.
+  - Se sincronizó el fondo de `.topbar` con el canvas gris de la aplicación (`background: var(--bg-app) !important;` / `#f6f8f7`), logrando una apariencia continua, limpia y flotante.
+  - Se eliminó el título duplicado de la cabecera ("Alistamiento de Pedidos" / `currentRouteTitle()`), preservando el encabezado `h1` propio de cada vista.
+  - Se mantuvieron en la esquina derecha los elementos funcionales limpios: píldora de conectividad (`En línea` / `Desconectado`), campana de notificaciones operativas con dot de bajo stock, avatar móvil y botón primario `+ Nuevo pedido`.
+  - Se mantuvo en `.topbar-left` el botón reactivo de toggle del sidebar (`.sidebar-toggle-btn`) junto con el logo y branding cuando el menú lateral está colapsado.
+- **3. Verificación de Sub-Agentes de Calidad**:
+  - **Agente Auditor Punto por Punto**: Certificó 100% de cumplimiento en los 12 criterios auditados (0 desviaciones).
+  - **Agente de Revisión Par (Peer Reviewer)**: Otorgó aprobación formal y sign-off definitivo sin observaciones ni anomalías.
+
+### 📦 Componentes Modificados
+- `src/app/layout/sidebar/sidebar.component.ts`
+- `src/app/layout/sidebar/sidebar.component.spec.ts`
+- `src/app/layout/header/header.component.ts`
+- `src/app/layout/header/header.component.spec.ts`
+- `src/styles.scss`
+- `implementation_plan.md`
+- `HISTORIAL_CAMBIOS.md`
+
+### ✅ Verificación, Compilación y Tests
+- **Build de Producción (`npm run build`)**: Exitoso (0 Errores, exit code 0).
+- **Pruebas Unitarias (`ng test`)**: 208 de 208 pruebas aprobadas (100% SUCCESS, 0 Fallos).
+
+---
+
+## [2026-10-28] - Visibilidad y Sincronización Inmediata de Pedidos de Portal Clientes en Alistamiento (Picking)
+
+### 💬 Prompt Original del Usuario
+> "cree un pedido por la pagina de portal cliente y no se ve refljeada en el alistamiento de pedidos"
+
+### 🤖 Resumen Técnico para la IA
+- **1. Diagnóstico de Causa Raíz**:
+  - En `ClientPortalComponent`, las opciones de entrega eran frases relativas ('Hoy mismo (Prioritario)', 'Mañana a primera hora', 'Día Siguiente', 'Programado fin de semana') enviadas en crudo a `order.scheduledDay`.
+  - En `OrdersComponent`, las columnas de alistamiento (`weekDayConfigs`) manejan exclusivamente los nombres canónicos en español ('Lunes' a 'Domingo').
+  - `OrdersComponent.getOrderDay()` retornaba `order.scheduledDay` directamente sin normalizar. Al comparar `orderDay === activeDay` (ej: 'Hoy mismo (Prioritario)' === 'Miércoles'), evaluaba `false` y el pedido no se mostraba ni sumaba a los contadores semanales.
+  - Además, la selección prioritaria no marcaba `isPriority: true` en el pedido en `StateService`.
+- **2. Arquitectura de Doble Defensa**:
+  - En `ClientPortalComponent`: se añadió `resolveCanonicalWeekday()` para transformar las opciones del cliente en días canónicos ('Lunes' a 'Domingo') y marcar `isPriority: true` cuando aplique 'hoy' o 'prioritario', preservando la instrucción original en las notas `[Entrega: ...]`.
+  - En `StateService`: se actualizó `createOrder` para recibir y persistir `isPriority` y asignar como fallback el día canónico actual `getSpanishWeekday()`.
+  - En `OrdersComponent`: se enriqueció `getOrderDay(order: OrderDto)` con normalización NFD sin acentos, evaluación de términos relativos, parseo de fechas ISO locales a mediodía (`12:00:00`) evitando desfases UTC-5 a días anteriores, y fallbacks reactivos encadenados.
+- **3. Verificación de Sub-Agentes de Calidad**:
+  - **Agente Auditor Punto por Punto**: Certificó 100% de cumplimiento en los 13 ítems evaluados (0 desviaciones).
+  - Pruebas unitarias ampliadas en `state.service.spec.ts`, `client-portal.component.spec.ts` y `orders.component.spec.ts`.
+
+### 📦 Componentes Modificados
+- `src/app/core/services/state.service.ts`
+- `src/app/core/services/state.service.spec.ts`
+- `src/app/features/client-portal/client-portal.component.ts`
+- `src/app/features/client-portal/client-portal.component.spec.ts`
+- `src/app/features/orders/orders.component.ts`
+- `src/app/features/orders/orders.component.spec.ts`
+- `HISTORIAL_CAMBIOS.md`
+
+### ✅ Verificación, Compilación y Tests
+- **Build de Producción (`npm run build`)**: Exitoso (0 Errores, exit code 0).
+- **Pruebas Unitarias (`ng test`)**: 203 de 203 pruebas aprobadas (100% SUCCESS, 0 Fallos).
+
+---
+
+## [2026-10-28] - Unificación Tipográfica y Rediseño de Botones en Modal de Confirmación de Pedido (Portal de Clientes)
+
+### 💬 Prompt Original del Usuario
+> "Mejora esta vista, no tiene el color del boton y la fuente y letra de toda la pwa"
+
+### 🤖 Resumen Técnico para la IA
+- **1. Diagnóstico de Tipografía y Desacople Estético**:
+  - En `ClientPortalComponent` (`src/app/features/client-portal/client-portal.component.ts`), la regla en `:host` tenía quemada una pila genérica del sistema operativo que bloqueaba la herencia de las variables globales (`--font-heading` y `--font-body: 'Lato'`).
+  - La modal de confirmación (`.success-modal`), su código de orden con `font-family: monospace;` y sus textos no reflejaban la identidad visual corporativa.
+  - El botón `.btn-send-whatsapp` utilizaba un verde fluorescente `#25d366` rectangular con sombra pesada y emoji `📲`, en lugar del verde esmeralda corporativo DGL (`var(--color-primary): #1e5e3a`), forma en píldora (`var(--radius-full)`) e ícono SVG vectorial nítido.
+  - El botón secundario `.btn-new-order` usaba un fondo grisáceo `#f1f5f9` desconectado del estilo secundario/outline de la PWA.
+- **2. Unificación con el Sistema de Diseño Global**:
+  - Se vinculó `:host` y `.success-modal` a `var(--font-body, 'Lato', sans-serif)` y `.success-title` a `var(--font-heading, 'Lato', sans-serif)`.
+  - Se rediseñó `.btn-send-whatsapp` con fondo `var(--color-primary)`, hover `var(--color-primary-hover)`, radio de píldora `var(--radius-full)`, sombra corporativa sutil e ícono SVG vectorial de WhatsApp.
+  - Se rediseñó `.btn-new-order` como botón outline en píldora con fondo blanco, borde `var(--border-subtle)` e ícono vectorial `+`.
+  - Se refinó el badge del código de pedido con `var(--color-primary-light)` y bordes suaves de 12px.
+- **3. Cobertura de Pruebas y Sub-Agentes de Control**:
+  - Se añadieron pruebas unitarias en `client-portal.component.spec.ts` validando el renderizado de la modal, los botones de acción y el reseteo de señales mediante `startNewOrder()`.
+  - **Agente Auditor Punto por Punto**: Certificó 100% de cumplimiento (100% PASS, 0 desviaciones).
+  - **Agente de Revisión Par (Peer Reviewer)**: Otorgó aprobación y sign-off completo sin anomalías.
+
+### 📦 Componentes Modificados
+- `src/app/features/client-portal/client-portal.component.ts`
+- `src/app/features/client-portal/client-portal.component.spec.ts`
+- `implementation_plan.md`
+- `HISTORIAL_CAMBIOS.md`
+
+### ✅ Verificación, Compilación y Tests
+- **Build de Producción (`npm run build`)**: Exitoso (0 Errores, código de salida 0).
+- **Pruebas Unitarias (`npm test`)**: 199 de 199 pruebas aprobadas (100% SUCCESS, 0 Fallos).
+
+---
+
+## [2026-10-28] - Integración del Botón de Creación de Pedidos en Vista Móvil (Alistamiento de Pedidos)
+
+### 💬 Prompt Original del Usuario
+> "En la pwa version mobile no veo el boton de crear nuevo pedido, esto adicionalo en el modulo de pedidos \"alistamiento de pedidos\""
+
+### 🤖 Resumen Técnico para la IA
+- **1. Diagnóstico de Causa Raíz**:
+  - En el layout global de la aplicación (`HeaderComponent`), el botón `+ Nuevo pedido` dispone de la clase CSS `.no-mobile` que se oculta en dispositivos móviles y pantallas estrechas (`@media (max-width: 768px) { display: none !important; }`) para preservar el espacio en la barra superior.
+  - La vista interna de alistamiento (`OrdersComponent` - Subtab Picking) no contaba con un botón propio para disparar `openCreateOrderModal()`, provocando que en dispositivos móviles no hubiera forma visible de iniciar la creación manual de pedidos.
+- **2. Aislamiento Quirúrgico y Preservación de Escritorio**:
+  - En `orders.component.html`, se reestructuró `.picking-page-header` organizando título y subtítulo en `.picking-title-block` y agregando el botón de acción `.picking-mobile-create-btn`.
+  - En `orders.component.scss`, `.picking-mobile-create-btn` tiene `display: none;` en resoluciones de escritorio (> 768px), garantizando cero regresiones visuales o duplicidades con el botón de la barra superior.
+  - En resoluciones móviles y tablets (<= 768px), se activa como `display: inline-flex; width: 100%;` con padding ergonómico de 10px 18px, borde en píldora `var(--radius-full)`, sombra corporativa y accesibilidad táctil para dedos pulgares (> 44px de área de pulsación).
+- **3. Acción Directa en Estado Vacío (Empty State)**:
+  - En la tarjeta que se renderiza cuando `tabOrders().length === 0`, se incorporó el botón `.btn-empty-create-order` con `(click)="openCreateOrderModal()"`, permitiendo crear pedidos directamente sin depender del texto informativo previo.
+- **4. Cumplimiento Estricto de Calidad y Sub-Agentes de Control**:
+  - **Agente de Verificación de Impacto**: Certificó 0 daños colaterales previo a la ejecución.
+  - **Agente Auditor Punto por Punto**: Verificó el 100% de los puntos implementados frente a las reglas de `AGENTS.md` (código en inglés, tipado estricto, cero datos quemados, cero comentarios `//`).
+  - **Agente de Revisión Par (Peer Reviewer)**: Otorgó aprobación final (sign-off) sin observaciones ni necesidad de planes correctivos.
+
+### 📦 Componentes Modificados
+- `src/app/features/orders/orders.component.html`
+- `src/app/features/orders/orders.component.scss`
+- `src/app/features/orders/orders.component.spec.ts`
+- `implementation_plan.md`
+- `HISTORIAL_CAMBIOS.md`
+
+### ✅ Verificación, Compilación y Tests
+- **Build de Producción (`npm run build`)**: Exitoso (0 Errores, código de salida 0).
+- **Pruebas Unitarias (`npm test`)**: 197 de 197 pruebas aprobadas (100% SUCCESS, 0 Fallos).
+
+---
+
 ## [2026-10-27] - Sincronización Global Reactiva de Presentaciones/Categorías y Corrección de Scrollbar en Modal de Cards
 
 ### 💬 Prompt Original del Usuario

@@ -657,8 +657,8 @@ app-header.header-hidden,
 
 .topbar {
   height: 64px;
-  border-bottom: 1px solid var(--border-subtle);
-  background: var(--bg-card-solid, #ffffff);
+  border: none;
+  background: var(--bg-app);
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -666,7 +666,7 @@ app-header.header-hidden,
   position: sticky;
   top: 0;
   z-index: 100;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  box-shadow: none;
   will-change: transform, opacity;
   transition: transform 0.32s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.28s ease, visibility 0.28s ease;
 }

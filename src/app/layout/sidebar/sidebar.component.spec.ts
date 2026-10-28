@@ -77,4 +77,26 @@ describe('SidebarComponent', () => {
     expect(component.isInventoryTabActive('fruits')).toBeFalse();
     expect(component.isInventoryTabActive('kds')).toBeFalse();
   });
+
+  it('should render dedicated quick navigation links for KDS picking, plant KDS, and client portal', () => {
+    fixture.detectChanges();
+    const compiled = fixture.nativeElement as HTMLElement;
+    const navItems = Array.from(compiled.querySelectorAll('.sidebar-nav > a.dgl-nav-item')) as HTMLAnchorElement[];
+
+    const kdsItem = navItems.find((el: HTMLAnchorElement) => el.getAttribute('href') === '/kds');
+    const plantItem = navItems.find((el: HTMLAnchorElement) => el.getAttribute('href') === '/kds-inventory');
+    const portalItem = navItems.find((el: HTMLAnchorElement) => el.getAttribute('href') === '/portal-clientes');
+
+    expect(kdsItem).toBeTruthy();
+    expect(kdsItem?.textContent).toContain('Pantalla de Alistamiento');
+    expect(kdsItem?.textContent).toContain('KDS');
+
+    expect(plantItem).toBeTruthy();
+    expect(plantItem?.textContent).toContain('KDS Inventario & Stock');
+    expect(plantItem?.textContent).toContain('PLANTA');
+
+    expect(portalItem).toBeTruthy();
+    expect(portalItem?.textContent).toContain('Portal Clientes');
+    expect(portalItem?.textContent).toContain('PEDIDOS');
+  });
 });

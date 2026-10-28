@@ -972,6 +972,15 @@ export class StateService {
   }
 
   /**
+   * Returns the Spanish weekday name for a date instance.
+   */
+  getSpanishWeekday(date: Date = new Date()): string {
+    const days = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+    const idx = date instanceof Date && !Number.isNaN(date.getTime()) ? date.getDay() : new Date().getDay();
+    return days[idx] ?? 'Lunes';
+  }
+
+  /**
    * Creates a commercial order and syncs to `POST /api/orders`.
    */
   createOrder(orderData: {
@@ -988,6 +997,7 @@ export class StateService {
     paymentMethodName?: string;
     courierName?: string;
     scheduledDay?: string;
+    isPriority?: boolean;
   }): OrderDto {
     try {
       const totalAmount = orderData.items.reduce((sum, item) => sum + item.quantity * item.unitPrice, 0);
@@ -1003,7 +1013,8 @@ export class StateService {
         clientAddress: orderData.clientAddress || '',
         status: 'PENDING',
         orderDate: new Date().toISOString().substring(0, 10),
-        scheduledDay: orderData.scheduledDay,
+        scheduledDay: orderData.scheduledDay || this.getSpanishWeekday(),
+        isPriority: Boolean(orderData.isPriority),
         totalAmount,
         isPaid: false,
         paymentMethodName: orderData.paymentMethodName || '',
@@ -1033,6 +1044,7 @@ export class StateService {
           clientAddress: newOrder.clientAddress,
           paymentMethod: newOrder.paymentMethodName,
           scheduledDay: newOrder.scheduledDay,
+          isPriority: newOrder.isPriority,
           notes: newOrder.notes,
           items: newOrder.items.map(i => ({
             fruitId: i.fruitId,

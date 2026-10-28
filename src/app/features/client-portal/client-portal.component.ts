@@ -579,7 +579,10 @@ export interface CartItem {
                 class="btn-send-whatsapp"
                 (click)="openWhatsAppConfirmation(order)"
               >
-                <span>📲 Enviar Confirmación por WhatsApp</span>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M12.04 2C6.58 2 2.13 6.45 2.13 11.91C2.13 13.66 2.59 15.36 3.45 16.86L2.05 22L7.3 20.62C8.75 21.41 10.38 21.83 12.04 21.83C17.5 21.83 21.95 17.38 21.95 11.92C21.95 9.27 20.92 6.78 19.05 4.91C17.18 3.03 14.69 2 12.04 2M12.05 3.67C14.25 3.67 16.31 4.53 17.87 6.09C19.42 7.65 20.28 9.72 20.28 11.92C20.28 16.46 16.58 20.15 12.04 20.15C10.56 20.15 9.11 19.76 7.85 19L7.55 18.83L4.43 19.65L5.26 16.61L5.06 16.29C4.24 15 3.8 13.47 3.8 11.91C3.81 7.37 7.5 3.67 12.05 3.67M9.11 7.02C8.94 7.02 8.66 7.08 8.42 7.34C8.18 7.6 7.5 8.24 7.5 9.53C7.5 10.82 8.44 12.07 8.57 12.24C8.7 12.41 10.42 15.06 13.05 16.2C13.68 16.47 14.16 16.63 14.55 16.75C15.17 16.95 15.74 16.92 16.19 16.85C16.69 16.78 17.72 16.23 17.93 15.63C18.15 15.03 18.15 14.52 18.08 14.41C18.01 14.3 17.83 14.23 17.57 14.1C17.31 13.97 16.03 13.34 15.79 13.26C15.56 13.17 15.39 13.13 15.22 13.39C15.05 13.64 14.57 14.21 14.42 14.38C14.27 14.55 14.12 14.57 13.86 14.44C13.6 14.31 12.78 14.04 11.8 13.17C11.04 12.49 10.52 11.66 10.37 11.4C10.22 11.15 10.35 11.01 10.48 10.88C10.6 10.77 10.74 10.58 10.87 10.43C11 10.28 11.04 10.17 11.13 10C11.22 9.83 11.17 9.68 11.11 9.55C11.04 9.42 10.53 8.17 10.32 7.65C10.11 7.15 9.9 7.22 9.74 7.21C9.59 7.2 9.42 7.2 9.25 7.2L9.11 7.02Z"/>
+                </svg>
+                <span>Enviar Confirmación por WhatsApp</span>
               </button>
 
               <button
@@ -587,7 +590,11 @@ export interface CartItem {
                 class="btn-new-order"
                 (click)="startNewOrder()"
               >
-                + Hacer Otro Pedido
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                  <line x1="12" y1="5" x2="12" y2="19"></line>
+                  <line x1="5" y1="12" x2="19" y2="12"></line>
+                </svg>
+                <span>Hacer Otro Pedido</span>
               </button>
             </div>
           </div>
@@ -602,7 +609,7 @@ export interface CartItem {
       min-height: 100vh;
       margin: 0;
       padding: 0;
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      font-family: var(--font-body, 'Lato', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif);
       background: #f8fafc;
       color: #0f172a;
     }
@@ -1615,19 +1622,21 @@ export interface CartItem {
 
     .success-modal {
       width: 100%;
-      max-width: 500px;
+      max-width: 460px;
       background: #ffffff;
-      border-radius: 20px;
-      padding: 24px;
-      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3);
+      border-radius: 24px;
+      padding: 28px 24px;
+      box-shadow: 0 25px 50px -12px rgba(15, 23, 42, 0.25);
+      border: 1px solid rgba(226, 232, 240, 0.8);
       display: flex;
       flex-direction: column;
-      gap: 18px;
-      animation: modalPop 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+      gap: 16px;
+      animation: modalPop 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+      font-family: var(--font-body, 'Lato', sans-serif);
     }
 
     @keyframes modalPop {
-      from { transform: scale(0.9); opacity: 0; }
+      from { transform: scale(0.92); opacity: 0; }
       to { transform: scale(1); opacity: 1; }
     }
 
@@ -1637,26 +1646,31 @@ export interface CartItem {
       .success-icon-wrap {
         font-size: 3rem;
         margin-bottom: 8px;
+        line-height: 1;
       }
 
       .success-title {
-        font-size: 1.35rem;
-        font-weight: 900;
-        color: #0f172a;
+        font-family: var(--font-heading, 'Lato', sans-serif);
+        font-size: 1.45rem;
+        font-weight: 800;
+        color: #111827;
         margin: 0;
+        letter-spacing: -0.02em;
       }
 
       .success-subtitle {
-        font-size: 0.85rem;
+        font-family: var(--font-body, 'Lato', sans-serif);
+        font-size: 0.88rem;
         color: #64748b;
-        margin: 4px 0 0 0;
+        margin: 6px 0 0 0;
+        line-height: 1.45;
       }
     }
 
     .success-details-card {
       background: #f8fafc;
       border: 1px solid #e2e8f0;
-      border-radius: 14px;
+      border-radius: 16px;
       padding: 16px;
       display: flex;
       flex-direction: column;
@@ -1666,22 +1680,24 @@ export interface CartItem {
         display: flex;
         justify-content: space-between;
         align-items: center;
-        background: #ecfdf5;
-        border: 1px solid #d1e7d8;
-        padding: 8px 12px;
-        border-radius: 8px;
+        background: var(--color-primary-light, #eaf5ee);
+        border: 1px solid var(--color-primary-border, #d1e7d8);
+        padding: 9px 14px;
+        border-radius: 12px;
 
         .code-lbl {
-          font-size: 0.78rem;
+          font-family: var(--font-body, 'Lato', sans-serif);
+          font-size: 0.8rem;
           font-weight: 700;
-          color: #1e5e3a;
+          color: var(--color-primary, #1e5e3a);
         }
 
         .code-val {
-          font-family: monospace;
-          font-size: 1rem;
-          font-weight: 900;
-          color: #164a2d;
+          font-family: var(--font-body, 'Lato', sans-serif);
+          font-size: 1.05rem;
+          font-weight: 800;
+          color: var(--color-primary, #1e5e3a);
+          letter-spacing: 0.02em;
         }
       }
 
@@ -1691,16 +1707,20 @@ export interface CartItem {
         gap: 10px;
 
         .meta-label {
-          font-size: 0.7rem;
+          font-family: var(--font-body, 'Lato', sans-serif);
+          font-size: 0.72rem;
           font-weight: 700;
           color: #64748b;
           text-transform: uppercase;
+          letter-spacing: 0.04em;
         }
 
         .meta-val {
-          font-size: 0.85rem;
+          font-family: var(--font-body, 'Lato', sans-serif);
+          font-size: 0.88rem;
           font-weight: 800;
-          color: #0f172a;
+          color: #111827;
+          word-break: break-word;
         }
       }
 
@@ -1709,27 +1729,30 @@ export interface CartItem {
         padding-top: 10px;
 
         .items-head {
+          font-family: var(--font-body, 'Lato', sans-serif);
           font-size: 0.72rem;
           font-weight: 800;
           color: #64748b;
           text-transform: uppercase;
+          letter-spacing: 0.04em;
           margin-bottom: 6px;
         }
 
         .item-summary-row {
           display: flex;
           justify-content: space-between;
-          font-size: 0.82rem;
+          font-family: var(--font-body, 'Lato', sans-serif);
+          font-size: 0.84rem;
           color: #334155;
           margin-bottom: 4px;
 
           &.total-row {
             margin-top: 8px;
-            padding-top: 6px;
+            padding-top: 8px;
             border-top: 1px solid #e2e8f0;
-            font-size: 0.95rem;
+            font-size: 0.98rem;
             font-weight: 900;
-            color: #164a2d;
+            color: var(--color-primary, #1e5e3a);
           }
         }
       }
@@ -1742,39 +1765,51 @@ export interface CartItem {
 
       .btn-send-whatsapp {
         width: 100%;
-        padding: 13px;
-        background: #25d366;
+        padding: 13px 20px;
+        background: var(--color-primary, #1e5e3a);
         border: none;
-        border-radius: 12px;
+        border-radius: var(--radius-full, 9999px);
         color: #ffffff;
+        font-family: var(--font-body, 'Lato', sans-serif);
         font-size: 0.95rem;
-        font-weight: 900;
+        font-weight: 700;
         cursor: pointer;
-        display: flex;
+        display: inline-flex;
         align-items: center;
         justify-content: center;
-        box-shadow: 0 4px 14px rgba(37, 211, 102, 0.4);
-        transition: all 0.2s ease;
+        gap: 8px;
+        box-shadow: 0 4px 14px rgba(30, 94, 58, 0.25);
+        transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 
         &:hover {
-          background: #20ba5a;
+          background: var(--color-primary-hover, #164a2d);
+          transform: translateY(-1px);
+          box-shadow: 0 6px 18px rgba(30, 94, 58, 0.32);
         }
       }
 
       .btn-new-order {
         width: 100%;
-        padding: 11px;
-        background: #f1f5f9;
-        border: 1px solid #cbd5e1;
-        border-radius: 12px;
-        color: #475569;
-        font-size: 0.88rem;
+        padding: 11px 18px;
+        background: #ffffff;
+        border: 1.5px solid var(--border-subtle, #e2e8f0);
+        border-radius: var(--radius-full, 9999px);
+        color: #374151;
+        font-family: var(--font-body, 'Lato', sans-serif);
+        font-size: 0.9rem;
         font-weight: 700;
         cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 
         &:hover {
-          background: #e2e8f0;
-          color: #0f172a;
+          background: var(--bg-hover, #f8fafc);
+          border-color: #cbd5e1;
+          color: var(--color-primary, #1e5e3a);
+          transform: translateY(-1px);
         }
       }
     }
@@ -2166,6 +2201,40 @@ export class ClientPortalComponent implements OnInit {
   }
 
   /**
+   * Resolves a customer-selected delivery option to a canonical Spanish weekday.
+   */
+  resolveCanonicalWeekday(deliveryOption: string): string {
+    try {
+      const days = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+      const normalized = (deliveryOption || '').toLowerCase().trim();
+
+      if (normalized.includes('hoy') || normalized.includes('prioritario')) {
+        return days[new Date().getDay()] ?? 'Lunes';
+      }
+      if (normalized.includes('mañana') || normalized.includes('manana') || normalized.includes('siguiente')) {
+        const tomorrow = new Date(Date.now() + 86400000);
+        return days[tomorrow.getDay()] ?? 'Martes';
+      }
+      if (normalized.includes('fin de semana') || normalized.includes('sabado') || normalized.includes('sábado')) {
+        return 'Sábado';
+      }
+      if (normalized.includes('domingo')) {
+        return 'Domingo';
+      }
+
+      for (const d of days) {
+        if (normalized.includes(d.toLowerCase())) {
+          return d;
+        }
+      }
+
+      return days[new Date().getDay()] ?? 'Lunes';
+    } catch {
+      return 'Lunes';
+    }
+  }
+
+  /**
    * Validates checkout fields and submits the client order to StateService.
    */
   submitClientOrder(): void {
@@ -2193,13 +2262,21 @@ export class ClientPortalComponent implements OnInit {
         return;
       }
 
+      const rawDeliveryDay = this.deliveryDay();
+      const resolvedWeekday = this.resolveCanonicalWeekday(rawDeliveryDay);
+      const isPriority = rawDeliveryDay.toLowerCase().includes('prioritario') || rawDeliveryDay.toLowerCase().includes('hoy');
+      const userNotes = this.deliveryNotes().trim();
+      const deliveryTag = `[Entrega: ${rawDeliveryDay}]`;
+      const combinedNotes = userNotes ? `${deliveryTag} ${userNotes}` : deliveryTag;
+
       const createdOrder = this.stateService.createOrder({
         clientName: name,
         clientPhone: phone,
         clientAddress: address,
-        notes: this.deliveryNotes().trim(),
+        notes: combinedNotes,
         paymentMethodName: this.selectedPaymentMethod(),
-        scheduledDay: this.deliveryDay(),
+        scheduledDay: resolvedWeekday,
+        isPriority,
         items: this.cart().map((item: CartItem) => ({
           fruitName: item.fruitName,
           grammage: item.grammage,

@@ -337,4 +337,22 @@ describe('StateService', () => {
     service.resetPortalCatalogToDefault();
     expect(service.portalCmsConfig().heroTitle).toBe('');
   });
+
+  it('should assign isPriority when provided to createOrder and default scheduledDay to current Spanish weekday', () => {
+    const currentWeekday = service.getSpanishWeekday();
+    const priorityOrder = service.createOrder({
+      clientName: 'Cliente Prioritario',
+      isPriority: true,
+      items: [{ fruitName: 'Fresa', grammage: 1000, quantity: 2, unitPrice: 12000 }]
+    });
+
+    expect(priorityOrder.isPriority).toBeTrue();
+    expect(priorityOrder.scheduledDay).toBe(currentWeekday);
+    expect(apiSpy.createOrder).toHaveBeenCalledWith(
+      jasmine.objectContaining({
+        isPriority: true,
+        scheduledDay: currentWeekday
+      })
+    );
+  });
 });

@@ -407,4 +407,90 @@ describe('OrdersComponent', () => {
     expect(activeCard?.textContent).not.toContain('Agrupado / Activo');
     expect(activeCard?.querySelector('.day-card-sub')?.textContent?.trim()).toMatch(/^\d+\s+pedidos$/);
   });
+
+  it('should render the mobile create order button in picking header and open create modal upon click', () => {
+    component.activeSubTab.set('picking');
+    fixture.detectChanges();
+    const compiled: HTMLElement = fixture.nativeElement as HTMLElement;
+    const mobileCreateBtn: HTMLButtonElement | null = compiled.querySelector('.picking-mobile-create-btn');
+
+    expect(mobileCreateBtn).not.toBeNull();
+    expect(mobileCreateBtn?.textContent).toContain('Nuevo Pedido');
+
+    mobileCreateBtn?.click();
+    fixture.detectChanges();
+
+    expect(component.showNewOrderModal()).toBeTrue();
+  });
+
+  it('should render create order button in empty state card when picking queue is empty and open modal upon click', () => {
+    component.activeSubTab.set('picking');
+    mockOrders.set([]);
+    fixture.detectChanges();
+    const compiled: HTMLElement = fixture.nativeElement as HTMLElement;
+    const emptyCreateBtn: HTMLButtonElement | null = compiled.querySelector('.btn-empty-create-order');
+
+    expect(emptyCreateBtn).not.toBeNull();
+    expect(emptyCreateBtn?.textContent).toContain('Crear Nuevo Pedido');
+
+    emptyCreateBtn?.click();
+    fixture.detectChanges();
+
+    expect(component.showNewOrderModal()).toBeTrue();
+  });
+
+  it('should normalize relative scheduledDay phrases, ISO dates, and unaccented names to canonical Spanish weekdays in getOrderDay', () => {
+    const baseOrder: OrderDto = {
+      orderId: 999,
+      orderNumber: 'ORD-999',
+      branchId: 1,
+      clientId: 1,
+      clientName: 'Portal Client',
+      status: 'PENDING',
+      orderDate: '2026-10-28',
+      createdAt: '2026-10-28T12:00:00Z',
+      totalAmount: 50000,
+      isPaid: false,
+      items: []
+    };
+
+    const today = component.getCurrentWeekDayName();
+    const tomorrow = component.getCurrentWeekDayName(new Date(Date.now() + 86400000));
+
+    expect(component.getOrderDay({ ...baseOrder, scheduledDay: 'Hoy mismo (Prioritario)' })).toBe(today);
+    expect(component.getOrderDay({ ...baseOrder, scheduledDay: 'Mañana a primera hora' })).toBe(tomorrow);
+    expect(component.getOrderDay({ ...baseOrder, scheduledDay: 'Programado fin de semana' })).toBe('Sábado');
+    expect(component.getOrderDay({ ...baseOrder, scheduledDay: 'miercoles' })).toBe('Miércoles');
+    expect(component.getOrderDay({ ...baseOrder, scheduledDay: 'sabado' })).toBe('Sábado');
+    expect(component.getOrderDay({ ...baseOrder, scheduledDay: '2026-10-28' })).toBe('Miércoles');
+    expect(component.getOrderDay({ ...baseOrder, scheduledDay: undefined })).toBe('Miércoles');
+  });
+
+  it('should include client orders with relative scheduledDay in the active weekday picking queue', () => {
+    const today = component.getCurrentWeekDayName();
+    component.activeSubTab.set('picking');
+    component.selectedDay.set(today);
+    mockOrders.set([
+      {
+        orderId: 777,
+        orderNumber: 'ORD-777',
+        branchId: 1,
+        clientId: 10,
+        clientName: 'Cliente Portal Web',
+        status: 'PENDING',
+        orderDate: '2026-10-28',
+        createdAt: '2026-10-28T10:00:00Z',
+        totalAmount: 25000,
+        isPaid: false,
+        scheduledDay: 'Hoy mismo (Prioritario)',
+        items: [{ fruitId: 1, fruitName: 'Mora', grammage: 1000, quantity: 2, unitPrice: 12500, subtotal: 25000 }]
+      }
+    ]);
+    fixture.detectChanges();
+
+    const activeDayConfig = component.weekDays().find(w => w.name === today);
+    expect(activeDayConfig?.count).toBe(1);
+    expect(component.tabOrders().length).toBe(1);
+    expect(component.tabOrders()[0].orderNumber).toBe('ORD-777');
+  });
 });
