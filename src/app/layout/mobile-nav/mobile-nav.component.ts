@@ -1,6 +1,7 @@
 import { Component, computed, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterLink, RouterLinkActive } from '@angular/router';
+import { NavigationEnd, Router, RouterLink } from '@angular/router';
+import { filter } from 'rxjs';
 import { StateService } from '../../core/services/state.service';
 import { AuthService } from '../../core/services/auth.service';
 import { environment } from '../../../environments/environment';
@@ -11,38 +12,82 @@ import { environment } from '../../../environments/environment';
 @Component({
   selector: 'app-mobile-nav',
   standalone: true,
-  imports: [CommonModule, RouterLink, RouterLinkActive],
+  imports: [CommonModule, RouterLink],
   template: `
     <nav class="dgl-mobile-nav">
-      <a routerLink="/dashboard" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }" class="dgl-mobile-nav-item">
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <rect x="3" y="3" width="7" height="7" rx="1.5"></rect>
-          <rect x="14" y="3" width="7" height="7" rx="1.5"></rect>
-          <rect x="14" y="14" width="7" height="7" rx="1.5"></rect>
-          <rect x="3" y="14" width="7" height="7" rx="1.5"></rect>
+      <a
+        routerLink="/dashboard"
+        class="dgl-mobile-nav-item"
+        [class.active]="isMobileTabActive('home')"
+        (click)="closeDrawer()"
+      >
+        <svg class="nav-icon-outline" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5.5v-6h-5v6H4a1 1 0 0 1-1-1v-9.5Z"></path>
         </svg>
-        <span>Panel</span>
+        <svg class="nav-icon-solid" width="22" height="22" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M11.35 2.25a1 1 0 0 1 1.3 0l9 7.5a1 1 0 0 1 .35.76V20a2 2 0 0 1-2 2h-5.5a1 1 0 0 1-1-1v-5.5h-3V21a1 1 0 0 1-1 1H4a2 2 0 0 1-2-2v-9.49a1 1 0 0 1 .35-.76l9-7.5Z"></path>
+        </svg>
+        <span>Inicio</span>
       </a>
 
       @if (authService.hasModuleAccess('/orders')) {
-        <a routerLink="/orders" [queryParams]="{ tab: 'picking' }" routerLinkActive="active" class="dgl-mobile-nav-item">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-            <polyline points="14 2 14 8 20 8"></polyline>
-            <line x1="16" y1="13" x2="8" y2="13"></line>
-            <line x1="16" y1="17" x2="8" y2="17"></line>
+        <a
+          routerLink="/orders"
+          [queryParams]="{ tab: 'picking' }"
+          class="dgl-mobile-nav-item"
+          [class.active]="isMobileTabActive('orders')"
+          (click)="closeDrawer()"
+        >
+          <svg class="nav-icon-outline" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M5 3h14a1 1 0 0 1 1 1v17l-3-2-3 2-2-2-2 2-3-2-3 2V4a1 1 0 0 1 1-1Z"></path>
+            <line x1="9" y1="9" x2="15" y2="9"></line>
+            <line x1="9" y1="13" x2="15" y2="13"></line>
           </svg>
-          <span>Alistamiento</span>
+          <svg class="nav-icon-solid" width="22" height="22" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M5 2a2 2 0 0 0-2 2v17a1 1 0 0 0 1.55.83L7 20.2l2.45 1.63a1 1 0 0 0 1.26-.12L12 20.4l1.29 1.31a1 1 0 0 0 1.26.12L17 20.2l2.45 1.63A1 1 0 0 0 21 21V4a2 2 0 0 0-2-2H5Zm4 6h6a1 1 0 1 1 0 2H9a1 1 0 1 1 0-2Zm0 4h6a1 1 0 1 1 0 2H9a1 1 0 1 1 0-2Z"></path>
+          </svg>
+          <span>Pedidos</span>
           @if (stateService.pendingOrdersCount() > 0) {
             <span class="dgl-mobile-badge">{{ stateService.pendingOrdersCount() }}</span>
           }
         </a>
+
+        <a
+          routerLink="/orders"
+          [queryParams]="{ tab: 'despachos' }"
+          class="dgl-mobile-nav-item"
+          [class.active]="isMobileTabActive('routes')"
+          (click)="closeDrawer()"
+        >
+          <svg class="nav-icon-outline" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="6" cy="19" r="3"></circle>
+            <path d="M9 19h8.5a3.5 3.5 0 0 0 0-7h-11a3.5 3.5 0 0 1 0-7H15"></path>
+            <circle cx="18" cy="5" r="3"></circle>
+          </svg>
+          <svg class="nav-icon-solid" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="6" cy="19" r="3" fill="currentColor"></circle>
+            <path d="M9 19h8.5a3.5 3.5 0 0 0 0-7h-11a3.5 3.5 0 0 1 0-7H15"></path>
+            <circle cx="18" cy="5" r="3" fill="currentColor"></circle>
+          </svg>
+          <span>Rutas</span>
+        </a>
       }
 
       @if (authService.hasModuleAccess('/settings')) {
-        <a routerLink="/settings" [queryParams]="{ tab: 'inventory' }" routerLinkActive="active" class="dgl-mobile-nav-item">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <a
+          routerLink="/settings"
+          [queryParams]="{ tab: 'inventory' }"
+          class="dgl-mobile-nav-item"
+          [class.active]="isMobileTabActive('inventory')"
+          (click)="closeDrawer()"
+        >
+          <svg class="nav-icon-outline" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
+            <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
+            <line x1="12" y1="22.08" x2="12" y2="12"></line>
+          </svg>
+          <svg class="nav-icon-solid" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" fill="rgba(17, 24, 39, 0.12)"></path>
             <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
             <line x1="12" y1="22.08" x2="12" y2="12"></line>
           </svg>
@@ -50,11 +95,33 @@ import { environment } from '../../../environments/environment';
         </a>
       }
 
-      <button type="button" class="dgl-mobile-nav-item" (click)="openDrawer()">
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <line x1="3" y1="12" x2="21" y2="12"></line>
-          <line x1="3" y1="6" x2="21" y2="6"></line>
-          <line x1="3" y1="18" x2="21" y2="18"></line>
+      <button
+        type="button"
+        class="dgl-mobile-nav-item"
+        [class.active]="showMoreDrawer()"
+        (click)="openDrawer()"
+      >
+        <svg class="nav-icon-outline" width="22" height="22" viewBox="0 0 24 24" fill="currentColor">
+          <circle cx="6" cy="6" r="1.8"></circle>
+          <circle cx="12" cy="6" r="1.8"></circle>
+          <circle cx="18" cy="6" r="1.8"></circle>
+          <circle cx="6" cy="12" r="1.8"></circle>
+          <circle cx="12" cy="12" r="1.8"></circle>
+          <circle cx="18" cy="12" r="1.8"></circle>
+          <circle cx="6" cy="18" r="1.8"></circle>
+          <circle cx="12" cy="18" r="1.8"></circle>
+          <circle cx="18" cy="18" r="1.8"></circle>
+        </svg>
+        <svg class="nav-icon-solid" width="22" height="22" viewBox="0 0 24 24" fill="currentColor">
+          <circle cx="6" cy="6" r="2.2"></circle>
+          <circle cx="12" cy="6" r="2.2"></circle>
+          <circle cx="18" cy="6" r="2.2"></circle>
+          <circle cx="6" cy="12" r="2.2"></circle>
+          <circle cx="12" cy="12" r="2.2"></circle>
+          <circle cx="18" cy="12" r="2.2"></circle>
+          <circle cx="6" cy="18" r="2.2"></circle>
+          <circle cx="12" cy="18" r="2.2"></circle>
+          <circle cx="18" cy="18" r="2.2"></circle>
         </svg>
         <span>Más</span>
       </button>
@@ -152,18 +219,27 @@ import { environment } from '../../../environments/environment';
   styles: [`
     .dgl-mobile-nav {
       position: fixed;
-      bottom: 0;
-      left: 0;
-      right: 0;
-      height: 62px;
-      background: #ffffff;
-      border-top: 1px solid #eef2ef;
-      box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.04);
+      bottom: max(10px, calc(env(safe-area-inset-bottom, 0px) + 6px));
+      left: 12px;
+      right: 12px;
+      max-width: 460px;
+      margin: 0 auto;
+      height: 68px;
+      background: rgba(255, 255, 255, 0.98);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(226, 232, 240, 0.92);
+      border-radius: 9999px;
+      box-shadow:
+        0 10px 30px rgba(15, 23, 42, 0.14),
+        0 2px 8px rgba(15, 23, 42, 0.06);
       display: flex;
-      justify-content: space-around;
+      justify-content: space-between;
       align-items: center;
+      gap: 4px;
       z-index: 9500;
-      padding: 0 10px;
+      padding: 6px;
+      box-sizing: border-box;
     }
 
     @media (min-width: 1025px) {
@@ -173,52 +249,73 @@ import { environment } from '../../../environments/environment';
     }
 
     .dgl-mobile-nav-item {
+      flex: 1 1 0%;
+      min-width: 0;
+      height: 100%;
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      gap: 3px;
+      gap: 4px;
       color: #6b7280;
-      font-size: 0.68rem;
-      font-weight: 500;
+      font-size: 0.7rem;
+      font-weight: 600;
+      letter-spacing: -0.01em;
+      white-space: nowrap;
       text-decoration: none;
       background: transparent;
       border: none;
-      padding: 6px 12px;
+      border-radius: 9999px;
+      padding: 6px 4px;
       cursor: pointer;
       position: relative;
-      transition: all 0.15s ease;
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 
-      &:hover {
-        color: #1e5e3a;
+      .nav-icon-solid {
+        display: none;
+      }
+
+      .nav-icon-outline {
+        display: block;
+      }
+
+      &:hover:not(.active) {
+        color: #111827;
+        background: rgba(241, 245, 249, 0.6);
       }
 
       &.active {
-        color: #1e5e3a;
-        font-weight: 700;
+        background: #f1f5f9;
+        color: #111827;
+        font-weight: 800;
 
-        svg {
-          stroke: #1e5e3a;
-          stroke-width: 2.3;
+        .nav-icon-outline {
+          display: none;
+        }
+
+        .nav-icon-solid {
+          display: block;
+          color: #111827;
         }
       }
     }
 
     .dgl-mobile-badge {
       position: absolute;
-      top: 3px;
-      right: 12px;
-      min-width: 15px;
-      height: 15px;
+      top: 4px;
+      right: calc(50% - 19px);
+      min-width: 16px;
+      height: 16px;
       border-radius: 9999px;
       background: #dc2626;
       color: #ffffff;
+      border: 1.5px solid #ffffff;
       font-size: 0.58rem;
-      font-weight: 700;
+      font-weight: 800;
       display: flex;
       align-items: center;
       justify-content: center;
-      padding: 0 3px;
+      padding: 0 3.5px;
     }
 
     .mobile-drawer-overlay {
@@ -333,8 +430,61 @@ import { environment } from '../../../environments/environment';
 export class MobileNavComponent {
   readonly stateService = inject(StateService);
   readonly authService = inject(AuthService);
+  private readonly router = inject(Router);
   readonly showMoreDrawer = signal<boolean>(false);
+  readonly currentUrl = signal<string>(this.router.url || '/dashboard');
   readonly environment = environment;
+
+  /**
+   * Subscribes to router navigation events to keep the active mobile tab synchronized.
+   */
+  constructor() {
+    try {
+      this.router.events
+        .pipe(filter((event): event is NavigationEnd => event instanceof NavigationEnd))
+        .subscribe((event: NavigationEnd) => {
+          this.currentUrl.set(event.urlAfterRedirects || event.url);
+        });
+    } catch {
+      return;
+    }
+  }
+
+  /**
+   * Determines whether a specific mobile bottom navigation tab is currently active.
+   */
+  isMobileTabActive(tab: 'home' | 'orders' | 'routes' | 'inventory'): boolean {
+    try {
+      if (this.showMoreDrawer()) {
+        return false;
+      }
+      const url: string = this.currentUrl() || this.router.url || '';
+      const path: string = url.split('?')[0] || '/dashboard';
+
+      if (tab === 'home') {
+        return path === '/dashboard' || path === '/';
+      }
+      if (tab === 'orders') {
+        return path === '/orders' && !url.includes('tab=despachos') && !url.includes('tab=facturacion');
+      }
+      if (tab === 'routes') {
+        return path === '/orders' && url.includes('tab=despachos');
+      }
+      if (tab === 'inventory') {
+        return (
+          (path === '/settings' &&
+            (url.includes('tab=inventory') ||
+              url.includes('tab=variants') ||
+              url.includes('tab=fruits') ||
+              url.includes('tab=cava'))) ||
+          path === '/kds-inventory'
+        );
+      }
+      return false;
+    } catch {
+      return false;
+    }
+  }
 
   /**
    * Computes the two-letter avatar initials of the currently authenticated user.

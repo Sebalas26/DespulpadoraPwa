@@ -4,7 +4,14 @@ import { FormsModule } from '@angular/forms';
 import { Router, ActivatedRoute } from '@angular/router';
 import { StateService } from '../../core/services/state.service';
 import { NotificationService } from '../../core/services/notification.service';
-import { FruitConfig, INITIAL_PROMOTIONS, DEFAULT_COMPANY_CONFIG, PromotionConfig } from '../../core/data/initial-data';
+import {
+  DEFAULT_CATEGORIES,
+  DEFAULT_COMPANY_CONFIG,
+  DEFAULT_GRAMMAGES,
+  FruitConfig,
+  INITIAL_PROMOTIONS,
+  PromotionConfig
+} from '../../core/data/initial-data';
 import {
   InventoryCategoryConfig,
   InventoryColumnConfig,
@@ -19,20 +26,6 @@ import { AdminUsersComponent } from '../admin/users/users.component';
 import { AdminRolesComponent } from '../admin/roles/roles.component';
 import { SystemCatalogComponent } from '../admin/system-catalog/system-catalog.component';
 import { CopCurrencyInputDirective } from '../../shared/directives/cop-currency-input.directive';
-
-const DEFAULT_CATEGORIES: InventoryCategoryConfig[] = [
-  { id: 'PULPAS', name: 'Pulpas Puras', icon: '', badgeClass: 'badge-warning', isActive: true },
-  { id: 'LIMONADAS', name: 'Bases Limonadas', icon: '', badgeClass: 'badge-info', isActive: true },
-  { id: 'BATIDOS', name: 'Batidos Funcionales', icon: '', badgeClass: 'badge-emerald', isActive: true },
-  { id: 'ESPECIAL', name: 'Especiales / Combos', icon: '', badgeClass: 'badge-purple', isActive: true }
-];
-
-const DEFAULT_GRAMMAGES: InventoryGrammageConfig[] = [
-  { key: 'g140', value: 140, label: '140g', isActive: true },
-  { key: 'g250', value: 250, label: '250g', isActive: true },
-  { key: 'g500', value: 500, label: '500g (1/2 Kg)', isActive: true },
-  { key: 'g1000', value: 1000, label: '1000g (1 Kg)', isActive: true }
-];
 
 const DEFAULT_COLUMNS: InventoryColumnConfig[] = [
   { key: 'product', label: 'Producto & SKU', description: 'Nombre comercial del producto y código SKU único', visible: true, locked: true },
@@ -107,8 +100,8 @@ export class SettingsComponent {
   readonly companyForm = signal<CompanyConfig>({ ...this.stateService.companyInfo() });
   readonly showInvoicePreviewModal = signal<boolean>(false);
 
-  readonly categoriesConfig = signal<InventoryCategoryConfig[]>(this.loadCategories());
-  readonly grammagesConfig = signal<InventoryGrammageConfig[]>(this.loadGrammages());
+  readonly categoriesConfig = this.stateService.categoriesConfig;
+  readonly grammagesConfig = this.stateService.grammagesConfig;
   readonly columnsConfig = signal<InventoryColumnConfig[]>(this.loadColumns());
   readonly pageSize = signal<number | 'all'>(this.loadPageSize());
 
@@ -186,21 +179,8 @@ export class SettingsComponent {
     }
   });
 
-  readonly activeCategories = computed<InventoryCategoryConfig[]>(() => {
-    try {
-      return this.categoriesConfig().filter(c => c.isActive);
-    } catch {
-      return [];
-    }
-  });
-
-  readonly activeGrammages = computed<InventoryGrammageConfig[]>(() => {
-    try {
-      return this.grammagesConfig().filter(g => g.isActive);
-    } catch {
-      return [];
-    }
-  });
+  readonly activeCategories = this.stateService.activeCategories;
+  readonly activeGrammages = this.stateService.activeGrammages;
 
   readonly categoryCounts = computed<Record<string, number>>(() => {
     try {
@@ -837,15 +817,7 @@ export class SettingsComponent {
    */
   toggleCategory(id: string): void {
     try {
-      this.categoriesConfig.update(cats =>
-        cats.map(c => {
-          if (c.id === id) {
-            return { ...c, isActive: !c.isActive };
-          }
-          return c;
-        })
-      );
-      this.saveCategories();
+      this.stateService.toggleCategory(id);
     } catch {
       return;
     }
@@ -856,15 +828,7 @@ export class SettingsComponent {
    */
   toggleGrammage(key: string): void {
     try {
-      this.grammagesConfig.update(grams =>
-        grams.map(g => {
-          if (g.key === key) {
-            return { ...g, isActive: !g.isActive };
-          }
-          return g;
-        })
-      );
-      this.saveGrammages();
+      this.stateService.toggleGrammage(key);
     } catch {
       return;
     }
@@ -983,8 +947,7 @@ export class SettingsComponent {
         isActive: true
       };
 
-      this.categoriesConfig.update(cats => [...cats, newCat]);
-      this.saveCategories();
+      this.stateService.addCategory(newCat);
       this.notification.success('Categoría Agregada', `La línea "${name}" ahora está disponible en el inventario.`);
 
       this.closeNewCategoryModal();
@@ -1010,11 +973,10 @@ export class SettingsComponent {
         cancelButtonText: 'Cancelar',
         isDanger: true,
         action: () => {
-          this.categoriesConfig.update(cats => cats.filter(c => c.id !== cat.id));
+          this.stateService.deleteCategory(cat.id);
           if (this.categoryFilter() === cat.id) {
             this.categoryFilter.set('ALL');
           }
-          this.saveCategories();
           this.notification.info('Categoría Eliminada', `Línea "${cat.name}" retirada.`);
         }
       });
@@ -1103,8 +1065,7 @@ export class SettingsComponent {
         isActive: true
       };
 
-      this.grammagesConfig.update(grams => [...grams, newGram]);
-      this.saveGrammages();
+      this.stateService.addGrammage(newGram);
       this.notification.success('Presentación Agregada', `Presentación de ${label} agregada exitosamente.`);
 
       this.closeNewGrammageModal();
@@ -1141,11 +1102,10 @@ export class SettingsComponent {
       const gram = this.grammagesConfig().find(g => g.key === key);
       if (!gram) return;
 
-      this.grammagesConfig.update(grams => grams.filter(g => g.key !== key));
+      this.stateService.deleteGrammage(key);
       if (this.grammageFilter() === gram.value) {
         this.grammageFilter.set('ALL');
       }
-      this.saveGrammages();
       this.notification.info('Gramaje Eliminado', `Gramaje de ${gram.label} eliminado.`);
     } catch {
       return;

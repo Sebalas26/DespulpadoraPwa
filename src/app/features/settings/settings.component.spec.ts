@@ -1,15 +1,17 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { ActivatedRoute, Router } from '@angular/router';
-import { signal } from '@angular/core';
+import { computed, signal } from '@angular/core';
 import { of } from 'rxjs';
 import { SettingsComponent } from './settings.component';
 import { StateService } from '../../core/services/state.service';
 import { AuthService } from '../../core/services/auth.service';
 import { NotificationService } from '../../core/services/notification.service';
 import { ApiService } from '../../core/services/api.service';
-import { DEFAULT_COMPANY_CONFIG, FruitConfig } from '../../core/data/initial-data';
+import { DEFAULT_CATEGORIES, DEFAULT_COMPANY_CONFIG, DEFAULT_GRAMMAGES, FruitConfig } from '../../core/data/initial-data';
 import {
   CompanyConfig,
+  InventoryCategoryConfig,
+  InventoryGrammageConfig,
   PaymentMethodDto,
   ProductVariantDto
 } from '../../core/models/business.models';
@@ -89,12 +91,25 @@ describe('SettingsComponent', () => {
     deletePaymentMethodSpy = jasmine.createSpy('deletePaymentMethod');
     deleteVariantSpy = jasmine.createSpy('deleteProductVariant');
 
+    const mockCategoriesConfig = signal<InventoryCategoryConfig[]>([...DEFAULT_CATEGORIES]);
+    const mockGrammagesConfig = signal<InventoryGrammageConfig[]>([...DEFAULT_GRAMMAGES]);
+
     const stateServiceMock: Partial<StateService> = {
       companyInfo: mockCompany,
       fruits: mockFruits,
       productVariants: mockVariants,
       paymentMethods: mockPaymentMethods,
       activePaymentMethods: mockPaymentMethods,
+      categoriesConfig: mockCategoriesConfig,
+      grammagesConfig: mockGrammagesConfig,
+      activeCategories: computed(() => mockCategoriesConfig().filter(c => c.isActive)),
+      activeGrammages: computed(() => mockGrammagesConfig().filter(g => g.isActive)),
+      addCategory: (cat: InventoryCategoryConfig) => mockCategoriesConfig.update(c => [...c, cat]),
+      deleteCategory: (id: string) => mockCategoriesConfig.update(c => c.filter(x => x.id !== id)),
+      toggleCategory: (id: string) => mockCategoriesConfig.update(c => c.map(x => x.id === id ? { ...x, isActive: !x.isActive } : x)),
+      addGrammage: (gram: InventoryGrammageConfig) => mockGrammagesConfig.update(g => [...g, gram]),
+      deleteGrammage: (key: string) => mockGrammagesConfig.update(g => g.filter(x => x.key !== key)),
+      toggleGrammage: (key: string) => mockGrammagesConfig.update(g => g.map(x => x.key === key ? { ...x, isActive: !x.isActive } : x)),
       totalFreshStockKg: signal<number>(100) as unknown as StateService['totalFreshStockKg'],
       addProductVariant: addVariantSpy,
       updateProductVariant: jasmine.createSpy('updateProductVariant'),
@@ -311,5 +326,25 @@ describe('SettingsComponent', () => {
 
     component.onConfirmDialog();
     expect(component.categoriesConfig().some(c => c.id === 'PULPAS')).toBeFalse();
+  });
+
+  it('should render modern segmented inventory sub-navigation buttons with SVG icons and badges and switch tabs', () => {
+    component.activeTab.set('inventory');
+    component.inventorySubTab.set('fruits');
+    fixture.detectChanges();
+
+    const compiled: HTMLElement = fixture.nativeElement as HTMLElement;
+    const navButtons: NodeListOf<HTMLButtonElement> = compiled.querySelectorAll('.dgl-subnav-bar .dgl-subnav-btn');
+    expect(navButtons.length).toBe(2);
+    expect(navButtons[0].classList.contains('active')).toBeTrue();
+    expect(navButtons[0].querySelector('svg')).not.toBeNull();
+    expect(navButtons[0].querySelector('.dgl-subnav-badge')?.textContent).toContain('Kg');
+    expect(navButtons[1].querySelector('svg')).not.toBeNull();
+    expect(navButtons[1].querySelector('.dgl-subnav-badge')?.textContent).toContain('uds');
+
+    navButtons[1].click();
+    fixture.detectChanges();
+    expect(component.inventorySubTab()).toBe('variants');
+    expect(navButtons[1].classList.contains('active')).toBeTrue();
   });
 });

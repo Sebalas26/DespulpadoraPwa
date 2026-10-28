@@ -5,6 +5,8 @@ import {
   EmployeeDto,
   ExpenseDto,
   FruitConfig,
+  InventoryCategoryConfig,
+  InventoryGrammageConfig,
   OrderDto,
   PaymentMethodDto,
   PayrollPeriodDto,
@@ -16,7 +18,7 @@ import {
   WorkShiftDto
 } from '../models/business.models';
 
-export type { FruitConfig, PromotionConfig, PortalCmsConfig };
+export type { FruitConfig, PromotionConfig, PortalCmsConfig, InventoryCategoryConfig, InventoryGrammageConfig };
 
 /**
  * Alias for production batch record.
@@ -134,3 +136,24 @@ export const DEFAULT_PORTAL_CMS_CONFIG: PortalCmsConfig = {
   chip3Text: '',
   whatsappPhone: ''
 };
+
+/**
+ * Default product categories configuration for inventory and catalog.
+ */
+export const DEFAULT_CATEGORIES: InventoryCategoryConfig[] = [
+  { id: 'PULPAS', name: 'Pulpas Puras', icon: '', badgeClass: 'badge-warning', isActive: true },
+  { id: 'LIMONADAS', name: 'Bases Limonadas', icon: '', badgeClass: 'badge-info', isActive: true },
+  { id: 'BATIDOS', name: 'Batidos Funcionales', icon: '', badgeClass: 'badge-emerald', isActive: true },
+  { id: 'ESPECIAL', name: 'Especiales / Combos', icon: '', badgeClass: 'badge-purple', isActive: true }
+];
+
+/**
+ * Default product grammages and presentation sizes for inventory, catalog, and store.
+ */
+export const DEFAULT_GRAMMAGES: InventoryGrammageConfig[] = [
+  { key: 'g140', value: 140, label: '140g', isActive: true },
+  { key: 'g250', value: 250, label: '250g', isActive: true },
+  { key: 'g500', value: 500, label: '500g (1/2 Kg)', isActive: true },
+  { key: 'g1000', value: 1000, label: '1000g (1 Kg)', isActive: true }
+];
+

@@ -285,25 +285,25 @@
 /* Category & Grammage Grid */
 .param-list-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 16px;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 12px;
 }
 
 .param-card {
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  min-height: 140px;
-  padding: 16px;
-  border-radius: var(--radius-lg, 14px);
+  min-height: auto;
+  padding: 12px 14px;
+  border-radius: var(--radius-md, 12px);
   border: 1px solid var(--border-subtle);
   background: var(--surface-card, #ffffff);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.03);
   transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 
   &:hover {
     transform: translateY(-2px);
-    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.08);
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.06);
     border-color: var(--border-highlight);
   }
 
@@ -316,9 +316,9 @@
 
 .param-card-top {
   display: flex;
-  align-items: flex-start;
-  gap: 12px;
-  margin-bottom: 14px;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
 }
 
 .param-card-header-info {
@@ -328,23 +328,29 @@
 
 .param-card-title {
   font-weight: 700;
-  font-size: 1rem;
+  font-size: 0.92rem;
   color: var(--text-main);
-  margin-bottom: 4px;
+  margin-bottom: 2px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  line-height: 1.25;
 }
 
 .param-card-meta {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   flex-wrap: wrap;
+
+  .code-badge {
+    font-size: 0.65rem;
+    padding: 1px 5px;
+  }
 }
 
 .param-meta-sub {
-  font-size: 0.74rem;
+  font-size: 0.72rem;
   color: var(--text-dim);
   font-weight: 600;
 }
@@ -353,17 +359,44 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding-top: 12px;
+  padding-top: 8px;
   border-top: 1px solid var(--border-subtle);
+  margin-top: auto;
+
+  .btn-icon {
+    width: 28px;
+    height: 28px;
+    padding: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 6px;
+  }
 }
 
 .param-status-toggle {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
+
+  .custom-switch {
+    width: 36px;
+    height: 20px;
+
+    .slider:before {
+      height: 14px;
+      width: 14px;
+      left: 3px;
+      bottom: 3px;
+    }
+
+    input:checked + .slider:before {
+      transform: translateX(16px);
+    }
+  }
 
   .status-text {
-    font-size: 0.8rem;
+    font-size: 0.75rem;
     font-weight: 600;
     color: var(--text-dim);
 
@@ -374,13 +407,13 @@
 }
 
 .param-icon-badge {
-  width: 42px;
-  height: 42px;
+  width: 34px;
+  height: 34px;
   flex-shrink: 0;
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 12px;
+  border-radius: 9px;
   background: rgba(37, 99, 235, 0.08);
   color: #2563eb;
 
@@ -1502,25 +1535,25 @@
    ======================================================== */
 .parameter-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  gap: 16px;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 12px;
 }
 
 .pm-card {
   background: var(--bg-card);
   border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-md);
-  padding: 16px 18px;
+  border-radius: var(--radius-md, 12px);
+  padding: 12px 14px;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
   transition: all 0.2s ease;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.03);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.03);
 
   &:hover {
     transform: translateY(-2px);
     border-color: rgba(30, 94, 58, 0.4);
-    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.06);
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.06);
   }
 
   &.inactive {
@@ -1537,15 +1570,40 @@
 
 .pm-card-top {
   display: flex;
-  gap: 14px;
-  align-items: flex-start;
-  margin-bottom: 12px;
+  gap: 10px;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.pm-header-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.pm-badges-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-bottom: 3px;
+
+  .badge {
+    font-size: 0.64rem;
+    padding: 2px 6px;
+    line-height: 1.2;
+    border-radius: 999px;
+  }
+
+  .code-badge {
+    font-size: 0.64rem;
+    padding: 1px 5px;
+  }
 }
 
 .pm-type-icon {
-  width: 44px;
-  height: 44px;
-  border-radius: 12px;
+  width: 34px;
+  height: 34px;
+  border-radius: 9px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1578,10 +1636,10 @@
 }
 
 .pm-name {
-  font-size: 1.02rem;
+  font-size: 0.92rem;
   font-weight: 700;
   color: var(--text-main);
-  margin: 6px 0 0 0;
+  margin: 0;
   line-height: 1.25;
   white-space: nowrap;
   overflow: hidden;
@@ -1590,22 +1648,21 @@
 
 .code-badge {
   font-family: monospace;
-  font-size: 0.68rem;
+  font-size: 0.65rem;
   font-weight: 700;
   background: rgba(0, 0, 0, 0.04);
   color: var(--text-muted);
-  padding: 2px 6px;
+  padding: 1px 5px;
   border-radius: 4px;
   border: 1px solid var(--border-subtle);
   letter-spacing: 0.03em;
 }
 
 .pm-desc {
-  font-size: 0.82rem;
+  font-size: 0.74rem;
   color: var(--text-muted);
-  margin: 0 0 16px 0;
-  line-height: 1.4;
-  min-height: 2.3em;
+  margin: 4px 0 10px 0;
+  line-height: 1.35;
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
@@ -1614,6 +1671,7 @@
   &.muted {
     color: var(--text-dim);
     font-style: italic;
+    opacity: 0.8;
   }
 }
 
@@ -1621,18 +1679,45 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding-top: 12px;
+  padding-top: 8px;
   border-top: 1px solid var(--border-subtle);
+  margin-top: auto;
+
+  .btn-icon {
+    width: 28px;
+    height: 28px;
+    padding: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 6px;
+  }
 }
 
 .pm-status-toggle {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
+
+  .custom-switch {
+    width: 36px;
+    height: 20px;
+
+    .slider:before {
+      height: 14px;
+      width: 14px;
+      left: 3px;
+      bottom: 3px;
+    }
+
+    input:checked + .slider:before {
+      transform: translateX(16px);
+    }
+  }
 }
 
 .status-text {
-  font-size: 0.78rem;
+  font-size: 0.75rem;
   font-weight: 600;
   color: var(--text-dim);
   transition: color 0.15s ease;

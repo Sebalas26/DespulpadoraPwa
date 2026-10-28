@@ -58,7 +58,7 @@ describe('ClientPortalAdminComponent', () => {
     expect(component.showCardModal()).toBeTrue();
     expect(component.isCreatingNewCard()).toBeTrue();
     expect(component.activeDraft()?.name).toBe('');
-    expect(component.activeDraft()?.prices.g140).toBe(0);
+    expect(component.activeDraft()?.prices['g140']).toBe(0);
 
     component.saveModalCard();
     expect(warnSpy).toHaveBeenCalled();
@@ -112,5 +112,47 @@ describe('ClientPortalAdminComponent', () => {
     const navSpy = spyOn(router, 'navigate').and.returnValue(Promise.resolve(true));
     component.openLivePortal();
     expect(navSpy).toHaveBeenCalledWith(['/portal-clientes']);
+  });
+
+  it('should not render floating brand or preview seal over product image in modal preview and catalog cards', () => {
+    stateService.createFruitCatalogCard({
+      name: 'Pina Especial',
+      scientificName: 'Ananas comosus',
+      description: 'Pulpa de pina',
+      category: 'PULPAS',
+      color: '#eab308',
+      prices: { g140: 2000, g250: 3500, g500: 6500, g1000: 12000 }
+    });
+
+    component.openNewCardModal();
+    fixture.detectChanges();
+
+    const compiled = fixture.nativeElement as HTMLElement;
+    expect(compiled.querySelector('.preview-seal')).toBeNull();
+    expect(compiled.querySelector('.brand-seal')).toBeNull();
+  });
+
+  it('should synchronize active grammages when deleted or deactivated in stateService and keep modal header isolated from scroll', () => {
+    expect(component.activeGrammages().some(g => g.key === 'g500')).toBeTrue();
+    expect(component.activeGrammages().some(g => g.key === 'g1000')).toBeTrue();
+
+    stateService.deleteGrammage('g500');
+    stateService.toggleGrammage('g1000');
+    fixture.detectChanges();
+
+    expect(component.activeGrammages().some(g => g.key === 'g500')).toBeFalse();
+    expect(component.activeGrammages().some(g => g.key === 'g1000')).toBeFalse();
+
+    component.openNewCardModal();
+    fixture.detectChanges();
+
+    const compiled = fixture.nativeElement as HTMLElement;
+    const priceLabels = compiled.querySelectorAll('.modal-prices-grid .form-group label');
+    expect(priceLabels.length).toBe(2);
+    expect(priceLabels[0].textContent).toContain('140g');
+    expect(priceLabels[1].textContent).toContain('250g');
+
+    const modal = compiled.querySelector('.card-edit-modal') as HTMLElement;
+    expect(modal).toBeTruthy();
   });
 });

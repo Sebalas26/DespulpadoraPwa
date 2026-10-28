@@ -19,7 +19,7 @@ import confetti from 'canvas-confetti';
 export interface CartItem {
   fruitId: number;
   fruitName: string;
-  grammage: 140 | 250 | 500 | 1000;
+  grammage: number;
   quantity: number;
   unitPrice: number;
   color?: string;
@@ -161,10 +161,6 @@ export interface CartItem {
                   />
                   <div class="media-overlay-gradient"></div>
 
-                                    <div class="brand-sticker-stamp" title="Marca Certificada DGL">
-                    <img src="/logo-dgl.png" alt="DGL" />
-                  </div>
-
                   <span class="media-category-badge" [style.background]="fruit.color || '#1e5e3a'">
                     {{ fruit.category || '' }}
                   </span>
@@ -189,38 +185,16 @@ export interface CartItem {
                                     <div class="grammage-selector-box">
                     <span class="grammage-box-lbl">Selecciona la Presentación:</span>
                     <div class="grammage-pills-row">
-                      <button
-                        type="button"
-                        class="gram-btn"
-                        [class.active]="getSelectedGrammage(fruit.id) === 140"
-                        (click)="setSelectedGrammage(fruit.id, 140)"
-                      >
-                        140g
-                      </button>
-                      <button
-                        type="button"
-                        class="gram-btn"
-                        [class.active]="getSelectedGrammage(fruit.id) === 250"
-                        (click)="setSelectedGrammage(fruit.id, 250)"
-                      >
-                        250g
-                      </button>
-                      <button
-                        type="button"
-                        class="gram-btn"
-                        [class.active]="getSelectedGrammage(fruit.id) === 500"
-                        (click)="setSelectedGrammage(fruit.id, 500)"
-                      >
-                        500g
-                      </button>
-                      <button
-                        type="button"
-                        class="gram-btn"
-                        [class.active]="getSelectedGrammage(fruit.id) === 1000"
-                        (click)="setSelectedGrammage(fruit.id, 1000)"
-                      >
-                        1 Kg
-                      </button>
+                      @for (g of activeGrammages(); track g.key) {
+                        <button
+                          type="button"
+                          class="gram-btn"
+                          [class.active]="getSelectedGrammage(fruit.id) === g.value"
+                          (click)="setSelectedGrammage(fruit.id, g.value)"
+                        >
+                          {{ g.label }}
+                        </button>
+                      }
                     </div>
                   </div>
 
@@ -1052,30 +1026,6 @@ export interface CartItem {
         pointer-events: none;
       }
 
-      .brand-sticker-stamp {
-        position: absolute;
-        top: 10px;
-        right: 10px;
-        width: 44px;
-        height: 44px;
-        background: rgba(255, 255, 255, 0.95);
-        backdrop-filter: blur(4px);
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        padding: 5px;
-        box-shadow: 0 3px 10px rgba(0, 0, 0, 0.16), 0 0 0 2px rgba(255, 255, 255, 0.92);
-        z-index: 3;
-        transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-
-        img {
-          width: 100%;
-          height: 100%;
-          object-fit: contain;
-        }
-      }
-
       .media-category-badge {
         position: absolute;
         top: 12px;
@@ -1109,9 +1059,6 @@ export interface CartItem {
     .product-card:hover {
       .fruit-main-img {
         transform: scale(1.06);
-      }
-      .brand-sticker-stamp {
-        transform: scale(1.1) rotate(5deg);
       }
     }
 
@@ -1862,7 +1809,8 @@ export class ClientPortalComponent implements OnInit {
   private readonly router = inject(Router);
 
   readonly cart = signal<CartItem[]>([]);
-  readonly selectedGrammages = signal<Record<string, 140 | 250 | 500 | 1000>>({});
+  readonly selectedGrammages = signal<Record<string, number>>({});
+  readonly activeGrammages = this.stateService.activeGrammages;
 
   readonly searchQuery = signal<string>('');
   readonly selectedCategory = signal<string>('ALL');
@@ -2025,30 +1973,34 @@ export class ClientPortalComponent implements OnInit {
   /**
    * Returns the currently selected grammage presentation for a fruit card.
    */
-  getSelectedGrammage(fruitId: string | number): 140 | 250 | 500 | 1000 {
+  getSelectedGrammage(fruitId: string | number): number {
     try {
-      return this.selectedGrammages()[String(fruitId)] || 500;
-    } catch (error: unknown) {
-      console.error('Error getting selected grammage:', error);
-      return 500;
+      const active = this.activeGrammages();
+      const current = this.selectedGrammages()[String(fruitId)];
+      if (current && active.some(g => g.value === current)) {
+        return current;
+      }
+      return active.length > 0 ? active[0].value : 140;
+    } catch {
+      return 140;
     }
   }
 
   /**
    * Updates the selected grammage presentation for a fruit card.
    */
-  setSelectedGrammage(fruitId: string | number, grammage: 140 | 250 | 500 | 1000): void {
+  setSelectedGrammage(fruitId: string | number, grammage: number): void {
     try {
       this.selectedGrammages.update(map => ({ ...map, [String(fruitId)]: grammage }));
-    } catch (error: unknown) {
-      console.error('Error setting selected grammage:', error);
+    } catch {
+      return;
     }
   }
 
   /**
    * Resolves the unit price for a fruit and grammage from configured product variants or fruit prices.
    */
-  getPrice(fruit: FruitConfig, grammage: 140 | 250 | 500 | 1000): number {
+  getPrice(fruit: FruitConfig, grammage: number): number {
     try {
       const variant = this.stateService.productVariants().find(
         (v: ProductVariantDto) => v.fruitId === (fruit.fruitId || fruit.id) && v.grammage === grammage
@@ -2069,8 +2021,7 @@ export class ClientPortalComponent implements OnInit {
       }
 
       return 0;
-    } catch (error: unknown) {
-      console.error('Error resolving fruit price in portal:', error);
+    } catch {
       return 0;
     }
   }
@@ -2078,12 +2029,11 @@ export class ClientPortalComponent implements OnInit {
   /**
    * Returns the quantity of a specific fruit and grammage currently in the cart.
    */
-  getItemQuantity(fruitId: number, grammage: 140 | 250 | 500 | 1000): number {
+  getItemQuantity(fruitId: number, grammage: number): number {
     try {
       const item = this.cart().find((i: CartItem) => i.fruitId === fruitId && i.grammage === grammage);
       return item ? item.quantity : 0;
-    } catch (error: unknown) {
-      console.error('Error getting item quantity in cart:', error);
+    } catch {
       return 0;
     }
   }
@@ -2096,8 +2046,7 @@ export class ClientPortalComponent implements OnInit {
       return this.cart()
         .filter((i: CartItem) => i.fruitId === fruitId)
         .reduce((sum: number, i: CartItem) => sum + i.quantity, 0);
-    } catch (error: unknown) {
-      console.error('Error getting total fruit quantity in cart:', error);
+    } catch {
       return 0;
     }
   }
@@ -2105,7 +2054,7 @@ export class ClientPortalComponent implements OnInit {
   /**
    * Adds, increments, or removes a fruit presentation in the shopping cart.
    */
-  updateItemQuantity(fruit: FruitConfig, grammage: 140 | 250 | 500 | 1000, delta: number): void {
+  updateItemQuantity(fruit: FruitConfig, grammage: number, delta: number): void {
     try {
       const fId = Number(fruit.fruitId || fruit.id);
       const unitPrice = this.getPrice(fruit, grammage);
@@ -2134,15 +2083,15 @@ export class ClientPortalComponent implements OnInit {
         }
         return current;
       });
-    } catch (error: unknown) {
-      console.error('Error updating item quantity in cart:', error);
+    } catch {
+      return;
     }
   }
 
   /**
    * Updates the quantity of an existing cart item by fruit ID and grammage.
    */
-  updateQuantityById(fruitId: number, grammage: 140 | 250 | 500 | 1000, delta: number): void {
+  updateQuantityById(fruitId: number, grammage: number, delta: number): void {
     try {
       this.cart.update((current: CartItem[]) => {
         const idx = current.findIndex((i: CartItem) => i.fruitId === fruitId && i.grammage === grammage);
@@ -2156,21 +2105,21 @@ export class ClientPortalComponent implements OnInit {
         }
         return current;
       });
-    } catch (error: unknown) {
-      console.error('Error updating cart quantity by ID:', error);
+    } catch {
+      return;
     }
   }
 
   /**
    * Removes an item from the shopping cart by fruit ID and grammage.
    */
-  removeItem(fruitId: number, grammage: 140 | 250 | 500 | 1000): void {
+  removeItem(fruitId: number, grammage: number): void {
     try {
       this.cart.update((current: CartItem[]) =>
         current.filter((i: CartItem) => !(i.fruitId === fruitId && i.grammage === grammage))
       );
-    } catch (error: unknown) {
-      console.error('Error removing item from cart:', error);
+    } catch {
+      return;
     }
   }
 

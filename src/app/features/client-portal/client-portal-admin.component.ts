@@ -20,12 +20,7 @@ export interface EditableCardDraft {
   color: string;
   imageUrl: string;
   isVisibleInPortal: boolean;
-  prices: {
-    g140: number;
-    g250: number;
-    g500: number;
-    g1000: number;
-  };
+  prices: Record<string, number>;
 }
 
 /**
@@ -216,10 +211,6 @@ export interface EditableCardDraft {
               />
               <div class="card-media-overlay"></div>
 
-              <div class="brand-seal">
-                <img [src]="stateService.companyInfo().logoUrl || '/logo-dgl.png'" [alt]="stateService.companyInfo().companyName" />
-              </div>
-
               <span class="category-floating-badge" [style.background]="fruit.color || '#1e5e3a'">
                 {{ fruit.category }}
               </span>
@@ -335,61 +326,21 @@ export interface EditableCardDraft {
                   <span>PRECIOS POR PRESENTACIÓN (COP)</span>
                 </div>
                 <div class="prices-grid-4">
-                  <div class="price-input-cell">
-                    <span class="gram-tag">140g</span>
-                    <div class="cop-input-wrap">
-                      <span class="cop-sign">$</span>
-                      <input
-                        type="text"
-                        appCopInput
-                        [appCopPrefix]="false"
-                        [ngModel]="fruit.prices.g140"
-                        (ngModelChange)="updateInlinePrice(fruit, 'g140', $event)"
-                      />
+                  @for (g of activeGrammages(); track g.key) {
+                    <div class="price-input-cell">
+                      <span class="gram-tag">{{ g.label }}</span>
+                      <div class="cop-input-wrap">
+                        <span class="cop-sign">$</span>
+                        <input
+                          type="text"
+                          appCopInput
+                          [appCopPrefix]="false"
+                          [ngModel]="fruit.prices[g.key] || 0"
+                          (ngModelChange)="updateInlinePrice(fruit, g.key, $event)"
+                        />
+                      </div>
                     </div>
-                  </div>
-
-                  <div class="price-input-cell">
-                    <span class="gram-tag">250g</span>
-                    <div class="cop-input-wrap">
-                      <span class="cop-sign">$</span>
-                      <input
-                        type="text"
-                        appCopInput
-                        [appCopPrefix]="false"
-                        [ngModel]="fruit.prices.g250"
-                        (ngModelChange)="updateInlinePrice(fruit, 'g250', $event)"
-                      />
-                    </div>
-                  </div>
-
-                  <div class="price-input-cell">
-                    <span class="gram-tag">500g</span>
-                    <div class="cop-input-wrap">
-                      <span class="cop-sign">$</span>
-                      <input
-                        type="text"
-                        appCopInput
-                        [appCopPrefix]="false"
-                        [ngModel]="fruit.prices.g500"
-                        (ngModelChange)="updateInlinePrice(fruit, 'g500', $event)"
-                      />
-                    </div>
-                  </div>
-
-                  <div class="price-input-cell">
-                    <span class="gram-tag">1 Kg</span>
-                    <div class="cop-input-wrap">
-                      <span class="cop-sign">$</span>
-                      <input
-                        type="text"
-                        appCopInput
-                        [appCopPrefix]="false"
-                        [ngModel]="fruit.prices.g1000"
-                        (ngModelChange)="updateInlinePrice(fruit, 'g1000', $event)"
-                      />
-                    </div>
-                  </div>
+                  }
                 </div>
               </div>
 
@@ -429,9 +380,6 @@ export interface EditableCardDraft {
                   <div class="preview-media">
                     <img [src]="activeDraft()!.imageUrl" [alt]="activeDraft()!.name" />
                     <div class="preview-gradient"></div>
-                    <div class="preview-seal">
-                      <img [src]="stateService.companyInfo().logoUrl || '/logo-dgl.png'" [alt]="stateService.companyInfo().companyName" />
-                    </div>
                     <span class="preview-badge" [style.background]="activeDraft()!.color || '#1e5e3a'">
                       {{ activeDraft()!.category }}
                     </span>
@@ -443,10 +391,9 @@ export interface EditableCardDraft {
                     <p class="preview-desc">{{ activeDraft()!.description }}</p>
 
                     <div class="preview-prices-strip">
-                      <div><small>140g</small><strong>{{ formatCOP(activeDraft()!.prices.g140) }}</strong></div>
-                      <div><small>250g</small><strong>{{ formatCOP(activeDraft()!.prices.g250) }}</strong></div>
-                      <div><small>500g</small><strong>{{ formatCOP(activeDraft()!.prices.g500) }}</strong></div>
-                      <div><small>1 Kg</small><strong>{{ formatCOP(activeDraft()!.prices.g1000) }}</strong></div>
+                      @for (g of activeGrammages(); track g.key) {
+                        <div><small>{{ g.label }}</small><strong>{{ formatCOP(activeDraft()!.prices[g.key] || 0) }}</strong></div>
+                      }
                     </div>
                   </div>
                 </div>
@@ -517,22 +464,12 @@ export interface EditableCardDraft {
                 <div class="modal-prices-section">
                   <label class="section-lbl">Precios de Venta en el Portal Clientes (COP)</label>
                   <div class="modal-prices-grid">
-                    <div class="form-group">
-                      <label>Bolsa 140g</label>
-                      <input type="text" appCopInput [(ngModel)]="activeDraft()!.prices.g140" />
-                    </div>
-                    <div class="form-group">
-                      <label>Bolsa 250g</label>
-                      <input type="text" appCopInput [(ngModel)]="activeDraft()!.prices.g250" />
-                    </div>
-                    <div class="form-group">
-                      <label>Bolsa 500g</label>
-                      <input type="text" appCopInput [(ngModel)]="activeDraft()!.prices.g500" />
-                    </div>
-                    <div class="form-group">
-                      <label>Bolsa 1000g (1 Kg)</label>
-                      <input type="text" appCopInput [(ngModel)]="activeDraft()!.prices.g1000" />
-                    </div>
+                    @for (g of activeGrammages(); track g.key) {
+                      <div class="form-group">
+                        <label>Bolsa {{ g.label }}</label>
+                        <input type="text" appCopInput [(ngModel)]="activeDraft()!.prices[g.key]" />
+                      </div>
+                    }
                   </div>
                 </div>
 
@@ -911,24 +848,6 @@ export interface EditableCardDraft {
         background: linear-gradient(180deg, rgba(0, 0, 0, 0.15) 0%, rgba(0, 0, 0, 0.05) 45%, rgba(0, 0, 0, 0.65) 100%);
       }
 
-      .brand-seal {
-        position: absolute;
-        top: 10px;
-        right: 10px;
-        width: 42px;
-        height: 42px;
-        background: rgba(255, 255, 255, 0.95);
-        border-radius: 50%;
-        padding: 5px;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
-
-        img {
-          width: 100%;
-          height: 100%;
-          object-fit: contain;
-        }
-      }
-
       .category-floating-badge {
         position: absolute;
         top: 12px;
@@ -1206,8 +1125,8 @@ export interface EditableCardDraft {
       border-radius: 20px;
       width: 100%;
       max-width: 860px;
-      max-height: 92vh;
-      overflow-y: auto;
+      max-height: 90vh;
+      overflow: hidden;
       box-shadow: 0 20px 50px rgba(0, 0, 0, 0.25);
       display: flex;
       flex-direction: column;
@@ -1219,6 +1138,7 @@ export interface EditableCardDraft {
       justify-content: space-between;
       padding: 18px 24px;
       border-bottom: 1px solid #e2e8f0;
+      flex-shrink: 0;
 
       .modal-kicker {
         font-size: 0.68rem;
@@ -1251,6 +1171,18 @@ export interface EditableCardDraft {
       grid-template-columns: 310px 1fr;
       gap: 24px;
       padding: 22px 24px;
+      overflow-y: auto;
+      flex: 1;
+      min-height: 0;
+
+      &::-webkit-scrollbar {
+        width: 6px;
+      }
+
+      &::-webkit-scrollbar-thumb {
+        background: #cbd5e1;
+        border-radius: 4px;
+      }
 
       @media (max-width: 768px) {
         grid-template-columns: 1fr;
@@ -1292,17 +1224,6 @@ export interface EditableCardDraft {
           position: absolute;
           inset: 0;
           background: linear-gradient(180deg, rgba(0,0,0,0.1) 0%, rgba(0,0,0,0.45) 100%);
-        }
-
-        .preview-seal {
-          position: absolute;
-          top: 8px;
-          right: 8px;
-          width: 36px;
-          height: 36px;
-          background: #ffffff;
-          border-radius: 50%;
-          padding: 4px;
         }
 
         .preview-badge {
@@ -1494,6 +1415,8 @@ export interface EditableCardDraft {
       justify-content: space-between;
       padding: 16px 24px;
       border-top: 1px solid #e2e8f0;
+      flex-shrink: 0;
+      background: #ffffff;
       background: #f8fafc;
 
       .footer-right {
@@ -1555,6 +1478,7 @@ export class ClientPortalAdminComponent {
 
   private quickPhotoTargetFruit: FruitConfig | null = null;
 
+  readonly activeGrammages = this.stateService.activeGrammages;
   readonly showCardModal = signal<boolean>(false);
   readonly isCreatingNewCard = signal<boolean>(false);
   readonly activeDraft = signal<EditableCardDraft | null>(null);
@@ -1679,7 +1603,7 @@ export class ClientPortalAdminComponent {
    */
   updateInlinePrice(
     fruit: FruitConfig,
-    gramKey: 'g140' | 'g250' | 'g500' | 'g1000',
+    gramKey: string,
     value: number
   ): void {
     try {
@@ -1843,6 +1767,11 @@ export class ClientPortalAdminComponent {
   openEditCardModal(fruit: FruitConfig): void {
     try {
       this.isCreatingNewCard.set(false);
+      const initialPrices: Record<string, number> = {};
+      for (const g of this.stateService.activeGrammages()) {
+        initialPrices[g.key] = Number(fruit.prices[g.key]) || 0;
+      }
+
       this.activeDraft.set({
         id: fruit.id,
         fruitId: fruit.fruitId,
@@ -1853,7 +1782,7 @@ export class ClientPortalAdminComponent {
         color: fruit.color || '#1e5e3a',
         imageUrl: fruit.imageUrl || `/fruits/${fruit.id}.jpg`,
         isVisibleInPortal: fruit.isVisibleInPortal !== false,
-        prices: { ...fruit.prices }
+        prices: initialPrices
       });
       this.showCardModal.set(true);
     } catch {
@@ -1867,21 +1796,20 @@ export class ClientPortalAdminComponent {
   openNewCardModal(): void {
     try {
       this.isCreatingNewCard.set(true);
+      const initialPrices: Record<string, number> = {};
+      for (const g of this.activeGrammages()) {
+        initialPrices[g.key] = 0;
+      }
       this.activeDraft.set({
         id: '',
         name: '',
         scientificName: '',
         description: '',
-        category: '',
+        category: this.stateService.activeCategories()[0]?.name || '',
         color: '#1e5e3a',
         imageUrl: '',
         isVisibleInPortal: true,
-        prices: {
-          g140: 0,
-          g250: 0,
-          g500: 0,
-          g1000: 0
-        }
+        prices: initialPrices
       });
       this.showCardModal.set(true);
     } catch {
@@ -1935,7 +1863,13 @@ export class ClientPortalAdminComponent {
           color: draft.color,
           imageUrl: draft.imageUrl,
           isVisibleInPortal: draft.isVisibleInPortal,
-          prices: { ...draft.prices }
+          prices: {
+            g140: Number(draft.prices['g140']) || 0,
+            g250: Number(draft.prices['g250']) || 0,
+            g500: Number(draft.prices['g500']) || 0,
+            g1000: Number(draft.prices['g1000']) || 0,
+            ...draft.prices
+          }
         });
       }
 

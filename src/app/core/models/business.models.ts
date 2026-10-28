@@ -22,9 +22,24 @@ export interface FruitConfig {
     g250: number;
     g500: number;
     g1000: number;
+    [key: string]: number | undefined;
   };
-  minStock: { g100?: number; g140: number; g250: number; g500: number; g1000: number };
-  prices: { g100?: number; g140: number; g250: number; g500: number; g1000: number };
+  minStock: {
+    g100?: number;
+    g140: number;
+    g250: number;
+    g500: number;
+    g1000: number;
+    [key: string]: number | undefined;
+  };
+  prices: {
+    g100?: number;
+    g140: number;
+    g250: number;
+    g500: number;
+    g1000: number;
+    [key: string]: number | undefined;
+  };
   costPerKg?: number;
   category: 'PULPAS' | 'CONSERVAS' | 'MERMELADAS' | 'INFUSIONES' | string;
 }
@@ -273,7 +288,7 @@ export interface OrderItemDto {
   orderItemId?: number;
   fruitId: number;
   fruitName?: string;
-  grammage: 140 | 250 | 500 | 1000;
+  grammage: number;
   presentationGrams?: number;
   quantity: number;
   unitPrice: number;

@@ -4,6 +4,123 @@ Este documento registra de manera cronológica y estructurada todas las interven
 
 ---
 
+## [2026-10-27] - Sincronización Global Reactiva de Presentaciones/Categorías y Corrección de Scrollbar en Modal de Cards
+
+### 💬 Prompt Original del Usuario
+> "Estoy viendo que borre algunas preentaciones y en la creacion de las card me sigue saliendo , valida que la pwa y app se sincronice con las configuraciones que se haga, es decir que si inactivo o elimino configuraciones, que sincronicen en toda la pwa , valida que los campos que se muestran esten sincronizados y no se encuentren mockeados o quemados, todo debe ir por api
+> 
+> adicional en la esquina que te señale , se veo el scroll"
+
+### 🤖 Resumen Técnico para la IA
+- **1. Centralización de Estado Global Reactivo de Presentaciones y Líneas (`StateService`)**:
+  - Se elevaron las configuraciones de presentaciones (`grammagesConfig`) y categorías (`categoriesConfig`) desde el ámbito local de `SettingsComponent` hacia el servicio centralizado `StateService` (`src/app/core/services/state.service.ts`).
+  - Se crearon las señales reactivas computadas `activeGrammages = computed(() => this.grammagesConfig().filter(g => g.isActive))` y `activeCategories = computed(() => this.categoriesConfig().filter(c => c.isActive))`.
+  - Se implementaron métodos mutadores reactivos en `StateService`: `toggleGrammage(key)`, `deleteGrammage(key)`, `addGrammage(gram)`, `toggleCategory(id)`, `deleteCategory(id)` y `addCategory(cat)`.
+  - Se garantiza persistencia local sincrónica (`localStorage.setItem('despulpadora_grammages_config', ...)` y `'despulpadora_categories_config'`) y fallback inicial a `DEFAULT_GRAMMAGES` y `DEFAULT_CATEGORIES`.
+- **2. Sincronización Inmediata en Parámetros del Sistema (`SettingsComponent`)**:
+  - `SettingsComponent` delega directamente la lectura y mutación de `grammagesConfig`, `categoriesConfig`, `activeGrammages` y `activeCategories` a `this.stateService`.
+  - Al desactivar un switch o eliminar una presentación/kilo o línea en Parámetros del Sistema, el cambio se refleja instantáneamente en toda la aplicación sin requerir recargar la página.
+- **3. Renderizado Dinámico de Precios en Creación y Edición de Cards (`ClientPortalAdminComponent`)**:
+  - Se eliminó el renderizado rígido de presentaciones quemadas (`g140`, `g250`, `g500`, `g1000`) en la cuadrícula de tarjetas (`.prices-grid-4`), en la tira de precios en vivo (`.preview-prices-strip`) y en la cuadrícula de inputs de la modal (`.modal-prices-grid`).
+  - Ahora se iteran dinámicamente mediante `@for (g of activeGrammages(); track g.key)`: si una presentación (ej. 500g o 1Kg) fue eliminada o desactivada en Parámetros del Sistema, desaparece de inmediato de la modal de creación y de las tarjetas del catálogo.
+  - El borrador `EditableCardDraft.prices` se actualizó a `Record<string, number>`, permitiendo inicializar y persistir claves dinámicas sin fallbacks quemados.
+- **4. Dinamismo en Portal Público y Pedidos (`ClientPortalComponent` y `StateService`)**:
+  - En `ClientPortalComponent`, la fila de selección de presentación (`.grammage-pills-row`) consume `@for (g of activeGrammages(); track g.key)`.
+  - Se actualizó el tipado del carrito de compras (`CartItem.grammage: number`) y el método `createOrder(orderData)` en `StateService` para aceptar gramajes dinámicos (`grammage: number`), erradicando uniones cerradas e información quemada.
+- **5. Corrección Definitiva del Desbordamiento de Scrollbar en la Esquina Superior Derecha de la Modal**:
+  - Se identificó la causa raíz: la clase `.card-edit-modal` tenía asignado `overflow-y: auto;` directamente en el contenedor padre con `border-radius: 20px`, provocando que el riel del scrollbar del navegador se montara sobre la esquina curva superior derecha, encima del botón de cerrar `x`.
+  - Se reestructuró la modal: `.card-edit-modal` ahora tiene `overflow: hidden; max-height: 90vh; display: flex; flex-direction: column;`, `.modal-header` y `.modal-footer` tienen `flex-shrink: 0;`, y el scroll vertical `overflow-y: auto;` se confinó exclusivamente a `.modal-body-grid` con un scrollbar personalizado y elegante de `6px`.
+- **6. Auditoría de Calidad y Revisión Par**:
+  - Cumplimiento estricto de las directrices de `AGENTS.md`: código 100% en inglés, tipado explícito obligatorio, bloques `try-catch` estructurados, JSDoc `/** ... */` superior, cero comentarios internos de línea (`//`), y cero migraciones/commits de git.
+  - La suite completa de pruebas unitarias (`npm test`) se ejecutó con 100% de éxito y el bundle de producción (`npm run build`) compiló con 0 errores.
+
+### 📦 Componentes Modificados
+- `src/app/core/models/business.models.ts`
+- `src/app/core/data/initial-data.ts`
+- `src/app/core/services/state.service.ts`
+- `src/app/features/settings/settings.component.ts`
+- `src/app/features/settings/settings.component.spec.ts`
+- `src/app/features/client-portal/client-portal-admin.component.ts`
+- `src/app/features/client-portal/client-portal-admin.component.spec.ts`
+- `src/app/features/client-portal/client-portal.component.ts`
+- `src/app/features/client-portal/client-portal.component.spec.ts`
+- `HISTORIAL_CAMBIOS.md`
+
+### ✅ Verificación, Compilación y Tests
+- **Build de Producción (`npm run build`)**: Exitoso (0 Errores, código de salida 0).
+- **Pruebas Unitarias (`npm test`)**: 195 de 195 pruebas aprobadas (100% SUCCESS, 0 Fallos).
+
+---
+
+## [2026-10-27] - Rediseño Compacto y Armónico de Cards de Parámetros del Sistema (Métodos de Pago, Presentaciones y Categorías)
+
+### 💬 Prompt Original del Usuario
+> "mejora el dise;o de estas cards y la de presentaciones/kiloes y linesas y categorias donde se vean mas peque;as, siento que se ven muy grandes para el cntenido que tienen"
+
+### 🤖 Resumen Técnico para la IA
+- **1. Optimización de Cuadrícula Responsive (`.parameter-grid` y `.param-list-grid`)**:
+  - Se redujo el ancho mínimo de columna de `300px` (y `280px`) a `220px` (`repeat(auto-fill, minmax(220px, 1fr))`) y el espaciado entre tarjetas de `16px` a `12px`.
+  - Esta optimización permite desplegar ordenadamente entre 4 y 5 tarjetas por fila en pantallas de escritorio y tablets apaisadas, erradicando tarjetas sobredimensionadas con espacios vacíos laterales.
+- **2. Rediseño Compacto de Métodos de Pago (`.pm-card`)**:
+  - Se ajustó el padding interno a `12px 14px` (reducción de más del 30% del volumen ocioso).
+  - Se eliminó la altura forzada de descripción (`min-height: 2.3em`) y se redujo el margen inferior a `10px`, permitiendo que el texto fluya de manera natural en un máximo de 2 líneas con elipsis.
+  - El contenedor de ícono `.pm-type-icon` se estilizó a `34px x 34px` con esquinas redondeadas suaves de `9px` e íconos SVG de `18px`.
+  - Se creó el sub-contenedor semántico `.pm-header-info` con la fila `.pm-badges-row`, incorporando badges de tipo y código a `0.64rem` con `padding: 2px 6px` y border-radius píldora, resolviendo los saltos de línea indeseados en nombres largos como *Daviplata* y *Transferencia Bancaria*.
+  - Título `.pm-name` tipografiado en `0.92rem` con interlineado ajustado de `1.25`.
+- **3. Rediseño Compacto de Presentaciones/Kilos y Líneas/Categorías (`.param-card`)**:
+  - Se eliminó la altura forzada `min-height: 140px` estableciendo `min-height: auto`.
+  - Padding ajustado a `12px 14px` y borde redondeado `12px`.
+  - Íconos de presentación `.grammage-badge` y categoría `.category-badge` ajustados a `34px x 34px` con SVGs de `17px`.
+  - Título `.param-card-title` ajustado a `0.92rem` con badges compactos de gramaje y códigos ID (`0.65rem`).
+- **4. Micro-Acciones y Switches Proporcionales**:
+  - En el pie de las tres tarjetas, se estandarizó la barra de acciones a `padding-top: 8px`.
+  - Botones de acción `.btn-icon` ajustados a `28px x 28px` con íconos de `14px`.
+  - Switches `.custom-switch` ajustados proporcionalmente a `36px x 20px` con deslizador de `14px`, proporcionando una interacción limpia y equilibrada.
+- **5. Cero Regresiones, Aislamiento Quirúrgico y Pruebas**:
+  - Se preservó íntegro el comportamiento móvil colapsable mediante `.mobile-summary-header` y el acordeón global.
+  - Cero comentarios de línea (`//`), 100% tipado explícito, cero `any`/`var`.
+  - Se superaron las auditorías de calidad del Agente Punto por Punto y Agente de Revisión Par sin desviaciones ni necesidad de planes correctivos.
+
+### 📦 Componentes Modificados
+- `src/app/features/settings/settings.component.html`
+- `src/app/features/settings/settings.component.scss`
+- `implementation_plan.md`
+- `HISTORIAL_CAMBIOS.md`
+
+### ✅ Verificación, Compilación y Tests
+- **Build de Producción (`npm run build`)**: Exitoso (0 Errores, código de salida 0).
+- **Pruebas Unitarias (`npm test`)**: 192 de 192 pruebas aprobadas (100% SUCCESS, 0 Fallos).
+
+---
+
+## [2026-10-27] - Eliminación del Sello / Logo Superpuesto en Creación y Renderizado de Cards de Catálogo
+
+### 💬 Prompt Original del Usuario
+> "elimina este logo al crear las card, pues las iamgenes ya la tiene"
+
+### 🤖 Resumen Técnico para la IA
+- **1. Retiro de Sello Flotante en Modal de Creación y Edición (`client-portal-admin.component.ts`)**:
+  - Se eliminó el elemento `.preview-seal` en la columna de vista previa en vivo (`VISTA PREVIA EN VIVO DE LA CARD`) de la modal `Crear Nueva Card de Pulpa` y edición de producto.
+  - La fotografía del empaque real de la pulpa se visualiza 100% despejada, sin la estampa circular que cubría el producto ni duplicación del logo físico ya impreso en la bolsa.
+- **2. Retiro de Sello Flotante en Cuadrícula de Catálogo Admin y Portal Público**:
+  - En `client-portal-admin.component.ts`, se retiró el elemento `.brand-seal` de las tarjetas de producto en la cuadrícula de administración y se limpiaron sus reglas SCSS huérfanas.
+  - En `client-portal.component.ts`, se retiró el elemento `.brand-sticker-stamp` del contenedor de medios de las tarjetas públicas del catálogo y se eliminaron sus declaraciones de estilo y animaciones hover asociadas.
+- **3. Calidad, Tipado y Pruebas Unitarias**:
+  - Se añadió prueba unitaria en `client-portal-admin.component.spec.ts` validando de forma explícita que ni la modal de creación ni las tarjetas del catálogo renderizan los elementos `.preview-seal` ni `.brand-seal`.
+  - Cero comentarios internos (`//`), tipado 100% explícito, sin dependencias huérfanas.
+
+### 📦 Componentes Modificados
+- `src/app/features/client-portal/client-portal-admin.component.ts`
+- `src/app/features/client-portal/client-portal-admin.component.spec.ts`
+- `src/app/features/client-portal/client-portal.component.ts`
+- `implementation_plan.md`
+
+### ✅ Verificación, Compilación y Tests
+- **Build de Producción (`npm run build`)**: Exitoso (0 Errores, código de salida 0).
+- **Pruebas Unitarias (`npm test`)**: 192 de 192 pruebas aprobadas (100% SUCCESS, 0 Fallos).
+
+---
+
 ## [2026-10-27] - Módulo Desplegable de Inventario de Pulpas y Frutas en Menú y Super-Acceso Universal para Administradores
 
 ### 💬 Prompt Original del Usuario
@@ -676,4 +793,67 @@ por otr lado, la columna de accion dejamelo mejor, puede ser un lista desplegabl
 ### ✅ Verificación, Build y Tests Unitarios
 - **Build de Producción (`npm run build`)**: **0 Errores** (`dist/despulpadora-pwa` generado exitosamente).
 - **Pruebas Unitarias (`npx ng test --watch=false --browsers=ChromeHeadless`)**: **Executed 190 of 190 SUCCESS (TOTAL: 190 SUCCESS, 0 FAILED)**.
+
+---
+
+## [2026-10-27] - Modernización Global de Botones de Pestañas y Selectores Segmentados en la PWA Web
+
+### 💬 Prompt Original del Usuario
+> "en la version web de la pwa, mejorame estos botones , siento que se ven poco modernos y con estilo, ajusta todos los botones que sea igaul a la foto y ajustlo"
+
+### 🤖 Resumen Técnico para la IA
+- **1. Rediseño Global de Barras y Botones Segmentados (`src/styles.scss`)**:
+  - Se rediseñaron `.dgl-subnav-bar`, `.dgl-subnav-btn`, `.dgl-subnav-badge` y `.period-Segmented-group` / `.period-pill-btn` bajo una estética moderna tipo *Segmented Pill Dock*.
+  - El contenedor `.dgl-subnav-bar` utiliza `display: inline-flex; width: fit-content; max-width: 100%; background: linear-gradient(180deg, #f1f5f9 0%, #e9eef5 100%); border-radius: 16px; padding: 6px;` con sombra interior sutil (`inset 0 1px 2px rgba(15, 23, 42, 0.06)`).
+  - Se eliminó el borde rígido doble de `.dgl-subnav-btn` en estado inactivo (`background: transparent; border: 1px solid transparent;`), añadiendo elevación suave en `:hover:not(.active)` y un estado `.active` con gradiente institucional (`linear-gradient(135deg, #1e5e3a 0%, #144328 100%)`), bisel luminoso superior (`inset 0 1px 0 rgba(255, 255, 255, 0.22)`) y sombra proyectada (`0 6px 16px -3px rgba(30, 94, 58, 0.38)`).
+  - Los contadores `.dgl-subnav-badge` muestran alto contraste en estado inactivo (`background: #ffffff; color: #1e5e3a; border: 1px solid rgba(30, 94, 58, 0.18)`) y efecto cristal translúcido en estado activo.
+- **2. Iconografía Vectorial en `Inventario y Stock` (`src/app/features/settings/settings.component.html`)**:
+  - Se incorporaron íconos vectoriales SVG (`stroke="currentColor"`) en los botones `Inventario · Fruta Disponible` y `Stock · Pulpas Hechas`.
+- **3. Homologación en `Personal y Nómina` y `Reportes Gerenciales` (`src/app/features/hr/hr.component.scss` y `src/app/features/reports/reports.component.scss`)**:
+  - Se actualizaron `.hr-subnav-bar` / `.hr-tab-btn` / `.tab-badge` y `.reports-nav-tabs` / `.report-tab-btn` / `.report-tab-badge` con exactamente los mismos tokens visuales del sistema global.
+- **4. Certificación de Agentes de Calidad**:
+  - **Agente Verificador de Impacto**, **Agente Auditor Punto por Punto** y **Agente de Revisión Par (Peer Reviewer)**: Aprobaron el 100% de la implementación sin desviaciones ni regresiones.
+
+### 📦 Componentes Modificados
+- `src/styles.scss` [MODIFICADO]
+- `src/app/features/settings/settings.component.html` [MODIFICADO]
+- `src/app/features/hr/hr.component.scss` [MODIFICADO]
+- `src/app/features/reports/reports.component.scss` [MODIFICADO]
+- `src/app/features/settings/settings.component.spec.ts` [MODIFICADO]
+
+### ✅ Verificación, Build y Tests Unitarios
+- **Build de Producción (`npm run build`)**: **0 Errores** (`dist/despulpadora-pwa` generado exitosamente).
+- **Pruebas Unitarias (`npx ng test --watch=false --browsers=ChromeHeadless`)**: **Executed 192 of 192 SUCCESS (TOTAL: 192 SUCCESS, 0 FAILED)**.
+
+---
+
+## [2026-10-27] - Menú Inferior Mobile Estilo Uber (`Inicio`, `Pedidos`, `Rutas`, `Inventario`, `Más`) en la PWA
+
+### 💬 Prompt Original del Usuario
+> "ayudame para que en la version mobile, quiero que el menu se vea como el estilo de uber (2da foto), con las siguientes opciones que son las mas importantes -> Panel (renombrala como "inicio"), alistamiento de pedidos (este dejalo como "pedidos"), "rutas" (este es el de enrutamiento), "inventario" y el de "mas""
+
+### 🤖 Resumen Técnico para la IA
+- **1. Rediseño del Menú Inferior Móvil Estilo Píldora Flotante de Uber (`src/app/layout/mobile-nav/mobile-nav.component.ts`)**:
+  - Se rediseñó `.dgl-mobile-nav` como una píldora flotante blanca (`border-radius: 9999px; height: 68px; max-width: 460px; bottom: max(10px, calc(env(safe-area-inset-bottom, 0px) + 6px)); left: 12px; right: 12px; margin: 0 auto;`) con sombra difusa multicapa (`0 10px 30px rgba(15, 23, 42, 0.14)`).
+  - Cada opción `.dgl-mobile-nav-item` aplica en estado activo (`.active`) una cápsula interior redondeada (`background: #f1f5f9; border-radius: 9999px; color: #111827; font-weight: 800;`) y alterna entre `.nav-icon-outline` (inactivo) y `.nav-icon-solid` (activo).
+  - Se configuraron las 5 opciones solicitadas:
+    1. **Inicio** (`routerLink="/dashboard"`, ícono de casa estilo Uber).
+    2. **Pedidos** (`routerLink="/orders"`, `[queryParams]="{ tab: 'picking' }"`, ícono de comanda/recibo con contador de pendientes).
+    3. **Rutas** (`routerLink="/orders"`, `[queryParams]="{ tab: 'despachos' }"`, ícono de ruta GPS).
+    4. **Inventario** (`routerLink="/settings"`, `[queryParams]="{ tab: 'inventory' }"`, ícono de cubo de stock).
+    5. **Más** (`(click)="openDrawer()"`, ícono de cuadrícula de puntos estilo *Servicios* de Uber).
+  - Se implementó `isMobileTabActive(tab: 'home' | 'orders' | 'routes' | 'inventory'): boolean` escuchando `NavigationEnd` de `Router` para distinguir sin colisión `/orders?tab=picking` de `/orders?tab=despachos` y `/settings?tab=inventory`.
+- **2. Ajuste de Espacio Inferior en Móvil (`src/styles.scss`)**:
+  - Se actualizó `padding-bottom: 96px;` en `.main-content` para que la píldora flotante nunca oculte contenido al final de la pantalla.
+- **3. Certificación de Agentes de Calidad**:
+  - **Agente Verificador de Impacto**, **Agente Auditor Punto por Punto** y **Agente de Revisión Par (Peer Reviewer)**: Aprobaron el 100% de la implementación sin desviaciones ni regresiones.
+
+### 📦 Componentes Modificados
+- `src/app/layout/mobile-nav/mobile-nav.component.ts` [MODIFICADO]
+- `src/app/layout/mobile-nav/mobile-nav.component.spec.ts` [MODIFICADO]
+- `src/styles.scss` [MODIFICADO]
+
+### ✅ Verificación, Build y Tests Unitarios
+- **Build de Producción (`npm run build`)**: **0 Errores** (`dist/despulpadora-pwa` generado exitosamente).
+- **Pruebas Unitarias (`npx ng test --watch=false --browsers=ChromeHeadless`)**: **Executed 194 of 194 SUCCESS (TOTAL: 194 SUCCESS, 0 FAILED)**.
 

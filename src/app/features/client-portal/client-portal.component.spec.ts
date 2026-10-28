@@ -5,7 +5,7 @@ import { ClientPortalComponent } from './client-portal.component';
 import { StateService } from '../../core/services/state.service';
 import { DEFAULT_COMPANY_CONFIG, DEFAULT_PORTAL_CMS_CONFIG } from '../../core/data/initial-data';
 import { NotificationService } from '../../core/services/notification.service';
-import { ClientDto, CompanyConfig, FruitConfig, OrderDto, PaymentMethodDto, PortalCmsConfig, ProductVariantDto } from '../../core/models/business.models';
+import { ClientDto, CompanyConfig, FruitConfig, InventoryGrammageConfig, OrderDto, PaymentMethodDto, PortalCmsConfig, ProductVariantDto } from '../../core/models/business.models';
 
 /**
  * Unit tests for ClientPortalComponent verifying empty client defaults, dynamic WhatsApp link, and real pricing.
@@ -84,6 +84,12 @@ describe('ClientPortalComponent', () => {
       activePaymentMethods: mockPaymentMethods,
       companyInfo: mockCompanyInfo,
       portalCmsConfig: signal<PortalCmsConfig>(DEFAULT_PORTAL_CMS_CONFIG) as unknown as StateService['portalCmsConfig'],
+      activeGrammages: signal<InventoryGrammageConfig[]>([
+        { key: 'g140', value: 140, label: '140g', isActive: true },
+        { key: 'g250', value: 250, label: '250g', isActive: true },
+        { key: 'g500', value: 500, label: '500g', isActive: true },
+        { key: 'g1000', value: 1000, label: '1000g', isActive: true }
+      ]) as unknown as StateService['activeGrammages'],
       createOrder: createOrderSpy
     };
 

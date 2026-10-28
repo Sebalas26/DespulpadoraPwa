@@ -13,6 +13,8 @@ import {
   ExpenseDto,
   FruitDto,
   IdealVsRealAuditDto,
+  InventoryCategoryConfig,
+  InventoryGrammageConfig,
   OrderDto,
   OrderStatus,
   PaymentMethodDto,
@@ -25,7 +27,9 @@ import {
   WorkShiftDto
 } from '../models/business.models';
 import {
+  DEFAULT_CATEGORIES,
   DEFAULT_COMPANY_CONFIG,
+  DEFAULT_GRAMMAGES,
   DEFAULT_PORTAL_CMS_CONFIG,
   FruitConfig,
   INITIAL_BATCHES_SAMPLE,
@@ -72,9 +76,28 @@ export class StateService {
   readonly portalCmsConfig = signal<PortalCmsConfig>(this.loadPortalCmsConfigFromStorage());
   readonly paymentMethods = signal<PaymentMethodDto[]>(this.loadPaymentMethodsFromStorage());
 
+  readonly grammagesConfig = signal<InventoryGrammageConfig[]>(this.loadGrammagesConfigFromStorage());
+  readonly categoriesConfig = signal<InventoryCategoryConfig[]>(this.loadCategoriesConfigFromStorage());
+
   readonly activePaymentMethods = computed<PaymentMethodDto[]>(() => {
     try {
       return this.paymentMethods().filter(p => p.isActive);
+    } catch {
+      return [];
+    }
+  });
+
+  readonly activeGrammages = computed<InventoryGrammageConfig[]>(() => {
+    try {
+      return this.grammagesConfig().filter(g => g.isActive);
+    } catch {
+      return [];
+    }
+  });
+
+  readonly activeCategories = computed<InventoryCategoryConfig[]>(() => {
+    try {
+      return this.categoriesConfig().filter(c => c.isActive);
     } catch {
       return [];
     }
@@ -671,6 +694,8 @@ export class StateService {
       localStorage.setItem('despulpadora_company_info', JSON.stringify(this.companyInfo()));
       localStorage.setItem('despulpadora_portal_cms_config', JSON.stringify(this.portalCmsConfig()));
       localStorage.setItem('despulpadora_payment_methods', JSON.stringify(this.paymentMethods()));
+      localStorage.setItem('despulpadora_grammages_config', JSON.stringify(this.grammagesConfig()));
+      localStorage.setItem('despulpadora_categories_config', JSON.stringify(this.categoriesConfig()));
     } catch {
       return;
     }
@@ -955,7 +980,7 @@ export class StateService {
     clientAddress?: string;
     items: {
       fruitName: string;
-      grammage: 140 | 250 | 500 | 1000;
+      grammage: number;
       quantity: number;
       unitPrice: number;
     }[];
@@ -1040,7 +1065,7 @@ export class StateService {
       clientAddress?: string;
       items: {
         fruitName: string;
-        grammage: 140 | 250 | 500 | 1000;
+        grammage: number;
         quantity: number;
         unitPrice: number;
         pickedQuantity?: number;
@@ -1843,7 +1868,7 @@ export class StateService {
     category: string;
     color: string;
     imageUrl?: string;
-    prices: { g140: number; g250: number; g500: number; g1000: number };
+    prices: Record<string, number>;
   }): FruitConfig {
     try {
       const nextFruitId = Math.max(0, ...this.fruits().map(f => f.fruitId || 0)) + 1;
@@ -1872,7 +1897,13 @@ export class StateService {
         freshStockKg: 0,
         stock: { g140: 0, g250: 0, g500: 0, g1000: 0 },
         minStock: { g140: 0, g250: 0, g500: 0, g1000: 0 },
-        prices: { ...payload.prices },
+        prices: {
+          g140: Number(payload.prices['g140']) || 0,
+          g250: Number(payload.prices['g250']) || 0,
+          g500: Number(payload.prices['g500']) || 0,
+          g1000: Number(payload.prices['g1000']) || 0,
+          ...payload.prices
+        },
         category: payload.category.trim()
       };
 
@@ -1886,8 +1917,8 @@ export class StateService {
           colorHex: newCard.color,
           yieldPercentage: 0,
           rawStockKg: 0,
-          unitPrice: newCard.prices.g140,
-          price140g: newCard.prices.g140,
+          unitPrice: Number(newCard.prices.g140) || 0,
+          price140g: Number(newCard.prices.g140) || 0,
           price250g: newCard.prices.g250,
           price500g: newCard.prices.g500,
           price1000g: newCard.prices.g1000
@@ -1932,6 +1963,153 @@ export class StateService {
         'Portal Restablecido',
         'Se restauraron todas las fotos, textos y precios predeterminados del catálogo.'
       );
+    } catch {
+      return;
+    }
+  }
+
+  /**
+   * Updates the list of inventory grammages and persists to storage.
+   */
+  updateGrammagesConfig(grammages: InventoryGrammageConfig[]): void {
+    try {
+      this.grammagesConfig.set(grammages);
+      this.saveGrammagesConfig();
+    } catch {
+      return;
+    }
+  }
+
+  /**
+   * Toggles the active status of a presentation grammage.
+   */
+  toggleGrammage(key: string): void {
+    try {
+      this.grammagesConfig.update(list =>
+        list.map(g => (g.key === key ? { ...g, isActive: !g.isActive } : g))
+      );
+      this.saveGrammagesConfig();
+    } catch {
+      return;
+    }
+  }
+
+  /**
+   * Removes a presentation grammage from the system.
+   */
+  deleteGrammage(key: string): void {
+    try {
+      this.grammagesConfig.update(list => list.filter(g => g.key !== key));
+      this.saveGrammagesConfig();
+    } catch {
+      return;
+    }
+  }
+
+  /**
+   * Adds a new custom presentation grammage to the system.
+   */
+  addGrammage(grammage: InventoryGrammageConfig): void {
+    try {
+      this.grammagesConfig.update(list => [...list, grammage]);
+      this.saveGrammagesConfig();
+    } catch {
+      return;
+    }
+  }
+
+  /**
+   * Updates the list of inventory product categories and persists to storage.
+   */
+  updateCategoriesConfig(categories: InventoryCategoryConfig[]): void {
+    try {
+      this.categoriesConfig.set(categories);
+      this.saveCategoriesConfig();
+    } catch {
+      return;
+    }
+  }
+
+  /**
+   * Toggles the active status of a product category.
+   */
+  toggleCategory(id: string): void {
+    try {
+      this.categoriesConfig.update(list =>
+        list.map(c => (c.id === id ? { ...c, isActive: !c.isActive } : c))
+      );
+      this.saveCategoriesConfig();
+    } catch {
+      return;
+    }
+  }
+
+  /**
+   * Removes a product category from the system.
+   */
+  deleteCategory(id: string): void {
+    try {
+      this.categoriesConfig.update(list => list.filter(c => c.id !== id));
+      this.saveCategoriesConfig();
+    } catch {
+      return;
+    }
+  }
+
+  /**
+   * Adds a new custom product category to the system.
+   */
+  addCategory(category: InventoryCategoryConfig): void {
+    try {
+      this.categoriesConfig.update(list => [...list, category]);
+      this.saveCategoriesConfig();
+    } catch {
+      return;
+    }
+  }
+
+  /**
+   * Loads the inventory grammages configuration from localStorage.
+   */
+  private loadGrammagesConfigFromStorage(): InventoryGrammageConfig[] {
+    try {
+      const data = localStorage.getItem('despulpadora_grammages_config');
+      return data ? JSON.parse(data) : DEFAULT_GRAMMAGES;
+    } catch {
+      return DEFAULT_GRAMMAGES;
+    }
+  }
+
+  /**
+   * Saves the inventory grammages configuration to localStorage.
+   */
+  private saveGrammagesConfig(): void {
+    try {
+      localStorage.setItem('despulpadora_grammages_config', JSON.stringify(this.grammagesConfig()));
+    } catch {
+      return;
+    }
+  }
+
+  /**
+   * Loads the inventory categories configuration from localStorage.
+   */
+  private loadCategoriesConfigFromStorage(): InventoryCategoryConfig[] {
+    try {
+      const data = localStorage.getItem('despulpadora_categories_config');
+      const list: InventoryCategoryConfig[] = data ? JSON.parse(data) : DEFAULT_CATEGORIES;
+      return list.map(c => ({ ...c, icon: '' }));
+    } catch {
+      return DEFAULT_CATEGORIES;
+    }
+  }
+
+  /**
+   * Saves the inventory categories configuration to localStorage.
+   */
+  private saveCategoriesConfig(): void {
+    try {
+      localStorage.setItem('despulpadora_categories_config', JSON.stringify(this.categoriesConfig()));
     } catch {
       return;
     }

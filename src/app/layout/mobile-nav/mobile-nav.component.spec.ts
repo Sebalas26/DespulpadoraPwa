@@ -71,4 +71,43 @@ describe('MobileNavComponent', () => {
     expect(component.getRouteQueryParams('/settings?tab=inventory')).toEqual({ tab: 'inventory' });
     expect(component.getRouteQueryParams('/dashboard')).toBeNull();
   });
+
+  it('should render the 5 Uber-style mobile navigation options: Inicio, Pedidos, Rutas, Inventario, and Más', () => {
+    spyOn(authService, 'hasModuleAccess').and.returnValue(true);
+    fixture.detectChanges();
+
+    const compiled: HTMLElement = fixture.nativeElement as HTMLElement;
+    const items: NodeListOf<HTMLElement> = compiled.querySelectorAll('.dgl-mobile-nav .dgl-mobile-nav-item');
+    expect(items.length).toBe(5);
+    const labels: string[] = Array.from(items).map((el: HTMLElement) =>
+      (el.querySelector('span')?.textContent || '').trim()
+    );
+    expect(labels).toEqual(['Inicio', 'Pedidos', 'Rutas', 'Inventario', 'Más']);
+  });
+
+  it('should accurately evaluate isMobileTabActive for home, orders, routes, and inventory without overlap', () => {
+    component.currentUrl.set('/dashboard');
+    expect(component.isMobileTabActive('home')).toBeTrue();
+    expect(component.isMobileTabActive('orders')).toBeFalse();
+    expect(component.isMobileTabActive('routes')).toBeFalse();
+    expect(component.isMobileTabActive('inventory')).toBeFalse();
+
+    component.currentUrl.set('/orders?tab=picking');
+    expect(component.isMobileTabActive('home')).toBeFalse();
+    expect(component.isMobileTabActive('orders')).toBeTrue();
+    expect(component.isMobileTabActive('routes')).toBeFalse();
+
+    component.currentUrl.set('/orders?tab=despachos');
+    expect(component.isMobileTabActive('orders')).toBeFalse();
+    expect(component.isMobileTabActive('routes')).toBeTrue();
+
+    component.currentUrl.set('/settings?tab=inventory');
+    expect(component.isMobileTabActive('inventory')).toBeTrue();
+
+    component.currentUrl.set('/settings?tab=general');
+    expect(component.isMobileTabActive('inventory')).toBeFalse();
+
+    component.openDrawer();
+    expect(component.isMobileTabActive('home')).toBeFalse();
+  });
 });
