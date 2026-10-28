@@ -355,4 +355,8 @@ describe('StateService', () => {
       })
     );
   });
+
+  it('should initialize companyInfo with official logoUrl fallback when storage is empty', () => {
+    expect(service.companyInfo().logoUrl).toBe('/logo-dgl.png');
+  });
 });

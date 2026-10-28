@@ -4,6 +4,47 @@ Este documento registra de manera cronológica y estructurada todas las interven
 
 ---
 
+## [2026-10-28] - Integración de Identidad Visual Corporativa: Favicon Web, Carga de Logo en Configuración y Logo en App Móvil
+
+### 💬 Prompt Original del Usuario
+> "ayudame ajustar algo, edtoy viendo que la pwa ya tiene cargado el logo , perono lo veo en pagina web 
+>
+> tampoco lo veo cargado en la configuracion 
+>
+> tambien configuralo en la app, reemplaza el el lgoo que se ve una cuadro verde con moto, pon el logo 'dgl.png"
+
+### 🤖 Resumen Técnico para la IA
+- **1. Favicon en la Página Web PWA (`src/index.html`)**:
+  - Se vincularon las etiquetas `<link rel="icon" type="image/png" href="logo-dgl.png">` y `<link rel="apple-touch-icon" href="logo-dgl.png">` directamente al activo estático oficial `public/logo-dgl.png`.
+  - Se eliminó el favicon por defecto de Angular en la pestaña del navegador.
+- **2. Logotipo Corporativo en Configuración (`initial-data.ts`, `state.service.ts` y `settings.component.ts`)**:
+  - Se actualizó `DEFAULT_COMPANY_CONFIG.logoUrl` a `'/logo-dgl.png'`.
+  - Se incorporó un mecanismo defensivo en `StateService.loadCompanyInfoFromStorage()` y `fetchInitialData()` para garantizar que sesiones previas o respuestas de API sin logo asignen automáticamente el fallback `/logo-dgl.png`.
+  - En la vista de Configuración (`/settings`), la caja de previsualización muestra inmediatamente la imagen corporativa y el input contiene la URL `'/logo-dgl.png'`.
+  - En `resetCompanyDefaults()` se restaura `'/logo-dgl.png'`.
+- **3. Logotipo en la Aplicación Móvil (`DespulpadoraApp` - Flutter)**:
+  - En `lib/views/home_orders_screen.dart`, se sustituyó el contenedor verde que contenía el icono de moto (`Icons.two_wheeler`) por un widget `ClipRRect(borderRadius: BorderRadius.circular(10))` conteniendo `Image.asset('assets/images/logo-dgl.png', width: 36, height: 36, fit: BoxFit.contain)`.
+  - Se preservó la legibilidad y layout del encabezado del mensajero (nombre, placa y estado en línea).
+- **4. Verificación de Sub-Agentes de Calidad**:
+  - **Agente Auditor Punto por Punto**: Certificó 100% de cumplimiento en todos los criterios.
+  - **Agente de Revisión Par (Peer Reviewer)**: Otorgó aprobación formal y sign-off definitivo sin observaciones ni anomalías.
+
+### 📦 Componentes Modificados
+- `src/index.html`
+- `src/app/core/data/initial-data.ts`
+- `src/app/core/services/state.service.ts`
+- `src/app/core/services/state.service.spec.ts`
+- `src/app/features/settings/settings.component.spec.ts`
+- `c:\Users\user\Documents\APP\DespulpadoraApp\lib\views\home_orders_screen.dart`
+- `implementation_plan.md`
+- `HISTORIAL_CAMBIOS.md`
+
+### ✅ Verificación, Compilación y Tests
+- **Build de Producción (`npm run build`)**: Exitoso (0 Errores, exit code 0).
+- **Pruebas Unitarias (`ng test`)**: 210 de 210 pruebas aprobadas (100% SUCCESS, 0 Fallos).
+
+---
+
 ## [2026-10-28] - Reubicación de Accesos Rápidos al Menú Lateral y Rediseño Integrado del Header (Eliminación de Card Bordeada)
 
 ### 💬 Prompt Original del Usuario

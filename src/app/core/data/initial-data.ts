@@ -97,7 +97,7 @@ export const DEFAULT_COMPANY_CONFIG: CompanyConfig = {
   companyName: '',
   legalName: '',
   nit: '',
-  logoUrl: '',
+  logoUrl: '/logo-dgl.png',
   tagline: '',
   address: '',
   city: '',

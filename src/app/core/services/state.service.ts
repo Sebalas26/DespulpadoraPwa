@@ -530,7 +530,11 @@ export class StateService {
         return DEFAULT_COMPANY_CONFIG;
       }
       const parsed = JSON.parse(data) as Partial<CompanyConfig>;
-      return { ...DEFAULT_COMPANY_CONFIG, ...parsed };
+      const merged = { ...DEFAULT_COMPANY_CONFIG, ...parsed };
+      if (!merged.logoUrl || merged.logoUrl.trim() === '') {
+        merged.logoUrl = DEFAULT_COMPANY_CONFIG.logoUrl;
+      }
+      return merged;
     } catch {
       return DEFAULT_COMPANY_CONFIG;
     }
@@ -810,7 +814,11 @@ export class StateService {
           }
 
           if (res.companySettings) {
-            this.companyInfo.set(res.companySettings);
+            const settings = { ...res.companySettings };
+            if (!settings.logoUrl || settings.logoUrl.trim() === '') {
+              settings.logoUrl = DEFAULT_COMPANY_CONFIG.logoUrl;
+            }
+            this.companyInfo.set(settings);
           }
 
           this.paymentMethods.set(res.paymentMethods || []);

@@ -347,4 +347,15 @@ describe('SettingsComponent', () => {
     expect(component.inventorySubTab()).toBe('variants');
     expect(navButtons[1].classList.contains('active')).toBeTrue();
   });
+
+  it('should initialize companyForm with official logoUrl and restore it on resetCompanyDefaults', () => {
+    expect(component.companyForm().logoUrl).toBe('/logo-dgl.png');
+
+    component.updateCompanyField('logoUrl', 'https://custom-logo.png');
+    expect(component.companyForm().logoUrl).toBe('https://custom-logo.png');
+
+    component.resetCompanyDefaults();
+    component.onConfirmDialog();
+    expect(component.companyForm().logoUrl).toBe('/logo-dgl.png');
+  });
 });
