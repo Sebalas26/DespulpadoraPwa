@@ -29,6 +29,8 @@ describe('SettingsComponent', () => {
   let deletePaymentMethodSpy: jasmine.Spy;
   let deleteVariantSpy: jasmine.Spy;
   let updateCompanyInfoSpy: jasmine.Spy;
+  let saveFreshFruitItemSpy: jasmine.Spy;
+  let deleteFreshFruitItemSpy: jasmine.Spy;
 
   const mockCompany = signal<CompanyConfig>({
     ...DEFAULT_COMPANY_CONFIG,
@@ -90,6 +92,8 @@ describe('SettingsComponent', () => {
 
     deletePaymentMethodSpy = jasmine.createSpy('deletePaymentMethod');
     deleteVariantSpy = jasmine.createSpy('deleteProductVariant');
+    saveFreshFruitItemSpy = jasmine.createSpy('saveFreshFruitItem');
+    deleteFreshFruitItemSpy = jasmine.createSpy('deleteFreshFruitItem');
 
     const mockCategoriesConfig = signal<InventoryCategoryConfig[]>([...DEFAULT_CATEGORIES]);
     const mockGrammagesConfig = signal<InventoryGrammageConfig[]>([...DEFAULT_GRAMMAGES]);
@@ -114,6 +118,8 @@ describe('SettingsComponent', () => {
       addProductVariant: addVariantSpy,
       updateProductVariant: jasmine.createSpy('updateProductVariant'),
       deleteProductVariant: deleteVariantSpy,
+      saveFreshFruitItem: saveFreshFruitItemSpy,
+      deleteFreshFruitItem: deleteFreshFruitItemSpy,
       createPaymentMethod: createPaymentMethodSpy,
       updatePaymentMethod: jasmine.createSpy('updatePaymentMethod'),
       deletePaymentMethod: deletePaymentMethodSpy,
@@ -357,5 +363,119 @@ describe('SettingsComponent', () => {
     component.resetCompanyDefaults();
     component.onConfirmDialog();
     expect(component.companyForm().logoUrl).toBe('/logo-dgl.png');
+  });
+
+  it('should display units in ms-value and total value in ms-status-pill on mobile stock summary cards and mark desktop-only buttons', () => {
+    component.activeTab.set('inventory');
+    component.inventorySubTab.set('variants');
+    fixture.detectChanges();
+
+    const compiled: HTMLElement = fixture.nativeElement as HTMLElement;
+    const settingsBtn = compiled.querySelector('#btn-open-inventory-settings');
+    expect(settingsBtn?.classList.contains('inventory-desktop-only-btn')).toBeTrue();
+
+    const summaryCell = compiled.querySelector('td.mobile-tr-summary-cell');
+    expect(summaryCell).not.toBeNull();
+    const msValue = summaryCell?.querySelector('.ms-value')?.textContent?.trim() || '';
+    const msStatusPill = summaryCell?.querySelector('.ms-status-pill')?.textContent?.trim() || '';
+    expect(msValue).toBe('40 uds');
+    expect(msStatusPill).toContain('140.000');
+
+    component.toggleMobileRow('variant-1');
+    expect(component.isMobileRowExpanded('variant-1')).toBeTrue();
+    component.toggleMobileRow('variant-1');
+    expect(component.isMobileRowExpanded('variant-1')).toBeFalse();
+  });
+
+  it('should open fruit modal, create and edit fresh fruit in kilograms, and delete fruit after confirmation', () => {
+    component.activeTab.set('inventory');
+    component.inventorySubTab.set('fruits');
+    fixture.detectChanges();
+
+    component.openNewFruitModal();
+    expect(component.showFruitModal()).toBeTrue();
+    expect(component.isEditingFruit()).toBeFalse();
+
+    component.fruitFormName.set('Guanábana');
+    component.fruitFormWeightKg.set(85);
+    component.fruitFormYieldPercent.set(80);
+    component.fruitFormScientificName.set('Annona muricata');
+    component.saveFruitForm();
+
+    expect(saveFreshFruitItemSpy).toHaveBeenCalledWith({
+      id: undefined,
+      fruitId: undefined,
+      name: 'Guanábana',
+      freshStockKg: 85,
+      yieldPercentage: 80,
+      scientificName: 'Annona muricata'
+    });
+    expect(component.showFruitModal()).toBeFalse();
+
+    const existingFruit = mockFruits()[0];
+    component.openEditFruitModal(existingFruit);
+    expect(component.showFruitModal()).toBeTrue();
+    expect(component.isEditingFruit()).toBeTrue();
+    expect(component.fruitFormName()).toBe('Mora');
+    expect(component.fruitFormWeightKg()).toBe(100);
+
+    component.fruitFormWeightKg.set(145);
+    component.saveFruitForm();
+    expect(saveFreshFruitItemSpy).toHaveBeenCalledWith({
+      id: 'mora',
+      fruitId: 1,
+      name: 'Mora',
+      freshStockKg: 145,
+      yieldPercentage: 70,
+      scientificName: 'Rubus glaucus'
+    });
+
+    component.deleteFreshFruit(existingFruit);
+    expect(component.confirmDialogState().isOpen).toBeTrue();
+    component.onConfirmDialog();
+    expect(deleteFreshFruitItemSpy).toHaveBeenCalledWith('mora');
+  });
+
+  it('should render clean payment method mobile cards without ms-subtitle or ms-value, omit Restablecer Valores button, and display simplified Nuevo Método de Pago modal', () => {
+    mockPaymentMethods.set([
+      {
+        paymentMethodId: 1,
+        name: 'Efectivo',
+        code: 'CASH',
+        type: 'cash',
+        description: '',
+        isActive: true
+      }
+    ]);
+    component.activeTab.set('parameters');
+    component.parametersSubTab.set('paymentMethods');
+    fixture.detectChanges();
+
+    const compiled: HTMLElement = fixture.nativeElement as HTMLElement;
+    expect(compiled.textContent).not.toContain('Restablecer Valores');
+
+    const pmSummaryHeaders: NodeListOf<HTMLElement> = compiled.querySelectorAll('.pm-card .mobile-summary-header');
+    expect(pmSummaryHeaders.length).toBeGreaterThan(0);
+    pmSummaryHeaders.forEach((header: HTMLElement) => {
+      expect(header.querySelector('.ms-code-badge')).not.toBeNull();
+      expect(header.querySelector('.ms-status-pill')).not.toBeNull();
+      expect(header.querySelector('.ms-subtitle')).toBeNull();
+      expect(header.querySelector('.ms-value')).toBeNull();
+    });
+
+    component.openCreatePaymentMethodModal();
+    fixture.detectChanges();
+
+    const modalTitle: HTMLElement | null = compiled.querySelector('.modal-overlay .modal-title');
+    expect((modalTitle?.textContent || '').trim()).toBe('Nuevo Método de Pago');
+
+    const modalBody: HTMLElement | null = compiled.querySelector('.modal-overlay .modal-body');
+    expect(modalBody).not.toBeNull();
+    expect(modalBody?.textContent).toContain('Nombre del Método de Pago *');
+    expect(modalBody?.textContent).toContain('Habilitado para Pedidos');
+    expect(modalBody?.textContent).not.toContain('Tipo de Medio');
+    expect(modalBody?.textContent).not.toContain('Código Interno');
+    expect(modalBody?.textContent).not.toContain('Descripción o Instrucciones');
+    expect(modalBody?.querySelector('.switch-card .custom-switch .slider')).not.toBeNull();
   });
 });

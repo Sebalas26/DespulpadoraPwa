@@ -359,4 +359,39 @@ describe('StateService', () => {
   it('should initialize companyInfo with official logoUrl fallback when storage is empty', () => {
     expect(service.companyInfo().logoUrl).toBe('/logo-dgl.png');
   });
+
+  it('should create, update, and delete fresh fruit inventory items via saveFreshFruitItem and deleteFreshFruitItem', () => {
+    const created = service.saveFreshFruitItem({
+      name: 'Maracuyá',
+      freshStockKg: 120,
+      yieldPercentage: 70,
+      scientificName: 'Passiflora edulis'
+    });
+
+    expect(created).not.toBeNull();
+    expect(service.fruits().length).toBe(1);
+    expect(service.fruits()[0].name).toBe('Maracuyá');
+    expect(service.fruits()[0].freshStockKg).toBe(120);
+    expect(service.totalFreshStockKg()).toBe(120);
+    expect(apiSpy.createFruit).toHaveBeenCalled();
+
+    const updated = service.saveFreshFruitItem({
+      id: created?.id,
+      fruitId: created?.fruitId,
+      name: 'Maracuyá Regional',
+      freshStockKg: 150,
+      yieldPercentage: 75,
+      scientificName: 'Passiflora edulis'
+    });
+
+    expect(updated?.name).toBe('Maracuyá Regional');
+    expect(service.fruits()[0].freshStockKg).toBe(150);
+    expect(service.totalFreshStockKg()).toBe(150);
+    expect(apiSpy.updateFruit).toHaveBeenCalled();
+
+    service.deleteFreshFruitItem(String(created?.id));
+    expect(service.fruits().length).toBe(0);
+    expect(service.totalFreshStockKg()).toBe(0);
+    expect(apiSpy.deleteFruit).toHaveBeenCalled();
+  });
 });

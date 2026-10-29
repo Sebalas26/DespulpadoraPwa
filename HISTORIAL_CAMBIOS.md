@@ -4,6 +4,82 @@ Este documento registra de manera cronológica y estructurada todas las interven
 
 ---
 
+## [2026-10-28] - Limpieza Visual de Catálogo de Formas de Pago en Mobile, Simplificación del Modal Nuevo Método de Pago y Corrección del Toggle Switch Habilitado para Pedidos
+
+### 💬 Prompt Original del Usuario
+> "en la pwa version mobile, eliminame lo que te talle con rojo 
+>
+> adicional mejorame el diseño del dialog de  nuevo meotod de pago, el cual el check de habilitado se ve mal"
+
+### 🤖 Resumen Técnico para la IA
+- **1. Limpieza Quirúrgica en Vista Mobile de Catálogo de Formas de Pago (`src/app/features/settings/settings.component.html`)**:
+  - Se eliminó el botón `↺ Restablecer Valores` en la barra superior de `paymentMethods` y se corrigió la etiqueta del botón de creación a `Nuevo Método de Pago` (evitando el doble signo `+ +`).
+  - En las tarjetas `.pm-card` (`.mobile-summary-header`), se eliminaron el subtexto gris `<span class="ms-subtitle">` (`CASH • Transferencia / Billetera`) y el texto verde `<span class="ms-value">` (`Transferencia / Billetera`), dejando únicamente el nombre del método de pago (`Efectivo`, `Nequi`, `Daviplata`, etc.), el badge `Activo`/`Desactivado` y el chevron desplegable.
+- **2. Simplificación del Modal `Nuevo Método de Pago` y Corrección del Toggle Switch `Habilitado para Pedidos` (`settings.component.html` y `settings.component.scss`)**:
+  - En `showPaymentMethodModal()`, se eliminó el signo `+` del título (`Nuevo Método de Pago`) y se removieron los campos `Tipo de Medio *`, `Código Interno` y `Descripción o Instrucciones (Opcional)`, dejando exclusivamente `Nombre del Método de Pago *` y la tarjeta `.switch-card` de `Habilitado para Pedidos`.
+  - Se corrigió el defecto visual del switch (`.custom-switch`) que se veía deformado como media luna cortada: se agregó `flex-shrink: 0; min-width: 46px; width: 46px; height: 26px;` a `.custom-switch`, `flex: 1; min-width: 0;` a `.switch-label-group`, y `gap: 16px; background: #f8fafc; border: 1.5px solid #e2e8f0; border-radius: 14px;` a `.switch-card`, garantizando una píldora perfecta con círculo blanco de `20px × 20px` y transición fluida.
+- **3. Cobertura del 100% de Pruebas Unitarias y Build**:
+  - Se añadió prueba unitaria en `src/app/features/settings/settings.component.spec.ts` verificando la ausencia de `Restablecer Valores`, la ausencia de `.ms-subtitle` y `.ms-value` en `.pm-card .mobile-summary-header`, y el formulario simplificado del modal `Nuevo Método de Pago`.
+  - Suite de pruebas ejecutada: **240 de 240 pruebas unitarias aprobadas exitosamente (100% SUCCESS, 0 FAILS)**.
+  - Compilación de producción: **Completada con éxito (`npm run build` con Exit code 0)**.
+
+### 📦 Componentes Modificados
+- `src/app/features/settings/settings.component.html`
+- `src/app/features/settings/settings.component.scss`
+- `src/app/features/settings/settings.component.spec.ts`
+- `implementation_plan.md`
+- `HISTORIAL_CAMBIOS.md`
+
+### ✅ Verificación, Build y Tests Unitarios
+- `npm test -- --watch=false`: **240 / 240 Pruebas Unitarias Exitosas (100% PASS, 0 fallos)**.
+- `npm run build`: **Compilación de producción completada con éxito (Exit code 0)**.
+- **Git**: Se cumplió estrictamente la prohibición de `git commit` y `git push`.
+
+---
+
+## [2026-10-28] - Optimización Móvil de Stock, Gestión Sincronizada de Fruta Disponible y Rediseño Claro de KDS Inventario
+
+### 💬 Prompt Original del Usuario
+> "Quiero que en la pwa version mobile, elimines lo que te señale en x roja, y lo datos de cada stock , quiero que el dato que esta en verde actual que es el valor , lo reemplaces por las unidades y abajo el de unidades , por el del valor que le de 
+>
+> Adicional en el modulo de inventario de fruta disponible, no veo la opcion de agregar la fruta, alli muestrame una lista como la de las pulpas, donde yo le pueda ingresar el nombre y peso kg, recuerda que esta data debe estar e irse sincronizando con los demas reportes y datos que muestro con este inventario en toda la pwa, incluyendo en el kds inventario, que aprovechando dejamelo como el estilo de mi pwa, se ve feo con ese color oscuro, dejamelo como el estilo del kds de alistamiento"
+
+### 🤖 Resumen Técnico para la IA
+- **1. Ocultamiento Quirúrgico en Móvil de Botones `Ajustes` y `Configurar Columnas` (`src/app/features/settings/settings.component.html/.scss`)**:
+  - Se asignó la clase `.inventory-desktop-only-btn` al botón `#btn-open-inventory-settings` (`Ajustes`) y al botón `Configurar Columnas` dentro de la vista `Stock · Pulpas Hechas`.
+  - En `settings.component.scss`, dentro de `@media (max-width: 768px)`, se declaró `.inventory-desktop-only-btn { display: none !important; }`, ocultándolos únicamente en dispositivos móviles sin alterar la vista de escritorio.
+- **2. Inversión de Posición entre Unidades y Valor Monetario en Tarjetas Móviles de Stock (`src/app/features/settings/settings.component.html/.ts`)**:
+  - En cada fila móvil de `Stock · Pulpas Hechas` (`td.mobile-tr-summary-cell`), el indicador verde superior (`.ms-value`) ahora muestra las unidades (`{{ v.currentStock }} uds`), mientras que la píldora inferior (`.ms-status-pill`) muestra el valor monetario calculado (`{{ formatCOP((v.currentStock || 0) > 0 ? (v.currentStock * v.basePrice) : v.basePrice) }}`).
+  - Se implementó `toggleMobileRow(rowId: string)` e `isMobileRowExpanded(rowId: string)` en `SettingsComponent` junto con el desglose de **Precio Unitario** y **Valor en Stock** en el detalle expandido móvil.
+- **3. Gestión Completa y Sincronización Global de `Inventario · Fruta Disponible` (`src/app/core/services/state.service.ts` y `src/app/features/settings/settings.component.ts/.html`)**:
+  - En `StateService`, se crearon los métodos `saveFreshFruitItem(fruit: FruitItem, isEdit: boolean)` y `deleteFreshFruitItem(id: string)` con persistencia reactiva, sincronización con backend (`createFruit`, `updateFruit`, `adjustFruitStock`, `deleteFruit`) y preservación de `freshStockKg` durante `refreshAll()`.
+  - En `SettingsComponent` (`inventorySubTab() === 'fruits'`), se agregaron el botón **`+ Nueva Fruta Disponible`**, el buscador reactivo (`fruitSearchQuery` / `filteredFruits`), la tabla/tarjetas móviles homologadas al diseño de pulpas (con nombre, peso en Kg, rendimiento %, pulpa estimada, estado y acciones de editar/eliminar) y el modal `@if (showFruitModal())` para registrar o editar el nombre de la fruta y su peso en kilogramos (`Kg`).
+  - Al actualizar `stateService.fruits()`, se sincronizan automáticamente en tiempo real `totalFreshStockKg`, `KdsInventoryComponent`, `DashboardComponent`, `ReportsComponent`, `OrdersComponent` y `ClientPortalComponent`.
+- **4. Rediseño del `KDS Planta & Inventario` al Estilo Claro Corporativo del `KDS de Alistamiento` (`src/app/features/inventory/kds/kds-inventory.component.ts`)**:
+  - Se cambió el tema predeterminado a claro (`isDarkTheme = signal<boolean>(false)`) con persistencia en `localStorage` (`despulpadora_kds_theme`), homologando el fondo (`#f6f8f7`), tarjetas (`#ffffff`), cabeceras, bordes (`#e5e7eb`), píldoras y acentos verdes institucionales (`#1e5e3a`) con el `KdsComponent` de Alistamiento.
+- **5. Cobertura del 100% de Pruebas Unitarias y Build**:
+  - Se ampliaron las pruebas unitarias en `state.service.spec.ts`, `settings.component.spec.ts` y `kds-inventory.component.spec.ts` cubriendo los 4 requerimientos.
+  - Suite de pruebas ejecutada: **239 de 239 pruebas unitarias aprobadas exitosamente (100% SUCCESS, 0 FAILS)**.
+  - Compilación de producción: **Completada con éxito (`npm run build` con Exit code 0)**.
+
+### 📦 Componentes Modificados
+- `src/app/core/services/state.service.ts`
+- `src/app/core/services/state.service.spec.ts`
+- `src/app/features/settings/settings.component.ts`
+- `src/app/features/settings/settings.component.html`
+- `src/app/features/settings/settings.component.scss`
+- `src/app/features/settings/settings.component.spec.ts`
+- `src/app/features/inventory/kds/kds-inventory.component.ts`
+- `src/app/features/inventory/kds/kds-inventory.component.spec.ts`
+- `HISTORIAL_CAMBIOS.md`
+
+### ✅ Verificación, Build y Tests Unitarios
+- `npm test -- --watch=false`: **239 / 239 Pruebas Unitarias Exitosas (100% PASS, 0 fallos)**.
+- `npm run build`: **Compilación de producción completada con éxito (Exit code 0)**.
+- **Git**: Se cumplió estrictamente la prohibición de `git commit` y `git push`.
+
+---
+
 ## [2026-10-28] - Menú Móvil Compacto sin Subtextos Descriptivos y Visibilidad Directa del Botón Cerrar Sesión
 
 ### 💬 Prompt Original del Usuario

@@ -136,4 +136,18 @@ describe('KdsInventoryComponent', () => {
     expect(adjustVariantStockSpy).toHaveBeenCalledWith(10, 12);
     expect(component.showNumpadModal()).toBeFalse();
   });
+
+  it('should initialize in light corporate theme by default matching KDS Alistamiento and persist theme toggle', () => {
+    localStorage.removeItem('despulpadora_kds_theme');
+    component.ngOnInit();
+    expect(component.isDarkTheme()).toBeFalse();
+
+    component.toggleTheme();
+    expect(component.isDarkTheme()).toBeTrue();
+    expect(localStorage.getItem('despulpadora_kds_theme')).toBe('dark');
+
+    component.toggleTheme();
+    expect(component.isDarkTheme()).toBeFalse();
+    expect(localStorage.getItem('despulpadora_kds_theme')).toBe('light');
+  });
 });

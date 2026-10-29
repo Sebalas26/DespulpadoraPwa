@@ -169,6 +169,35 @@ export class SettingsComponent {
   readonly newVariantCurrentStock = signal<number>(0);
   readonly newVariantMinStock = signal<number>(0);
 
+  readonly fruitSearchQuery = signal<string>('');
+  readonly showFruitModal = signal<boolean>(false);
+  readonly isEditingFruit = signal<boolean>(false);
+  readonly editingFruitId = signal<string | null>(null);
+  readonly editingFruitDbId = signal<number | undefined>(undefined);
+  readonly fruitFormName = signal<string>('');
+  readonly fruitFormWeightKg = signal<number>(0);
+  readonly fruitFormYieldPercent = signal<number>(75);
+  readonly fruitFormScientificName = signal<string>('');
+  readonly expandedMobileRows = signal<Record<string, boolean>>({});
+
+  readonly filteredFruits = computed<FruitConfig[]>(() => {
+    try {
+      const q = this.fruitSearchQuery().trim().toLowerCase();
+      const list = [...this.stateService.fruits()];
+      if (!q) {
+        return list;
+      }
+      return list.filter(
+        f =>
+          f.name.toLowerCase().includes(q) ||
+          Boolean(f.scientificName && f.scientificName.toLowerCase().includes(q)) ||
+          String(f.id).toLowerCase().includes(q)
+      );
+    } catch {
+      return [];
+    }
+  });
+
   readonly promotions = signal<PromotionConfig[]>(INITIAL_PROMOTIONS);
 
   readonly totalPulpUnitsStock = computed<number>(() => {
@@ -1277,6 +1306,125 @@ export class SettingsComponent {
         isDanger: true,
         action: () => {
           this.stateService.deleteProductVariant(variantId);
+        }
+      });
+    } catch {
+      return;
+    }
+  }
+
+  /**
+   * Toggles the expanded accordion state for a mobile table row card.
+   */
+  toggleMobileRow(rowKey: string, event?: Event): void {
+    try {
+      if (event) {
+        event.stopPropagation();
+      }
+      this.expandedMobileRows.update(prev => ({
+        ...prev,
+        [rowKey]: !prev[rowKey]
+      }));
+    } catch {
+      return;
+    }
+  }
+
+  /**
+   * Returns whether a mobile table row card is currently expanded.
+   */
+  isMobileRowExpanded(rowKey: string): boolean {
+    try {
+      return Boolean(this.expandedMobileRows()[rowKey]);
+    } catch {
+      return false;
+    }
+  }
+
+  /**
+   * Opens the modal to register a new fresh fruit variety with weight in kilograms.
+   */
+  openNewFruitModal(): void {
+    try {
+      this.isEditingFruit.set(false);
+      this.editingFruitId.set(null);
+      this.editingFruitDbId.set(undefined);
+      this.fruitFormName.set('');
+      this.fruitFormWeightKg.set(0);
+      this.fruitFormYieldPercent.set(75);
+      this.fruitFormScientificName.set('');
+      this.showFruitModal.set(true);
+    } catch {
+      return;
+    }
+  }
+
+  /**
+   * Opens the modal to edit an existing fresh fruit variety and its available weight in kilograms.
+   */
+  openEditFruitModal(fruit: FruitConfig): void {
+    try {
+      this.isEditingFruit.set(true);
+      this.editingFruitId.set(String(fruit.id));
+      this.editingFruitDbId.set(fruit.fruitId);
+      this.fruitFormName.set(fruit.name);
+      this.fruitFormWeightKg.set(Number(fruit.freshStockKg || 0));
+      this.fruitFormYieldPercent.set(
+        fruit.yieldRate && fruit.yieldRate > 0 ? Math.round(fruit.yieldRate * 100) : 75
+      );
+      this.fruitFormScientificName.set(fruit.scientificName || '');
+      this.showFruitModal.set(true);
+    } catch {
+      return;
+    }
+  }
+
+  /**
+   * Validates and saves a fresh fruit item (creating or updating it) in the global state store.
+   */
+  saveFruitForm(): void {
+    try {
+      const name = this.fruitFormName().trim();
+      if (!name) {
+        this.notification.error('Nombre Requerido', 'Por favor ingresa el nombre de la fruta.');
+        return;
+      }
+      const weightKg = Number(this.fruitFormWeightKg());
+      if (Number.isNaN(weightKg) || weightKg < 0) {
+        this.notification.error('Peso Inválido', 'Ingresa un peso en kilogramos válido (0 o mayor).');
+        return;
+      }
+
+      this.stateService.saveFreshFruitItem({
+        id: this.editingFruitId() ?? undefined,
+        fruitId: this.editingFruitDbId(),
+        name,
+        freshStockKg: weightKg,
+        yieldPercentage: Number(this.fruitFormYieldPercent() || 0),
+        scientificName: this.fruitFormScientificName().trim()
+      });
+
+      this.showFruitModal.set(false);
+      this.editingFruitId.set(null);
+      this.editingFruitDbId.set(undefined);
+    } catch {
+      return;
+    }
+  }
+
+  /**
+   * Prompts confirmation and removes a fresh fruit item from the plant inventory.
+   */
+  deleteFreshFruit(fruit: FruitConfig): void {
+    try {
+      this.openConfirmDialog({
+        title: '¿Eliminar Fruta del Inventario?',
+        message: `¿Estás seguro de eliminar "${fruit.name}" (${fruit.freshStockKg} Kg) del inventario de fruta disponible?`,
+        confirmButtonText: 'Eliminar Fruta',
+        cancelButtonText: 'Cancelar',
+        isDanger: true,
+        action: () => {
+          this.stateService.deleteFreshFruitItem(String(fruit.id));
         }
       });
     } catch {

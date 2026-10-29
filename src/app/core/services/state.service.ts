@@ -837,6 +837,10 @@ private loadEmployeesFromStorage(): EmployeeDto[] {
               f => f.fruitId === apiFruit.fruitId || f.name.toLowerCase() === apiFruit.name.toLowerCase()
             );
             const color = apiFruit.colorHex || apiFruit.pulpColor || existing?.color || '';
+            const apiRawStock = Number(apiFruit.rawStockKg ?? 0);
+            const resolvedFreshStockKg =
+              apiRawStock > 0 ? apiRawStock : (existing?.freshStockKg ?? apiRawStock);
+            const apiYieldRate = (apiFruit.yieldPercentage || apiFruit.expectedYieldPercentage || 0) / 100;
             return {
               id:
                 existing?.id ||
@@ -853,9 +857,9 @@ private loadEmployeesFromStorage(): EmployeeDto[] {
               bgColor: existing?.bgColor || '',
               borderColor: existing?.borderColor || color,
               emoji: '',
-              yieldRate: (apiFruit.yieldPercentage || apiFruit.expectedYieldPercentage || 0) / 100,
+              yieldRate: apiYieldRate > 0 ? apiYieldRate : (existing?.yieldRate ?? 0),
               waterAdditionDefault: existing?.waterAdditionDefault ?? 0,
-              freshStockKg: apiFruit.rawStockKg ?? existing?.freshStockKg ?? 0,
+              freshStockKg: resolvedFreshStockKg,
               stock: {
                 g140: apiFruit.stock100g ?? existing?.stock.g140 ?? 0,
                 g250: apiFruit.stock250g ?? existing?.stock.g250 ?? 0,
@@ -1044,6 +1048,184 @@ private loadEmployeesFromStorage(): EmployeeDto[] {
       this.notification.info(
         'Inventario de Fruta Actualizado',
         `${targetFruitName}: ${deltaKg > 0 ? '+' : ''}${deltaKg} Kg de fruta fresca`
+      );
+    } catch {
+      return;
+    }
+  }
+
+  /**
+   * Creates or updates a fresh fruit inventory item in kilograms and synchronizes with the backend API and all PWA modules.
+   */
+  saveFreshFruitItem(payload: {
+    id?: string;
+    fruitId?: number;
+    name: string;
+    freshStockKg: number;
+    yieldPercentage?: number;
+    scientificName?: string;
+  }): FruitConfig | null {
+    try {
+      const cleanName = payload.name.trim();
+      if (!cleanName) {
+        return null;
+      }
+      const weightKg = Math.max(0, Number(Number(payload.freshStockKg || 0).toFixed(1)));
+      const yieldPct = Math.max(0, Math.min(100, Number(payload.yieldPercentage ?? 0)));
+      const yieldRate = Number((yieldPct / 100).toFixed(4));
+      const cleanScientific = (payload.scientificName ?? '').trim();
+
+      const currentList = this.fruits();
+      const existing = currentList.find(
+        f =>
+          (payload.id && f.id === payload.id) ||
+          (payload.fruitId && f.fruitId === payload.fruitId) ||
+          f.name.toLowerCase() === cleanName.toLowerCase()
+      );
+
+      if (existing) {
+        const previousName = existing.name;
+        const previousKg = existing.freshStockKg || 0;
+        const deltaKg = Number((weightKg - previousKg).toFixed(1));
+        const updatedFruit: FruitConfig = {
+          ...existing,
+          name: cleanName,
+          scientificName: cleanScientific,
+          freshStockKg: weightKg,
+          yieldRate: yieldPct > 0 ? yieldRate : existing.yieldRate
+        };
+
+        this.fruits.update(list => list.map(f => (f.id === existing.id ? updatedFruit : f)));
+
+        if (previousName.toLowerCase() !== cleanName.toLowerCase()) {
+          this.productVariants.update(variants =>
+            variants.map(v =>
+              v.fruitId === existing.fruitId || v.fruitName.toLowerCase() === previousName.toLowerCase()
+                ? { ...v, fruitName: cleanName }
+                : v
+            )
+          );
+        }
+
+        this.saveAllToStorage();
+
+        if (existing.fruitId && existing.fruitId > 0) {
+          this.api
+            .updateFruit?.(existing.fruitId, {
+              name: cleanName,
+              rawStockKg: weightKg,
+              yieldPercentage: Math.round((updatedFruit.yieldRate || 0) * 100),
+              expectedYieldPercentage: Math.round((updatedFruit.yieldRate || 0) * 100)
+            })
+            ?.subscribe({ error: () => {} });
+
+          if (deltaKg !== 0) {
+            this.api
+              .adjustFruitStock?.(existing.fruitId, { rawStockKgDelta: deltaKg })
+              ?.subscribe({ error: () => {} });
+          }
+        }
+
+        this.notification.success(
+          'Fruta Actualizada',
+          `${cleanName}: ${weightKg} Kg disponibles en planta.`
+        );
+        return updatedFruit;
+      }
+
+      const nextFruitId = Math.max(0, ...currentList.map(f => f.fruitId || 0)) + 1;
+      const slug =
+        cleanName
+          .toLowerCase()
+          .normalize('NFD')
+          .replace(/[\u0300-\u036f]/g, '')
+          .replace(/[^a-z0-9]+/g, '_')
+          .replace(/^_|_$/g, '') || `fruit_${nextFruitId}`;
+
+      let resolvedFruit: FruitConfig = {
+        id: `${slug}_${nextFruitId}`,
+        fruitId: nextFruitId,
+        name: cleanName,
+        scientificName: cleanScientific,
+        description: '',
+        imageUrl: '',
+        isVisibleInPortal: true,
+        color: '#1e5e3a',
+        bgColor: '#f0fdf4',
+        borderColor: '#1e5e3a',
+        emoji: '',
+        yieldRate,
+        waterAdditionDefault: 0,
+        freshStockKg: weightKg,
+        stock: { g140: 0, g250: 0, g500: 0, g1000: 0 },
+        minStock: { g140: 0, g250: 0, g500: 0, g1000: 0 },
+        prices: { g140: 0, g250: 0, g500: 0, g1000: 0 },
+        category: 'PULPAS'
+      };
+
+      this.fruits.update(list => [resolvedFruit, ...list]);
+      this.saveAllToStorage();
+
+      this.api
+        .createFruit?.({
+          name: cleanName,
+          code: slug.toUpperCase().slice(0, 12),
+          category: 'PULPAS',
+          colorHex: '#1e5e3a',
+          yieldPercentage: yieldPct,
+          expectedYieldPercentage: yieldPct,
+          rawStockKg: weightKg,
+          unitPrice: 0
+        })
+        ?.subscribe({
+          next: (createdDto: FruitDto) => {
+            if (createdDto && createdDto.fruitId) {
+              resolvedFruit = { ...resolvedFruit, fruitId: createdDto.fruitId };
+              this.fruits.update(list =>
+                list.map(f =>
+                  f.id === resolvedFruit.id ? { ...f, fruitId: createdDto.fruitId } : f
+                )
+              );
+              this.saveAllToStorage();
+              if (weightKg > 0 && (createdDto.rawStockKg ?? 0) === 0) {
+                this.api
+                  .adjustFruitStock?.(createdDto.fruitId, { rawStockKgDelta: weightKg })
+                  ?.subscribe({ error: () => {} });
+              }
+            }
+          },
+          error: () => {}
+        });
+
+      this.notification.success(
+        'Fruta Registrada en Inventario',
+        `${cleanName} agregada con ${weightKg} Kg disponibles en planta.`
+      );
+      return resolvedFruit;
+    } catch {
+      return null;
+    }
+  }
+
+  /**
+   * Deletes a fresh fruit inventory item by id or name and synchronizes with the backend API.
+   */
+  deleteFreshFruitItem(fruitIdOrSlug: string): void {
+    try {
+      const target = this.fruits().find(
+        f => f.id === fruitIdOrSlug || String(f.fruitId) === String(fruitIdOrSlug)
+      );
+      if (!target) {
+        return;
+      }
+      this.fruits.update(list => list.filter(f => f.id !== target.id));
+      this.saveAllToStorage();
+      if (target.fruitId && target.fruitId > 0) {
+        this.api.deleteFruit?.(target.fruitId)?.subscribe({ error: () => {} });
+      }
+      this.notification.info(
+        'Fruta Eliminada',
+        `"${target.name}" fue retirada del inventario de planta.`
       );
     } catch {
       return;

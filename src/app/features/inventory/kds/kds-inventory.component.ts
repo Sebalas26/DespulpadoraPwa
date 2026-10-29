@@ -566,104 +566,213 @@ interface AudioContextWindow extends Window {
 
     .kds-root {
       min-height: 100vh;
-      background: #0f172a;
-      color: #f8fafc;
+      background: #f6f8f7;
+      color: #111827;
       display: flex;
       flex-direction: column;
       user-select: none;
       transition: background 0.25s ease, color 0.25s ease;
 
-      &:not(.dark-theme) {
-        background: #f1f5f9;
-        color: #0f172a;
+      &.dark-theme {
+        background: #0f172a;
+        color: #f8fafc;
 
         .kds-header {
-          background: #ffffff;
-          border-bottom-color: #e2e8f0;
-          box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);
+          background: #1e293b;
+          border-bottom-color: #334155;
+          box-shadow: none;
+        }
+
+        .kds-clock .clock-time {
+          color: #4ade80;
+        }
+
+        .kds-clock .clock-date {
+          color: #94a3b8;
+        }
+
+        .kds-title-badge .badge-tag {
+          color: #4ade80;
+        }
+
+        .kds-title-badge .kds-title {
+          color: #f8fafc;
         }
 
         .metric-card {
-          background: #f8fafc;
-          border-color: #e2e8f0;
-          color: #1e293b;
+          background: #0f172a;
+          border-color: #334155;
+          color: #f8fafc;
+
+          .metric-val {
+            color: #f8fafc;
+
+            small {
+              color: #94a3b8;
+            }
+          }
+
+          .metric-lbl {
+            color: #94a3b8;
+          }
+        }
+
+        .kds-view-selector {
+          background: #0f172a;
+          border-color: #334155;
+
+          .view-pill {
+            color: #94a3b8;
+
+            &.active {
+              background: #1e5e3a;
+              color: #ffffff;
+            }
+          }
+        }
+
+        .kds-tool-btn {
+          background: #0f172a;
+          border-color: #334155;
+          color: #cbd5e1;
+
+          &:hover {
+            background: #334155;
+            color: #ffffff;
+          }
         }
 
         .kds-filter-bar {
-          background: #ffffff;
-          border-bottom-color: #e2e8f0;
+          background: #131d31;
+          border-bottom-color: #22324e;
         }
 
-        .filter-search-input {
-          background: #f8fafc;
-          border-color: #cbd5e1;
-          color: #0f172a;
+        .filter-search-wrap .filter-search-input {
+          background: #0f172a;
+          border-color: #334155;
+          color: #f8fafc;
         }
 
         .fruit-chip {
-          background: #f1f5f9;
-          border-color: #cbd5e1;
-          color: #475569;
+          background: #1e293b;
+          border-color: #334155;
+          color: #cbd5e1;
 
           &.active {
             background: #1e5e3a;
             border-color: #1e5e3a;
             color: #ffffff;
           }
-        }
 
-        .kds-section-panel {
-          background: #ffffff;
-          border-color: #e2e8f0;
-          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
-        }
-
-        .sec-title {
-          color: #0f172a;
-        }
-
-        .touch-card {
-          background: #ffffff;
-          border-color: #e2e8f0;
-          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
-
-          &:hover {
-            border-color: #1e5e3a;
-            box-shadow: 0 6px 18px rgba(0, 0, 0, 0.08);
+          .chip-badge {
+            background: rgba(0, 0, 0, 0.35);
+            color: #cbd5e1;
           }
         }
 
-        .item-name {
-          color: #0f172a;
+        .kds-section-panel {
+          background: #1e293b;
+          border-color: #334155;
         }
 
-        .card-big-stat .stat-number {
-          color: #0f172a;
+        .section-title-bar {
+          .sec-title {
+            color: #f8fafc;
+          }
+
+          .sec-subtitle {
+            color: #94a3b8;
+          }
+
+          .sec-count-badge {
+            background: #0f172a;
+            border-color: #334155;
+            color: #cbd5e1;
+          }
+        }
+
+        .touch-card {
+          background: #0f172a;
+          border-color: #334155;
+
+          .item-name {
+            color: #f8fafc;
+          }
+
+          .item-sub {
+            color: #94a3b8;
+          }
+
+          .card-big-stat .stat-number {
+            color: #f8fafc;
+          }
+        }
+
+        .btn-exact-numpad {
+          background: rgba(255, 255, 255, 0.04);
+          border-color: #475569;
+          color: #cbd5e1;
+
+          &:hover {
+            background: rgba(255, 255, 255, 0.1);
+            color: #ffffff;
+          }
         }
 
         .kds-audit-footer {
-          background: #ffffff;
-          border-top-color: #e2e8f0;
-          color: #475569;
+          background: #1e293b;
+          border-top-color: #334155;
+          color: #94a3b8;
         }
 
         .tx-chip {
-          background: #f8fafc;
-          border-color: #e2e8f0;
-          color: #1e293b;
+          background: #0f172a;
+          border-color: #334155;
+          color: #f8fafc;
+        }
+
+        .numpad-modal {
+          background: #1e293b;
+          border-color: #334155;
+          color: #f8fafc;
+
+          .numpad-title {
+            color: #f8fafc;
+          }
+
+          .numpad-screen {
+            background: #0f172a;
+            border-color: #334155;
+
+            .screen-number {
+              color: #ffffff;
+            }
+          }
+
+          .numkey {
+            background: #0f172a;
+            border-color: #334155;
+            color: #ffffff;
+          }
+
+          .shortcut-chip {
+            background: #0f172a;
+            border-color: #334155;
+            color: #cbd5e1;
+          }
         }
       }
     }
 
-    
     .kds-header {
       display: flex;
       align-items: center;
       justify-content: space-between;
       gap: 16px;
       padding: 12px 24px;
-      background: #1e293b;
-      border-bottom: 1.5px solid #334155;
+      background: #ffffff;
+      border-bottom: 1px solid #eef2ef;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
       flex-wrap: wrap;
       position: sticky;
       top: 0;
@@ -679,14 +788,16 @@ interface AudioContextWindow extends Window {
     .kds-clock {
       display: flex;
       flex-direction: column;
+      padding-right: 16px;
+      border-right: 1px solid #e5e7eb;
 
       .clock-time {
         font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-        font-size: 1.6rem;
+        font-size: 1.55rem;
         font-weight: 900;
         letter-spacing: -0.03em;
         line-height: 1;
-        color: #1e5e3a;
+        color: #111827;
       }
 
       .clock-date {
@@ -694,7 +805,7 @@ interface AudioContextWindow extends Window {
         font-weight: 700;
         text-transform: uppercase;
         letter-spacing: 0.05em;
-        color: #94a3b8;
+        color: #6b7280;
         margin-top: 2px;
       }
     }
@@ -707,22 +818,21 @@ interface AudioContextWindow extends Window {
         font-size: 0.65rem;
         font-weight: 900;
         letter-spacing: 0.08em;
-        color: #38bdf8;
+        color: #1e5e3a;
       }
 
       .kds-title {
         font-size: 1.15rem;
         font-weight: 800;
-        color: #ffffff;
+        color: #111827;
         letter-spacing: -0.01em;
       }
     }
 
-    
     .kds-metrics-bar {
       display: flex;
       align-items: center;
-      gap: 12px;
+      gap: 10px;
       flex-wrap: wrap;
     }
 
@@ -731,9 +841,10 @@ interface AudioContextWindow extends Window {
       align-items: center;
       gap: 10px;
       padding: 6px 14px;
-      background: #0f172a;
-      border: 1px solid #334155;
-      border-radius: 12px;
+      background: #ffffff;
+      border: 1px solid #e5e7eb;
+      border-radius: 10px;
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
 
       .metric-icon {
         width: 32px;
@@ -746,26 +857,26 @@ interface AudioContextWindow extends Window {
       }
 
       &.metric-fruit .metric-icon {
-        background: rgba(30, 94, 58, 0.15);
+        background: #eaf5ee;
         color: #1e5e3a;
       }
 
       &.metric-pulp .metric-icon {
-        background: rgba(56, 189, 248, 0.15);
-        color: #38bdf8;
+        background: #eff6ff;
+        color: #2563eb;
       }
 
       &.metric-equiv .metric-icon {
-        background: rgba(168, 85, 247, 0.15);
-        color: #a855f7;
+        background: #f5f3ff;
+        color: #7c3aed;
       }
 
       &.metric-alert {
-        border-color: #ef4444;
-        background: rgba(239, 68, 68, 0.1);
+        border-color: #fecaca;
+        background: #fef2f2;
 
         .metric-val {
-          color: #ef4444;
+          color: #dc2626;
         }
       }
 
@@ -773,62 +884,63 @@ interface AudioContextWindow extends Window {
         font-size: 1.15rem;
         font-weight: 900;
         line-height: 1;
+        color: #111827;
 
         small {
           font-size: 0.72rem;
           font-weight: 700;
-          color: #94a3b8;
+          color: #6b7280;
         }
       }
 
       .metric-lbl {
         font-size: 0.68rem;
         font-weight: 600;
-        color: #94a3b8;
+        color: #6b7280;
         margin-top: 2px;
       }
     }
 
-    
     .kds-actions-group {
       display: flex;
       align-items: center;
-      gap: 10px;
+      gap: 8px;
     }
 
     .kds-view-selector {
       display: inline-flex;
-      background: rgba(0, 0, 0, 0.25);
-      padding: 3px;
-      border-radius: 10px;
-      border: 1px solid #334155;
+      background: #f3f4f6;
+      padding: 2px;
+      border-radius: 8px;
+      border: 1px solid #e5e7eb;
 
       .view-pill {
         border: none;
         background: transparent;
-        color: #94a3b8;
+        color: #6b7280;
         font-size: 0.78rem;
-        font-weight: 700;
+        font-weight: 600;
         padding: 5px 12px;
-        border-radius: 7px;
+        border-radius: 6px;
         cursor: pointer;
         transition: all 0.15s ease;
 
         &.active {
-          background: #1e5e3a;
-          color: #ffffff;
-          box-shadow: 0 2px 8px rgba(30, 94, 58, 0.3);
+          background: #ffffff;
+          color: #1e5e3a;
+          font-weight: 700;
+          box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
         }
       }
     }
 
     .kds-tool-btn {
-      width: 38px;
-      height: 38px;
-      border-radius: 10px;
-      border: 1px solid #334155;
-      background: rgba(255, 255, 255, 0.05);
-      color: #cbd5e1;
+      width: 36px;
+      height: 36px;
+      border-radius: 8px;
+      border: 1px solid #e5e7eb;
+      background: #ffffff;
+      color: #4b5563;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -836,46 +948,46 @@ interface AudioContextWindow extends Window {
       transition: all 0.15s ease;
 
       &:hover {
-        background: rgba(255, 255, 255, 0.12);
-        color: #ffffff;
-        border-color: #64748b;
+        background: #f9fafb;
+        color: #111827;
+        border-color: #d1d5db;
       }
 
       &.muted {
-        color: #ef4444;
+        color: #dc2626;
+        border-color: #fecaca;
+        background: #fef2f2;
       }
     }
 
     .btn-exit-kds {
       display: inline-flex;
       align-items: center;
-      gap: 7px;
+      gap: 6px;
       padding: 7px 14px;
-      background: rgba(239, 68, 68, 0.15);
-      border: 1.5px solid rgba(239, 68, 68, 0.4);
-      color: #fca5a5;
-      border-radius: 10px;
-      font-size: 0.82rem;
-      font-weight: 800;
+      background: #ffffff;
+      border: 1px solid #fecaca;
+      color: #dc2626;
+      border-radius: 8px;
+      font-size: 0.8rem;
+      font-weight: 700;
       cursor: pointer;
       transition: all 0.18s ease;
 
       &:hover {
-        background: #ef4444;
+        background: #dc2626;
         color: #ffffff;
-        border-color: #ef4444;
-        box-shadow: 0 4px 12px rgba(239, 68, 68, 0.35);
+        border-color: #dc2626;
       }
     }
 
-    
     .kds-filter-bar {
       display: flex;
       align-items: center;
       gap: 14px;
       padding: 10px 24px;
-      background: #131d31;
-      border-bottom: 1px solid #22324e;
+      background: #ffffff;
+      border-bottom: 1px solid #eef2ef;
       overflow-x: auto;
     }
 
@@ -889,22 +1001,23 @@ interface AudioContextWindow extends Window {
         left: 12px;
         top: 50%;
         transform: translateY(-50%);
-        color: #64748b;
+        color: #9ca3af;
         pointer-events: none;
       }
 
       .filter-search-input {
         width: 100%;
         padding: 7px 32px 7px 36px;
-        background: #0f172a;
-        border: 1px solid #334155;
+        background: #f9fafb;
+        border: 1px solid #e5e7eb;
         border-radius: 8px;
-        color: #f8fafc;
+        color: #111827;
         font-size: 0.82rem;
         outline: none;
 
         &:focus {
           border-color: #1e5e3a;
+          background: #ffffff;
         }
       }
 
@@ -915,7 +1028,7 @@ interface AudioContextWindow extends Window {
         transform: translateY(-50%);
         background: none;
         border: none;
-        color: #94a3b8;
+        color: #6b7280;
         font-size: 1.1rem;
         cursor: pointer;
       }
@@ -932,9 +1045,9 @@ interface AudioContextWindow extends Window {
 
     .fruit-chip {
       padding: 5px 12px;
-      background: rgba(255, 255, 255, 0.05);
-      border: 1px solid #334155;
-      color: #94a3b8;
+      background: #f3f4f6;
+      border: 1px solid #e5e7eb;
+      color: #374151;
       border-radius: 20px;
       font-size: 0.78rem;
       font-weight: 700;
@@ -945,18 +1058,18 @@ interface AudioContextWindow extends Window {
       transition: all 0.15s ease;
 
       &:hover {
-        background: rgba(255, 255, 255, 0.1);
-        color: #ffffff;
+        background: #e5e7eb;
+        color: #111827;
       }
 
       &.active {
         background: #1e5e3a;
         border-color: #1e5e3a;
         color: #ffffff;
-        box-shadow: 0 2px 8px rgba(30, 94, 58, 0.35);
+        box-shadow: 0 2px 6px rgba(30, 94, 58, 0.25);
 
         .chip-badge {
-          background: rgba(255, 255, 255, 0.25);
+          background: rgba(255, 255, 255, 0.22);
           color: #ffffff;
         }
       }
@@ -965,12 +1078,11 @@ interface AudioContextWindow extends Window {
         font-size: 0.68rem;
         padding: 1px 6px;
         border-radius: 8px;
-        background: rgba(0, 0, 0, 0.3);
-        color: #cbd5e1;
+        background: #ffffff;
+        color: #374151;
       }
     }
 
-    
     .kds-main-grid {
       flex: 1;
       display: flex;
@@ -981,9 +1093,9 @@ interface AudioContextWindow extends Window {
     }
 
     .kds-section-panel {
-      background: #1e293b;
-      border: 1.5px solid #334155;
-      border-radius: 16px;
+      background: #f8faf8;
+      border: 1px solid #e5e7eb;
+      border-radius: 14px;
       padding: 18px 20px;
     }
 
@@ -1011,26 +1123,26 @@ interface AudioContextWindow extends Window {
         flex-shrink: 0;
 
         &.fruit-color {
-          background: rgba(30, 94, 58, 0.15);
+          background: #eaf5ee;
           color: #1e5e3a;
         }
 
         &.pulp-color {
-          background: rgba(56, 189, 248, 0.15);
-          color: #38bdf8;
+          background: #eff6ff;
+          color: #2563eb;
         }
       }
 
       .sec-title {
-        font-size: 1.15rem;
+        font-size: 1.1rem;
         font-weight: 800;
         margin: 0;
-        color: #ffffff;
+        color: #111827;
       }
 
       .sec-subtitle {
         font-size: 0.78rem;
-        color: #94a3b8;
+        color: #6b7280;
         margin: 2px 0 0 0;
       }
 
@@ -1039,12 +1151,12 @@ interface AudioContextWindow extends Window {
         font-weight: 700;
         padding: 4px 10px;
         border-radius: 9999px;
-        background: rgba(255, 255, 255, 0.08);
-        color: #cbd5e1;
+        background: #ffffff;
+        border: 1px solid #e5e7eb;
+        color: #374151;
       }
     }
 
-    
     .cards-stream-grid {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
@@ -1052,23 +1164,24 @@ interface AudioContextWindow extends Window {
     }
 
     .touch-card {
-      background: #0f172a;
-      border: 1.5px solid #334155;
-      border-radius: 14px;
+      background: #ffffff;
+      border: 1px solid #e5e7eb;
+      border-radius: 12px;
       padding: 16px;
       display: flex;
       flex-direction: column;
       justify-content: space-between;
+      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
       transition: all 0.2s ease;
 
       &:hover {
         border-color: #1e5e3a;
         transform: translateY(-2px);
-        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.35);
+        box-shadow: 0 6px 16px rgba(0, 0, 0, 0.07);
       }
 
       &.alert-border {
-        border-color: #ef4444 !important;
+        border: 1.5px solid #ef4444 !important;
       }
     }
 
@@ -1080,15 +1193,16 @@ interface AudioContextWindow extends Window {
       margin-bottom: 8px;
 
       .item-name {
-        font-size: 1.15rem;
+        font-size: 1.1rem;
         font-weight: 800;
         margin: 0;
         line-height: 1.2;
+        color: #111827;
       }
 
       .item-sub {
         font-size: 0.74rem;
-        color: #94a3b8;
+        color: #6b7280;
         display: block;
         margin-top: 2px;
       }
@@ -1098,15 +1212,15 @@ interface AudioContextWindow extends Window {
         font-weight: 800;
         padding: 3px 8px;
         border-radius: 9999px;
-        background: rgba(30, 94, 58, 0.15);
+        background: #eaf5ee;
         color: #1e5e3a;
-        border: 1px solid rgba(30, 94, 58, 0.3);
+        border: 1px solid #d1e7d8;
         white-space: nowrap;
 
         &.low-stock {
-          background: rgba(239, 68, 68, 0.15);
-          color: #ef4444;
-          border-color: rgba(239, 68, 68, 0.4);
+          background: #fef2f2;
+          color: #dc2626;
+          border-color: #fecaca;
         }
       }
 
@@ -1115,9 +1229,9 @@ interface AudioContextWindow extends Window {
         font-weight: 800;
         padding: 3px 8px;
         border-radius: 8px;
-        background: rgba(168, 85, 247, 0.15);
-        color: #c084fc;
-        border: 1px solid rgba(168, 85, 247, 0.3);
+        background: #f5f3ff;
+        color: #7c3aed;
+        border: 1px solid #ddd6fe;
       }
     }
 
@@ -1130,26 +1244,25 @@ interface AudioContextWindow extends Window {
 
       .stat-number {
         font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-        font-size: 2.2rem;
+        font-size: 2.1rem;
         font-weight: 900;
         line-height: 1;
-        color: #ffffff;
+        color: #111827;
       }
 
       .stat-unit {
-        font-size: 1rem;
+        font-size: 0.95rem;
         font-weight: 800;
-        color: #94a3b8;
+        color: #6b7280;
       }
 
       .stat-equiv {
         font-size: 0.74rem;
-        color: #64748b;
+        color: #6b7280;
         margin-left: auto;
       }
     }
 
-    
     .touch-keypad {
       display: flex;
       flex-direction: column;
@@ -1175,15 +1288,15 @@ interface AudioContextWindow extends Window {
       }
 
       &.negative-row .keypad-row-lbl {
-        color: #ef4444;
+        color: #dc2626;
       }
     }
 
     .kds-key-btn {
       flex: 1;
-      padding: 9px 0;
+      padding: 8px 0;
       border-radius: 8px;
-      font-size: 0.82rem;
+      font-size: 0.8rem;
       font-weight: 800;
       cursor: pointer;
       border: 1px solid transparent;
@@ -1196,9 +1309,9 @@ interface AudioContextWindow extends Window {
       }
 
       &.btn-pos {
-        background: rgba(30, 94, 58, 0.15);
+        background: #eaf5ee;
         color: #1e5e3a;
-        border-color: rgba(30, 94, 58, 0.35);
+        border-color: #d1e7d8;
 
         &:hover {
           background: #1e5e3a;
@@ -1206,18 +1319,18 @@ interface AudioContextWindow extends Window {
         }
 
         &.btn-bold {
-          background: rgba(30, 94, 58, 0.28);
+          background: #dcfce7;
           font-weight: 900;
         }
       }
 
       &.btn-neg {
-        background: rgba(239, 68, 68, 0.12);
-        color: #f87171;
-        border-color: rgba(239, 68, 68, 0.3);
+        background: #fef2f2;
+        color: #dc2626;
+        border-color: #fecaca;
 
         &:hover {
-          background: #ef4444;
+          background: #dc2626;
           color: #ffffff;
         }
       }
@@ -1231,33 +1344,33 @@ interface AudioContextWindow extends Window {
       gap: 8px;
       width: 100%;
       padding: 8px;
-      background: rgba(255, 255, 255, 0.04);
-      border: 1px dashed #475569;
+      background: #f9fafb;
+      border: 1px dashed #d1d5db;
       border-radius: 8px;
-      color: #94a3b8;
+      color: #4b5563;
       font-size: 0.78rem;
       font-weight: 700;
       cursor: pointer;
       transition: all 0.15s ease;
 
       &:hover {
-        background: rgba(255, 255, 255, 0.1);
-        color: #ffffff;
-        border-color: #94a3b8;
+        background: #f3f4f6;
+        color: #111827;
+        border-color: #9ca3af;
       }
     }
 
-    
     .kds-audit-footer {
       display: flex;
       align-items: center;
       gap: 16px;
       padding: 10px 24px;
-      background: #1e293b;
-      border-top: 1.5px solid #334155;
+      background: #ffffff;
+      border-top: 1px solid #eef2ef;
       font-size: 0.82rem;
       overflow-x: auto;
       white-space: nowrap;
+      color: #4b5563;
     }
 
     .audit-left {
@@ -1271,12 +1384,12 @@ interface AudioContextWindow extends Window {
         height: 8px;
         border-radius: 50%;
         background: #1e5e3a;
-        box-shadow: 0 0 10px #1e5e3a;
+        box-shadow: 0 0 8px rgba(30, 94, 58, 0.5);
       }
 
       .audit-title {
         font-weight: 800;
-        color: #94a3b8;
+        color: #374151;
       }
     }
 
@@ -1289,7 +1402,7 @@ interface AudioContextWindow extends Window {
     }
 
     .audit-empty {
-      color: #64748b;
+      color: #6b7280;
       font-style: italic;
       font-size: 0.78rem;
     }
@@ -1299,14 +1412,15 @@ interface AudioContextWindow extends Window {
       align-items: center;
       gap: 8px;
       padding: 4px 10px;
-      background: #0f172a;
-      border: 1px solid #334155;
+      background: #f9fafb;
+      border: 1px solid #e5e7eb;
       border-radius: 8px;
       font-size: 0.78rem;
+      color: #111827;
 
       .tx-time {
         font-family: monospace;
-        color: #64748b;
+        color: #6b7280;
       }
 
       .tx-name {
@@ -1322,13 +1436,13 @@ interface AudioContextWindow extends Window {
       }
 
       &.neg .tx-delta {
-        color: #ef4444;
+        color: #dc2626;
       }
 
       .tx-undo-btn {
         background: transparent;
         border: none;
-        color: #94a3b8;
+        color: #6b7280;
         font-size: 0.72rem;
         font-weight: 700;
         cursor: pointer;
@@ -1336,17 +1450,16 @@ interface AudioContextWindow extends Window {
         border-radius: 4px;
 
         &:hover {
-          background: rgba(255, 255, 255, 0.1);
-          color: #ffffff;
+          background: #e5e7eb;
+          color: #111827;
         }
       }
     }
 
-    
     .modal-backdrop {
       position: fixed;
       inset: 0;
-      background: rgba(0, 0, 0, 0.75);
+      background: rgba(17, 24, 39, 0.45);
       backdrop-filter: blur(4px);
       display: flex;
       align-items: center;
@@ -1358,14 +1471,15 @@ interface AudioContextWindow extends Window {
     .numpad-modal {
       width: 100%;
       max-width: 440px;
-      background: #1e293b;
-      border: 1.5px solid #334155;
+      background: #ffffff;
+      border: 1px solid #e5e7eb;
       border-radius: 20px;
       padding: 20px;
-      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6);
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.18);
       display: flex;
       flex-direction: column;
       gap: 16px;
+      color: #111827;
     }
 
     .numpad-header {
@@ -1377,23 +1491,24 @@ interface AudioContextWindow extends Window {
         font-size: 1.25rem;
         font-weight: 800;
         margin: 0;
+        color: #111827;
       }
 
       .numpad-sub {
         font-size: 0.78rem;
-        color: #94a3b8;
+        color: #6b7280;
       }
 
       .numpad-close {
         background: none;
         border: none;
-        color: #94a3b8;
+        color: #6b7280;
         font-size: 1.6rem;
         cursor: pointer;
         line-height: 1;
 
         &:hover {
-          color: #ffffff;
+          color: #111827;
         }
       }
     }
@@ -1409,40 +1524,40 @@ interface AudioContextWindow extends Window {
         font-size: 0.85rem;
         font-weight: 800;
         cursor: pointer;
-        border: 2px solid transparent;
+        border: 1.5px solid transparent;
         transition: all 0.15s ease;
 
         &.op-add {
-          background: rgba(30, 94, 58, 0.12);
+          background: #eaf5ee;
           color: #1e5e3a;
-          border-color: rgba(30, 94, 58, 0.3);
+          border-color: #d1e7d8;
 
           &.selected {
             background: #1e5e3a;
             color: #ffffff;
             border-color: #1e5e3a;
-            box-shadow: 0 4px 12px rgba(30, 94, 58, 0.35);
+            box-shadow: 0 4px 12px rgba(30, 94, 58, 0.25);
           }
         }
 
         &.op-sub {
-          background: rgba(239, 68, 68, 0.12);
-          color: #f87171;
-          border-color: rgba(239, 68, 68, 0.3);
+          background: #fef2f2;
+          color: #dc2626;
+          border-color: #fecaca;
 
           &.selected {
-            background: #ef4444;
+            background: #dc2626;
             color: #ffffff;
-            border-color: #ef4444;
-            box-shadow: 0 4px 12px rgba(239, 68, 68, 0.35);
+            border-color: #dc2626;
+            box-shadow: 0 4px 12px rgba(220, 38, 38, 0.25);
           }
         }
       }
     }
 
     .numpad-screen {
-      background: #0f172a;
-      border: 2px solid #334155;
+      background: #f9fafb;
+      border: 1.5px solid #e5e7eb;
       border-radius: 12px;
       padding: 14px 18px;
       display: flex;
@@ -1454,21 +1569,21 @@ interface AudioContextWindow extends Window {
         font-family: monospace;
         font-size: 1.8rem;
         font-weight: 900;
-        color: #94a3b8;
+        color: #6b7280;
       }
 
       .screen-number {
         font-family: monospace;
         font-size: 2.5rem;
         font-weight: 900;
-        color: #ffffff;
+        color: #111827;
         letter-spacing: -0.02em;
       }
 
       .screen-unit {
         font-size: 1.1rem;
         font-weight: 800;
-        color: #94a3b8;
+        color: #6b7280;
       }
     }
 
@@ -1478,25 +1593,29 @@ interface AudioContextWindow extends Window {
       gap: 10px;
 
       .numkey {
-        padding: 16px 0;
+        padding: 14px 0;
         border-radius: 12px;
-        background: #0f172a;
-        border: 1px solid #334155;
-        color: #ffffff;
+        background: #f9fafb;
+        border: 1px solid #e5e7eb;
+        color: #111827;
         font-family: monospace;
-        font-size: 1.6rem;
+        font-size: 1.5rem;
         font-weight: 800;
         cursor: pointer;
         transition: all 0.12s ease;
         touch-action: manipulation;
 
+        &:hover {
+          background: #f3f4f6;
+        }
+
         &:active {
           transform: scale(0.95);
-          background: #334155;
+          background: #e5e7eb;
         }
 
         &.numkey-clear {
-          color: #ef4444;
+          color: #dc2626;
           font-weight: 900;
         }
       }
@@ -1510,22 +1629,22 @@ interface AudioContextWindow extends Window {
       .shortcuts-lbl {
         font-size: 0.72rem;
         font-weight: 700;
-        color: #94a3b8;
+        color: #6b7280;
       }
 
       .shortcut-chip {
         padding: 4px 10px;
-        background: #0f172a;
-        border: 1px solid #334155;
+        background: #f3f4f6;
+        border: 1px solid #e5e7eb;
         border-radius: 6px;
-        color: #cbd5e1;
+        color: #374151;
         font-size: 0.78rem;
         font-weight: 800;
         cursor: pointer;
 
         &:hover {
-          background: #334155;
-          color: #ffffff;
+          background: #e5e7eb;
+          color: #111827;
         }
       }
     }
@@ -1539,15 +1658,15 @@ interface AudioContextWindow extends Window {
         flex: 1;
         padding: 12px;
         border-radius: 10px;
-        background: transparent;
-        border: 1.5px solid #475569;
-        color: #cbd5e1;
+        background: #ffffff;
+        border: 1px solid #d1d5db;
+        color: #374151;
         font-size: 0.9rem;
         font-weight: 700;
         cursor: pointer;
 
         &:hover {
-          background: rgba(255, 255, 255, 0.05);
+          background: #f9fafb;
         }
       }
 
@@ -1561,7 +1680,7 @@ interface AudioContextWindow extends Window {
         font-size: 0.95rem;
         font-weight: 900;
         cursor: pointer;
-        box-shadow: 0 4px 16px rgba(30, 94, 58, 0.4);
+        box-shadow: 0 4px 12px rgba(30, 94, 58, 0.28);
         transition: all 0.15s ease;
 
         &:hover {
@@ -1569,11 +1688,11 @@ interface AudioContextWindow extends Window {
         }
 
         &.confirm-neg {
-          background: #ef4444;
-          box-shadow: 0 4px 16px rgba(239, 68, 68, 0.4);
+          background: #dc2626;
+          box-shadow: 0 4px 12px rgba(220, 38, 38, 0.28);
 
           &:hover {
-            background: #dc2626;
+            background: #b91c1c;
           }
         }
       }
@@ -1586,7 +1705,7 @@ export class KdsInventoryComponent implements OnInit, OnDestroy {
   private readonly router = inject(Router);
   readonly Math = Math;
 
-  readonly isDarkTheme = signal<boolean>(true);
+  readonly isDarkTheme = signal<boolean>(false);
   readonly soundEnabled = signal<boolean>(true);
   readonly viewMode = signal<'all' | 'fruits' | 'pulps'>('all');
   readonly searchQuery = signal<string>('');
@@ -1700,6 +1819,12 @@ export class KdsInventoryComponent implements OnInit, OnDestroy {
    */
   ngOnInit(): void {
     try {
+      const savedTheme = localStorage.getItem('despulpadora_kds_theme');
+      if (savedTheme === 'dark') {
+        this.isDarkTheme.set(true);
+      } else {
+        this.isDarkTheme.set(false);
+      }
       this.stateService.refreshAll?.();
       this.updateClock();
       this.clockInterval = setInterval(() => this.updateClock(), 1000);
@@ -2014,7 +2139,9 @@ export class KdsInventoryComponent implements OnInit, OnDestroy {
    */
   toggleTheme(): void {
     try {
-      this.isDarkTheme.update((t: boolean) => !t);
+      const next = !this.isDarkTheme();
+      this.isDarkTheme.set(next);
+      localStorage.setItem('despulpadora_kds_theme', next ? 'dark' : 'light');
     } catch (error: unknown) {
       console.error('Error toggling theme:', error);
     }
