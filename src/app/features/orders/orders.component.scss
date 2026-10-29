@@ -2922,3 +2922,12 @@ button.btn-primary.btn-disabled {
 
 
 
+
+@media (min-width: 1024px) {
+  .picking-page-header .picking-title-block {
+    display: none !important;
+  }
+  .separated-view-header > div:first-child {
+    display: none !important;
+  }
+}

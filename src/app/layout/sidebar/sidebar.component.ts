@@ -100,10 +100,10 @@ import { environment } from '../../../environments/environment';
             @if (mod.slug === 'inventory' || mod.frontendRoute.includes('tab=inventory')) {
               <a
                 routerLink="/settings"
-                [queryParams]="{ tab: 'variants' }"
-                [class.active]="isInventoryTabActive('variants')"
+                [queryParams]="{ tab: 'inventory' }"
+                [class.active]="isInventoryTabActive('inventory')"
                 class="dgl-nav-item"
-                title="Stock de pulpas congeladas listas para despacho por gramaje"
+                title="Inventario de fruta fresca y stock de pulpas congeladas"
               >
                 <span class="dgl-nav-icon">
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -112,39 +112,7 @@ import { environment } from '../../../environments/environment';
                     <line x1="12" y1="22.08" x2="12" y2="12"></line>
                   </svg>
                 </span>
-                <span class="dgl-nav-text">Stock de Pulpas</span>
-              </a>
-
-              <a
-                routerLink="/settings"
-                [queryParams]="{ tab: 'fruits' }"
-                [class.active]="isInventoryTabActive('fruits')"
-                class="dgl-nav-item"
-                title="Inventario de fruta fresca disponible en bodega"
-              >
-                <span class="dgl-nav-icon">
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z"></path>
-                    <path d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12"></path>
-                  </svg>
-                </span>
-                <span class="dgl-nav-text">Fruta Fresca</span>
-              </a>
-
-              <a
-                routerLink="/kds-inventory"
-                [class.active]="isInventoryTabActive('kds')"
-                class="dgl-nav-item"
-                title="Pantalla KDS de control y stock en planta"
-              >
-                <span class="dgl-nav-icon">
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
-                    <line x1="8" y1="21" x2="16" y2="21"></line>
-                    <line x1="12" y1="17" x2="12" y2="21"></line>
-                  </svg>
-                </span>
-                <span class="dgl-nav-text">Pantalla KDS Planta</span>
+                <span class="dgl-nav-text">Inventario & Stock</span>
               </a>
             } @else if (mod.frontendRoute === '/orders' || mod.slug === 'orders') {
               <a
@@ -669,7 +637,7 @@ export class SidebarComponent {
 
   private readonly navEnd$ = this.router.events.pipe(
     filter((e): e is NavigationEnd => e instanceof NavigationEnd),
-    map(() => this.router.url)
+    map((e: NavigationEnd) => e.urlAfterRedirects || e.url || this.router.url)
   );
 
   private readonly urlSignal = toSignal(this.navEnd$, { initialValue: this.router.url });
@@ -852,7 +820,7 @@ export class SidebarComponent {
   /**
    * Checks whether a specific sub-tab of inventory or KDS screen is active.
    */
-  isInventoryTabActive(subTab: 'variants' | 'fruits' | 'kds'): boolean {
+  isInventoryTabActive(subTab: 'variants' | 'fruits' | 'kds' | 'inventory'): boolean {
     try {
       const url = this.urlSignal() || '';
       if (subTab === 'kds') {
@@ -860,6 +828,15 @@ export class SidebarComponent {
       }
       if (!url.startsWith('/settings')) {
         return false;
+      }
+      if (subTab === 'inventory') {
+        return (
+          url.includes('tab=inventory') ||
+          url.includes('tab=variants') ||
+          url.includes('tab=fruits') ||
+          url.includes('tab=cava') ||
+          url.includes('tab=stock')
+        );
       }
       if (subTab === 'fruits') {
         return url.includes('tab=fruits');

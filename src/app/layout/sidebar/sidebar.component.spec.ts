@@ -76,6 +76,7 @@ describe('SidebarComponent', () => {
     expect(component.isInventoryTabActive('variants')).toBeFalse();
     expect(component.isInventoryTabActive('fruits')).toBeFalse();
     expect(component.isInventoryTabActive('kds')).toBeFalse();
+    expect(component.isInventoryTabActive('inventory')).toBeFalse();
     expect(component.isOrderTabActive('facturacion')).toBeFalse();
     expect(component.isOrderTabActive('despachos')).toBeFalse();
     expect(component.isSettingsTabActive('inventory')).toBeFalse();
@@ -132,11 +133,10 @@ describe('SidebarComponent', () => {
     const navItems = Array.from(compiled.querySelectorAll('.sidebar-nav a.dgl-nav-item')) as HTMLAnchorElement[];
     const itemTexts = navItems.map(item => item.textContent || '');
 
-    expect(itemTexts.some(t => t.includes('Stock de Pulpas'))).toBeTrue();
-    expect(itemTexts.some(t => t.includes('Fruta Fresca'))).toBeTrue();
-    expect(itemTexts.some(t => t.includes('Pantalla KDS Planta'))).toBeTrue();
+    expect(itemTexts.some(t => t.includes('Inventario & Stock'))).toBeTrue();
     expect(itemTexts.some(t => t.includes('Facturación & POS'))).toBeTrue();
     expect(itemTexts.some(t => t.includes('Despachos & Rutas'))).toBeTrue();
+    expect(itemTexts.some(t => t.includes('Pantalla KDS Planta'))).toBeFalse();
 
     // Verify none of the items contains the arrow prefix '↳'
     itemTexts.forEach(text => {

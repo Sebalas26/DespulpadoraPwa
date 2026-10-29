@@ -1,7 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
-import { Router, provideRouter } from '@angular/router';
+import { NavigationEnd, Router, provideRouter } from '@angular/router';
 import { HeaderComponent } from './header.component';
 import { StateService } from '../../core/services/state.service';
 import { AuthService } from '../../core/services/auth.service';
@@ -120,5 +120,27 @@ describe('HeaderComponent', () => {
     pill = compiled.querySelector('.online-pill');
     expect(pill?.textContent).toContain('Desconectado');
     expect(pill?.classList.contains('offline')).toBeTrue();
+  });
+
+  it('should render the topbar module title in desktop aligned with topbar actions', () => {
+    fixture.detectChanges();
+    const compiled = fixture.nativeElement as HTMLElement;
+    const titleEl = compiled.querySelector('.topbar-module-title');
+    expect(titleEl).toBeTruthy();
+    expect(titleEl?.textContent?.trim()).toBe(component.currentRouteTitle());
+  });
+
+  it('should compute appropriate module titles across main application routes', () => {
+    component.currentUrl.set('/settings?tab=general');
+    expect(component.currentRouteTitle()).toBe('Configuración de la Planta & Sistema');
+
+    component.currentUrl.set('/settings?tab=variants');
+    expect(component.currentRouteTitle()).toBe('Inventario y Stock de Pulpas');
+
+    component.currentUrl.set('/orders?tab=despachos');
+    expect(component.currentRouteTitle()).toBe('Despachos & Rutas');
+
+    component.currentUrl.set('/dashboard');
+    expect(component.currentRouteTitle()).toBe('Dashboard general');
   });
 });

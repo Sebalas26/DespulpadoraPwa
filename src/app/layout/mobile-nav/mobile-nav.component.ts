@@ -1,4 +1,4 @@
-import { Component, computed, inject, signal } from '@angular/core';
+import { Component, HostListener, OnDestroy, computed, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { NavigationEnd, Router, RouterLink } from '@angular/router';
 import { filter } from 'rxjs';
@@ -14,7 +14,7 @@ import { environment } from '../../../environments/environment';
   standalone: true,
   imports: [CommonModule, RouterLink],
   template: `
-    <nav class="dgl-mobile-nav">
+    <nav class="dgl-mobile-nav" [class.nav-hidden]="isNavHidden() && !showMoreDrawer()">
       <a
         routerLink="/dashboard"
         class="dgl-mobile-nav-item"
@@ -219,7 +219,7 @@ import { environment } from '../../../environments/environment';
   styles: [`
     .dgl-mobile-nav {
       position: fixed;
-      bottom: max(10px, calc(env(safe-area-inset-bottom, 0px) + 6px));
+      bottom: max(22px, calc(env(safe-area-inset-bottom, 0px) + 16px));
       left: 12px;
       right: 12px;
       max-width: 460px;
@@ -240,6 +240,17 @@ import { environment } from '../../../environments/environment';
       z-index: 9500;
       padding: 6px;
       box-sizing: border-box;
+      will-change: transform, opacity;
+      transition: transform 0.32s cubic-bezier(0.16, 1, 0.3, 1),
+                  opacity 0.28s ease,
+                  visibility 0.28s ease;
+
+      &.nav-hidden {
+        transform: translateY(calc(100% + 40px));
+        opacity: 0;
+        visibility: hidden;
+        pointer-events: none;
+      }
     }
 
     @media (min-width: 1025px) {
@@ -427,13 +438,17 @@ import { environment } from '../../../environments/environment';
     }
   `]
 })
-export class MobileNavComponent {
+export class MobileNavComponent implements OnDestroy {
   readonly stateService = inject(StateService);
   readonly authService = inject(AuthService);
   private readonly router = inject(Router);
   readonly showMoreDrawer = signal<boolean>(false);
   readonly currentUrl = signal<string>(this.router.url || '/dashboard');
   readonly environment = environment;
+  readonly isNavHidden = signal<boolean>(false);
+  private lastScrollY = 0;
+  private readonly scrollThreshold = 8;
+  private scrollIdleTimeout: ReturnType<typeof setTimeout> | null = null;
 
   /**
    * Subscribes to router navigation events to keep the active mobile tab synchronized.
@@ -571,6 +586,76 @@ export class MobileNavComponent {
       return params;
     } catch {
       return null;
+    }
+  }
+
+  /**
+   * Listens for window scroll events to auto-hide or reveal the mobile navigation bar.
+   */
+  @HostListener('window:scroll')
+  onWindowScroll(): void {
+    try {
+      this.handleScroll();
+    } catch {
+      return;
+    }
+  }
+
+  /**
+   * Evaluates vertical scroll delta to auto-hide or reveal navigation and resets idle timer.
+   */
+  private handleScroll(): void {
+    try {
+      if (typeof window === 'undefined' || this.showMoreDrawer()) {
+        return;
+      }
+
+      const currentScrollY =
+        window.scrollY || document.documentElement.scrollTop || document.body.scrollTop || 0;
+
+      if (currentScrollY <= 25) {
+        this.isNavHidden.set(false);
+        this.lastScrollY = currentScrollY;
+        if (this.scrollIdleTimeout) {
+          clearTimeout(this.scrollIdleTimeout);
+          this.scrollIdleTimeout = null;
+        }
+        return;
+      }
+
+      const delta = currentScrollY - this.lastScrollY;
+
+      if (Math.abs(delta) >= this.scrollThreshold) {
+        if (delta > 0 && currentScrollY > 40) {
+          this.isNavHidden.set(true);
+        } else if (delta < 0) {
+          this.isNavHidden.set(false);
+        }
+        this.lastScrollY = currentScrollY;
+      }
+
+      if (this.scrollIdleTimeout) {
+        clearTimeout(this.scrollIdleTimeout);
+      }
+      this.scrollIdleTimeout = setTimeout(() => {
+        this.isNavHidden.set(false);
+      }, 700);
+    } catch {
+      return;
+    }
+  }
+
+  /**
+   * Cleans up scroll idle timers on component teardown.
+   */
+  ngOnDestroy(): void {
+    try {
+      if (this.scrollIdleTimeout) {
+        clearTimeout(this.scrollIdleTimeout);
+        this.scrollIdleTimeout = null;
+      }
+    } catch {
+      return;
     }
   }
 }

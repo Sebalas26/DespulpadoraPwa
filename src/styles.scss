@@ -742,7 +742,7 @@ body:has(.mobile-drawer-overlay) .map-canvas-card {
 
 /* Page Body Container */
 .page-container {
-  padding: 28px;
+  padding: 12px 28px 28px 28px;
   max-width: 1600px;
   margin: 0 auto;
   width: 100%;
@@ -2003,12 +2003,22 @@ td.mobile-tr-summary-cell {
 }
 
 /* Responsive Hide / Show */
+/* Desktop / Mobile Visibility Utilities */
+@media (min-width: 1024px) {
+  .no-desktop {
+    display: none !important;
+  }
+}
+
 @media (max-width: 1023px) {
+  .no-mobile {
+    display: none !important;
+  }
   .sidebar {
     display: none;
   }
   .page-container {
-    padding: 16px;
+    padding: 14px 16px 92px 16px;
   }
   .topbar {
     padding: 0 16px;

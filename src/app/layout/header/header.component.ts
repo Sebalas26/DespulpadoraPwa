@@ -49,7 +49,10 @@ import { VoiceOrdersService } from '../../core/services/voice-orders.service';
               <span class="header-brand-sub">{{ stateService.companyInfo().tagline }}</span>
             </div>
           </div>
+          <span class="topbar-title-divider">/</span>
         }
+
+        <h1 class="topbar-module-title">{{ currentRouteTitle() }}</h1>
       </div>
 
       <div class="mobile-only-header only-mobile">
@@ -161,6 +164,26 @@ import { VoiceOrdersService } from '../../core/services/voice-orders.service';
       display: flex;
       align-items: center;
       gap: 12px;
+      min-width: 0;
+    }
+
+    .topbar-module-title {
+      font-size: 1.35rem;
+      font-weight: 800;
+      color: #111827;
+      letter-spacing: -0.025em;
+      line-height: 1.2;
+      margin: 0;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .topbar-title-divider {
+      color: #d1d5db;
+      font-size: 1.15rem;
+      font-weight: 300;
+      margin: 0 4px;
     }
 
     .sidebar-toggle-btn {
@@ -679,9 +702,10 @@ export class HeaderComponent implements OnInit, OnDestroy {
           filter((e): e is NavigationEnd => e instanceof NavigationEnd),
           catchError(() => of())
         )
-        .subscribe(() => {
+        .subscribe((e: NavigationEnd) => {
           this.isHeaderHidden.set(false);
           this.lastScrollY = 0;
+          this.currentUrl.set(e.urlAfterRedirects || e.url || this.router.url);
         });
     } catch {
       return;
@@ -749,21 +773,20 @@ export class HeaderComponent implements OnInit, OnDestroy {
     }
   }
 
-  private readonly navEnd$ = this.router.events.pipe(
-    filter((e): e is NavigationEnd => e instanceof NavigationEnd),
-    map(() => this.router.url)
-  );
-
-  private readonly urlSignal = toSignal(this.navEnd$, { initialValue: this.router.url });
+  /**
+   * Active application URL path used to evaluate dynamic module titles.
+   */
+  readonly currentUrl = signal<string>(this.router.url || '/dashboard');
 
   /**
    * Resolves the human-readable title for the active route.
    */
   readonly currentRouteTitle = computed<string>(() => {
     try {
-      const url = this.urlSignal() || '';
-      if (url.startsWith('/dashboard')) return 'Panel general';
-      if (url.startsWith('/portal-admin')) return 'Portal Clientes · Administración';
+      const url = this.currentUrl() || '';
+      if (url.startsWith('/dashboard')) return 'Dashboard general';
+      if (url.startsWith('/portal-admin')) return 'Admin Catálogo · Portal Clientes';
+      if (url.startsWith('/portal-clientes')) return 'Portal Clientes';
       if (url.startsWith('/orders')) {
         if (url.includes('tab=facturacion')) return 'Facturación & POS';
         if (url.includes('tab=despachos')) return 'Despachos & Rutas';
@@ -776,20 +799,22 @@ export class HeaderComponent implements OnInit, OnDestroy {
           url.includes('tab=fruits') ||
           url.includes('tab=cava')
         ) {
-          return 'Inventario y Stock';
+          return 'Inventario y Stock de Pulpas';
         }
-        if (url.includes('tab=users') || url.includes('tab=usuarios') || url.includes('tab=roles')) {
-          return 'Usuarios y roles';
-        }
-        return 'Configuración';
+        return 'Configuración de la Planta & Sistema';
       }
-      if (url.startsWith('/accounting')) return 'Clientes';
-      if (url.startsWith('/shifts') || url.startsWith('/hr')) return 'Gestión de Personal';
-      if (url.startsWith('/reports')) return 'Ventas';
-      if (url.startsWith('/admin')) return 'Administración';
-      return 'Panel general';
+      if (url.startsWith('/accounting')) return 'Clientes & Facturación';
+      if (url.startsWith('/shifts')) return 'Control de Turnos & Marcación';
+      if (url.startsWith('/hr')) return 'Gestión de Personal & Talento Humano';
+      if (url.startsWith('/reports')) return 'Centro de Reportes & Analítica';
+      if (url.startsWith('/admin/users')) return 'Usuarios del Sistema';
+      if (url.startsWith('/admin/roles')) return 'Roles & Matriz de Privilegios';
+      if (url.startsWith('/admin/catalog')) return 'Catálogo del Sistema';
+      if (url.startsWith('/admin/backups')) return 'Copias de Seguridad';
+      if (url.startsWith('/admin')) return 'Administración del Sistema';
+      return 'Dashboard general';
     } catch {
-      return 'Panel general';
+      return 'Dashboard general';
     }
   });
 

@@ -110,4 +110,31 @@ describe('MobileNavComponent', () => {
     component.openDrawer();
     expect(component.isMobileTabActive('home')).toBeFalse();
   });
+
+  it('should manage isNavHidden state on window scroll events and idle timeout', (done) => {
+    expect(component.isNavHidden()).toBeFalse();
+
+    Object.defineProperty(window, 'scrollY', { value: 120, writable: true, configurable: true });
+    component.onWindowScroll();
+    expect(component.isNavHidden()).toBeTrue();
+
+    Object.defineProperty(window, 'scrollY', { value: 60, writable: true, configurable: true });
+    component.onWindowScroll();
+    expect(component.isNavHidden()).toBeFalse();
+
+    Object.defineProperty(window, 'scrollY', { value: 200, writable: true, configurable: true });
+    component.onWindowScroll();
+    expect(component.isNavHidden()).toBeTrue();
+
+    setTimeout(() => {
+      expect(component.isNavHidden()).toBeFalse();
+      done();
+    }, 750);
+  });
+
+  it('should reset scroll idle timeout on ngOnDestroy', () => {
+    Object.defineProperty(window, 'scrollY', { value: 100, writable: true, configurable: true });
+    component.onWindowScroll();
+    expect(() => component.ngOnDestroy()).not.toThrow();
+  });
 });

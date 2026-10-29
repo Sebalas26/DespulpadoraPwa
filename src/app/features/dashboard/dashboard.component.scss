@@ -1330,3 +1330,9 @@
     grid-template-columns: repeat(2, 1fr);
   }
 }
+
+@media (min-width: 1024px) {
+  .dashboard-top-section {
+    display: none !important;
+  }
+}
