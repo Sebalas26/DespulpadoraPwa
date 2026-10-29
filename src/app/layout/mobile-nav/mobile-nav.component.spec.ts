@@ -137,4 +137,42 @@ describe('MobileNavComponent', () => {
     component.onWindowScroll();
     expect(() => component.ngOnDestroy()).not.toThrow();
   });
+
+  it('should render only module names (.drawer-title) without subtexts (.drawer-desc) and show Cerrar Sesión button when mobile drawer is open', () => {
+    spyOn(authService, 'hasModuleAccess').and.returnValue(true);
+    spyOn(authService, 'groupedNavigationSections').and.returnValue([
+      {
+        sectionName: 'Operación',
+        modules: [
+          {
+            moduleId: 1,
+            name: 'Dashboard Operativo',
+            slug: 'dashboard',
+            menuSection: 'Operación',
+            frontendRoute: '/dashboard',
+            icon: 'grid',
+            displayOrder: 1,
+            allowedActionSlugs: ['dashboard.view']
+          }
+        ]
+      }
+    ]);
+
+    component.openDrawer();
+    fixture.detectChanges();
+
+    const compiled: HTMLElement = fixture.nativeElement as HTMLElement;
+    const titles: NodeListOf<HTMLElement> = compiled.querySelectorAll('.mobile-drawer-body .drawer-title');
+    const subtexts: NodeListOf<HTMLElement> = compiled.querySelectorAll('.mobile-drawer-body .drawer-desc');
+    const logoutBtn: HTMLElement | null = compiled.querySelector('.drawer-logout-btn');
+
+    expect(titles.length).toBeGreaterThanOrEqual(3);
+    const titleTexts: string[] = Array.from(titles).map((el: HTMLElement) => (el.textContent || '').trim());
+    expect(titleTexts).toContain('Portal Clientes');
+    expect(titleTexts).toContain('Admin. Portal Clientes');
+    expect(titleTexts).toContain('Dashboard Operativo');
+    expect(subtexts.length).toBe(0);
+    expect(logoutBtn).not.toBeNull();
+    expect((logoutBtn?.textContent || '').trim()).toBe('Cerrar Sesión');
+  });
 });

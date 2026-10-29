@@ -23,7 +23,27 @@
     </div>
   </div>
 
-  <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 24px;">
+  @if (isLoading()) {
+    <div class="dgl-shimmer-wrapper">
+      <div class="shimmer-card-grid" style="grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));">
+        <div class="shimmer-card" style="gap: 14px;">
+          <div class="shimmer-title" style="width: 55%;"></div>
+          <div class="shimmer-box" style="height: 40px; border-radius: 10px;"></div>
+          <div class="shimmer-box" style="height: 40px; border-radius: 10px;"></div>
+          <div class="shimmer-box" style="height: 40px; border-radius: 10px;"></div>
+          <div class="shimmer-pill" style="width: 100%; height: 42px;"></div>
+        </div>
+        <div class="shimmer-card" style="gap: 14px;">
+          <div class="shimmer-title" style="width: 48%;"></div>
+          @for (item of [1, 2, 3]; track item) {
+            <div class="shimmer-box" style="height: 54px; border-radius: 10px;"></div>
+          }
+        </div>
+      </div>
+    </div>
+  }
+
+  <div [class.dgl-loading-hidden]="isLoading()" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 24px;">
     <div class="card">
       <div class="card-header">
         <h3 class="card-title">Terminal de Marcación Rápida</h3>

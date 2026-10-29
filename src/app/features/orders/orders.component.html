@@ -1,4 +1,30 @@
 <div class="orders-module-container">
+  @if (isLoading()) {
+    <div class="dgl-shimmer-wrapper">
+      <div style="display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 10px;">
+        @for (dayItem of [1, 2, 3, 4, 5, 6, 7]; track dayItem) {
+          <div class="shimmer-box" style="height: 68px; border-radius: 14px;"></div>
+        }
+      </div>
+      <div class="shimmer-card-grid">
+        @for (cardItem of [1, 2, 3, 4, 5, 6]; track cardItem) {
+          <div class="shimmer-card" style="gap: 14px;">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <div class="shimmer-badge" style="width: 90px; height: 22px;"></div>
+              <div class="shimmer-badge" style="width: 72px; height: 22px;"></div>
+            </div>
+            <div class="shimmer-title" style="width: 68%;"></div>
+            <div class="shimmer-subtitle" style="width: 82%;"></div>
+            <div class="shimmer-box" style="height: 64px; border-radius: 10px;"></div>
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <div class="shimmer-title" style="width: 40%;"></div>
+              <div class="shimmer-pill" style="width: 110px; height: 34px;"></div>
+            </div>
+          </div>
+        }
+      </div>
+    </div>
+  }
 
         @if (activeSubTab() === 'picking') {
     <div class="picking-page-header">

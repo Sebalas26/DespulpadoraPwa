@@ -202,4 +202,19 @@ describe('DashboardComponent', () => {
     expect(component.kpiSparklines().freshFruit.trend).toBe('flat');
     expect(component.kpiSparklines().freshFruit.endY).toBe(17);
   });
+
+  it('should render downward expand chevron indicator in all 4 top KPI cards and toggle expanded class when selected', () => {
+    fixture.detectChanges();
+    const compiled = fixture.nativeElement as HTMLElement;
+    const chevrons = Array.from(compiled.querySelectorAll('.quick-kpi-card .kpi-card-top-row .kpi-expand-chevron'));
+
+    expect(chevrons.length).toBe(4);
+    expect(chevrons.every(el => !el.classList.contains('expanded'))).toBeTrue();
+
+    component.openKpiDetail('billing');
+    fixture.detectChanges();
+
+    expect(chevrons[0].classList.contains('expanded')).toBeTrue();
+    expect(chevrons[1].classList.contains('expanded')).toBeFalse();
+  });
 });

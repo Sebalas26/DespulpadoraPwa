@@ -383,4 +383,35 @@ describe('AdminRolesComponent', () => {
       isCourier: true
     }));
   });
+
+  it('should render Editar button to the left of Guardar Permisos without inline pencil icons, toggle capsule filters, and display shimmer when isLoading is true', () => {
+    fixture.detectChanges();
+    const compiled = fixture.nativeElement as HTMLElement;
+
+    const inlinePencilBtns = compiled.querySelectorAll('button[title="Modificar nombre del rol"]');
+    expect(inlinePencilBtns.length).toBe(0);
+
+    const headerActions = compiled.querySelector('.role-header-actions') as HTMLElement;
+    expect(headerActions).toBeTruthy();
+    const actionButtons = Array.from(headerActions.querySelectorAll('button'));
+    expect(actionButtons.length).toBe(2);
+    expect(actionButtons[0].classList.contains('role-edit-header-btn')).toBeTrue();
+    expect(actionButtons[0].textContent).toContain('Editar');
+    expect(actionButtons[1].textContent).toContain('Guardar Permisos');
+
+    actionButtons[0].click();
+    fixture.detectChanges();
+    expect(component.showEditRoleModal()).toBeTrue();
+    component.showEditRoleModal.set(false);
+
+    const capsuleFilters = Array.from(compiled.querySelectorAll('.capsule-filter')) as HTMLButtonElement[];
+    expect(capsuleFilters.length).toBe(3);
+    capsuleFilters[1].click();
+    fixture.detectChanges();
+    expect(component.scopeFilter()).toBe('PWA');
+
+    component.isLoading.set(true);
+    fixture.detectChanges();
+    expect(compiled.querySelector('.dgl-shimmer-wrapper')).toBeTruthy();
+  });
 });

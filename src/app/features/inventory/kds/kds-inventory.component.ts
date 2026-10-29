@@ -225,6 +225,20 @@ interface AudioContextWindow extends Window {
         </div>
       </header>
 
+            @if (isLoading()) {
+        <div class="dgl-shimmer-wrapper" style="padding: 16px 24px;">
+          <div class="shimmer-card-grid">
+            @for (item of [1, 2, 3, 4, 5, 6]; track item) {
+              <div class="shimmer-card" style="gap: 14px;">
+                <div class="shimmer-title" style="width: 60%;"></div>
+                <div class="shimmer-subtitle" style="width: 45%;"></div>
+                <div class="shimmer-box" style="height: 84px; border-radius: 12px;"></div>
+              </div>
+            }
+          </div>
+        </div>
+      }
+
             <div class="kds-filter-bar">
         <div class="filter-search-wrap">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -1626,6 +1640,14 @@ export class KdsInventoryComponent implements OnInit, OnDestroy {
     }
   });
 
+  readonly isLoading = computed<boolean>(() => {
+    try {
+      return typeof this.stateService.isLoading === 'function' ? this.stateService.isLoading() : false;
+    } catch {
+      return false;
+    }
+  });
+
   readonly filteredFruits = computed<FruitConfig[]>(() => {
     try {
       let list = this.stateService.fruits();
@@ -1678,6 +1700,7 @@ export class KdsInventoryComponent implements OnInit, OnDestroy {
    */
   ngOnInit(): void {
     try {
+      this.stateService.refreshAll?.();
       this.updateClock();
       this.clockInterval = setInterval(() => this.updateClock(), 1000);
     } catch (error: unknown) {

@@ -45,6 +45,24 @@ export class AccountingComponent {
   readonly notes = signal<string>('');
 
   readonly searchQuery = signal<string>('');
+  readonly isLoading = computed<boolean>(() => {
+    try {
+      return typeof this.stateService.isLoading === 'function' ? this.stateService.isLoading() : false;
+    } catch {
+      return false;
+    }
+  });
+
+  /**
+   * Synchronizes operational state when entering the clients and billing module.
+   */
+  constructor() {
+    try {
+      this.stateService.refreshAll?.();
+    } catch {
+      return;
+    }
+  }
 
   readonly filteredClients = computed<ClientDto[]>(() => {
     try {

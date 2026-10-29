@@ -82,14 +82,23 @@ describe('SidebarComponent', () => {
     expect(component.isSettingsTabActive('inventory')).toBeFalse();
   });
 
-  it('should render dedicated quick navigation links for KDS picking, plant KDS, and client portal', () => {
+  it('should hide the 4 quick navigation links by default, open them when clicking the trigger, and hide them when clicking the hide button or another module', () => {
     fixture.detectChanges();
     const compiled = fixture.nativeElement as HTMLElement;
-    const navItems = Array.from(compiled.querySelectorAll('.sidebar-nav > a.dgl-nav-item')) as HTMLAnchorElement[];
 
-    const kdsItem = navItems.find((el: HTMLAnchorElement) => el.getAttribute('href') === '/kds');
-    const plantItem = navItems.find((el: HTMLAnchorElement) => el.getAttribute('href') === '/kds-inventory');
-    const portalItem = navItems.find((el: HTMLAnchorElement) => el.getAttribute('href') === '/portal-clientes');
+    expect(component.isQuickAccessOpen()).toBeFalse();
+    expect(compiled.querySelector('.dgl-quick-access-panel')).toBeNull();
+
+    const triggerBtn = compiled.querySelector('.dgl-quick-access-trigger') as HTMLButtonElement;
+    expect(triggerBtn).toBeTruthy();
+    triggerBtn.click();
+    fixture.detectChanges();
+
+    expect(component.isQuickAccessOpen()).toBeTrue();
+    const quickLinks = Array.from(compiled.querySelectorAll('.dgl-quick-access-panel a.dgl-nav-item')) as HTMLAnchorElement[];
+    const kdsItem = quickLinks.find((el: HTMLAnchorElement) => el.getAttribute('href') === '/kds');
+    const plantItem = quickLinks.find((el: HTMLAnchorElement) => el.getAttribute('href') === '/kds-inventory');
+    const portalItem = quickLinks.find((el: HTMLAnchorElement) => el.getAttribute('href') === '/portal-clientes');
 
     expect(kdsItem).toBeTruthy();
     expect(kdsItem?.textContent).toContain('Pantalla de Alistamiento');
@@ -102,9 +111,22 @@ describe('SidebarComponent', () => {
     expect(portalItem).toBeTruthy();
     expect(portalItem?.textContent).toContain('Portal Clientes');
     expect(portalItem?.textContent).toContain('PEDIDOS');
+
+    const hideBtn = compiled.querySelector('.dgl-quick-access-hide-btn') as HTMLButtonElement;
+    expect(hideBtn).toBeTruthy();
+    hideBtn.click();
+    fixture.detectChanges();
+
+    expect(component.isQuickAccessOpen()).toBeFalse();
+    expect(compiled.querySelector('.dgl-quick-access-panel')).toBeNull();
+
+    component.openQuickAccess();
+    expect(component.isQuickAccessOpen()).toBeTrue();
+    component.closeQuickAccess();
+    expect(component.isQuickAccessOpen()).toBeFalse();
   });
 
-  it('should render independent, top-level navigation items for operation modules without arrow prefixes', () => {
+  it('should render independent, top-level navigation items for operation modules including Pedidos between Inventario & Stock and Facturación & POS', () => {
     authService.navigationModules.set([
       {
         moduleId: 2,
@@ -131,15 +153,20 @@ describe('SidebarComponent', () => {
     fixture.detectChanges();
     const compiled = fixture.nativeElement as HTMLElement;
     const navItems = Array.from(compiled.querySelectorAll('.sidebar-nav a.dgl-nav-item')) as HTMLAnchorElement[];
-    const itemTexts = navItems.map(item => item.textContent || '');
+    const itemTexts = navItems.map((item: HTMLAnchorElement) => (item.textContent || '').trim());
 
-    expect(itemTexts.some(t => t.includes('Inventario & Stock'))).toBeTrue();
-    expect(itemTexts.some(t => t.includes('Facturación & POS'))).toBeTrue();
-    expect(itemTexts.some(t => t.includes('Despachos & Rutas'))).toBeTrue();
-    expect(itemTexts.some(t => t.includes('Pantalla KDS Planta'))).toBeFalse();
+    const invIdx = itemTexts.findIndex((t: string) => t.includes('Inventario & Stock'));
+    const pedidosIdx = itemTexts.findIndex((t: string) => t === 'Pedidos');
+    const factIdx = itemTexts.findIndex((t: string) => t.includes('Facturación & POS'));
+    const despIdx = itemTexts.findIndex((t: string) => t.includes('Despachos & Rutas'));
 
-    // Verify none of the items contains the arrow prefix '↳'
-    itemTexts.forEach(text => {
+    expect(invIdx).toBeGreaterThanOrEqual(0);
+    expect(pedidosIdx).toBe(invIdx + 1);
+    expect(factIdx).toBe(pedidosIdx + 1);
+    expect(despIdx).toBe(factIdx + 1);
+    expect(itemTexts.some((t: string) => t.includes('Pantalla KDS Planta'))).toBeFalse();
+
+    itemTexts.forEach((text: string) => {
       expect(text.includes('↳')).toBeFalse();
     });
   });

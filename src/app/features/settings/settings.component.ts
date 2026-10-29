@@ -181,6 +181,13 @@ export class SettingsComponent {
 
   readonly activeCategories = this.stateService.activeCategories;
   readonly activeGrammages = this.stateService.activeGrammages;
+  readonly isLoading = computed<boolean>(() => {
+    try {
+      return typeof this.stateService.isLoading === 'function' ? this.stateService.isLoading() : false;
+    } catch {
+      return false;
+    }
+  });
 
   readonly categoryCounts = computed<Record<string, number>>(() => {
     try {
@@ -312,6 +319,7 @@ export class SettingsComponent {
    */
   constructor() {
     try {
+      this.stateService.refreshAll?.();
       this.route.queryParams.subscribe(params => {
         const tab = params['tab'];
         const view = params['view'];

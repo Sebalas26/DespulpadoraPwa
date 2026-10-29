@@ -220,6 +220,13 @@ export class OrdersComponent {
 
   readonly editingOrderId = signal<number | null>(null);
   readonly editingOrderNumber = signal<string>('');
+  readonly isLoading = computed<boolean>(() => {
+    try {
+      return typeof this.stateService.isLoading === 'function' ? this.stateService.isLoading() : false;
+    } catch {
+      return false;
+    }
+  });
 
   readonly weekDays = computed(() => {
     try {
@@ -614,6 +621,7 @@ export class OrdersComponent {
    */
   constructor() {
     try {
+      this.stateService.refreshAll?.();
       this.route.queryParams.subscribe(params => {
         const tab = params['tab'] as 'picking' | 'facturacion' | 'despachos' | undefined;
         if (tab && ['picking', 'facturacion', 'despachos'].includes(tab)) {

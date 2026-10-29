@@ -146,7 +146,22 @@ export interface CartItem {
             </div>
           </div>
 
-                    <div class="products-grid">
+                    @if (isLoading()) {
+            <div class="dgl-shimmer-wrapper">
+              <div class="shimmer-card-grid">
+                @for (item of [1, 2, 3, 4, 5, 6]; track item) {
+                  <div class="shimmer-card" style="gap: 12px;">
+                    <div class="shimmer-box" style="height: 150px; border-radius: 12px;"></div>
+                    <div class="shimmer-title" style="width: 62%;"></div>
+                    <div class="shimmer-subtitle" style="width: 85%;"></div>
+                    <div class="shimmer-box" style="height: 44px; border-radius: 10px;"></div>
+                  </div>
+                }
+              </div>
+            </div>
+          }
+
+                    <div class="products-grid" [class.dgl-loading-hidden]="isLoading()">
             @for (fruit of filteredFruits(); track fruit.id) {
               <div
                 class="product-card"
@@ -1926,11 +1941,20 @@ export class ClientPortalComponent implements OnInit {
     }
   });
 
+  readonly isLoading = computed<boolean>(() => {
+    try {
+      return typeof this.stateService.isLoading === 'function' ? this.stateService.isLoading() : false;
+    } catch {
+      return false;
+    }
+  });
+
   /**
    * Initializes default client and payment method selections if available in StateService.
    */
   ngOnInit(): void {
     try {
+      this.stateService.refreshAll?.();
       const clients = this.stateService.clients();
       if (clients.length > 0) {
         const first = clients[0];

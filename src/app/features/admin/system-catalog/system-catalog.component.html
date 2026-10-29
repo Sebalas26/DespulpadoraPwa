@@ -56,6 +56,19 @@
   @if (activeTab() === 'backups') {
     <app-backups />
   } @else {
+    @if (isLoading()) {
+      <div class="dgl-shimmer-wrapper">
+        <div class="shimmer-card-grid">
+          @for (item of [1, 2, 3, 4]; track item) {
+            <div class="shimmer-card" style="gap: 12px;">
+              <div class="shimmer-title" style="width: 56%;"></div>
+              <div class="shimmer-subtitle" style="width: 78%;"></div>
+              <div class="shimmer-box" style="height: 88px; border-radius: 10px;"></div>
+            </div>
+          }
+        </div>
+      </div>
+    }
     <div class="card">
       <div class="card-body" style="padding: 14px 20px; display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 12px;">
         <div style="position: relative; flex: 1; min-width: 240px; max-width: 420px;">

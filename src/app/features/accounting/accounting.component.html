@@ -20,7 +20,27 @@
     </button>
   </div>
 
-  <div class="client-list-card">
+  @if (isLoading()) {
+    <div class="dgl-shimmer-wrapper">
+      <div class="shimmer-table-card">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+          <div class="shimmer-title" style="width: 32%;"></div>
+          <div class="shimmer-box" style="width: 240px; height: 36px; border-radius: 10px;"></div>
+        </div>
+        @for (row of [1, 2, 3, 4, 5]; track row) {
+          <div class="shimmer-table-row">
+            <div class="shimmer-circle" style="width: 34px; height: 34px;"></div>
+            <div class="shimmer-line" style="width: 82%;"></div>
+            <div class="shimmer-line" style="width: 65%;"></div>
+            <div class="shimmer-line" style="width: 70%;"></div>
+            <div class="shimmer-badge"></div>
+          </div>
+        }
+      </div>
+    </div>
+  }
+
+  <div class="client-list-card" [class.dgl-loading-hidden]="isLoading()">
     <div class="list-card-header">
       <div>
         <h3 class="form-card-title">Clientes Registrados ({{ filteredClients().length }})</h3>

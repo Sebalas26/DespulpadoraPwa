@@ -83,6 +83,7 @@ export class AdminRolesComponent implements OnInit {
   readonly selectedRoleId = signal<number>(0);
   readonly assignedModuleIds = signal<Set<number>>(new Set<number>());
   readonly assignedActionIds = signal<Set<number>>(new Set<number>());
+  readonly isLoading = signal<boolean>(false);
   readonly isSaving = signal<boolean>(false);
 
   readonly searchTerm = signal<string>('');
@@ -219,11 +220,13 @@ export class AdminRolesComponent implements OnInit {
    */
   loadRolesAndCatalog(): void {
     try {
+      this.isLoading.set(true);
       forkJoin({
         roles: this.api.getRoles(),
         modules: this.api.getSystemModules(false)
       }).subscribe({
         next: (result: { roles: UserRoleDto[]; modules: SystemModuleCatalogDto[] }) => {
+          this.isLoading.set(false);
           if (Array.isArray(result.modules)) {
             const visibleModules = result.modules.filter(
               (m: SystemModuleCatalogDto) =>
@@ -282,6 +285,7 @@ export class AdminRolesComponent implements OnInit {
           }
         },
         error: () => {
+          this.isLoading.set(false);
           this.roles.set([]);
           this.modules.set([]);
           this.assignedModuleIds.set(new Set<number>());
@@ -290,6 +294,7 @@ export class AdminRolesComponent implements OnInit {
         }
       });
     } catch {
+      this.isLoading.set(false);
       this.roles.set([]);
       this.modules.set([]);
     }

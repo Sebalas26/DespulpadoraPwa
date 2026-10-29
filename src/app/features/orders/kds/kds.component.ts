@@ -176,6 +176,20 @@ interface AudioContextWindow extends Window {
         </div>
       </header>
 
+                        @if (isLoading()) {
+        <div class="dgl-shimmer-wrapper" style="padding: 18px 24px;">
+          <div class="shimmer-card-grid" style="grid-template-columns: repeat(3, minmax(0, 1fr));">
+            @for (col of [1, 2, 3]; track col) {
+              <div class="shimmer-card" style="gap: 14px;">
+                <div class="shimmer-title" style="width: 55%;"></div>
+                <div class="shimmer-box" style="height: 120px; border-radius: 12px;"></div>
+                <div class="shimmer-box" style="height: 120px; border-radius: 12px;"></div>
+              </div>
+            }
+          </div>
+        </div>
+      }
+
                         @if (viewMode() === 'columns') {
         <main class="kds-board-columns">
                     <section class="kds-column col-pending">
@@ -1213,6 +1227,14 @@ export class KdsComponent implements OnInit, OnDestroy {
     }
   });
 
+  readonly isLoading = computed<boolean>(() => {
+    try {
+      return typeof this.stateService.isLoading === 'function' ? this.stateService.isLoading() : false;
+    } catch {
+      return false;
+    }
+  });
+
   readonly totalPendingKg = computed<string>(() => {
     try {
       const orders = [...this.pendingOrders(), ...this.pickingOrders()];
@@ -1234,6 +1256,7 @@ export class KdsComponent implements OnInit, OnDestroy {
    */
   ngOnInit(): void {
     try {
+      this.stateService.refreshAll?.();
       this.updateClock();
       this.clockInterval = setInterval(() => this.updateClock(), 1000);
 

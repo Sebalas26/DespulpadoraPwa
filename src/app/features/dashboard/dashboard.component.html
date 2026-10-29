@@ -10,14 +10,68 @@
     </div>
   </div>
 
-  <div class="quick-kpis-grid">
+  @if (isLoading()) {
+    <div class="dgl-shimmer-wrapper">
+      <div class="shimmer-kpi-grid">
+        @for (item of [1, 2, 3, 4]; track item) {
+          <div class="shimmer-kpi-card">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <div class="shimmer-circle"></div>
+              <div class="shimmer-box" style="width: 26px; height: 26px; border-radius: 8px;"></div>
+            </div>
+            <div class="shimmer-subtitle" style="width: 60%;"></div>
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <div class="shimmer-title" style="width: 55%; height: 26px;"></div>
+              <div class="shimmer-box" style="width: 64px; height: 30px; border-radius: 8px;"></div>
+            </div>
+          </div>
+        }
+      </div>
+
+      <div class="shimmer-card" style="padding: 22px 24px; gap: 16px;">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <div style="flex: 1; display: flex; flex-direction: column; gap: 8px;">
+            <div class="shimmer-title" style="width: 34%;"></div>
+            <div class="shimmer-subtitle" style="width: 48%;"></div>
+          </div>
+          <div class="shimmer-pill" style="width: 120px;"></div>
+        </div>
+        <div class="shimmer-card-grid" style="grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));">
+          @for (metric of [1, 2, 3]; track metric) {
+            <div class="shimmer-box" style="height: 112px; border-radius: 14px;"></div>
+          }
+        </div>
+        <div class="shimmer-line" style="height: 10px; border-radius: 9999px;"></div>
+      </div>
+
+      <div class="shimmer-card-grid" style="grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));">
+        @for (panel of [1, 2]; track panel) {
+          <div class="shimmer-card" style="gap: 14px;">
+            <div class="shimmer-title" style="width: 52%;"></div>
+            <div class="shimmer-box" style="height: 64px; border-radius: 12px;"></div>
+            <div class="shimmer-box" style="height: 48px; border-radius: 10px;"></div>
+            <div class="shimmer-box" style="height: 48px; border-radius: 10px;"></div>
+          </div>
+        }
+      </div>
+    </div>
+  }
+
+  <div class="quick-kpis-grid" [class.dgl-loading-hidden]="isLoading()">
     <div class="quick-kpi-card clickable-kpi-card" role="button" tabindex="0" (click)="openKpiDetail('billing')">
-      <div class="kpi-icon-box icon-green">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <rect x="2" y="6" width="20" height="12" rx="2"></rect>
-          <circle cx="12" cy="12" r="3"></circle>
-          <path d="M6 12h.01M18 12h.01"></path>
-        </svg>
+      <div class="kpi-card-top-row">
+        <div class="kpi-icon-box icon-green">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="2" y="6" width="20" height="12" rx="2"></rect>
+            <circle cx="12" cy="12" r="3"></circle>
+            <path d="M6 12h.01M18 12h.01"></path>
+          </svg>
+        </div>
+        <span class="kpi-expand-chevron" [class.expanded]="selectedKpiCard() === 'billing'" aria-hidden="true" title="Desplegar detalle">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="6 9 12 15 18 9"></polyline>
+          </svg>
+        </span>
       </div>
       <span class="kpi-label">Facturación hoy</span>
       <div class="kpi-value-row">
@@ -37,11 +91,18 @@
     </div>
 
     <div class="quick-kpi-card clickable-kpi-card" role="button" tabindex="0" (click)="openKpiDetail('pulpStock')">
-      <div class="kpi-icon-box icon-green">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z"></path>
-          <path d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12"></path>
-        </svg>
+      <div class="kpi-card-top-row">
+        <div class="kpi-icon-box icon-green">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z"></path>
+            <path d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12"></path>
+          </svg>
+        </div>
+        <span class="kpi-expand-chevron" [class.expanded]="selectedKpiCard() === 'pulpStock'" aria-hidden="true" title="Desplegar detalle">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="6 9 12 15 18 9"></polyline>
+          </svg>
+        </span>
       </div>
       <span class="kpi-label">Pulpa total en bodega</span>
       <div class="kpi-value-row">
@@ -61,12 +122,19 @@
     </div>
 
     <div class="quick-kpi-card clickable-kpi-card" role="button" tabindex="0" (click)="openKpiDetail('pulpsSoldToday')">
-      <div class="kpi-icon-box icon-amber">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"></path>
-          <path d="M3 6h18"></path>
-          <path d="M16 10a4 4 0 0 1-8 0"></path>
-        </svg>
+      <div class="kpi-card-top-row">
+        <div class="kpi-icon-box icon-amber">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"></path>
+            <path d="M3 6h18"></path>
+            <path d="M16 10a4 4 0 0 1-8 0"></path>
+          </svg>
+        </div>
+        <span class="kpi-expand-chevron" [class.expanded]="selectedKpiCard() === 'pulpsSoldToday'" aria-hidden="true" title="Desplegar detalle">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="6 9 12 15 18 9"></polyline>
+          </svg>
+        </span>
       </div>
       <span class="kpi-label">Pulpas vendidas hoy</span>
       <div class="kpi-value-row">
@@ -86,12 +154,19 @@
     </div>
 
     <div class="quick-kpi-card clickable-kpi-card" role="button" tabindex="0" (click)="openKpiDetail('freshFruit')">
-      <div class="kpi-icon-box icon-purple">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
-          <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
-          <line x1="12" y1="22.08" x2="12" y2="12"></line>
-        </svg>
+      <div class="kpi-card-top-row">
+        <div class="kpi-icon-box icon-purple">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
+            <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
+            <line x1="12" y1="22.08" x2="12" y2="12"></line>
+          </svg>
+        </div>
+        <span class="kpi-expand-chevron" [class.expanded]="selectedKpiCard() === 'freshFruit'" aria-hidden="true" title="Desplegar detalle">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="6 9 12 15 18 9"></polyline>
+          </svg>
+        </span>
       </div>
       <span class="kpi-label">Fruta total en bodega</span>
       <div class="kpi-value-row">

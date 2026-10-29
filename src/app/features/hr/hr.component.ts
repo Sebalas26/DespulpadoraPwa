@@ -80,6 +80,13 @@ export class HrComponent implements OnInit, OnDestroy {
   readonly selectedShiftEmployeeId = signal<number>(1);
   readonly selectedShiftType = signal<'MORNING' | 'AFTERNOON' | 'NIGHT'>('MORNING');
   readonly shiftNotes = signal<string>('');
+  readonly isLoading = computed<boolean>(() => {
+    try {
+      return typeof this.stateService.isLoading === 'function' ? this.stateService.isLoading() : false;
+    } catch {
+      return false;
+    }
+  });
 
   readonly activeShifts = computed<WorkShiftDto[]>(() => {
     try {
@@ -134,6 +141,7 @@ export class HrComponent implements OnInit, OnDestroy {
    */
   ngOnInit(): void {
     try {
+      this.stateService.refreshAll?.();
       this.route.queryParams.subscribe(params => {
         const tab = params['tab'] as HrTabType | undefined;
         if (tab && ['employees', 'shifts', 'certificates', 'payroll'].includes(tab)) {

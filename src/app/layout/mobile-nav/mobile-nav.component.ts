@@ -144,7 +144,7 @@ import { environment } from '../../../environments/environment';
           <div class="mobile-drawer-body">
             <a routerLink="/portal-clientes" class="drawer-link-item" (click)="closeDrawer()">
               <span class="drawer-icon" style="background: rgba(30, 94, 58, 0.12); color: #1e5e3a;">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <circle cx="9" cy="21" r="1"></circle>
                   <circle cx="20" cy="21" r="1"></circle>
                   <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path>
@@ -152,14 +152,13 @@ import { environment } from '../../../environments/environment';
               </span>
               <div>
                 <div class="drawer-title">Portal Clientes</div>
-                <div class="drawer-desc">Catálogo digital y autopedido</div>
               </div>
             </a>
 
             @if (authService.hasModuleAccess('/portal-admin')) {
               <a routerLink="/portal-admin" class="drawer-link-item" (click)="closeDrawer()">
                 <span class="drawer-icon" style="background: rgba(30, 94, 58, 0.12); color: #1e5e3a;">
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
                     <circle cx="8.5" cy="8.5" r="1.5"></circle>
                     <polyline points="21 15 16 10 5 21"></polyline>
@@ -167,13 +166,12 @@ import { environment } from '../../../environments/environment';
                 </span>
                 <div>
                   <div class="drawer-title" style="color: #164a2d; font-weight: 800;">Admin. Portal Clientes</div>
-                  <div class="drawer-desc">Editar fotos, precios y textos de las cards</div>
                 </div>
               </a>
             }
 
             @for (section of authService.groupedNavigationSections(); track section.sectionName) {
-              <div style="font-size: 0.68rem; font-weight: 800; color: #9ca3af; letter-spacing: 0.05em; padding: 8px 12px 4px 12px; text-transform: uppercase;">
+              <div style="font-size: 0.65rem; font-weight: 800; color: #9ca3af; letter-spacing: 0.05em; padding: 5px 10px 2px 10px; text-transform: uppercase;">
                 {{ section.sectionName }}
               </div>
               @for (mod of section.modules; track mod.moduleId) {
@@ -184,7 +182,7 @@ import { environment } from '../../../environments/environment';
                   (click)="closeDrawer()"
                 >
                   <span class="drawer-icon">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                       <rect x="3" y="3" width="7" height="7" rx="1.5"></rect>
                       <rect x="14" y="3" width="7" height="7" rx="1.5"></rect>
                       <rect x="14" y="14" width="7" height="7" rx="1.5"></rect>
@@ -193,7 +191,6 @@ import { environment } from '../../../environments/environment';
                   </span>
                   <div>
                     <div class="drawer-title">{{ mod.name }}</div>
-                    <div class="drawer-desc">{{ mod.menuSection }} · {{ mod.frontendRoute }}</div>
                   </div>
                 </a>
               }
@@ -347,7 +344,7 @@ import { environment } from '../../../environments/environment';
       width: 100%;
       background: #ffffff;
       border-radius: 20px 20px 0 0;
-      padding: 16px 18px max(20px, env(safe-area-inset-bottom, 16px));
+      padding: 12px 14px max(14px, env(safe-area-inset-bottom, 12px));
       max-height: 94dvh;
       overflow-y: auto;
       box-shadow: 0 -8px 30px rgba(0, 0, 0, 0.18);
@@ -358,20 +355,20 @@ import { environment } from '../../../environments/environment';
       display: flex;
       align-items: center;
       justify-content: space-between;
-      margin-bottom: 10px;
-      padding-bottom: 12px;
+      margin-bottom: 6px;
+      padding-bottom: 8px;
       border-bottom: 1px solid #eef2ef;
     }
 
     .drawer-link-item {
       display: flex;
       align-items: center;
-      gap: 12px;
-      padding: 10px 12px;
-      border-radius: 12px;
+      gap: 10px;
+      padding: 5px 10px;
+      border-radius: 10px;
       text-decoration: none;
       transition: background 0.15s ease;
-      margin-bottom: 4px;
+      margin-bottom: 2px;
 
       &:hover {
         background: #f6f8f7;
@@ -379,10 +376,10 @@ import { environment } from '../../../environments/environment';
     }
 
     .drawer-icon {
-      font-size: 1.25rem;
-      width: 36px;
-      height: 36px;
-      border-radius: 10px;
+      font-size: 1.05rem;
+      width: 28px;
+      height: 28px;
+      border-radius: 8px;
       background: #f0f7f2;
       display: flex;
       align-items: center;
@@ -391,22 +388,15 @@ import { environment } from '../../../environments/environment';
     }
 
     .drawer-title {
-      font-size: 0.87rem;
+      font-size: 0.85rem;
       font-weight: 700;
       color: #111827;
-      line-height: 1.25;
-    }
-
-    .drawer-desc {
-      font-size: 0.73rem;
-      color: #6b7280;
-      line-height: 1.25;
-      margin-top: 2px;
+      line-height: 1.2;
     }
 
     .mobile-drawer-footer {
-      margin-top: 12px;
-      padding-top: 12px;
+      margin-top: 8px;
+      padding-top: 8px;
       border-top: 1px solid #eef2ef;
     }
 
@@ -415,16 +405,16 @@ import { environment } from '../../../environments/environment';
       justify-content: center;
       color: #dc2626 !important;
       border-color: #fecaca !important;
-      padding: 10px 14px !important;
-      font-size: 0.86rem !important;
+      padding: 8px 12px !important;
+      font-size: 0.84rem !important;
     }
 
     .drawer-version-text {
-      font-size: 0.68rem;
+      font-size: 0.66rem;
       font-weight: 600;
       color: #9ca3af;
       text-align: center;
-      margin-top: 8px;
+      margin-top: 5px;
       letter-spacing: 0.04em;
     }
 

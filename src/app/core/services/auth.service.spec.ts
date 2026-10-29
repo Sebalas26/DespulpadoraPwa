@@ -249,4 +249,41 @@ describe('AuthService', () => {
     expect(service.hasPermission('roles.manage')).toBeTrue();
     expect(service.hasModuleAccess('/settings')).toBeTrue();
   });
+
+  it('should hide Portal Web Clientes from groupedNavigationSections in COMERCIAL Y FINANZAS while preserving /portal-clientes route access', () => {
+    const responseWithPortalModule: LoginResponseDto = {
+      ...sampleLoginResponse,
+      navigationModules: [
+        {
+          moduleId: 6,
+          name: 'Contabilidad y Facturación',
+          slug: 'accounting',
+          menuSection: 'Comercial y Finanzas',
+          frontendRoute: '/accounting',
+          icon: 'dollar-sign',
+          displayOrder: 6,
+          allowedActionSlugs: ['accounting.view']
+        },
+        {
+          moduleId: 7,
+          name: 'Portal Web Clientes',
+          slug: 'client-portal',
+          menuSection: 'Comercial y Finanzas',
+          frontendRoute: '/portal-clientes',
+          icon: 'grid',
+          displayOrder: 7,
+          allowedActionSlugs: ['portal.view']
+        }
+      ]
+    };
+
+    service.persistLoginSession(responseWithPortalModule, false);
+
+    const groups = service.groupedNavigationSections();
+    const commercialGroup = groups.find(g => g.sectionName === 'Comercial y Finanzas');
+    expect(commercialGroup).toBeTruthy();
+    expect(commercialGroup?.modules.some(m => m.frontendRoute === '/portal-clientes')).toBeFalse();
+    expect(commercialGroup?.modules.some(m => m.name === 'Portal Web Clientes')).toBeFalse();
+    expect(service.hasModuleAccess('/portal-clientes')).toBeTrue();
+  });
 });

@@ -199,7 +199,22 @@ export interface EditableCardDraft {
         (change)="onQuickFileSelected($event)"
       />
 
-      <div class="admin-cards-grid">
+      @if (isLoading()) {
+        <div class="dgl-shimmer-wrapper">
+          <div class="shimmer-card-grid">
+            @for (item of [1, 2, 3, 4, 5, 6]; track item) {
+              <div class="shimmer-card" style="gap: 12px;">
+                <div class="shimmer-box" style="height: 150px; border-radius: 12px;"></div>
+                <div class="shimmer-title" style="width: 60%;"></div>
+                <div class="shimmer-subtitle" style="width: 80%;"></div>
+                <div class="shimmer-box" style="height: 60px; border-radius: 10px;"></div>
+              </div>
+            }
+          </div>
+        </div>
+      }
+
+      <div class="admin-cards-grid" [class.dgl-loading-hidden]="isLoading()">
         @for (fruit of filteredFruits(); track fruit.id) {
           <div class="admin-product-card" [class.is-hidden-portal]="fruit.isVisibleInPortal === false">
             <div class="card-media-box">
@@ -1482,6 +1497,24 @@ export class ClientPortalAdminComponent {
   readonly showCardModal = signal<boolean>(false);
   readonly isCreatingNewCard = signal<boolean>(false);
   readonly activeDraft = signal<EditableCardDraft | null>(null);
+  readonly isLoading = computed<boolean>(() => {
+    try {
+      return typeof this.stateService.isLoading === 'function' ? this.stateService.isLoading() : false;
+    } catch {
+      return false;
+    }
+  });
+
+  /**
+   * Synchronizes operational state when entering the Client Portal Admin module.
+   */
+  constructor() {
+    try {
+      this.stateService.refreshAll?.();
+    } catch {
+      return;
+    }
+  }
 
   /**
    * Computes the total number of fruit catalog cards currently visible in the client portal.

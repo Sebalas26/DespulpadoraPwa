@@ -114,7 +114,11 @@ export class AuthService {
       const modules: NavigationModuleDto[] = [];
 
       for (const mod of rawModules) {
-        if (this.isRemovedCalculatorModule(mod) || this.isEmbeddedSettingsRbacModule(mod)) {
+        if (
+          this.isRemovedCalculatorModule(mod) ||
+          this.isEmbeddedSettingsRbacModule(mod) ||
+          this.isDedicatedClientPortalModule(mod)
+        ) {
           continue;
         }
         if (!this.isSuperAdmin() && this.isSuperAdminOnlyModule(mod)) {
@@ -718,6 +722,34 @@ export class AuthService {
         normalizedName === 'gestion de usuarios' ||
         normalizedName === 'roles y matriz de permisos' ||
         normalizedSection === 'seguridad rbac'
+      );
+    } catch {
+      return false;
+    }
+  }
+
+  /**
+   * Determines whether a module corresponds to "Portal Web Clientes" or "Portal Clientes",
+   * which is already accessible via the top collapsible quick-access module in the sidebar
+   * and therefore should be omitted from the dynamic `COMERCIAL Y FINANZAS` section list.
+   */
+  isDedicatedClientPortalModule(mod: {
+    frontendRoute?: string;
+    slug?: string;
+    name?: string;
+  }): boolean {
+    try {
+      const normalizedRoute = this.normalizeRouteKey(mod.frontendRoute || '');
+      const normalizedSlug = (mod.slug || '').trim().toLowerCase();
+      const normalizedName = (mod.name || '').trim().toLowerCase();
+      return (
+        normalizedRoute === 'portal-clientes' ||
+        normalizedRoute === 'portal-cliente' ||
+        normalizedSlug === 'portal-clientes' ||
+        normalizedSlug === 'client-portal' ||
+        normalizedSlug === 'portal-web-clientes' ||
+        normalizedName === 'portal web clientes' ||
+        normalizedName === 'portal clientes'
       );
     } catch {
       return false;

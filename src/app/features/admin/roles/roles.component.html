@@ -19,7 +19,39 @@
     </button>
   </div>
 
-  <div class="roles-matrix-grid">
+  @if (isLoading()) {
+    <div class="dgl-shimmer-wrapper">
+      <div class="roles-matrix-grid">
+        <div class="shimmer-card">
+          <div class="shimmer-title" style="width: 65%; margin-bottom: 8px;"></div>
+          @for (item of [1, 2, 3, 4]; track item) {
+            <div class="shimmer-box" style="height: 58px; width: 100%; border-radius: 12px;"></div>
+          }
+        </div>
+        <div class="shimmer-card" style="gap: 16px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; gap: 12px;">
+            <div style="flex: 1; display: flex; flex-direction: column; gap: 8px;">
+              <div class="shimmer-title" style="width: 42%;"></div>
+              <div class="shimmer-subtitle" style="width: 58%;"></div>
+            </div>
+            <div style="display: flex; gap: 10px;">
+              <div class="shimmer-pill" style="width: 100px; height: 38px;"></div>
+              <div class="shimmer-pill" style="width: 155px; height: 38px;"></div>
+            </div>
+          </div>
+          <div style="display: flex; justify-content: space-between; gap: 12px;">
+            <div class="shimmer-box" style="height: 38px; flex: 1; border-radius: 9999px;"></div>
+            <div class="shimmer-pill" style="width: 260px; height: 38px;"></div>
+          </div>
+          @for (modItem of [1, 2, 3]; track modItem) {
+            <div class="shimmer-box" style="height: 128px; width: 100%; border-radius: 14px;"></div>
+          }
+        </div>
+      </div>
+    </div>
+  }
+
+  <div class="roles-matrix-grid" [class.dgl-loading-hidden]="isLoading()">
 
     <div class="card roles-sidebar-card">
       <div class="card-header" style="justify-content: space-between;">
@@ -38,18 +70,6 @@
                 <span style="font-weight: 700; font-size: 0.88rem; color: var(--text-main); line-height: 1.3;">
                   {{ role.name }}
                 </span>
-                @if (!role.isSystemRole) {
-                  <button
-                    type="button"
-                    (click)="openEditRoleModal(role, $event)"
-                    title="Modificar nombre del rol"
-                    style="background: transparent; border: none; color: var(--text-muted); cursor: pointer; padding: 2px 4px; border-radius: 4px; display: inline-flex; align-items: center; transition: color 0.15s ease;"
-                  >
-                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                      <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path>
-                    </svg>
-                  </button>
-                }
               </div>
               <div style="display: flex; align-items: center; gap: 6px; margin-top: 2px;">
                 <span style="font-size: 0.72rem; color: var(--text-dim);">
@@ -90,18 +110,6 @@
             <h3 class="card-title" style="margin: 0; font-size: 1.15rem;">
               {{ currentRole().name }}
             </h3>
-            @if (!currentRole().isSystemRole) {
-              <button
-                type="button"
-                (click)="openEditRoleModal(currentRole(), $event)"
-                title="Modificar nombre del rol"
-                style="background: transparent; border: none; color: var(--text-muted); cursor: pointer; padding: 4px; border-radius: 4px; display: inline-flex; align-items: center;"
-              >
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path>
-                </svg>
-              </button>
-            }
             <span
               class="badge"
               [class.badge-success]="selectedRoleId() === 1"
@@ -118,20 +126,36 @@
           </p>
         </div>
 
-        <button
-          type="button"
-          class="btn btn-primary"
-          [disabled]="isSaving() || selectedRoleId() === 1"
-          (click)="savePermissions()"
-          style="gap: 8px;"
-        >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
-            <polyline points="17 21 17 13 7 13 7 21"></polyline>
-            <polyline points="7 3 7 8 15 8"></polyline>
-          </svg>
-          <span>{{ isSaving() ? 'Guardando...' : 'Guardar Permisos' }}</span>
-        </button>
+        <div class="role-header-actions" style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+          @if (!currentRole().isSystemRole) {
+            <button
+              type="button"
+              class="btn btn-outline role-edit-header-btn"
+              title="Editar nombre y configuración del rol"
+              (click)="openEditRoleModal(currentRole(), $event)"
+            >
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path>
+              </svg>
+              <span>Editar</span>
+            </button>
+          }
+
+          <button
+            type="button"
+            class="btn btn-primary"
+            [disabled]="isSaving() || selectedRoleId() === 1"
+            (click)="savePermissions()"
+            style="gap: 8px;"
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+              <polyline points="17 21 17 13 7 13 7 21"></polyline>
+              <polyline points="7 3 7 8 15 8"></polyline>
+            </svg>
+            <span>{{ isSaving() ? 'Guardando...' : 'Guardar Permisos' }}</span>
+          </button>
+        </div>
       </div>
 
       <div class="card-body" style="padding: 16px;">

@@ -200,6 +200,13 @@ export class DashboardComponent {
   readonly showEditTargetModal = signal<boolean>(false);
   readonly editTargetAmount = signal<number>(0);
   readonly selectedKpiCard = signal<KpiCardType | null>(null);
+  readonly isLoading = computed<boolean>(() => {
+    try {
+      return typeof this.stateService.isLoading === 'function' ? this.stateService.isLoading() : false;
+    } catch {
+      return false;
+    }
+  });
 
   readonly ordersByStatus = computed<OrdersByStatusCounts>(() => {
     try {
@@ -717,6 +724,7 @@ export class DashboardComponent {
    */
   constructor() {
     try {
+      this.stateService.refreshAll?.();
       this.route.queryParams.subscribe(params => {
         if (params['focus'] === 'goals') {
           setTimeout(() => {

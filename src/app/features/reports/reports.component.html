@@ -1,5 +1,31 @@
 <div style="display: flex; flex-direction: column; gap: 24px;">
 
+  @if (isLoading()) {
+    <div class="dgl-shimmer-wrapper">
+      <div class="shimmer-kpi-grid">
+        @for (kpi of [1, 2, 3, 4]; track kpi) {
+          <div class="shimmer-kpi-card">
+            <div class="shimmer-circle"></div>
+            <div class="shimmer-subtitle" style="width: 58%;"></div>
+            <div class="shimmer-title" style="width: 50%; height: 24px;"></div>
+          </div>
+        }
+      </div>
+      <div class="shimmer-table-card">
+        <div class="shimmer-title" style="width: 38%; margin-bottom: 8px;"></div>
+        @for (row of [1, 2, 3, 4, 5]; track row) {
+          <div class="shimmer-table-row">
+            <div class="shimmer-circle" style="width: 34px; height: 34px;"></div>
+            <div class="shimmer-line" style="width: 80%;"></div>
+            <div class="shimmer-line" style="width: 65%;"></div>
+            <div class="shimmer-line" style="width: 60%;"></div>
+            <div class="shimmer-badge"></div>
+          </div>
+        }
+      </div>
+    </div>
+  }
+
     <div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 16px;">
     <div>
       <h1 style="font-size: 1.85rem; font-weight: 800; margin-bottom: 4px; color: var(--text-main);">

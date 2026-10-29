@@ -30,6 +30,32 @@
     </div>
   </div>
 
+  @if (isLoading()) {
+    <div class="dgl-shimmer-wrapper">
+      <div class="shimmer-kpi-grid">
+        @for (kpi of [1, 2, 3, 4]; track kpi) {
+          <div class="shimmer-kpi-card">
+            <div class="shimmer-circle"></div>
+            <div class="shimmer-subtitle" style="width: 60%;"></div>
+            <div class="shimmer-title" style="width: 50%; height: 24px;"></div>
+          </div>
+        }
+      </div>
+      <div class="shimmer-table-card">
+        <div class="shimmer-title" style="width: 35%; margin-bottom: 8px;"></div>
+        @for (row of [1, 2, 3, 4]; track row) {
+          <div class="shimmer-table-row">
+            <div class="shimmer-circle" style="width: 34px; height: 34px;"></div>
+            <div class="shimmer-line" style="width: 80%;"></div>
+            <div class="shimmer-line" style="width: 65%;"></div>
+            <div class="shimmer-line" style="width: 55%;"></div>
+            <div class="shimmer-badge"></div>
+          </div>
+        }
+      </div>
+    </div>
+  }
+
   <div class="hr-subnav-bar no-print">
     <button
       type="button"

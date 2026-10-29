@@ -1,4 +1,4 @@
-import { Component, computed, inject } from '@angular/core';
+import { Component, computed, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { NavigationEnd, Router, RouterLink, RouterLinkActive } from '@angular/router';
 import { toSignal } from '@angular/core/rxjs-interop';
@@ -41,55 +41,97 @@ import { environment } from '../../../environments/environment';
       </div>
 
       <nav class="sidebar-nav">
-        <a routerLink="/kds" routerLinkActive="active" class="dgl-nav-item" title="Abrir pantalla dedicada de alistamiento de pedidos (KDS)">
-          <span class="dgl-nav-icon">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
-              <line x1="8" y1="21" x2="16" y2="21"></line>
-              <line x1="12" y1="17" x2="12" y2="21"></line>
-            </svg>
-          </span>
-          <span class="dgl-nav-text">Pantalla de Alistamiento</span>
-          <span class="dgl-nav-badge" style="background: #1e5e3a; color: white; font-weight: 800;">KDS</span>
-        </a>
-
-        <a routerLink="/kds-inventory" routerLinkActive="active" class="dgl-nav-item" title="Abrir pantalla KDS de control y alimentación de inventario y stock en planta">
-          <span class="dgl-nav-icon">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
-              <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
-              <line x1="12" y1="22.08" x2="12" y2="12"></line>
-            </svg>
-          </span>
-          <span class="dgl-nav-text">KDS Inventario & Stock</span>
-          <span class="dgl-nav-badge" style="background: #2563eb; color: white; font-weight: 800;">PLANTA</span>
-        </a>
-
-        <a routerLink="/portal-clientes" routerLinkActive="active" class="dgl-nav-item" title="Abrir portal de autopedido y catálogo digital para clientes">
-          <span class="dgl-nav-icon">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <circle cx="9" cy="21" r="1"></circle>
-              <circle cx="20" cy="21" r="1"></circle>
-              <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path>
-            </svg>
-          </span>
-          <span class="dgl-nav-text">Portal Clientes</span>
-          <span class="dgl-nav-badge" style="background: #d97706; color: white; font-weight: 800;">PEDIDOS</span>
-        </a>
-
-        @if (authService.hasModuleAccess('/portal-admin')) {
-          <a routerLink="/portal-admin" routerLinkActive="active" class="dgl-nav-item" title="Administrar fotos, precios y textos de las cards del Portal Clientes">
+        <div class="dgl-quick-access-wrapper" [class.open]="isQuickAccessOpen()">
+          <button
+            type="button"
+            class="dgl-nav-item dgl-quick-access-trigger"
+            [class.active]="isQuickAccessOpen()"
+            [attr.aria-expanded]="isQuickAccessOpen()"
+            title="Desplegar u ocultar pantallas KDS y Portal Clientes"
+            (click)="toggleQuickAccess()"
+          >
             <span class="dgl-nav-icon">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
-                <circle cx="8.5" cy="8.5" r="1.5"></circle>
-                <polyline points="21 15 16 10 5 21"></polyline>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="3" width="7" height="7" rx="1.5"></rect>
+                <rect x="14" y="3" width="7" height="7" rx="1.5"></rect>
+                <rect x="14" y="14" width="7" height="7" rx="1.5"></rect>
+                <rect x="3" y="14" width="7" height="7" rx="1.5"></rect>
               </svg>
             </span>
-            <span class="dgl-nav-text">Admin Catálogo</span>
-            <span class="dgl-nav-badge" style="background: #0284c7; color: white; font-weight: 700;">CMS</span>
-          </a>
-        }
+            <span class="dgl-nav-text">Accesos Rápidos</span>
+            <span class="dgl-quick-access-chevron" [class.expanded]="isQuickAccessOpen()" aria-hidden="true">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="6 9 12 15 18 9"></polyline>
+              </svg>
+            </span>
+          </button>
+
+          @if (isQuickAccessOpen()) {
+            <div class="dgl-quick-access-panel">
+              <a routerLink="/kds" routerLinkActive="active" class="dgl-nav-item" title="Abrir pantalla dedicada de alistamiento de pedidos (KDS)">
+                <span class="dgl-nav-icon">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
+                    <line x1="8" y1="21" x2="16" y2="21"></line>
+                    <line x1="12" y1="17" x2="12" y2="21"></line>
+                  </svg>
+                </span>
+                <span class="dgl-nav-text">Pantalla de Alistamiento</span>
+                <span class="dgl-nav-badge" style="background: #1e5e3a; color: white; font-weight: 800;">KDS</span>
+              </a>
+
+              <a routerLink="/kds-inventory" routerLinkActive="active" class="dgl-nav-item" title="Abrir pantalla KDS de control y alimentación de inventario y stock en planta">
+                <span class="dgl-nav-icon">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
+                    <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
+                    <line x1="12" y1="22.08" x2="12" y2="12"></line>
+                  </svg>
+                </span>
+                <span class="dgl-nav-text">KDS Inventario & Stock</span>
+                <span class="dgl-nav-badge" style="background: #2563eb; color: white; font-weight: 800;">PLANTA</span>
+              </a>
+
+              <a routerLink="/portal-clientes" routerLinkActive="active" class="dgl-nav-item" title="Abrir portal de autopedido y catálogo digital para clientes">
+                <span class="dgl-nav-icon">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="9" cy="21" r="1"></circle>
+                    <circle cx="20" cy="21" r="1"></circle>
+                    <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path>
+                  </svg>
+                </span>
+                <span class="dgl-nav-text">Portal Clientes</span>
+                <span class="dgl-nav-badge" style="background: #d97706; color: white; font-weight: 800;">PEDIDOS</span>
+              </a>
+
+              @if (authService.hasModuleAccess('/portal-admin')) {
+                <a routerLink="/portal-admin" routerLinkActive="active" class="dgl-nav-item" title="Administrar fotos, precios y textos de las cards del Portal Clientes">
+                  <span class="dgl-nav-icon">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                      <circle cx="8.5" cy="8.5" r="1.5"></circle>
+                      <polyline points="21 15 16 10 5 21"></polyline>
+                    </svg>
+                  </span>
+                  <span class="dgl-nav-text">Admin Catálogo</span>
+                  <span class="dgl-nav-badge" style="background: #0284c7; color: white; font-weight: 700;">CMS</span>
+                </a>
+              }
+
+              <button
+                type="button"
+                class="dgl-quick-access-hide-btn"
+                title="Ocultar módulos rápidos"
+                (click)="closeQuickAccess()"
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="18 15 12 9 6 15"></polyline>
+                </svg>
+                <span>Ocultar módulos</span>
+              </button>
+            </div>
+          }
+        </div>
 
         @for (section of authService.groupedNavigationSections(); track section.sectionName; let secIdx = $index) {
           <div class="nav-section-title" [style.marginTop]="secIdx >= 0 ? '14px' : '0'">
@@ -104,6 +146,7 @@ import { environment } from '../../../environments/environment';
                 [class.active]="isInventoryTabActive('inventory')"
                 class="dgl-nav-item"
                 title="Inventario de fruta fresca y stock de pulpas congeladas"
+                (click)="closeQuickAccess()"
               >
                 <span class="dgl-nav-icon">
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -117,10 +160,29 @@ import { environment } from '../../../environments/environment';
             } @else if (mod.frontendRoute === '/orders' || mod.slug === 'orders') {
               <a
                 routerLink="/orders"
+                [queryParams]="{ tab: 'picking' }"
+                [class.active]="isOrderTabActive('picking')"
+                class="dgl-nav-item"
+                title="Alistamiento de pedidos"
+                (click)="closeQuickAccess()"
+              >
+                <span class="dgl-nav-icon">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M5 3h14a1 1 0 0 1 1 1v17l-3-2-3 2-2-2-2 2-3-2-3 2V4a1 1 0 0 1 1-1Z"></path>
+                    <line x1="9" y1="9" x2="15" y2="9"></line>
+                    <line x1="9" y1="13" x2="15" y2="13"></line>
+                  </svg>
+                </span>
+                <span class="dgl-nav-text">Pedidos</span>
+              </a>
+
+              <a
+                routerLink="/orders"
                 [queryParams]="{ tab: 'facturacion' }"
                 [class.active]="isOrderTabActive('facturacion')"
                 class="dgl-nav-item"
                 title="Facturación y Punto de Venta POS"
+                (click)="closeQuickAccess()"
               >
                 <span class="dgl-nav-icon">
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -140,6 +202,7 @@ import { environment } from '../../../environments/environment';
                 [class.active]="isOrderTabActive('despachos')"
                 class="dgl-nav-item"
                 title="Despachos, rutas y liquidación"
+                (click)="closeQuickAccess()"
               >
                 <span class="dgl-nav-icon">
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -161,6 +224,7 @@ import { environment } from '../../../environments/environment';
                 [class.active]="isModuleActive(mod)"
                 class="dgl-nav-item"
                 [title]="mod.name"
+                (click)="closeQuickAccess()"
               >
                 <span class="dgl-nav-icon">
                   @switch (mod.icon) {
@@ -485,6 +549,80 @@ import { environment } from '../../../environments/environment';
       text-overflow: ellipsis;
     }
 
+    .dgl-quick-access-wrapper {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      margin-bottom: 4px;
+      border-radius: 12px;
+      border: 1px solid #eef2ef;
+      background: #f8faf8;
+      padding: 4px;
+      transition: all 0.2s ease;
+
+      &.open {
+        background: #ffffff;
+        border-color: #d1e7d8;
+        box-shadow: 0 4px 12px rgba(30, 94, 58, 0.06);
+      }
+    }
+
+    .dgl-quick-access-trigger {
+      width: 100%;
+      border: none;
+      background: transparent;
+      cursor: pointer;
+      text-align: left;
+      font-family: inherit;
+    }
+
+    .dgl-quick-access-chevron {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      color: #6b7280;
+      margin-left: auto;
+      transition: transform 0.2s ease, color 0.15s ease;
+
+      &.expanded {
+        transform: rotate(180deg);
+        color: #1e5e3a;
+      }
+    }
+
+    .dgl-quick-access-panel {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      padding-top: 4px;
+      border-top: 1px dashed #e5e7eb;
+    }
+
+    .dgl-quick-access-hide-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      width: 100%;
+      margin-top: 4px;
+      padding: 6px 10px;
+      border-radius: 8px;
+      border: 1px solid #e5e7eb;
+      background: #f9fafb;
+      color: #4b5563;
+      font-size: 0.75rem;
+      font-weight: 600;
+      font-family: inherit;
+      cursor: pointer;
+      transition: all 0.15s ease;
+
+      &:hover {
+        background: #eaf5ee;
+        border-color: #1e5e3a;
+        color: #1e5e3a;
+      }
+    }
+
     .dgl-nav-badge {
       background: #ef4444;
       color: #ffffff;
@@ -633,7 +771,41 @@ export class SidebarComponent {
   readonly authService = inject(AuthService);
   readonly stateService = inject(StateService);
   readonly environment = environment;
+  readonly isQuickAccessOpen = signal<boolean>(false);
   private readonly router = inject(Router);
+
+  /**
+   * Toggles the visibility of the 4 top quick-access modules (KDS, Planta, Portal Clientes, Admin Catálogo).
+   */
+  toggleQuickAccess(): void {
+    try {
+      this.isQuickAccessOpen.update((open: boolean) => !open);
+    } catch {
+      this.isQuickAccessOpen.set(false);
+    }
+  }
+
+  /**
+   * Opens the 4 top quick-access modules in the sidebar.
+   */
+  openQuickAccess(): void {
+    try {
+      this.isQuickAccessOpen.set(true);
+    } catch {
+      this.isQuickAccessOpen.set(false);
+    }
+  }
+
+  /**
+   * Hides the 4 top quick-access modules in the sidebar.
+   */
+  closeQuickAccess(): void {
+    try {
+      this.isQuickAccessOpen.set(false);
+    } catch {
+      this.isQuickAccessOpen.set(false);
+    }
+  }
 
   private readonly navEnd$ = this.router.events.pipe(
     filter((e): e is NavigationEnd => e instanceof NavigationEnd),

@@ -4,6 +4,159 @@ Este documento registra de manera cronológica y estructurada todas las interven
 
 ---
 
+## [2026-10-28] - Menú Móvil Compacto sin Subtextos Descriptivos y Visibilidad Directa del Botón Cerrar Sesión
+
+### 💬 Prompt Original del Usuario
+> "Quiero que de la pwa version mobile, me elimines esos subtextod que me muestra en la lista de las opcion, solo quiero que los nombres de los modulos , esto me ayudara a que logre ver hasta la opcion de cerrar sesion en lamisma vista al ingresar sin tener que scrollear al final para verla"
+
+### 🤖 Resumen Técnico para la IA
+- **1. Eliminación Quirúrgica de Subtextos (`.drawer-desc`) en `MobileNavComponent` (`src/app/layout/mobile-nav/mobile-nav.component.ts`)**:
+  - Se eliminaron los 3 bloques de subtexto `<div class="drawer-desc">...</div>` de las opciones del drawer móvil (`Portal Clientes`, `Admin. Portal Clientes` y el ciclo `@for (mod of section.modules)`), dejando exclusivamente el título del módulo (`<div class="drawer-title">...</div>`).
+  - Se removió la regla CSS `.drawer-desc` obsoleta.
+- **2. Compactación Vertical del Menú Móvil para Visibilidad Inmediata de `Cerrar Sesión`**:
+  - Se optimizó el espaciado vertical de `.mobile-drawer-content` (`padding: 12px 14px`), `.mobile-drawer-header` (`margin-bottom: 6px; padding-bottom: 8px;`), cabeceras de sección (`padding: 5px 10px 2px 10px; font-size: 0.65rem;`), `.drawer-link-item` (`padding: 5px 10px; gap: 10px; margin-bottom: 2px; border-radius: 10px;`), `.drawer-icon` (`28px × 28px`, iconos SVG `17×17`), `.drawer-title` (`font-size: 0.85rem; line-height: 1.2;`), `.mobile-drawer-footer` (`margin-top: 8px; padding-top: 8px;`) y `.drawer-logout-btn` (`padding: 8px 12px !important; font-size: 0.84rem !important;`), permitiendo ver todos los módulos y el botón **`Cerrar Sesión`** en la misma vista sin hacer scroll hasta el final.
+- **3. Cobertura del 100% de Pruebas Unitarias y Build**:
+  - Se añadió prueba unitaria en `src/app/layout/mobile-nav/mobile-nav.component.spec.ts` verificando que el drawer móvil renderiza únicamente los nombres de los módulos (`.drawer-title`), que no existe ningún elemento `.drawer-desc` (`subtexts.length === 0`) y que el botón `.drawer-logout-btn` (`Cerrar Sesión`) está visible.
+  - Suite de pruebas ejecutada: **235 de 235 pruebas unitarias aprobadas exitosamente (100% SUCCESS, 0 FAILS)**.
+  - Compilación de producción: **Completada con éxito (`npm run build` con Exit code 0)**.
+
+### 📦 Componentes Modificados
+- `src/app/layout/mobile-nav/mobile-nav.component.ts`
+- `src/app/layout/mobile-nav/mobile-nav.component.spec.ts`
+- `implementation_plan.md`
+- `HISTORIAL_CAMBIOS.md`
+
+### ✅ Verificación, Build y Tests Unitarios
+- `npm test -- --watch=false`: **235 / 235 Pruebas Unitarias Exitosas (100% PASS, 0 fallos)**.
+- `npm run build`: **Compilación de producción completada con éxito (Exit code 0)**.
+- **Git**: Se cumplió estrictamente la prohibición de `git commit` y `git push`.
+
+---
+
+## [2026-10-28] - Sistema Global de Carga Shimmer Skeleton en Todos los Módulos de la PWA, Rediseño de Cápsulas de Ámbito y Botón Editar en Roles & Matriz de Privilegios
+
+### 💬 Prompt Original del Usuario
+> "Ayudame para que cada vez que ingrese a los modulos de la pwa (cubre todos ) y el este consumiendo el servicio de consulta, mientras no quede en blanca la pantalla, si no que tenga un shimmer en los campos de informacion, si son cards, si es una lista de informacion, etc... valida todos y aplicalos el efecto shimmer que sea vea bonito
+>
+> adicional ve que se daño el diseño de estos botones de Roles & Matriz de Privilegios
+>
+> adicioanl elimina el icono del lapiz y mas bien agrega un boton a la izquierda de guardar permisos el de editar"
+
+### 🤖 Resumen Técnico para la IA
+- **1. Arquitectura Global de Shimmer Skeleton (`src/styles.scss`)**:
+  - Se creó el sistema global de carga con barrido luminoso `@keyframes dglShimmerWave` (con soporte para modo claro y `[data-theme="dark"]`) y las utilidades `.dgl-shimmer-wrapper`, `.dgl-loading-hidden`, `.shimmer-kpi-grid`, `.shimmer-kpi-card`, `.shimmer-card-grid`, `.shimmer-card`, `.shimmer-table-card`, `.shimmer-table-row`, `.shimmer-box`, `.shimmer-line`, `.shimmer-title`, `.shimmer-subtitle`, `.shimmer-circle`, `.shimmer-pill` y `.shimmer-badge`.
+- **2. Cobertura Total del Efecto Shimmer en los 15 Módulos de la PWA**:
+  - Se sincronizó la consulta al ingresar a cada módulo (`this.stateService.refreshAll?.()` / servicios dedicados) y se conectó la señal reactiva `isLoading` con plantillas `.dgl-shimmer-wrapper` estructuradas según la anatomía de cada vista (cards KPI, grillas operativas, paneles y tablas):
+    - `DashboardComponent` (`dashboard.component.ts/.html`)
+    - `OrdersComponent` (`orders.component.ts/.html`)
+    - `SettingsComponent` (`settings.component.ts/.html`)
+    - `ShiftsComponent` (`shifts.component.ts/.html`)
+    - `HrComponent` (`hr.component.ts/.html`)
+    - `AccountingComponent` (`accounting.component.ts/.html`)
+    - `ReportsComponent` (`reports.component.ts/.html`)
+    - `KdsComponent` (`orders/kds/kds.component.ts`)
+    - `KdsInventoryComponent` (`inventory/kds/kds-inventory.component.ts`)
+    - `ClientPortalComponent` (`client-portal.component.ts`)
+    - `ClientPortalAdminComponent` (`client-portal-admin.component.ts`)
+    - `AdminUsersComponent` (`admin/users/users.component.html`)
+    - `AdminRolesComponent` (`admin/roles/roles.component.ts/.html`)
+    - `SystemCatalogComponent` (`admin/system-catalog/system-catalog.component.html`)
+    - `BackupsComponent` (`admin/backups/backups.component.html`)
+- **3. Corrección de Botones de Filtro de Ámbito (`.capsule-filter`) y Botón `Editar` en `Roles & Matriz de Privilegios` (`src/app/features/admin/roles/`)**:
+  - Se definieron las reglas CSS para `.capsule-filter`, `.capsule-filter-group` y `.btn-outline` en `src/styles.scss` y `roles.component.scss`, otorgando diseño tipo píldora con estado `.active` en gradiente verde institucional (`#1e5e3a -> #144328`) a los botones `Todos`, `PWA (Planta & Oficina)` y `App Móvil (Repartidores)`.
+  - Se eliminaron los botones de ícono de lápiz sueltos de las tarjetas laterales de `Perfiles y Roles` y junto al título del rol seleccionado.
+  - Se agregó el botón **`Editar`** (`.role-edit-header-btn`) inmediatamente a la izquierda del botón **`Guardar Permisos`** en `.role-header-actions`.
+- **4. Cobertura del 100% de Pruebas Unitarias y Build**:
+  - Se añadió prueba unitaria en `roles.component.spec.ts` verificando la ausencia de lápices inline, la presencia y apertura del modal desde el botón `Editar` a la izquierda de `Guardar Permisos`, los filtros `.capsule-filter` y el renderizado de `.dgl-shimmer-wrapper`.
+  - Suite de pruebas ejecutada: **234 de 234 pruebas unitarias aprobadas exitosamente (100% SUCCESS, 0 FAILS)**.
+  - Compilación de producción: **Completada con éxito (`npm run build` con Exit code 0)**.
+
+### 📦 Componentes Modificados
+- `src/styles.scss`
+- `src/app/features/admin/roles/roles.component.ts`
+- `src/app/features/admin/roles/roles.component.html`
+- `src/app/features/admin/roles/roles.component.scss`
+- `src/app/features/admin/roles/roles.component.spec.ts`
+- `src/app/features/dashboard/dashboard.component.ts`
+- `src/app/features/dashboard/dashboard.component.html`
+- `src/app/features/orders/orders.component.ts`
+- `src/app/features/orders/orders.component.html`
+- `src/app/features/settings/settings.component.ts`
+- `src/app/features/settings/settings.component.html`
+- `src/app/features/shifts/shifts.component.ts`
+- `src/app/features/shifts/shifts.component.html`
+- `src/app/features/hr/hr.component.ts`
+- `src/app/features/hr/hr.component.html`
+- `src/app/features/accounting/accounting.component.ts`
+- `src/app/features/accounting/accounting.component.html`
+- `src/app/features/reports/reports.component.ts`
+- `src/app/features/reports/reports.component.html`
+- `src/app/features/orders/kds/kds.component.ts`
+- `src/app/features/inventory/kds/kds-inventory.component.ts`
+- `src/app/features/client-portal/client-portal.component.ts`
+- `src/app/features/client-portal/client-portal-admin.component.ts`
+- `src/app/features/admin/users/users.component.html`
+- `src/app/features/admin/system-catalog/system-catalog.component.html`
+- `src/app/features/admin/backups/backups.component.html`
+- `implementation_plan.md`
+- `HISTORIAL_CAMBIOS.md`
+
+### ✅ Verificación, Build y Tests Unitarios
+- `npm test -- --watch=false`: **234 / 234 Pruebas Unitarias Exitosas (100% PASS, 0 fallos)**.
+- `npm run build`: **Compilación de producción completada con éxito (Exit code 0)**.
+- **Git**: Se cumplió estrictamente la prohibición de `git commit` y `git push`.
+
+---
+
+## [2026-10-28] - Módulo Comprimido de Accesos Rápidos en Sidebar Web, Eliminación de Portal Web Clientes Duplicado, Adición de Módulo Pedidos (Alistamiento) e Indicador de Flecha en KPIs del Dashboard
+
+### 💬 Prompt Original del Usuario
+> "Quiero que estos modulos de la pwa verision web se ven comprimidos por un modulo el cual los oculta, al oprimir se abren los 4 , que al oprimir otro boton se ocultan, pero por defecto que salgan ocultos, adicional en el menu desplegable elimines el portal web clientes el que esta debajo de contabilidad y facturacion, ya que la opcion ya esta en las 4 opciones que te digo que se oculten y se muestren
+>
+> adicional entre el inventario y facturacion (modulos del menu desplegable pwa web) falta el modulo de "pedidos" que es el de alistamiento de pedidos
+>
+> en las 4 cards agregale una flecha hacia abajo para hacer alucion de que el boton desplega algo hacia abajo si lo oprime"
+
+### 🤖 Resumen Técnico para la IA
+- **1. Compresión y Ocultamiento por Defecto de los 4 Módulos Superiores del Sidebar Web (`src/app/layout/sidebar/sidebar.component.ts`)**:
+  - Se incorporó la señal reactiva tipada `readonly isQuickAccessOpen = signal<boolean>(false);` (oculta por defecto) junto con los métodos documentados con JSDoc y protegidos con `try-catch`: `toggleQuickAccess(): void`, `openQuickAccess(): void` y `closeQuickAccess(): void`.
+  - Se agruparon los 4 accesos superiores (`Pantalla de Alistamiento [KDS]`, `KDS Inventario & Stock [PLANTA]`, `Portal Clientes [PEDIDOS]` y `Admin Catálogo [CMS]`) dentro del contenedor `.dgl-quick-access-wrapper`.
+  - Al oprimir el botón disparador `.dgl-quick-access-trigger` (*"Accesos Rápidos"*), se despliegan los 4 módulos; al oprimir el botón `.dgl-quick-access-hide-btn` (*"Ocultar módulos"*), volver a oprimir el disparador o hacer clic en cualquier otro módulo del menú lateral, se ocultan inmediatamente.
+- **2. Eliminación de `Portal Web Clientes` en la Sección `COMERCIAL Y FINANZAS` (`src/app/core/services/auth.service.ts`)**:
+  - Se implementó el método `isDedicatedClientPortalModule(mod)` en `AuthService` y se integró en el filtro visual de `groupedNavigationSections()`.
+  - Esto elimina la entrada duplicada `Portal Web Clientes` debajo de `Contabilidad y Facturación` en el menú desplegable, manteniendo intactos `navigationModules()`, `hasModuleAccess('/portal-clientes')` y las rutas en `app.routes.ts`.
+- **3. Adición del Módulo `Pedidos` (Alistamiento de Pedidos) entre `Inventario & Stock` y `Facturación & POS` (`src/app/layout/sidebar/sidebar.component.ts`)**:
+  - En la sección `OPERACIÓN`, dentro del bloque `@else if (mod.frontendRoute === '/orders' || mod.slug === 'orders')`, se agregó como primer ítem el enlace de primer nivel `Pedidos` con `routerLink="/orders"`, `[queryParams]="{ tab: 'picking' }"` y `[class.active]="isOrderTabActive('picking')"`, ubicándolo exactamente entre `Inventario & Stock` y `Facturación & POS`.
+- **4. Indicador de Flecha Hacia Abajo en las 4 Cards Superiores del Dashboard (`src/app/features/dashboard/dashboard.component.html` y `dashboard.component.scss`)**:
+  - En cada una de las 4 tarjetas KPI superiores (`Facturación hoy`, `Pulpa total en bodega`, `Pulpas vendidas hoy`, `Fruta total en bodega`), se estructuró la fila superior `.kpi-card-top-row` alineando el ícono `.kpi-icon-box` a la izquierda y el indicador `.kpi-expand-chevron` (flecha hacia abajo SVG) en la esquina superior derecha.
+  - Se añadieron estilos en desktop y mobile con micro-interacción en `:hover` y rotación de `180deg` cuando la tarjeta está desplegada (`[class.expanded]`).
+- **5. Cobertura del 100% de Pruebas Unitarias y Build**:
+  - Se actualizaron y añadieron pruebas unitarias en `sidebar.component.spec.ts`, `auth.service.spec.ts` y `dashboard.component.spec.ts`.
+  - Suite de pruebas ejecutada: **233 de 233 pruebas unitarias aprobadas exitosamente (100% SUCCESS, 0 FAILS)**.
+  - Compilación de producción: **Completada con éxito (`npm run build` con Exit code 0)**.
+- **6. Certificación por Sub-Agentes de Calidad**:
+  - **Agente de Verificación de Impacto**: Certificó 0 daños colaterales previo a la implementación.
+  - **Agente Auditor Punto por Punto**: Certificó cumplimiento del 100% en los 4 requerimientos y en todas las reglas de `AGENTS.md`.
+  - **Agente de Revisión Par (Peer Reviewer)**: Aprobó la arquitectura, estilos, reactividad y pruebas unitarias.
+
+### 📦 Componentes Modificados
+- `src/app/core/services/auth.service.ts`
+- `src/app/core/services/auth.service.spec.ts`
+- `src/app/layout/sidebar/sidebar.component.ts`
+- `src/app/layout/sidebar/sidebar.component.spec.ts`
+- `src/app/features/dashboard/dashboard.component.html`
+- `src/app/features/dashboard/dashboard.component.scss`
+- `src/app/features/dashboard/dashboard.component.spec.ts`
+- `implementation_plan.md`
+- `HISTORIAL_CAMBIOS.md`
+
+### ✅ Verificación, Build y Tests Unitarios
+- `npm test -- --watch=false`: **233 / 233 Pruebas Unitarias Exitosas (100% PASS, 0 fallos)**.
+- `npm run build`: **Compilación de producción completada con éxito (Exit code 0)**.
+- **Git**: Se cumplió estrictamente la prohibición de `git commit` y `git push`.
+
+---
+
 ## [2026-10-28] - Alineación de Títulos en Topbar Web Desktop, Optimización Vertical de Contenido y Elevación de Mobile Nav con Auto-Ocultado e Inactividad
 
 ### 💬 Prompt Original del Usuario

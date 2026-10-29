@@ -61,6 +61,13 @@ export class ReportsComponent {
   private readonly route = inject(ActivatedRoute);
 
   readonly activeTab = signal<ReportTab>('sales');
+  readonly isLoading = computed<boolean>(() => {
+    try {
+      return typeof this.stateService.isLoading === 'function' ? this.stateService.isLoading() : false;
+    } catch {
+      return false;
+    }
+  });
 
   readonly monthsList: MonthOption[] = [
     { value: '01', label: 'Enero', shortLabel: 'Ene' },
@@ -590,6 +597,7 @@ export class ReportsComponent {
    */
   constructor() {
     try {
+      this.stateService.refreshAll?.();
       this.route.queryParams.subscribe(params => {
         const tab = params['tab'];
         if (tab === 'sales' || tab === 'ventas') {

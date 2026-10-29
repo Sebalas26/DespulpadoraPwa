@@ -40,6 +40,17 @@ export class ShiftsComponent implements OnInit, OnDestroy {
   private timer: ReturnType<typeof setInterval> | null = null;
 
   readonly systemUsers = signal<UserAdminDto[]>([]);
+  readonly isLoadingUsers = signal<boolean>(false);
+  readonly isLoading = computed<boolean>(() => {
+    try {
+      return (
+        this.isLoadingUsers() ||
+        (typeof this.stateService.isLoading === 'function' ? this.stateService.isLoading() : false)
+      );
+    } catch {
+      return false;
+    }
+  });
   readonly selectedEmployeeId = signal<number>(1);
   readonly selectedShiftType = signal<'MORNING' | 'AFTERNOON' | 'NIGHT'>('MORNING');
   readonly shiftNotes = signal<string>('');
@@ -171,6 +182,7 @@ export class ShiftsComponent implements OnInit, OnDestroy {
    */
   ngOnInit(): void {
     try {
+      this.stateService.refreshAll?.();
       this.loadSystemUsers();
     } catch {
       return;
@@ -182,8 +194,10 @@ export class ShiftsComponent implements OnInit, OnDestroy {
    */
   loadSystemUsers(): void {
     try {
+      this.isLoadingUsers.set(true);
       this.apiService.getUsers().subscribe({
         next: (users: UserAdminDto[]) => {
+          this.isLoadingUsers.set(false);
           if (Array.isArray(users)) {
             this.systemUsers.set(users);
             const available = this.selectableUsers();
@@ -199,10 +213,12 @@ export class ShiftsComponent implements OnInit, OnDestroy {
           }
         },
         error: () => {
+          this.isLoadingUsers.set(false);
           return;
         }
       });
     } catch {
+      this.isLoadingUsers.set(false);
       return;
     }
   }
