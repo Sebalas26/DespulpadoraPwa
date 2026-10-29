@@ -38,21 +38,32 @@
                 <span style="font-weight: 700; font-size: 0.88rem; color: var(--text-main); line-height: 1.3;">
                   {{ role.name }}
                 </span>
+                @if (!role.isSystemRole) {
+                  <button
+                    type="button"
+                    (click)="openEditRoleModal(role, $event)"
+                    title="Modificar nombre del rol"
+                    style="background: transparent; border: none; color: var(--text-muted); cursor: pointer; padding: 2px 4px; border-radius: 4px; display: inline-flex; align-items: center; transition: color 0.15s ease;"
+                  >
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path>
+                    </svg>
+                  </button>
+                }
               </div>
-              <div style="font-size: 0.72rem; color: var(--text-dim); margin-top: 2px;">
-                {{ role.isSystemRole ? 'Rol de Sistema (Fijo)' : 'Rol Personalizado' }}
+              <div style="display: flex; align-items: center; gap: 6px; margin-top: 2px;">
+                <span style="font-size: 0.72rem; color: var(--text-dim);">
+                  {{ role.isSystemRole ? 'Rol de Sistema (Fijo)' : 'Rol Personalizado' }}
+                </span>
+                @if (role.isCourier) {
+                  <span style="font-size: 0.65rem; font-weight: 800; background: #e0f2fe; color: #0369a1; padding: 1px 6px; border-radius: 4px; letter-spacing: 0.02em;">
+                    DOMICILIARIO
+                  </span>
+                }
               </div>
             </div>
 
             <div style="display: flex; align-items: center; gap: 6px;">
-              @if (selectedRoleId() === role.roleId) {
-                <span style="display: flex; align-items: center; justify-content: center; width: 22px; height: 22px; border-radius: 50%; background: var(--color-primary); color: #ffffff;">
-                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
-                    <polyline points="20 6 9 17 4 12"></polyline>
-                  </svg>
-                </span>
-              }
-
               @if (!role.isSystemRole) {
                 <button
                   type="button"
@@ -79,6 +90,18 @@
             <h3 class="card-title" style="margin: 0; font-size: 1.15rem;">
               {{ currentRole().name }}
             </h3>
+            @if (!currentRole().isSystemRole) {
+              <button
+                type="button"
+                (click)="openEditRoleModal(currentRole(), $event)"
+                title="Modificar nombre del rol"
+                style="background: transparent; border: none; color: var(--text-muted); cursor: pointer; padding: 4px; border-radius: 4px; display: inline-flex; align-items: center;"
+              >
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path>
+                </svg>
+              </button>
+            }
             <span
               class="badge"
               [class.badge-success]="selectedRoleId() === 1"
@@ -98,105 +121,95 @@
         <button
           type="button"
           class="btn btn-primary"
-          style="padding: 10px 20px; font-size: 0.88rem; font-weight: 700; gap: 8px;"
+          [disabled]="isSaving() || selectedRoleId() === 1"
           (click)="savePermissions()"
+          style="gap: 8px;"
         >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
             <polyline points="17 21 17 13 7 13 7 21"></polyline>
             <polyline points="7 3 7 8 15 8"></polyline>
           </svg>
-          <span>Guardar Permisos</span>
+          <span>{{ isSaving() ? 'Guardando...' : 'Guardar Permisos' }}</span>
         </button>
       </div>
 
-      <div style="padding: 14px 20px; background: rgba(0, 0, 0, 0.02); border-bottom: 1px solid var(--border-subtle); display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 12px;">
-        <div style="position: relative; flex: 1; min-width: 240px; max-width: 400px;">
-          <input
-            type="text"
-            class="form-control"
-            style="padding-left: 34px; font-size: 0.84rem;"
-            placeholder="Buscar acción, permiso o módulo..."
-            [ngModel]="searchTerm()"
-            (ngModelChange)="searchTerm.set($event)"
-          />
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--text-dim)" stroke-width="2.2" style="position: absolute; left: 11px; top: 50%; transform: translateY(-50%); pointer-events: none;">
-            <circle cx="11" cy="11" r="8"></circle>
-            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-          </svg>
-          @if (searchTerm()) {
+      <div class="card-body" style="padding: 16px;">
+        <div style="display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 20px; align-items: center; justify-content: space-between;">
+          <div style="flex: 1; min-width: 240px; position: relative;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--text-muted);">
+              <circle cx="11" cy="11" r="8"></circle>
+              <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+            </svg>
+            <input
+              type="text"
+              class="form-control"
+              style="padding-left: 36px;"
+              placeholder="Buscar acción, permiso o módulo..."
+              [ngModel]="searchTerm()"
+              (ngModelChange)="searchTerm.set($event)"
+            />
+          </div>
+
+          <div style="display: flex; align-items: center; gap: 6px;">
+            <span style="font-size: 0.8rem; font-weight: 700; color: var(--text-muted); margin-right: 4px;">Ámbito:</span>
             <button
               type="button"
-              (click)="searchTerm.set('')"
-              style="position: absolute; right: 8px; top: 50%; transform: translateY(-50%); background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 0.8rem;"
+              class="capsule-filter"
+              [class.active]="scopeFilter() === 'ALL'"
+              (click)="scopeFilter.set('ALL')"
             >
-              &times;
+              Todos ({{ totalActionsCount() }})
             </button>
-          }
+            <button
+              type="button"
+              class="capsule-filter"
+              [class.active]="scopeFilter() === 'PWA'"
+              (click)="scopeFilter.set('PWA')"
+            >
+              PWA (Planta & Oficina)
+            </button>
+            <button
+              type="button"
+              class="capsule-filter"
+              [class.active]="scopeFilter() === 'APP'"
+              (click)="scopeFilter.set('APP')"
+            >
+              App Móvil (Repartidores)
+            </button>
+          </div>
         </div>
 
-        <div style="display: flex; gap: 6px; align-items: center;">
-          <span style="font-size: 0.76rem; font-weight: 700; color: var(--text-muted); margin-right: 4px;">Ámbito:</span>
-          <button
-            type="button"
-            class="btn btn-sm"
-            [class.btn-primary]="scopeFilter() === 'ALL'"
-            [class.btn-outline]="scopeFilter() !== 'ALL'"
-            style="padding: 4px 10px; font-size: 0.76rem; font-weight: 700;"
-            (click)="scopeFilter.set('ALL')"
-          >
-            Todos ({{ totalActionsCount() }})
-          </button>
-          <button
-            type="button"
-            class="btn btn-sm"
-            [class.btn-primary]="scopeFilter() === 'PWA'"
-            [class.btn-outline]="scopeFilter() !== 'PWA'"
-            style="padding: 4px 10px; font-size: 0.76rem; font-weight: 700;"
-            (click)="scopeFilter.set('PWA')"
-          >
-            PWA (Planta & Oficina)
-          </button>
-          <button
-            type="button"
-            class="btn btn-sm"
-            [class.btn-primary]="scopeFilter() === 'APP'"
-            [class.btn-outline]="scopeFilter() !== 'APP'"
-            style="padding: 4px 10px; font-size: 0.76rem; font-weight: 700;"
-            (click)="scopeFilter.set('APP')"
-          >
-            App Móvil (Repartidores)
-          </button>
-        </div>
-      </div>
-
-      <div class="card-body" style="padding: 20px;">
-        <div style="display: flex; flex-direction: column; gap: 20px;">
+        <div style="display: flex; flex-direction: column; gap: 14px;">
           @for (mod of filteredModules(); track mod.moduleId) {
-            <div style="border: 1px solid var(--border-subtle); border-radius: var(--radius-md); overflow: hidden; background: var(--bg-card);">
-              
-              <div style="padding: 12px 18px; background: rgba(0,0,0,0.02); border-bottom: 1px solid var(--border-subtle); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+            <div
+              style="border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); overflow: hidden; background: var(--bg-card);"
+            >
+              <div
+                style="display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; background: rgba(0, 0, 0, 0.02); border-bottom: 1px solid var(--border-subtle);"
+              >
                 <div style="display: flex; align-items: center; gap: 10px;">
-                  <span style="display: inline-block; width: 4px; height: 18px; background: var(--color-primary); border-radius: 2px;"></span>
+                  <span style="display: inline-block; width: 4px; height: 16px; border-radius: 2px; background: var(--color-primary);"></span>
                   <div>
-                    <div style="display: flex; align-items: center; gap: 8px;">
-                      <span style="font-size: 0.95rem; font-weight: 800; color: var(--text-main);">{{ mod.name }}</span>
-                      <span
-                        class="badge"
-                        [style.background]="mod.scope === 'APP' ? '#e0e7ff' : (mod.scope === 'PWA + APP' ? '#f3e8ff' : '#e0f2fe')"
-                        [style.color]="mod.scope === 'APP' ? '#3730a3' : (mod.scope === 'PWA + APP' ? '#6b21a8' : '#0369a1')"
-                        style="font-size: 0.68rem; font-weight: 800; text-transform: uppercase;"
-                      >
-                        {{ mod.scope }}
-                      </span>
-                    </div>
-                    <div style="font-size: 0.74rem; color: var(--text-muted); margin-top: 1px;">
-                      {{ mod.description }}
+                    <span style="font-weight: 800; font-size: 0.92rem; color: var(--text-main);">
+                      {{ mod.name }}
+                    </span>
+                    <span
+                      class="badge"
+                      style="margin-left: 8px; font-size: 0.68rem;"
+                      [class.badge-info]="mod.scope === 'PWA'"
+                      [class.badge-warning]="mod.scope === 'APP'"
+                      [class.badge-success]="mod.scope === 'PWA + APP'"
+                    >
+                      {{ mod.scope }}
+                    </span>
+                    <div style="font-size: 0.72rem; color: var(--text-dim); margin-top: 1px;">
+                      Sección: {{ mod.menuSection || 'General' }} - Ruta: {{ mod.frontendRoute || 'N/A' }}
                     </div>
                   </div>
                 </div>
 
-                <div style="display: flex; align-items: center; gap: 8px;">
+                <div style="display: flex; align-items: center; gap: 10px;">
                   <span style="font-size: 0.76rem; font-weight: 700; color: var(--text-dim);">
                     {{ getModuleAssignedCount(mod) }} / {{ mod.actions.length }} asignados
                   </span>
@@ -283,11 +296,88 @@
           placeholder="ej: Control de alistamiento y salida de pedidos a ruta"
         />
       </div>
+
+      <div class="form-group checkbox-group" style="margin-top: 14px; display: flex; align-items: center; gap: 10px; padding: 10px 12px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px;">
+        <input
+          type="checkbox"
+          id="newRoleIsCourier"
+          class="form-check-input"
+          [ngModel]="newRoleIsCourier()"
+          (ngModelChange)="newRoleIsCourier.set($event)"
+          style="width: 18px; height: 18px; accent-color: #1e5e3a; cursor: pointer;"
+        />
+        <label for="newRoleIsCourier" class="form-label" style="margin: 0; cursor: pointer; font-weight: 600; font-size: 0.85rem; color: #1e293b;">
+          Rol de Domiciliario (permite asignar entregas y rutas en el mapa)
+        </label>
+      </div>
     </div>
 
     <div class="modal-footer">
       <button type="button" class="btn btn-outline" (click)="showCreateRoleModal.set(false)">Cancelar</button>
       <button type="button" class="btn btn-primary" (click)="submitNewRole()">Guardar y Configurar Permisos</button>
+    </div>
+  </div>
+</div>
+}
+
+@if (showEditRoleModal()) {
+<div class="modal-overlay" (click)="closeEditRoleModal()">
+  <div class="modal-content" style="max-width: 440px;" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h3 class="modal-title">Modificar Nombre del Rol</h3>
+      <button class="modal-close" (click)="closeEditRoleModal()">&times;</button>
+    </div>
+
+    <div class="modal-body">
+      <div class="form-group">
+        <label class="form-label">Nombre del Rol *</label>
+        <input
+          type="text"
+          class="form-control"
+          [ngModel]="editingRoleName()"
+          (ngModelChange)="editingRoleName.set($event)"
+          (keydown.enter)="saveRoleName()"
+          placeholder="ej: Administrador Operativo"
+        />
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Descripción del Perfil</label>
+        <input
+          type="text"
+          class="form-control"
+          [ngModel]="editingRoleDesc()"
+          (ngModelChange)="editingRoleDesc.set($event)"
+          (keydown.enter)="saveRoleName()"
+          placeholder="ej: Gestión integral de planta, inventario y despacho"
+        />
+      </div>
+
+      <div class="form-group checkbox-group" style="margin-top: 14px; display: flex; align-items: center; gap: 10px; padding: 10px 12px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px;">
+        <input
+          type="checkbox"
+          id="editingRoleIsCourier"
+          class="form-check-input"
+          [ngModel]="editingRoleIsCourier()"
+          (ngModelChange)="editingRoleIsCourier.set($event)"
+          style="width: 18px; height: 18px; accent-color: #1e5e3a; cursor: pointer;"
+        />
+        <label for="editingRoleIsCourier" class="form-label" style="margin: 0; cursor: pointer; font-weight: 600; font-size: 0.85rem; color: #1e293b;">
+          Rol de Domiciliario (permite asignar entregas y rutas en el mapa)
+        </label>
+      </div>
+    </div>
+
+    <div class="modal-footer">
+      <button type="button" class="btn btn-outline" (click)="closeEditRoleModal()">Cancelar</button>
+      <button
+        type="button"
+        class="btn btn-primary"
+        [disabled]="isSavingRoleName() || !editingRoleName().trim()"
+        (click)="saveRoleName()"
+      >
+        {{ isSavingRoleName() ? 'Guardando...' : 'Guardar Cambios' }}
+      </button>
     </div>
   </div>
 </div>

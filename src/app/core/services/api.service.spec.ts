@@ -217,4 +217,15 @@ describe('ApiService', () => {
     const backupsReq = httpMock.expectOne(`${baseUrl}/database-backups`);
     backupsReq.flush([]);
   });
+  it('should create and map role with isCourier flag via POST /api/roles', () => {
+    service.createRole({ name: 'Domiciliario', description: 'Entregas', isActive: true, isCourier: true }).subscribe(role => {
+      expect(role.roleId).toBe(12);
+      expect(role.isCourier).toBeTrue();
+    });
+
+    const req = httpMock.expectOne(`${baseUrl}/roles`);
+    expect(req.request.method).toBe('POST');
+    expect(req.request.body.isCourier).toBeTrue();
+    req.flush({ id: 12, name: 'Domiciliario', isCourier: true });
+  });
 });

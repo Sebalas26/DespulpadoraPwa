@@ -5,6 +5,7 @@ import { forkJoin } from 'rxjs';
 import { ApiService } from '../../../core/services/api.service';
 import { AuthService } from '../../../core/services/auth.service';
 import { NotificationService } from '../../../core/services/notification.service';
+import { ConfirmDialogService } from '../../../core/services/confirm-dialog.service';
 import { UserAdminDto, UserRoleDto } from '../../../core/models/business.models';
 
 const STORAGE_USERS_KEY = 'dgl_users_v2';
@@ -23,6 +24,7 @@ export class AdminUsersComponent implements OnInit {
   private readonly api = inject(ApiService);
   readonly authService = inject(AuthService);
   private readonly notification = inject(NotificationService);
+  private readonly confirmDialog = inject(ConfirmDialogService);
 
   readonly users = signal<UserAdminDto[]>([]);
   readonly roles = signal<UserRoleDto[]>([]);
@@ -244,9 +246,9 @@ export class AdminUsersComponent implements OnInit {
   }
 
   /**
-   * Deletes a user account via `DELETE /api/users/{id}`.
+   * Deletes a user account via `DELETE /api/users/{id}` using the modern confirmation dialog.
    */
-  deleteUser(user: UserAdminDto): void {
+  async deleteUser(user: UserAdminDto): Promise<void> {
     try {
       this.activeActionMenuUserId.set(null);
       if (user.userId === 1) {
@@ -254,7 +256,15 @@ export class AdminUsersComponent implements OnInit {
         return;
       }
 
-      if (!confirm(`¿Eliminar al usuario "${user.fullName}" (@${user.username})?`)) {
+      const confirmed = await this.confirmDialog.confirm({
+        title: 'Eliminar Usuario',
+        message: `¿Está seguro de eliminar al usuario "${user.fullName}" (@${user.username})? Esta acción no se puede revertir.`,
+        confirmText: 'Sí, eliminar',
+        cancelText: 'Cancelar',
+        isDanger: true
+      });
+
+      if (!confirmed) {
         return;
       }
 

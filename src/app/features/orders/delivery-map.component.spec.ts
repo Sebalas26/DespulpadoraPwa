@@ -5,7 +5,7 @@ import { StateService } from '../../core/services/state.service';
 import { DEFAULT_COMPANY_CONFIG } from '../../core/data/initial-data';
 import { NotificationService } from '../../core/services/notification.service';
 import { GeocodingService } from '../../core/services/geocoding.service';
-import { CompanyConfig, EmployeeDto, FruitConfig, OrderDto } from '../../core/models/business.models';
+import { CompanyConfig, EmployeeDto, FruitConfig, OrderDto, UserAdminDto, UserRoleDto } from '../../core/models/business.models';
 
 /**
  * Unit tests for DeliveryMapComponent verifying empty initial stops, dynamic couriers, and zeroed form defaults.
@@ -36,6 +36,8 @@ describe('DeliveryMapComponent', () => {
   ]);
 
   const mockEmployees = signal<EmployeeDto[]>([]);
+  const mockUsers = signal<UserAdminDto[]>([]);
+  const mockRoles = signal<UserRoleDto[]>([]);
   const mockOrders = signal<OrderDto[]>([]);
 
   const mockCompanyInfo = signal<CompanyConfig>({
@@ -46,6 +48,8 @@ describe('DeliveryMapComponent', () => {
 
   beforeEach(async () => {
     mockEmployees.set([]);
+    mockUsers.set([]);
+    mockRoles.set([]);
     mockOrders.set([]);
 
     createOrderSpy = jasmine.createSpy('createOrder').and.callFake((dto: Partial<OrderDto>) => ({
@@ -66,6 +70,8 @@ describe('DeliveryMapComponent', () => {
     const stateServiceMock: Partial<StateService> = {
       fruits: mockFruits,
       employees: mockEmployees,
+      users: mockUsers,
+      roles: mockRoles,
       orders: mockOrders,
       companyInfo: mockCompanyInfo,
       createOrder: createOrderSpy,
@@ -179,5 +185,39 @@ describe('DeliveryMapComponent', () => {
     expect(component.deliveryStops().length).toBe(1);
     expect(component.deliveryStops()[0].clientPhone).toBe('');
     expect(component.deliveryStops()[0].address).toBe('');
+  });
+  it('should render the fullscreen fab in bottom-left corner when map is in locked mode', () => {
+    component.mapViewMode.set('locked');
+    fixture.detectChanges();
+    const fab = fixture.nativeElement.querySelector('.map-fullscreen-fab');
+    expect(fab).toBeTruthy();
+    spyOn(component, 'toggleMapFullscreen');
+    fab.click();
+    expect(component.toggleMapFullscreen).toHaveBeenCalled();
+  });
+
+  it('should dynamically populate couriers from active users with isCourier role', () => {
+    mockRoles.set([
+      { roleId: 9, name: 'Repartidor VIP', isCourier: true, isSystemRole: false, isActive: true }
+    ]);
+    mockUsers.set([
+      {
+        userId: 77,
+        username: 'repartidor.vip',
+        fullName: 'Andres Repartidor',
+        roleId: 9,
+        roleName: 'Repartidor VIP',
+        isActive: true,
+        companyId: 1,
+        branches: [],
+        email: 'andres@example.com'
+      }
+    ]);
+
+    (component as unknown as { syncCouriersFromEmployees: () => void }).syncCouriersFromEmployees();
+
+    expect(component.couriers().length).toBe(1);
+    expect(component.couriers()[0].id).toBe('u77');
+    expect(component.couriers()[0].name).toBe('Andres Repartidor');
   });
 });

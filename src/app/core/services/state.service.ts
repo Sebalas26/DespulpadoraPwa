@@ -24,6 +24,8 @@ import {
   SalesPerformanceKpiDto,
   SalesTargetDto,
   UpsertSalesTargetDto,
+  UserAdminDto,
+  UserRoleDto,
   WorkShiftDto
 } from '../models/business.models';
 import {
@@ -64,6 +66,8 @@ export class StateService {
   readonly batches = signal<BatchDto[]>(this.loadBatchesFromStorage());
   readonly orders = signal<OrderDto[]>(this.loadOrdersFromStorage());
   readonly employees = signal<EmployeeDto[]>(this.loadEmployeesFromStorage());
+  readonly users = signal<UserAdminDto[]>(this.loadUsersFromStorage());
+  readonly roles = signal<UserRoleDto[]>(this.loadRolesFromStorage());
   readonly expenses = signal<ExpenseDto[]>(this.loadExpensesFromStorage());
   readonly clients = signal<ClientDto[]>(this.loadClientsFromStorage());
   readonly shifts = signal<WorkShiftDto[]>(this.loadShiftsFromStorage());
@@ -419,7 +423,59 @@ export class StateService {
   /**
    * Loads employees from localStorage.
    */
-  private loadEmployeesFromStorage(): EmployeeDto[] {
+    /**
+   * Loads users from localStorage.
+   */
+  private loadUsersFromStorage(): UserAdminDto[] {
+    try {
+      if (typeof localStorage === 'undefined') return [];
+      const data = localStorage.getItem('dgl_users_v2');
+      return data ? JSON.parse(data) : [];
+    } catch {
+      return [];
+    }
+  }
+
+  /**
+   * Persists users to localStorage.
+   */
+  private saveUsersToStorage(users: UserAdminDto[]): void {
+    try {
+      if (typeof localStorage !== 'undefined') {
+        localStorage.setItem('dgl_users_v2', JSON.stringify(users));
+      }
+    } catch {
+      return;
+    }
+  }
+
+  /**
+   * Loads roles from localStorage.
+   */
+  private loadRolesFromStorage(): UserRoleDto[] {
+    try {
+      if (typeof localStorage === 'undefined') return [];
+      const data = localStorage.getItem('dgl_roles_v2');
+      return data ? JSON.parse(data) : [];
+    } catch {
+      return [];
+    }
+  }
+
+  /**
+   * Persists roles to localStorage.
+   */
+  private saveRolesToStorage(roles: UserRoleDto[]): void {
+    try {
+      if (typeof localStorage !== 'undefined') {
+        localStorage.setItem('dgl_roles_v2', JSON.stringify(roles));
+      }
+    } catch {
+      return;
+    }
+  }
+
+private loadEmployeesFromStorage(): EmployeeDto[] {
     try {
       const data = localStorage.getItem('despulpadora_employees');
       return data ? JSON.parse(data) : INITIAL_EMPLOYEES_SAMPLE;
@@ -755,10 +811,25 @@ export class StateService {
         paymentMethods: this.api.getPaymentMethods().pipe(catchError(() => of([] as PaymentMethodDto[]))),
         shifts: (this.api.getShifts
           ? this.api.getShifts(branchId).pipe(catchError(() => of(null as WorkShiftDto[] | null)))
-          : of(null as WorkShiftDto[] | null))
+          : of(null as WorkShiftDto[] | null)),
+        users: (this.api.getUsers
+          ? this.api.getUsers().pipe(catchError(() => of([] as UserAdminDto[])))
+          : of([] as UserAdminDto[])),
+        roles: (this.api.getRoles
+          ? this.api.getRoles().pipe(catchError(() => of([] as UserRoleDto[])))
+          : of([] as UserRoleDto[]))
       }).subscribe({
         next: res => {
           this.isLoading.set(false);
+
+          if (res.users && res.users.length > 0) {
+            this.users.set(res.users);
+            this.saveUsersToStorage(res.users);
+          }
+          if (res.roles && res.roles.length > 0) {
+            this.roles.set(res.roles);
+            this.saveRolesToStorage(res.roles);
+          }
 
           const existingList = this.fruits();
           const mappedFruits: FruitConfig[] = (res.fruits || []).map((apiFruit: FruitDto) => {

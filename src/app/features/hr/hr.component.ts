@@ -5,6 +5,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { StateService } from '../../core/services/state.service';
 import { ApiService } from '../../core/services/api.service';
 import { NotificationService } from '../../core/services/notification.service';
+import { ConfirmDialogService } from '../../core/services/confirm-dialog.service';
 import { EmployeeArea, EmployeeDto, EmployeeGender, PayrollSettlementDto, WorkShiftDto } from '../../core/models/business.models';
 import { CopCurrencyInputDirective } from '../../shared/directives/cop-currency-input.directive';
 
@@ -27,6 +28,7 @@ export class HrComponent implements OnInit, OnDestroy {
   readonly stateService = inject(StateService);
   private readonly api = inject(ApiService);
   readonly notification = inject(NotificationService);
+  private readonly confirmDialog = inject(ConfirmDialogService);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   readonly Math = Math;
@@ -291,11 +293,17 @@ export class HrComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * Prompts for confirmation and deletes an employee from the state store.
+   * Prompts for confirmation using the modern confirm dialog and deletes an employee from the state store.
    */
-  deleteEmployee(emp: EmployeeDto): void {
+  async deleteEmployee(emp: EmployeeDto): Promise<void> {
     try {
-      const confirmed = confirm(`¿Estás seguro de que deseas eliminar a ${emp.fullName} del personal de la empresa?`);
+      const confirmed = await this.confirmDialog.confirm({
+        title: 'Eliminar Empleado',
+        message: `¿Estás seguro de que deseas eliminar a ${emp.fullName} del personal de la empresa?`,
+        confirmText: 'Sí, eliminar',
+        cancelText: 'Cancelar',
+        isDanger: true
+      });
       if (confirmed) {
         this.stateService.deleteEmployee(emp.employeeId);
       }

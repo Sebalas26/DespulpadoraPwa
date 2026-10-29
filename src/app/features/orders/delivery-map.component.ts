@@ -783,8 +783,7 @@ export const MAP_STYLES: MapStyleOption[] = [
           }
 
           
-          @if (mapViewMode() !== 'locked') {
-            <div class="map-left-controls-container" [class.is-fullscreen]="isMapFullscreen()">
+          <div class="map-left-controls-container" [class.is-fullscreen]="isMapFullscreen()">
               
               @if (mapViewMode() === 'live') {
                 <div class="map-couriers-vertical-fab-stack">
@@ -843,7 +842,6 @@ export const MAP_STYLES: MapStyleOption[] = [
                 }
               </button>
             </div>
-          }
         </div>
 
         
@@ -8796,14 +8794,10 @@ export class DeliveryMapComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   /**
-   * Synchronizes the couriers signal from employees in StateService belonging to the DOMICILIOS area.
+   * Synchronizes the couriers signal from users with courier role and delivery employees in StateService.
    */
   private syncCouriersFromEmployees(): void {
     try {
-      const domiEmployees = this.stateService.employees().filter((e: EmployeeDto) => e.area === 'DOMICILIOS');
-      if (domiEmployees.length === 0) {
-        return;
-      }
       const colors = ['#10b981', '#3b82f6', '#f59e0b', '#8b5cf6', '#ec4899'];
       const lightColors = [
         'rgba(16, 185, 129, 0.15)',
@@ -8812,48 +8806,126 @@ export class DeliveryMapComponent implements OnInit, AfterViewInit, OnDestroy {
         'rgba(139, 92, 246, 0.15)',
         'rgba(236, 72, 153, 0.15)'
       ];
+
+      let rolesList = this.stateService.roles ? this.stateService.roles() : [];
+      if (rolesList.length === 0 && typeof localStorage !== 'undefined') {
+        try {
+          const cached = localStorage.getItem('dgl_roles_v2');
+          if (cached) rolesList = JSON.parse(cached);
+        } catch {}
+      }
+      const courierRoleIds = new Set(
+        rolesList
+          .filter(r => r.isCourier || (r.name && (r.name.toLowerCase().includes('domicili') || r.name.toLowerCase().includes('mensajer') || r.name.toLowerCase().includes('repartidor'))))
+          .map(r => r.roleId)
+      );
+
+      let usersList = this.stateService.users ? this.stateService.users() : [];
+      if (usersList.length === 0 && typeof localStorage !== 'undefined') {
+        try {
+          const cached = localStorage.getItem('dgl_users_v2');
+          if (cached) usersList = JSON.parse(cached);
+        } catch {}
+      }
+      const courierUsers = usersList.filter(u =>
+        u.isActive !== false &&
+        (courierRoleIds.has(u.roleId) ||
+          (u.roleName && (u.roleName.toLowerCase().includes('domicili') || u.roleName.toLowerCase().includes('mensajer') || u.roleName.toLowerCase().includes('repartidor'))))
+      );
+
+      const domiEmployees = this.stateService.employees ? this.stateService.employees().filter((e: EmployeeDto) => e.area === 'DOMICILIOS') : [];
+
       const existingMap = new Map(this.couriers().map((c: Courier) => [c.id, c]));
-      const updated: Courier[] = domiEmployees.map((emp: EmployeeDto, idx: number) => {
-        const id = `c${emp.id}`;
+      const updated: Courier[] = [];
+      const seenNames = new Set<string>();
+
+      courierUsers.forEach((usr, idx) => {
+        const id = 'u' + usr.userId;
+        const name = usr.fullName || usr.username;
+        seenNames.add(name.toLowerCase());
         const existing = existingMap.get(id);
-        const empName = emp.fullName || emp.name || '';
         if (existing) {
-          return {
+          updated.push({
+            ...existing,
+            name,
+            phone: usr.phone || existing.phone
+          });
+        } else {
+          updated.push({
+            id,
+            name,
+            vehicleType: 'moto',
+            vehiclePlate: usr.documentNumber || '',
+            vehicleModel: usr.roleName || 'Domiciliario',
+            phone: usr.phone || '',
+            color: colors[idx % colors.length],
+            colorLight: lightColors[idx % lightColors.length],
+            capacityKg: 45,
+            status: 'en_ruta',
+            routeCode: 'RUTA-U' + usr.userId,
+            routeStatus: 'en_ruta',
+            currentSpeedKmH: 35,
+            batteryPct: 100,
+            orderIds: [],
+            currentStopIndex: 0,
+            progress: 0,
+            roadStepIndex: 0,
+            lat: PLANTA_MATRIZ_LAT,
+            lng: PLANTA_MATRIZ_LNG
+          });
+        }
+      });
+
+      domiEmployees.forEach((emp: EmployeeDto, idx: number) => {
+        const empName = emp.fullName || emp.name || '';
+        if (seenNames.has(empName.toLowerCase())) return;
+        seenNames.add(empName.toLowerCase());
+
+        const id = 'c' + emp.id;
+        const existing = existingMap.get(id);
+        const paletteIdx = (courierUsers.length + idx) % colors.length;
+
+        if (existing) {
+          updated.push({
             ...existing,
             name: empName,
-            phone: emp.phone || ''
-          };
+            phone: emp.phone || existing.phone
+          });
+        } else {
+          updated.push({
+            id,
+            name: empName,
+            vehicleType: 'moto',
+            vehiclePlate: '',
+            vehicleModel: emp.position || '',
+            phone: emp.phone || '',
+            color: colors[paletteIdx],
+            colorLight: lightColors[paletteIdx],
+            capacityKg: 45,
+            status: 'en_ruta',
+            routeCode: 'RUTA-' + emp.id,
+            routeStatus: 'en_ruta',
+            currentSpeedKmH: 35,
+            batteryPct: 100,
+            orderIds: [],
+            currentStopIndex: 0,
+            progress: 0,
+            roadStepIndex: 0,
+            lat: PLANTA_MATRIZ_LAT,
+            lng: PLANTA_MATRIZ_LNG
+          });
         }
-        return {
-          id,
-          name: empName,
-          vehicleType: 'moto',
-          vehiclePlate: '',
-          vehicleModel: emp.position || '',
-          phone: emp.phone || '',
-          color: colors[idx % colors.length],
-          colorLight: lightColors[idx % lightColors.length],
-          capacityKg: 45,
-          status: 'en_ruta',
-          routeCode: `RUTA-${emp.id}`,
-          routeStatus: 'en_ruta',
-          currentSpeedKmH: 35,
-          batteryPct: 100,
-          orderIds: [],
-          currentStopIndex: 0,
-          progress: 0,
-          roadStepIndex: 0,
-          lat: PLANTA_MATRIZ_LAT,
-          lng: PLANTA_MATRIZ_LNG
-        };
       });
-      this.couriers.set(updated);
-      if (!this.activePlannerCourierId() && updated.length > 0) {
-        this.activePlannerCourierId.set(updated[0].id);
-        this.selectedCourierId.set(updated[0].id);
+
+      if (updated.length > 0) {
+        this.couriers.set(updated);
+        if (!this.activePlannerCourierId()) {
+          this.activePlannerCourierId.set(updated[0].id);
+          this.selectedCourierId.set(updated[0].id);
+        }
       }
     } catch (error: unknown) {
-      console.error('Error syncing couriers from employees:', error);
+      console.error('Error syncing couriers from employees and users:', error);
     }
   }
 

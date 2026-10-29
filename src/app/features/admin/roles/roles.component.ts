@@ -5,6 +5,7 @@ import { forkJoin } from 'rxjs';
 import { ApiService } from '../../../core/services/api.service';
 import { AuthService } from '../../../core/services/auth.service';
 import { NotificationService } from '../../../core/services/notification.service';
+import { ConfirmDialogService } from '../../../core/services/confirm-dialog.service';
 import { NavigationModuleDto } from '../../../core/models/auth.models';
 import {
   RolePermissionsMatrixDto,
@@ -63,7 +64,7 @@ const STORAGE_PERMISSIONS_KEY = 'dgl_role_permissions_v2';
 
 /**
  * Roles and Permissions Matrix administration component connected to
- * `/api/roles`, `/api/modules`, and `PUT /api/roles/{roleId}/permissions`.
+ * `/api/roles`, `/api/modules`, `PUT /api/roles/{roleId}` and `PUT /api/roles/{roleId}/permissions`.
  */
 @Component({
   selector: 'app-admin-roles',
@@ -76,6 +77,7 @@ export class AdminRolesComponent implements OnInit {
   private readonly api = inject(ApiService);
   private readonly auth = inject(AuthService);
   private readonly notification = inject(NotificationService);
+  private readonly confirmDialog = inject(ConfirmDialogService);
 
   readonly roles = signal<UserRoleDto[]>([]);
   readonly selectedRoleId = signal<number>(0);
@@ -89,6 +91,14 @@ export class AdminRolesComponent implements OnInit {
   readonly showCreateRoleModal = signal<boolean>(false);
   readonly newRoleName = signal<string>('');
   readonly newRoleDesc = signal<string>('');
+  readonly newRoleIsCourier = signal<boolean>(false);
+
+  readonly showEditRoleModal = signal<boolean>(false);
+  readonly editingRole = signal<UserRoleDto | null>(null);
+  readonly editingRoleName = signal<string>('');
+  readonly editingRoleDesc = signal<string>('');
+  readonly editingRoleIsCourier = signal<boolean>(false);
+  readonly isSavingRoleName = signal<boolean>(false);
 
   readonly modules = signal<SystemModuleCatalog[]>([]);
 
@@ -528,16 +538,22 @@ export class AdminRolesComponent implements OnInit {
       }
 
       const description = this.newRoleDesc().trim();
+      const isCourier = this.newRoleIsCourier();
 
-      this.api.createRole({ name, description, isActive: true }).subscribe({
+      this.api.createRole({ name, description, isActive: true, isCourier }).subscribe({
         next: (created: UserRoleDto) => {
-          const updated = [...this.roles(), created];
+          const roleWithCourier: UserRoleDto = {
+            ...created,
+            isCourier
+          };
+          const updated = [...this.roles(), roleWithCourier];
           this.roles.set(updated);
           this.saveRolesToStorage(updated);
           this.selectRole(created.roleId);
           this.showCreateRoleModal.set(false);
           this.newRoleName.set('');
           this.newRoleDesc.set('');
+          this.newRoleIsCourier.set(false);
           this.notification.success('Rol Creado', `Rol "${created.name}" registrado en el servidor.`);
         },
         error: () => {
@@ -550,9 +566,95 @@ export class AdminRolesComponent implements OnInit {
   }
 
   /**
-   * Deletes a custom role via `DELETE /api/roles/{id}`.
+   * Opens the edit role name modal dialog.
    */
-  deleteCustomRole(role: UserRoleDto, event: MouseEvent): void {
+  openEditRoleModal(role: UserRoleDto, event?: MouseEvent): void {
+    try {
+      if (event) {
+        event.stopPropagation();
+      }
+      if (role.isSystemRole) {
+        this.notification.warning('No permitido', 'Los roles de sistema no pueden ser renombrados.');
+        return;
+      }
+      this.editingRole.set(role);
+      this.editingRoleName.set(role.name);
+      this.editingRoleDesc.set(role.description || '');
+      this.editingRoleIsCourier.set(Boolean(role.isCourier));
+      this.showEditRoleModal.set(true);
+    } catch {
+      return;
+    }
+  }
+
+  /**
+   * Closes the edit role modal dialog and cleans editing state.
+   */
+  closeEditRoleModal(): void {
+    this.showEditRoleModal.set(false);
+    this.editingRole.set(null);
+    this.editingRoleName.set('');
+    this.editingRoleDesc.set('');
+    this.editingRoleIsCourier.set(false);
+    this.isSavingRoleName.set(false);
+  }
+
+  /**
+   * Saves updated role name and description via `PUT /api/roles/{id}`.
+   */
+  saveRoleName(): void {
+    try {
+      const targetRole = this.editingRole();
+      if (!targetRole) {
+        return;
+      }
+
+      const newName = this.editingRoleName().trim();
+      if (!newName) {
+        this.notification.warning('Nombre requerido', 'El nombre del rol no puede estar vacío.');
+        return;
+      }
+
+      const newDesc = this.editingRoleDesc().trim();
+      const isCourier = this.editingRoleIsCourier();
+      this.isSavingRoleName.set(true);
+
+      this.api.updateRole(targetRole.roleId, {
+        name: newName,
+        description: newDesc,
+        isActive: targetRole.isActive ?? true,
+        isCourier
+      }).subscribe({
+        next: (updatedRole: UserRoleDto) => {
+          this.isSavingRoleName.set(false);
+          const finalName = updatedRole?.name || newName;
+          const finalDesc = updatedRole?.description !== undefined ? updatedRole.description : newDesc;
+          const finalCourier = updatedRole?.isCourier !== undefined ? updatedRole.isCourier : isCourier;
+
+          const updatedList = this.roles().map((r: UserRoleDto) =>
+            r.roleId === targetRole.roleId
+              ? { ...r, name: finalName, description: finalDesc, isCourier: finalCourier }
+              : r
+          );
+          this.roles.set(updatedList);
+          this.saveRolesToStorage(updatedList);
+          this.closeEditRoleModal();
+          this.notification.success('Rol Actualizado', `El rol fue actualizado a "${finalName}".`);
+        },
+        error: () => {
+          this.isSavingRoleName.set(false);
+          this.notification.error('Error al Actualizar', 'No se pudo actualizar el nombre del rol en el servidor.');
+        }
+      });
+    } catch {
+      this.isSavingRoleName.set(false);
+    }
+  }
+
+  /**
+   * Deletes a custom role via `DELETE /api/roles/{id}` using the modern confirmation dialog.
+   */
+  async deleteCustomRole(role: UserRoleDto, event: MouseEvent): Promise<void> {
     try {
       event.stopPropagation();
       if (role.isSystemRole) {
@@ -560,7 +662,15 @@ export class AdminRolesComponent implements OnInit {
         return;
       }
 
-      if (!confirm(`¿Eliminar el rol "${role.name}"?`)) {
+      const confirmed = await this.confirmDialog.confirm({
+        title: 'Eliminar Rol',
+        message: `¿Está seguro de eliminar el rol "${role.name}"? Esta acción no se puede deshacer.`,
+        confirmText: 'Sí, eliminar',
+        cancelText: 'Cancelar',
+        isDanger: true
+      });
+
+      if (!confirmed) {
         return;
       }
 

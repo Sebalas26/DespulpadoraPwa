@@ -6,6 +6,7 @@ import { HrComponent } from './hr.component';
 import { StateService } from '../../core/services/state.service';
 import { ApiService } from '../../core/services/api.service';
 import { NotificationService } from '../../core/services/notification.service';
+import { ConfirmDialogService } from '../../core/services/confirm-dialog.service';
 import { DEFAULT_COMPANY_CONFIG } from '../../core/data/initial-data';
 import {
   CompanyConfig,
@@ -22,10 +23,12 @@ describe('HrComponent', () => {
   let fixture: ComponentFixture<HrComponent>;
   let apiSpy: jasmine.SpyObj<ApiService>;
   let notificationSpy: jasmine.SpyObj<NotificationService>;
+  let confirmDialogSpy: jasmine.SpyObj<ConfirmDialogService>;
   let routerSpy: jasmine.SpyObj<Router>;
   let startWorkShiftSpy: jasmine.Spy;
   let closeWorkShiftSpy: jasmine.Spy;
   let settlePayrollSpy: jasmine.Spy;
+  let stateServiceMock: Partial<StateService>;
 
   const mockEmployees = signal<EmployeeDto[]>([
     {
@@ -68,6 +71,11 @@ describe('HrComponent', () => {
       'warning',
       'info'
     ]);
+    confirmDialogSpy = jasmine.createSpyObj<ConfirmDialogService>('ConfirmDialogService', [
+      'confirm'
+    ]);
+    confirmDialogSpy.confirm.and.resolveTo(true);
+
     routerSpy = jasmine.createSpyObj<Router>('Router', ['navigate']);
     startWorkShiftSpy = jasmine.createSpy('startWorkShift').and.returnValue({
       shiftId: 10,
@@ -105,7 +113,7 @@ describe('HrComponent', () => {
 
     apiSpy.createEmployee.and.callFake((emp: Partial<EmployeeDto>) => of(emp as EmployeeDto));
 
-    const stateServiceMock: Partial<StateService> = {
+    stateServiceMock = {
       employees: mockEmployees,
       shifts: mockShifts,
       payrollSettlements: mockSettlements,
@@ -122,6 +130,7 @@ describe('HrComponent', () => {
         { provide: StateService, useValue: stateServiceMock },
         { provide: ApiService, useValue: apiSpy },
         { provide: NotificationService, useValue: notificationSpy },
+        { provide: ConfirmDialogService, useValue: confirmDialogSpy },
         { provide: Router, useValue: routerSpy },
         { provide: ActivatedRoute, useValue: { queryParams: of({}) } }
       ]
@@ -205,5 +214,18 @@ describe('HrComponent', () => {
 
     expect(component.calculateHealthDeduction(1000000)).toBe(40000);
     expect(component.calculatePensionDeduction(1000000)).toBe(40000);
+  });
+
+  it('should prompt confirmation dialog and delete employee from stateStore when confirmed', async () => {
+    const emp = mockEmployees()[0];
+    await component.deleteEmployee(emp);
+
+    expect(confirmDialogSpy.confirm).toHaveBeenCalledWith(
+      jasmine.objectContaining({
+        title: 'Eliminar Empleado',
+        isDanger: true
+      })
+    );
+    expect(stateServiceMock.deleteEmployee).toHaveBeenCalledWith(emp.employeeId);
   });
 });

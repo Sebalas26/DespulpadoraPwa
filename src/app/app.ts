@@ -1,6 +1,7 @@
 import { Component, HostListener, OnInit, inject } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
 import { ToastContainerComponent } from './shared/components/toast-container/toast-container.component';
+import { ConfirmDialogComponent } from './shared/components/confirm-dialog/confirm-dialog.component';
 import { PwaUpdateService } from './core/services/pwa-update.service';
 
 /**
@@ -9,7 +10,7 @@ import { PwaUpdateService } from './core/services/pwa-update.service';
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [RouterOutlet, ToastContainerComponent],
+  imports: [RouterOutlet, ToastContainerComponent, ConfirmDialogComponent],
   templateUrl: './app.html',
   styleUrl: './app.scss'
 })
@@ -48,8 +49,8 @@ export class AppComponent implements OnInit {
       ) as HTMLElement | null;
       if (
         collapsibleEl &&
-        !collapsibleEl.querySelector('td[colspan]') &&
-        !collapsibleEl.closest('.pro-invoice-table')
+        !collapsibleEl.classList.contains('empty-state-row') &&
+        !collapsibleEl.classList.contains('loading-row')
       ) {
         collapsibleEl.classList.toggle('mobile-row-expanded');
       }

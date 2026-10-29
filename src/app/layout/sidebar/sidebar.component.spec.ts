@@ -76,6 +76,9 @@ describe('SidebarComponent', () => {
     expect(component.isInventoryTabActive('variants')).toBeFalse();
     expect(component.isInventoryTabActive('fruits')).toBeFalse();
     expect(component.isInventoryTabActive('kds')).toBeFalse();
+    expect(component.isOrderTabActive('facturacion')).toBeFalse();
+    expect(component.isOrderTabActive('despachos')).toBeFalse();
+    expect(component.isSettingsTabActive('inventory')).toBeFalse();
   });
 
   it('should render dedicated quick navigation links for KDS picking, plant KDS, and client portal', () => {
@@ -98,5 +101,46 @@ describe('SidebarComponent', () => {
     expect(portalItem).toBeTruthy();
     expect(portalItem?.textContent).toContain('Portal Clientes');
     expect(portalItem?.textContent).toContain('PEDIDOS');
+  });
+
+  it('should render independent, top-level navigation items for operation modules without arrow prefixes', () => {
+    authService.navigationModules.set([
+      {
+        moduleId: 2,
+        name: 'Inventario de Pulpas y Frutas',
+        slug: 'inventory',
+        menuSection: 'Operación',
+        frontendRoute: '/settings?tab=inventory',
+        icon: 'package',
+        displayOrder: 1,
+        allowedActionSlugs: ['inventory.view']
+      },
+      {
+        moduleId: 3,
+        name: 'Pedidos y Despachos',
+        slug: 'orders',
+        menuSection: 'Operación',
+        frontendRoute: '/orders',
+        icon: 'truck',
+        displayOrder: 2,
+        allowedActionSlugs: ['orders.view']
+      }
+    ]);
+
+    fixture.detectChanges();
+    const compiled = fixture.nativeElement as HTMLElement;
+    const navItems = Array.from(compiled.querySelectorAll('.sidebar-nav a.dgl-nav-item')) as HTMLAnchorElement[];
+    const itemTexts = navItems.map(item => item.textContent || '');
+
+    expect(itemTexts.some(t => t.includes('Stock de Pulpas'))).toBeTrue();
+    expect(itemTexts.some(t => t.includes('Fruta Fresca'))).toBeTrue();
+    expect(itemTexts.some(t => t.includes('Pantalla KDS Planta'))).toBeTrue();
+    expect(itemTexts.some(t => t.includes('Facturación & POS'))).toBeTrue();
+    expect(itemTexts.some(t => t.includes('Despachos & Rutas'))).toBeTrue();
+
+    // Verify none of the items contains the arrow prefix '↳'
+    itemTexts.forEach(text => {
+      expect(text.includes('↳')).toBeFalse();
+    });
   });
 });

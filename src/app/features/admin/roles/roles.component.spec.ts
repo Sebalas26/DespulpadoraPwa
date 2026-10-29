@@ -10,6 +10,7 @@ import {
 import { ApiService } from '../../../core/services/api.service';
 import { AuthService } from '../../../core/services/auth.service';
 import { NotificationService } from '../../../core/services/notification.service';
+import { ConfirmDialogService } from '../../../core/services/confirm-dialog.service';
 import {
   RolePermissionsMatrixDto,
   SystemModuleCatalogDto,
@@ -25,6 +26,7 @@ describe('AdminRolesComponent', () => {
   let apiSpy: jasmine.SpyObj<ApiService>;
   let authMock: Partial<AuthService>;
   let notificationSpy: jasmine.SpyObj<NotificationService>;
+  let confirmDialogSpy: jasmine.SpyObj<ConfirmDialogService>;
 
   const mockSystemModules: SystemModuleCatalogDto[] = [
     {
@@ -74,6 +76,7 @@ describe('AdminRolesComponent', () => {
       'getRolePermissionsMatrix',
       'assignRolePermissionsMatrix',
       'createRole',
+      'updateRole',
       'deleteRole'
     ]);
     const isSuperAdminSignal = signal<boolean>(false);
@@ -99,6 +102,10 @@ describe('AdminRolesComponent', () => {
       'warning',
       'info'
     ]);
+    confirmDialogSpy = jasmine.createSpyObj<ConfirmDialogService>('ConfirmDialogService', [
+      'confirm'
+    ]);
+    confirmDialogSpy.confirm.and.resolveTo(true);
 
     apiSpy.getSystemModules.and.returnValue(of(mockSystemModules));
     apiSpy.getRoles.and.returnValue(of(mockRoles));
@@ -109,7 +116,8 @@ describe('AdminRolesComponent', () => {
       providers: [
         { provide: ApiService, useValue: apiSpy },
         { provide: AuthService, useValue: authMock },
-        { provide: NotificationService, useValue: notificationSpy }
+        { provide: NotificationService, useValue: notificationSpy },
+        { provide: ConfirmDialogService, useValue: confirmDialogSpy }
       ]
     }).compileComponents();
 
@@ -159,7 +167,7 @@ describe('AdminRolesComponent', () => {
     });
   });
 
-  it('should create and delete custom roles via API', () => {
+  it('should create and delete custom roles via API using modern confirm dialog', async () => {
     const newRole: UserRoleDto = {
       roleId: 5,
       name: 'Supervisor',
@@ -169,7 +177,6 @@ describe('AdminRolesComponent', () => {
     };
     apiSpy.createRole.and.returnValue(of(newRole));
     apiSpy.deleteRole.and.returnValue(of({ message: 'Deleted' }));
-    spyOn(window, 'confirm').and.returnValue(true);
 
     component.showCreateRoleModal.set(true);
     component.newRoleName.set('Supervisor');
@@ -180,8 +187,61 @@ describe('AdminRolesComponent', () => {
     expect(component.roles().some(r => r.roleId === 5)).toBeTrue();
 
     const mouseEvent = new MouseEvent('click');
-    component.deleteCustomRole(newRole, mouseEvent);
+    await component.deleteCustomRole(newRole, mouseEvent);
+
+    expect(confirmDialogSpy.confirm).toHaveBeenCalled();
     expect(apiSpy.deleteRole).toHaveBeenCalledWith(5);
+  });
+
+  it('should open edit role modal, modify role name and save via updateRole API', () => {
+    const targetRole: UserRoleDto = {
+      roleId: 1,
+      name: 'Operador',
+      description: 'Rol operativo',
+      isSystemRole: false,
+      isActive: true
+    };
+    const updatedRoleDto: UserRoleDto = {
+      ...targetRole,
+      name: 'Administrador Operativo',
+      description: 'Gestión completa'
+    };
+    apiSpy.updateRole.and.returnValue(of(updatedRoleDto));
+
+    const mouseEvent = new MouseEvent('click');
+    component.openEditRoleModal(targetRole, mouseEvent);
+
+    expect(component.showEditRoleModal()).toBeTrue();
+    expect(component.editingRole()?.roleId).toBe(1);
+    expect(component.editingRoleName()).toBe('Operador');
+
+    component.editingRoleName.set('Administrador Operativo');
+    component.editingRoleDesc.set('Gestión completa');
+    component.saveRoleName();
+
+    expect(apiSpy.updateRole).toHaveBeenCalledWith(1, {
+      name: 'Administrador Operativo',
+      description: 'Gestión completa',
+      isActive: true,
+      isCourier: false
+    });
+    expect(component.showEditRoleModal()).toBeFalse();
+    expect(component.roles().find(r => r.roleId === 1)?.name).toBe('Administrador Operativo');
+    expect(notificationSpy.success).toHaveBeenCalled();
+  });
+
+  it('should prevent opening edit role modal on protected system roles', () => {
+    const systemRole: UserRoleDto = {
+      roleId: 1,
+      name: 'Super Administrador',
+      description: 'Sistema',
+      isSystemRole: true,
+      isActive: true
+    };
+
+    component.openEditRoleModal(systemRole);
+    expect(component.showEditRoleModal()).toBeFalse();
+    expect(notificationSpy.warning).toHaveBeenCalled();
   });
 
   it('should filter out removed calculator module and calculator/batches actions from permissions matrix', () => {
@@ -270,5 +330,57 @@ describe('AdminRolesComponent', () => {
     expect(component.visibleRoles()[0].name).toBe('Administrador Operativo');
     expect(component.selectedRoleId()).toBe(2);
     expect(component.filteredModules().some(m => m.slug === 'system-catalog')).toBeFalse();
+  });
+  it('should send isCourier flag to api.createRole when newRoleIsCourier is checked', () => {
+    component.newRoleName.set('Repartidor Expreso');
+    component.newRoleDesc.set('Zona Norte');
+    component.newRoleIsCourier.set(true);
+
+    apiSpy.createRole.and.returnValue(of({
+      roleId: 99,
+      name: 'Repartidor Expreso',
+      description: 'Zona Norte',
+      isCourier: true,
+      isSystemRole: false,
+      isActive: true
+    }));
+
+    component.submitNewRole();
+
+    expect(apiSpy.createRole).toHaveBeenCalledWith(jasmine.objectContaining({
+      name: 'Repartidor Expreso',
+      isCourier: true
+    }));
+    expect(component.roles().some(r => r.roleId === 99 && r.isCourier === true)).toBeTrue();
+  });
+
+  it('should send isCourier flag when updating role via saveRoleName', () => {
+    component.editingRole.set({
+      roleId: 44,
+      name: 'Repartidor Antiguo',
+      description: 'Antiguo',
+      isSystemRole: false,
+      isActive: true,
+      isCourier: false
+    });
+    component.editingRoleName.set('Repartidor Actualizado');
+    component.editingRoleDesc.set('Nuevo');
+    component.editingRoleIsCourier.set(true);
+
+    apiSpy.updateRole.and.returnValue(of({
+      roleId: 44,
+      name: 'Repartidor Actualizado',
+      description: 'Nuevo',
+      isCourier: true,
+      isSystemRole: false,
+      isActive: true
+    }));
+
+    component.saveRoleName();
+
+    expect(apiSpy.updateRole).toHaveBeenCalledWith(44, jasmine.objectContaining({
+      name: 'Repartidor Actualizado',
+      isCourier: true
+    }));
   });
 });

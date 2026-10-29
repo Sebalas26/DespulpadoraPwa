@@ -4,6 +4,116 @@ Este documento registra de manera cronológica y estructurada todas las interven
 
 ---
 
+## [2026-10-28] - Botón Pantalla Completa Permanente en Mapa de Entregas y Checkbox Domiciliario Dinámico en Roles
+
+### 💬 Prompt Original del Usuario
+> "dejame en la esquina del mapa cuando se vean los botones de envivo y ver todas las entregas el icono de pantalla completa 
+> 
+> adicional  quiero que durante la creacion de los roles, exista un checkbox de Domiciliario, si el queda marcado, da por entendido que es un usuario que domiciliario al cual le pueden asignar entregas en Despachos & Rutas/ Entregas en el Mapa, entonces carga la lista ahi"
+
+### 🤖 Resumen Técnico para la IA
+- **1. Botón de Pantalla Completa en Mapa Bloqueado (`src/app/features/orders/delivery-map.component.ts`)**:
+  - Se desacopló el contenedor `.map-left-controls-container` de la condición `@if (mapViewMode() !== 'locked')`, garantizando que el botón circular `.map-fullscreen-fab` esté permanentemente renderizado en la esquina inferior izquierda (`bottom: 16px; left: 16px; z-index: 1250`).
+  - Al estar el mapa en modo bloqueado (`locked`), el botón flota de manera limpia sobre el overlay difuminado (`z-index: 1200`), permitiendo maximizar el mapa de entregas de inmediato sin desbloquear previamente la pantalla.
+  - La botonera vertical de mensajeros en tiempo real permanece condicionada a `@if (mapViewMode() === 'live')`, de modo que en modo bloqueado solo se visualiza el botón de pantalla completa.
+- **2. Checkbox "Rol de Domiciliario" en Creación y Edición (`src/app/features/admin/roles/`)**:
+  - Se extendieron los modelos `UserRoleDto` y `CreateRoleDto` con el atributo booleano tipado `isCourier?: boolean`.
+  - En `AdminRolesComponent`, se añadieron las señales `newRoleIsCourier` y `editingRoleIsCourier`, sincronizándolas en `submitNewRole()` y `saveRoleName()`.
+  - Se integró el checkbox estilizado en el modal de nuevo rol y en el modal de edición de rol (`roles.component.html`), persistiendo el flag hacia `POST /api/roles` y `PUT /api/roles/{id}`.
+  - Se agregó un badge distintivo `DOMICILIARIO` en los ítems de rol en el panel lateral para identificar perfiles con esta facultad.
+- **3. Carga Dinámica de Usuarios Domiciliarios en Entregas y Despachos (`DeliveryMapComponent` & `OrdersComponent`)**:
+  - `StateService` ahora expone señales reactivas `users = signal<UserAdminDto[]>` y `roles = signal<UserRoleDto[]>`, con carga inicial resiliente vía API y persistencia segura en `localStorage`.
+  - En `DeliveryMapComponent`, `syncCouriersFromEmployees()` ahora detecta los roles activos con `isCourier: true`, filtra los usuarios asignados a esos roles y los inyecta dinámicamente como mensajeros (`Courier` con id `'u' + userId`), fusionándolos con el personal operativo de domicilios.
+  - El selector de paradas del drawer (`Sin mensajero`), el filtrado por mensajeros y el asignador de zonas poligonales cargan de inmediato a estos repartidores.
+  - En `OrdersComponent`, el catálogo `COURIER_CATALOG` sincroniza idénticamente a dichos domiciliarios para la tabla y asignación rápida de pedidos en "Despachos & Rutas".
+- **4. Cobertura del 100% de Pruebas Unitarias y Build**:
+  - Se incorporaron pruebas unitarias para el renderizado del botón de pantalla completa en modo bloqueado y la población de domiciliarios en `delivery-map.component.spec.ts`.
+  - Se añadieron pruebas para la creación y edición de roles con `isCourier` en `roles.component.spec.ts` y `api.service.spec.ts`.
+  - Suite de pruebas ejecutada: **227 de 227 pruebas unitarias aprobadas exitosamente (100% SUCCESS, 0 FAILS)**.
+  - Build de producción: Exitoso (`npm run build` con exit code 0).
+- **5. Certificación de Sub-Agentes de Calidad**:
+  - **Agente Auditor Punto por Punto**: Certificó 100% de cumplimiento en cada requerimiento funcional y regla de `AGENTS.md`.
+  - **Agente de Revisión Par (Peer Reviewer)**: Aprobó formalmente la arquitectura, tipado, reactividad con Angular Signals y ausencia total de datos inventados.
+
+### 📦 Componentes Modificados
+- `src/app/core/models/business.models.ts`
+- `src/app/core/services/api.service.ts`
+- `src/app/core/services/api.service.spec.ts`
+- `src/app/core/services/state.service.ts`
+- `src/app/features/admin/roles/roles.component.html`
+- `src/app/features/admin/roles/roles.component.ts`
+- `src/app/features/admin/roles/roles.component.spec.ts`
+- `src/app/features/orders/delivery-map.component.ts`
+- `src/app/features/orders/delivery-map.component.spec.ts`
+- `src/app/features/orders/orders.component.ts`
+- `implementation_plan.md`
+- `HISTORIAL_CAMBIOS.md`
+
+### ✅ Verificación, Build y Tests Unitarios
+- `npm test -- --watch=false`: **227 / 227 Pruebas Unitarias Exitosas (100% PASS, 0 fallos)**.
+- `npm run build`: **Compilación de producción completada con éxito (Exit code 0)**.
+- **Git**: Se cumplió estrictamente la prohibición de `git commit` y `git push`.
+
+---
+
+## [2026-10-28] - Desagrupación de Módulos en Barra Lateral, Edición de Roles con Lápiz y Sistema Centralizado de Modales de Confirmación
+
+### 💬 Prompt Original del Usuario
+> "Quiero que estos modulos sean independientes y no se vean agrupados, deja que cada opcion se vea igual que las demas en la version web
+> 
+> tambien quiero que me borres ese chulo verde y agregale un icono de lapiz al lado de los nombres , ejemplo \"Administrador Operativo\", este hara la opcion de modifiar el nombre , esto muestre un dialog y gurdar, 
+> 
+> tambien mejora los diseños de confirmacion de toda la pwa , ya que se ve feo"
+
+### 🤖 Resumen Técnico para la IA
+- **1. Desagrupación e Independencia en la Barra Lateral (`src/app/layout/sidebar/sidebar.component.ts`)**:
+  - Se eliminó el esquema de submódulos anidados con sangría forzada (`padding-left: 34px`) y símbolo de flecha `↳`.
+  - Cada una de las opciones operativas (`Stock de Pulpas`, `Fruta Fresca`, `Pantalla KDS Planta`, `Facturación & POS`, `Despachos & Rutas`) se renderiza ahora como un enlace independiente `dgl-nav-item` de primer nivel, con su propio icono vectorial SVG dedicado, texto limpio, tamaño uniforme (`0.88rem`), padding estándar (`9px 12px`) y badge de pedidos pendientes en despachos.
+  - Se mantuvieron intactas las funciones reactivas de activación de pestañas (`isInventoryTabActive`, `isOrderTabActive`).
+- **2. Roles y Privilegios: Eliminación de "Chulo Verde", Icono de Lápiz y Modal de Edición (`src/app/features/admin/roles/`)**:
+  - Se eliminó por completo el círculo verde con checkmark de la tarjeta del rol activo.
+  - Se agregó el botón interactivo con icono de lápiz editable al lado del nombre de cada rol personalizado en la lista y en la cabecera de detalle.
+  - Se implementó el diálogo modal `showEditRoleModal` para modificar el nombre y descripción del rol, persistiendo los cambios mediante `PUT /api/roles/{id}` (`ApiService.updateRole`).
+- **3. Sistema Centralizado de Modales de Confirmación (`ConfirmDialogService` & `ConfirmDialogComponent`)**:
+  - Se eliminaron el 100% de las alertas nativas del navegador (`confirm(...)` / `window.confirm(...)`).
+  - Se creó el servicio singleton reactivo `ConfirmDialogService` (`confirm(options): Promise<boolean>`) y el componente visual `ConfirmDialogComponent` montado en la raíz (`src/app/app.html`).
+  - Se centralizaron los estilos globales en `src/styles.scss` con backdrop desenfocado, animación de escala, badge circular con icono de advertencia/peligro y botones con sombras suaves.
+  - Se integró el nuevo sistema de diálogo en la eliminación de roles (`AdminRolesComponent`), usuarios (`AdminUsersComponent`) y personal (`HrComponent`).
+- **4. Cobertura del 100% de Pruebas Unitarias y Build**:
+  - Se crearon y actualizaron las pruebas unitarias `.spec.ts` para cada componente y servicio modificado.
+  - Suite completa: **222 de 222 pruebas unitarias aprobadas exitosamente (100% SUCCESS)**.
+  - Build de producción: Exitoso (exit code 0, cero errores de TypeScript/SCSS).
+- **5. Verificación de Sub-Agentes de Calidad**:
+  - **Agente Auditor Punto por Punto**: Certificó 100% de cumplimiento en todos los requerimientos del usuario y reglas de `AGENTS.md`.
+  - **Agente de Revisión Par (Peer Reviewer)**: Aprobación formal y sign-off definitivo de arquitectura, tipado estricto y estilos sin observaciones.
+
+### 📦 Componentes Modificados
+- `src/app/core/services/confirm-dialog.service.ts` (Nuevo)
+- `src/app/core/services/confirm-dialog.service.spec.ts` (Nuevo)
+- `src/app/shared/components/confirm-dialog/confirm-dialog.component.ts` (Nuevo)
+- `src/app/shared/components/confirm-dialog/confirm-dialog.component.spec.ts` (Nuevo)
+- `src/app/app.ts`
+- `src/app/app.html`
+- `src/styles.scss`
+- `src/app/layout/sidebar/sidebar.component.ts`
+- `src/app/layout/sidebar/sidebar.component.spec.ts`
+- `src/app/features/admin/roles/roles.component.html`
+- `src/app/features/admin/roles/roles.component.ts`
+- `src/app/features/admin/roles/roles.component.spec.ts`
+- `src/app/features/admin/users/users.component.ts`
+- `src/app/features/admin/users/users.component.spec.ts`
+- `src/app/features/hr/hr.component.ts`
+- `src/app/features/hr/hr.component.spec.ts`
+- `implementation_plan.md`
+- `HISTORIAL_CAMBIOS.md`
+
+### ✅ Verificación, Compilación y Tests
+- **Build de Producción (`npm run build`)**: Exitoso (0 Errores, exit code 0).
+- **Pruebas Unitarias (`ng test`)**: 222 de 222 pruebas aprobadas (100% SUCCESS, 0 Fallos).
+
+---
+
+
 ## [2026-10-28] - Integración de Identidad Visual Corporativa: Favicon Web, Carga de Logo en Configuración y Logo en App Móvil
 
 ### 💬 Prompt Original del Usuario

@@ -598,6 +598,7 @@ export interface UserRoleDto {
   usersCount?: number;
   moduleIds?: number[];
   actionIds?: number[];
+  isCourier?: boolean;
 }
 
 /**
@@ -757,6 +758,7 @@ export interface CreateRoleDto {
   name: string;
   description?: string;
   isActive?: boolean;
+  isCourier?: boolean;
 }
 
 /**

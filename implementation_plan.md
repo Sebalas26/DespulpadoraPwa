@@ -1,97 +1,94 @@
-# 📋 Plan de Implementación: Visibilidad y Sincronización de Pedidos del Portal de Clientes en Alistamiento de Pedidos
+# 📋 PLAN DE IMPLEMENTACIÓN: PANTALLA COMPLETA EN MAPA BLOQUEADO Y ROL DOMICILIARIO DINÁMICO EN ENTREGAS
 
-## 📌 Contexto y Diagnóstico
-Al crear un pedido desde el Portal de Clientes (`ClientPortalComponent`), el sistema registra la orden en `StateService` y actualiza el contador global de pendientes (reflejado en el badge `[ 1 ]` de la barra lateral en *Pedidos y Despachos*). Sin embargo, en la pantalla de **Alistamiento de Pedidos** (`OrdersComponent` - subtab picking), las 7 tarjetas de días de la semana marcan `0 pedidos` y la lista permanece vacía con el mensaje de estado *"¡Inventario al día! No hay pedidos pendientes de alistamiento"*.
-
-### 🔍 Causa Raíz Identificada
-1. **Desalineación de Cadenas de Día (`scheduledDay`)**:
-   - En `ClientPortalComponent`, el selector de entrega ofrece opciones relativas: `'Hoy mismo (Prioritario)'`, `'Mañana a primera hora'`, `'Día Siguiente'`, `'Programado fin de semana'`.
-   - Al invocar `createOrder`, se enviaba literalmente esa cadena a `order.scheduledDay`.
-   - En `OrdersComponent`, las 7 columnas y pestañas de alistamiento están configuradas exclusivamente con los nombres canónicos en español: `['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo']`.
-   - El método `OrdersComponent.getOrderDay(order: OrderDto)` retornaba de forma cruda `return order.scheduledDay || ''`.
-   - Al comparar `'Hoy mismo (Prioritario)' === 'Miércoles'` (o cualquiera de los 7 días), el resultado es `false`. Por tanto, el pedido no encajaba en ninguna columna y resultaba invisible.
-2. **Flag de Prioridad Urgente (`isPriority`)**:
-   - Cuando el cliente seleccionaba `'Hoy mismo (Prioritario)'`, no se encendía el flag `isPriority: true` del pedido en `StateService`, impidiendo que se active la alerta roja de cava y ruta establecida en la regla de negocio 6.2.
+> **Estado**: Esperando aprobación del usuario para proceder con la ejecución en código (Fase 2 - `AGENTS.md`).  
+> **Archivos a modificar**: 6 archivos (Componentes, Modelos, Servicios y Specs).  
+> **Aislamiento**: Quirúrgico, sin regresiones visuales ni de negocio.
 
 ---
 
-## 🎯 Arquitectura de Solución (Estrategia de Doble Defensa)
+## 🎯 1. OBJETIVOS DEL REQUERIMIENTO
 
-```mermaid
-flowchart TD
-    A["Cliente crea pedido en Portal"] --> B["submitClientOrder()"]
-    B --> C["Resuelve día canónico (ej: 'Miércoles')"]
-    B --> D["Activa isPriority: true si 'Prioritario'"]
-    B --> E["Preserva '[Entrega: Hoy mismo]' en order.notes"]
-    C & D & E --> F["StateService.createOrder()"]
-    F --> G["Persistencia en orders signal y localStorage"]
-    G --> H["OrdersComponent.getOrderDay()"]
-    H --> I["Normalizador Robusto (Canónico, Relativo, Fechas ISO, Fallback Hoy)"]
-    I --> J["weekDays conteo correcto (1 pedido en Miércoles)"]
-    I --> K["tabOrders muestra la tarjeta en Alistamiento"]
-    K --> L["KDS Cava muestra banner rojo URGENTE [⚡]"]
-```
+1. **Botón de Pantalla Completa en Mapa Bloqueado (`media_1793224339327_0b4b5aeb.png`)**:
+   - En la vista del Mapa de Entregas (`/orders` -> subtab Mapa), cuando el mapa se encuentra en estado inicial o bloqueado (`mapViewMode() === 'locked'`) mostrando los botones centrales `• En Vivo` y `Ver Todas las Entregas`, mostrar de forma permanente el botón flotante circular de pantalla completa `[ ⤢ ]` en la esquina inferior izquierda.
+   - Al hacer clic, activar la vista maximizada del canvas (`isMapFullscreen`), ajustando el tamaño de Leaflet mediante `invalidateSize()`.
 
----
+2. **Checkbox "Domiciliario" en Creación y Edición de Roles (`media_1793224528561_bd9bd3a1.png`)**:
+   - En `/settings` -> Roles & Matriz de Privilegios, en el modal de "Crear Nuevo Rol de Usuario" y "Modificar Nombre del Rol", incorporar un checkbox explícito:
+     `[✓] Rol de Domiciliario (permite asignar entregas y rutas en el mapa)` (`isCourier`).
+   - Al marcarlo, el rol queda tipado con `isCourier: true` y se persiste tanto en el payload enviado al API (`POST /api/roles`, `PUT /api/roles/{id}`) como en el almacenamiento local seguro (`dgl_roles_v2`).
+   - Mostrar un badge visual identificador `DOMICILIARIO` en la lista lateral de roles para los perfiles que cuenten con esta cualidad activa.
 
-## 🛠️ Alcance Quirúrgico de los Cambios
-
-### 1. `src/app/core/services/state.service.ts`
-- **Firma de `createOrder`**:
-  - Incorporar el parámetro opcional `isPriority?: boolean` en `createOrder(orderData: { ... })`.
-  - En la creación del objeto `newOrder: OrderDto`, asignar `isPriority: Boolean(orderData.isPriority)`.
-  - Si `orderData.scheduledDay` viene vacío o indefinido, asignar por defecto el día de la semana actual mediante una función auxiliar limpia.
-  - Sincronizar `isPriority` y `scheduledDay` en el payload de `this.api.createOrder(...)`.
-
-### 2. `src/app/features/client-portal/client-portal.component.ts`
-- **Resolución Canónica en `submitClientOrder()`**:
-  - Crear el método privado `resolveCanonicalDay(deliveryOption: string): string` que mapea:
-    - Opciones que contengan `'hoy'` o `'prioritario'` $\to$ Día actual en español (`Lunes` ... `Domingo`).
-    - Opciones que contengan `'mañana'` o `'siguiente'` $\to$ Día siguiente en español.
-    - Opciones que contengan `'fin de semana'` $\to$ `'Sábado'`.
-    - Días explícitos $\to$ Normalización estándar.
-  - Detectar `isPriority = rawDeliveryDay.toLowerCase().includes('prioritario');`.
-  - Preservar la instrucción original en las notas: `[Entrega: ${rawDeliveryDay}]`.
-  - Pasar `scheduledDay: resolvedWeekday` e `isPriority` a `stateService.createOrder(...)`.
-
-### 3. `src/app/features/orders/orders.component.ts`
-- **Normalización Robusta y Retrocompatible en `getOrderDay(order: OrderDto)`**:
-  - Robustecer el método `getOrderDay(order: OrderDto): string`:
-    1. Si `order.scheduledDay` coincide con alguno de los 7 días de `weekDayConfigs` (ignorando mayúsculas/minúsculas y tildes), retornar el nombre canónico correspondiente.
-    2. Si contiene `'hoy'` o `'prioritario'`, retornar el día actual (`this.getCurrentWeekDayName()`).
-    3. Si contiene `'mañana'`, `'manana'` o `'siguiente'`, retornar el día de mañana.
-    4. Si contiene `'fin de semana'`, retornar `'Sábado'`.
-    5. Si es una fecha ISO (`YYYY-MM-DD` o ISO string), parsearla y calcular su día de la semana.
-    6. Si está vacío o no coincide con nada, usar `order.createdAt` / `order.orderDate` o fallback al día actual (`this.getCurrentWeekDayName()`).
-  - **Efecto Inmediato**: El pedido ya creado por el usuario en su sesión actual (que quedó guardado como `'Hoy mismo (Prioritario)'`) **se hará visible de inmediato en la columna del día de hoy** sin requerir borrar la base de datos o recrear el pedido.
+3. **Carga Dinámica de Usuarios Domiciliarios en el Selector de Entregas del Mapa (`media_1793224559802_e75cda58.png`)**:
+   - Todo usuario del sistema (`UserAdminDto`) cuyo rol asignado (`roleId` / `roleName`) esté configurado como `isCourier === true` será reconocido automáticamente por la plataforma como un repartidor / domiciliario activo.
+   - En el drawer lateral de entregas del mapa (`Sin mensajero`), en los filtros por mensajero, en el modal de asignación por zonas poligonales y en la tabla de despacho de pedidos (`orders.component.ts`), la lista desplegable de mensajeros cargará automáticamente a dichos usuarios disponibles.
 
 ---
 
-## 🧪 Estrategia de Pruebas Unitarias (`100% PASS`)
+## 🔍 2. ANÁLISIS DE IMPACTO Y VERIFICACIÓN PREVIA (FASE 1)
 
-### 1. `src/app/core/services/state.service.spec.ts`
-- Test: `should assign isPriority when provided to createOrder and default scheduledDay to current weekday`.
-
-### 2. `src/app/features/client-portal/client-portal.component.spec.ts`
-- Test: `should resolve canonical weekday and set isPriority true when selecting Hoy mismo (Prioritario) in client checkout`.
-
-### 3. `src/app/features/orders/orders.component.spec.ts`
-- Test: `should resolve relative phrases in getOrderDay (Hoy mismo, Mañana, Fin de semana) to canonical Spanish weekdays`.
-- Test: `should filter client orders with relative scheduledDay into active weekday picking queue`.
-
----
-
-## 🚫 Archivos NO Modificados
-- `src/styles.scss` (No se tocan estilos globales).
-- No se modifican contratos de API ni endpoints remotos.
-- `delivery-map.component.ts`, `kds.component.ts`, `hr.component.ts` permanecen intactos.
+| Archivo / Componente | Elemento Afectado | Análisis de Impacto y Mitigación |
+| :--- | :--- | :--- |
+| `src/app/features/orders/delivery-map.component.ts` | Contenedor `.map-left-controls-container` y botón `.map-fullscreen-fab` | Actualmente envuelto en `@if (mapViewMode() !== 'locked')`. Al retirar esa restricción en el contenedor padre y conservarla únicamente en el stack vertical de mensajeros `@if (mapViewMode() === 'live')`, el botón FAB se posiciona automáticamente en `bottom: 16px; left: 16px; z-index: 1250;`, flotando sobre el overlay (`z-index: 1200`) sin interferir con los botones centrales. Cero impacto negativo en otras vistas. |
+| `src/app/features/orders/delivery-map.component.ts` | Método `syncCouriersFromEmployees()` y señal `couriers` | Se extiende para consultar `stateService.users()` y roles con `isCourier: true`, fusionándolos con empleados de `DOMICILIOS`. Esto garantiza que los usuarios del rol aparezcan en `<select class="drawer-stop-courier-select">` (`Sin mensajero`). |
+| `src/app/core/models/business.models.ts` | `UserRoleDto` y `CreateRoleDto` | Se añade la propiedad tipada opcional `isCourier?: boolean`. Cero ruptura de compatibilidad hacia atrás. |
+| `src/app/core/services/api.service.ts` | `createRole`, `updateRole`, `mapRoleFromApi` | Se añade `isCourier` al payload de creación/actualización y al mapeo desde el backend o caché local. |
+| `src/app/core/services/state.service.ts` | Señales `users` y `roles`, método `loadInitialData()` | Añade señales reactivas para sincronizar los usuarios y roles registrados, exponiéndolos al mapa y a despachos. |
+| `src/app/features/admin/roles/roles.component.html` y `.ts` | Modales `showCreateRoleModal` y `showEditRoleModal` | Se añade el checkbox con bind bidireccional a señales `newRoleIsCourier` y `editingRoleIsCourier`. |
+| `src/app/features/orders/orders.component.ts` | Getter `COURIER_CATALOG` | Sincroniza el catálogo de repartidores en la tabla y asignación de despachos para incluir los usuarios con rol de domiciliario. |
 
 ---
 
-## 🏁 Criterios de Aceptación
-1. El pedido creado en el portal de clientes aparece de inmediato en la tarjeta de día correspondiente de **Alistamiento de Pedidos**.
-2. El contador de la tarjeta de día (ej: `Miércoles`) se incrementa a `1 pedidos` y el resumen de pulpas requeridas se calcula automáticamente.
-3. El flag `isPriority` se preserva para alertar en cava y despachos.
-4. `npm run build` compila con 0 errores.
-5. `npm test` pasa con 100% de éxito (202+ tests aprobados, 0 fallos).
-6. Cero `git commit` y cero `git push`.
+## 🛠️ 3. PLAN PASO A PASO DE EJECUCIÓN (POST-APROBACIÓN)
+
+### Paso 1: Actualizar Modelos y API Service (`business.models.ts` y `api.service.ts`)
+1. En `src/app/core/models/business.models.ts`:
+   - Añadir `isCourier?: boolean;` a `UserRoleDto`.
+   - Añadir `isCourier?: boolean;` a `CreateRoleDto`.
+2. En `src/app/core/services/api.service.ts`:
+   - Enviar `isCourier: dto.isCourier ?? false` en `createRole` y `updateRole`.
+   - Mapear `isCourier` en `mapRoleFromApi(item)`.
+
+### Paso 2: Checkbox en Módulo de Roles (`roles.component.ts` y `roles.component.html`)
+1. En `roles.component.ts`:
+   - Definir `readonly newRoleIsCourier = signal<boolean>(false);`
+   - Definir `readonly editingRoleIsCourier = signal<boolean>(false);`
+   - Enviar `isCourier` en `submitNewRole()` y `saveRoleName()`.
+   - Restablecer y sincronizar valores al abrir/cerrar modales.
+2. En `roles.component.html`:
+   - Incorporar el checkbox estilizado en el modal de creación y en el modal de edición.
+   - Añadir badge sutil `DOMICILIARIO` en los ítems de rol activos con esta marca.
+
+### Paso 3: Sincronización en `StateService` (`state.service.ts`)
+1. Exponer señales `users = signal<UserAdminDto[]>(...)` y `roles = signal<UserRoleDto[]>(...)`.
+2. En `loadInitialData()` consultar en paralelo `this.api.getUsers()` y `this.api.getRoles()` con fallback a `localStorage`.
+
+### Paso 4: Botón Pantalla Completa y Carga de Domiciliarios en el Mapa (`delivery-map.component.ts`)
+1. En el template de `delivery-map.component.ts`:
+   - Mover `<div class="map-left-controls-container" [class.is-fullscreen]="isMapFullscreen()">` fuera del `@if (mapViewMode() !== 'locked')` para que el botón de pantalla completa esté siempre disponible en la esquina inferior izquierda.
+   - Conservar `@if (mapViewMode() === 'live')` exclusivamente dentro del contenedor para la botonera vertical de mensajeros.
+2. En la lógica de `delivery-map.component.ts`:
+   - Actualizar `syncCouriersFromEmployees()` para incorporar usuarios cuyo rol tenga `isCourier: true`.
+   - Garantizar que el dropdown `<option value="">Sin mensajero</option>` del drawer de entregas liste a los domiciliarios detectados.
+3. En `orders.component.ts`:
+   - Actualizar `COURIER_CATALOG` para reflejar los mismos domiciliarios activos derivados de los roles.
+
+### Paso 5: Actualización y Cobertura de Pruebas Unitarias (`.spec.ts`)
+1. Actualizar `delivery-map.component.spec.ts`:
+   - Prueba 1: Verificar que el botón de pantalla completa `.map-fullscreen-fab` se renderiza cuando `mapViewMode() === 'locked'`.
+   - Prueba 2: Verificar que usuarios con rol `isCourier: true` se incorporan al listado de mensajeros (`couriers()`).
+2. Actualizar `roles.component.spec.ts`:
+   - Prueba 1: Verificar que al crear un rol con `newRoleIsCourier = true`, se propaga `isCourier: true` a `api.createRole`.
+   - Prueba 2: Verificar que al modificar un rol, `editingRoleIsCourier` se propaga a `api.updateRole`.
+3. Actualizar `api.service.spec.ts` y `state.service.spec.ts` si corresponde.
+
+### Paso 6: Verificación de Calidad y Registro Histórico
+1. Ejecutar la suite completa de pruebas: `ng test --watch=false` (exigido 100% de pruebas aprobadas sin fallos).
+2. Ejecutar build de producción: `npm run build` (0 errores).
+3. Registrar en `./HISTORIAL_CAMBIOS.md`.
+4. Desplegar los sub-agentes requeridos por `AGENTS.md` (Agente Auditor Punto por Punto y Agente de Revisión Par).
+5. **Cero `git commit` y cero `git push`** (cumplimiento estricto de la Regla 5).
+
+---
+
+## ❓ 4. DECISIÓN REQUERIDA DEL USUARIO
+¿Apruebas este plan de implementación para proceder de inmediato con la edición quirúrgica del código y la suite de validación?

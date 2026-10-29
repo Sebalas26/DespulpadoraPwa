@@ -1211,7 +1211,8 @@ export class ApiService {
       const payload = {
         name: dto.name,
         description: dto.description ?? '',
-        isActive: dto.isActive ?? true
+        isActive: dto.isActive ?? true,
+        isCourier: dto.isCourier ?? false
       };
       return this.http.post<Record<string, unknown>>(`${this.baseUrl}/roles`, payload).pipe(
         map((item: Record<string, unknown>) => this.mapRoleFromApi(item)),
@@ -1230,7 +1231,8 @@ export class ApiService {
       const payload = {
         name: dto.name,
         description: dto.description ?? '',
-        isActive: dto.isActive ?? true
+        isActive: dto.isActive ?? true,
+        isCourier: dto.isCourier ?? false
       };
       return this.http.put<Record<string, unknown>>(`${this.baseUrl}/roles/${roleId}`, payload).pipe(
         map((item: Record<string, unknown>) => this.mapRoleFromApi(item)),
@@ -1847,7 +1849,10 @@ export class ApiService {
         isSystemRole: id === 1 || name.toLowerCase().includes('super'),
         isActive: Boolean(item['isActive'] ?? true),
         moduleIds: Array.isArray(item['moduleIds']) ? (item['moduleIds'] as number[]) : [],
-        actionIds: Array.isArray(item['actionIds']) ? (item['actionIds'] as number[]) : []
+        actionIds: Array.isArray(item['actionIds']) ? (item['actionIds'] as number[]) : [],
+        isCourier: item['isCourier'] !== undefined
+          ? Boolean(item['isCourier'])
+          : (name.toLowerCase().includes('domicili') || name.toLowerCase().includes('mensajer') || name.toLowerCase().includes('repartidor'))
       };
     } catch (error: unknown) {
       throw error;

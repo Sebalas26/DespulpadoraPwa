@@ -675,25 +675,79 @@ export class OrdersComponent {
         { color: '#10b981', colorLight: '#ecfdf5' },
         { color: '#3b82f6', colorLight: '#eff6ff' },
         { color: '#f59e0b', colorLight: '#fffbeb' },
-        { color: '#8b5cf6', colorLight: '#f5f3ff' }
+        { color: '#8b5cf6', colorLight: '#f5f3ff' },
+        { color: '#ec4899', colorLight: '#fdf2f8' }
       ];
-      return this.stateService
-        .employees()
-        .filter((emp: EmployeeDto) => emp.area === 'DOMICILIOS')
-        .map((emp: EmployeeDto, idx: number) => {
-          const colors = palette[idx % palette.length];
-          return {
-            id: `c${emp.id}`,
-            name: emp.fullName || emp.name || '',
-            vehicleType: 'moto',
-            vehiclePlate: emp.documentNumber || '',
-            vehicleModel: emp.position || '',
-            phone: emp.phone || '',
-            color: colors.color,
-            colorLight: colors.colorLight,
-            routeCode: ''
-          };
+
+      let rolesList = this.stateService.roles ? this.stateService.roles() : [];
+      if (rolesList.length === 0 && typeof localStorage !== 'undefined') {
+        try {
+          const cached = localStorage.getItem('dgl_roles_v2');
+          if (cached) rolesList = JSON.parse(cached);
+        } catch {}
+      }
+      const courierRoleIds = new Set(
+        rolesList
+          .filter(r => r.isCourier || (r.name && (r.name.toLowerCase().includes('domicili') || r.name.toLowerCase().includes('mensajer') || r.name.toLowerCase().includes('repartidor'))))
+          .map(r => r.roleId)
+      );
+
+      let usersList = this.stateService.users ? this.stateService.users() : [];
+      if (usersList.length === 0 && typeof localStorage !== 'undefined') {
+        try {
+          const cached = localStorage.getItem('dgl_users_v2');
+          if (cached) usersList = JSON.parse(cached);
+        } catch {}
+      }
+      const courierUsers = usersList.filter(u =>
+        u.isActive !== false &&
+        (courierRoleIds.has(u.roleId) ||
+          (u.roleName && (u.roleName.toLowerCase().includes('domicili') || u.roleName.toLowerCase().includes('mensajer') || u.roleName.toLowerCase().includes('repartidor'))))
+      );
+
+      const domiEmployees = this.stateService.employees ? this.stateService.employees().filter((emp: EmployeeDto) => emp.area === 'DOMICILIOS') : [];
+
+      const list: CourierCatalogEntry[] = [];
+      const seenNames = new Set<string>();
+
+      courierUsers.forEach((usr, idx) => {
+        const name = usr.fullName || usr.username;
+        seenNames.add(name.toLowerCase());
+        const colors = palette[idx % palette.length];
+        list.push({
+          id: 'u' + usr.userId,
+          name,
+          vehicleType: 'moto',
+          vehiclePlate: usr.documentNumber || '',
+          vehicleModel: usr.roleName || 'Domiciliario',
+          phone: usr.phone || '',
+          color: colors.color,
+          colorLight: colors.colorLight,
+          routeCode: 'RUTA-U' + usr.userId
         });
+      });
+
+      domiEmployees.forEach((emp: EmployeeDto, idx: number) => {
+        const empName = emp.fullName || emp.name || '';
+        if (seenNames.has(empName.toLowerCase())) return;
+        seenNames.add(empName.toLowerCase());
+
+        const paletteIdx = (courierUsers.length + idx) % palette.length;
+        const colors = palette[paletteIdx];
+        list.push({
+          id: 'c' + emp.id,
+          name: empName,
+          vehicleType: 'moto',
+          vehiclePlate: emp.documentNumber || '',
+          vehicleModel: emp.position || '',
+          phone: emp.phone || '',
+          color: colors.color,
+          colorLight: colors.colorLight,
+          routeCode: ''
+        });
+      });
+
+      return list;
     } catch (error: unknown) {
       console.error('Error deriving COURIER_CATALOG:', error);
       return [];
