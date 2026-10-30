@@ -761,6 +761,72 @@ export class DashboardComponent {
   }
 
   /**
+   * Computes the integer monthly sales goal compliance percentage clamped between 0 and 100.
+   */
+  readonly monthlyGoalPercentage = computed<number>(() => {
+    try {
+      const rawPct = Math.round(Number(this.stateService.salesPerformance().compliancePercentage) || 0);
+      return Math.min(100, Math.max(0, rawPct));
+    } catch {
+      return 0;
+    }
+  });
+
+  /**
+   * Resolves the visual color tier ('red', 'orange', or 'green') based on the monthly goal percentage.
+   */
+  readonly monthlyGoalTier = computed<'red' | 'orange' | 'green'>(() => {
+    try {
+      const pct = this.monthlyGoalPercentage();
+      if (pct >= 80) {
+        return 'green';
+      }
+      if (pct >= 40) {
+        return 'orange';
+      }
+      return 'red';
+    } catch {
+      return 'red';
+    }
+  });
+
+  /**
+   * Returns the CSS modifier class for the monthly sales card according to the goal tier.
+   */
+  readonly monthlySalesCardClass = computed<string>(() => {
+    try {
+      const tier = this.monthlyGoalTier();
+      if (tier === 'green') {
+        return 'dark-green-card';
+      }
+      if (tier === 'orange') {
+        return 'dark-orange-card';
+      }
+      return 'dark-red-card';
+    } catch {
+      return 'dark-red-card';
+    }
+  });
+
+  /**
+   * Returns the localized sales pace label matching the current monthly goal percentage range.
+   */
+  readonly monthlySalesPaceLabel = computed<string>(() => {
+    try {
+      const tier = this.monthlyGoalTier();
+      if (tier === 'green') {
+        return 'Ritmo de venta óptimo';
+      }
+      if (tier === 'orange') {
+        return 'Ritmo de venta medio';
+      }
+      return 'Ritmo de venta bajo';
+    } catch {
+      return 'Ritmo de venta bajo';
+    }
+  });
+
+  /**
    * Opens the modal to edit the monthly sales revenue target.
    */
   openTargetModal(): void {

@@ -2979,6 +2979,12 @@ body:has(.confirm-modal-overlay) {
   display: none !important;
 }
 
+@media (min-width: 769px) {
+  .module-inline-title {
+    display: none !important;
+  }
+}
+
 .dgl-shimmer-wrapper {
   display: flex;
   flex-direction: column;

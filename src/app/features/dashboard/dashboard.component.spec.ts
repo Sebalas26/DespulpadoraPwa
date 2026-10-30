@@ -217,4 +217,41 @@ describe('DashboardComponent', () => {
     expect(chevrons[0].classList.contains('expanded')).toBeTrue();
     expect(chevrons[1].classList.contains('expanded')).toBeFalse();
   });
+
+  it('should round monthly goal percentage to integer, cap at 100%, and apply red/orange/green card and pace styles', () => {
+    mockSalesPerformance.update(prev => ({ ...prev, compliancePercentage: 0.1 }));
+    fixture.detectChanges();
+    const compiled = fixture.nativeElement as HTMLElement;
+    const salesCard = compiled.querySelector('.financial-metrics-row .fin-metric-box') as HTMLElement;
+    const pctEl = compiled.querySelector('.target-pct') as HTMLElement;
+    const paceEl = compiled.querySelector('.target-rate-warning span') as HTMLElement;
+
+    expect(component.monthlyGoalPercentage()).toBe(0);
+    expect(component.monthlyGoalTier()).toBe('red');
+    expect(salesCard.classList.contains('dark-red-card')).toBeTrue();
+    expect(pctEl.textContent?.trim()).toBe('0%');
+    expect(paceEl.textContent?.trim()).toBe('Ritmo de venta bajo');
+
+    mockSalesPerformance.update(prev => ({ ...prev, compliancePercentage: 55.4 }));
+    fixture.detectChanges();
+    expect(component.monthlyGoalPercentage()).toBe(55);
+    expect(component.monthlyGoalTier()).toBe('orange');
+    expect(salesCard.classList.contains('dark-orange-card')).toBeTrue();
+    expect(pctEl.textContent?.trim()).toBe('55%');
+    expect(paceEl.textContent?.trim()).toBe('Ritmo de venta medio');
+
+    mockSalesPerformance.update(prev => ({ ...prev, compliancePercentage: 85.2 }));
+    fixture.detectChanges();
+    expect(component.monthlyGoalPercentage()).toBe(85);
+    expect(component.monthlyGoalTier()).toBe('green');
+    expect(salesCard.classList.contains('dark-green-card')).toBeTrue();
+    expect(pctEl.textContent?.trim()).toBe('85%');
+    expect(paceEl.textContent?.trim()).toBe('Ritmo de venta óptimo');
+
+    mockSalesPerformance.update(prev => ({ ...prev, compliancePercentage: 150 }));
+    fixture.detectChanges();
+    expect(component.monthlyGoalPercentage()).toBe(100);
+    expect(component.monthlyGoalTier()).toBe('green');
+    expect(pctEl.textContent?.trim()).toBe('100%');
+  });
 });

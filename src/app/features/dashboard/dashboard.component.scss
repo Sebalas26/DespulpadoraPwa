@@ -306,8 +306,9 @@
     z-index: 1;
   }
 
-  &.dark-green-card {
-    background: linear-gradient(135deg, #1b5635 0%, #1e5e3a 60%, #236b43 100%);
+  &.dark-green-card,
+  &.dark-orange-card,
+  &.dark-red-card {
     color: #ffffff;
 
     .fin-bg-waves {
@@ -330,6 +331,18 @@
     .fin-box-desc {
       color: rgba(255, 255, 255, 0.78);
     }
+  }
+
+  &.dark-green-card {
+    background: linear-gradient(135deg, #1b5635 0%, #1e5e3a 60%, #236b43 100%);
+  }
+
+  &.dark-orange-card {
+    background: linear-gradient(135deg, #b45309 0%, #d97706 60%, #ea580c 100%);
+  }
+
+  &.dark-red-card {
+    background: linear-gradient(135deg, #991b1b 0%, #b91c1c 60%, #dc2626 100%);
   }
 
   &.white-card {
@@ -434,6 +447,18 @@
   font-size: 0.92rem;
   font-weight: 800;
   color: #1e5e3a;
+
+  &.tier-red {
+    color: #dc2626;
+  }
+
+  &.tier-orange {
+    color: #d97706;
+  }
+
+  &.tier-green {
+    color: #1e5e3a;
+  }
 }
 
 .target-track-bar {
@@ -462,6 +487,30 @@
     border: 2px solid #ffffff;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
   }
+
+  &.tier-red {
+    background: #dc2626;
+
+    .bar-end-dot {
+      background: #dc2626;
+    }
+  }
+
+  &.tier-orange {
+    background: #d97706;
+
+    .bar-end-dot {
+      background: #d97706;
+    }
+  }
+
+  &.tier-green {
+    background: #1e5e3a;
+
+    .bar-end-dot {
+      background: #1e5e3a;
+    }
+  }
 }
 
 .target-subinfo-row {
@@ -482,6 +531,18 @@
   gap: 4px;
   color: #b45309;
   font-weight: 600;
+
+  &.tier-red {
+    color: #dc2626;
+  }
+
+  &.tier-orange {
+    color: #d97706;
+  }
+
+  &.tier-green {
+    color: #1e5e3a;
+  }
 }
 
 /* ==========================================

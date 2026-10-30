@@ -185,13 +185,15 @@ describe('ApiService', () => {
     const getReq = httpMock.expectOne(`${baseUrl}/company-settings`);
     getReq.flush({});
 
-    service.updateCompanySettings({ companyName: 'Configured Corp' }).subscribe(updated => {
+    service.updateCompanySettings({ companyName: 'Configured Corp', monthlySalesTarget: 28000000 }).subscribe(updated => {
       expect(updated.companyName).toBe('Configured Corp');
+      expect(updated.monthlySalesTarget).toBe(28000000);
     });
 
     const putReq = httpMock.expectOne(`${baseUrl}/company-settings`);
     expect(putReq.request.method).toBe('PUT');
-    putReq.flush({ companyName: 'Configured Corp' });
+    expect(putReq.request.body.monthlySalesTarget).toBe(28000000);
+    putReq.flush({ companyName: 'Configured Corp', monthlySalesTarget: 28000000 });
   });
 
   it('should create a user without hardcoded default password and manage roles/modules/backups', () => {
@@ -227,5 +229,25 @@ describe('ApiService', () => {
     expect(req.request.method).toBe('POST');
     expect(req.request.body.isCourier).toBeTrue();
     req.flush({ id: 12, name: 'Domiciliario', isCourier: true });
+  });
+
+  it('should dispatch courier route via POST /api/orders/dispatch-route and map returned orders', () => {
+    service
+      .dispatchOrdersRoute({ courierId: 9, courierName: 'Domi Norte', orderIds: [101, 102] })
+      .subscribe(orders => {
+        expect(orders.length).toBe(2);
+        expect(orders[0].courierId).toBe(9);
+        expect(orders[0].routeSequenceOrder).toBe(1);
+        expect(orders[0].status).toBe('DISPATCHED');
+      });
+
+    const req = httpMock.expectOne(`${baseUrl}/orders/dispatch-route`);
+    expect(req.request.method).toBe('POST');
+    expect(req.request.body.courierId).toBe(9);
+    expect(req.request.body.orderIds).toEqual([101, 102]);
+    req.flush([
+      { id: 101, orderCode: 'ORD-101', status: 'EnRuta', courierId: 9, courierName: 'Domi Norte', routeSequenceOrder: 1 },
+      { id: 102, orderCode: 'ORD-102', status: 'EnRuta', courierId: 9, courierName: 'Domi Norte', routeSequenceOrder: 2 }
+    ]);
   });
 });

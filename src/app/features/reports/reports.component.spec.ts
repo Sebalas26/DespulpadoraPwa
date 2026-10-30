@@ -247,4 +247,30 @@ describe('ReportsComponent', () => {
     expect(component.editItems()[0].fruitName).toBe('Mora');
     expect(component.editItems()[0].unitPrice).toBe(12000);
   });
+
+  it('should render dashboard-style static KPI cards without expand chevrons across all 5 report tabs and keep date filters inside reports-toolbar-actions', () => {
+    const tabs: Array<'sales' | 'loss' | 'stock' | 'expenses' | 'payroll'> = [
+      'sales',
+      'loss',
+      'stock',
+      'expenses',
+      'payroll'
+    ];
+
+    const hostEl = fixture.nativeElement as HTMLElement;
+    expect(hostEl.querySelector('.reports-top-shell')).toBeTruthy();
+    expect(hostEl.querySelector('.reports-nav-tabs')).toBeTruthy();
+    expect(hostEl.querySelector('.reports-toolbar-actions .period-filter-container')).toBeTruthy();
+    expect(hostEl.querySelector('.reports-print-btn.no-mobile')).toBeTruthy();
+
+    for (const tab of tabs) {
+      component.setTab(tab);
+      fixture.detectChanges();
+      const kpiCards = hostEl.querySelectorAll('.quick-kpis-grid .quick-kpi-card.report-kpi-card');
+      expect(kpiCards.length).toBe(4);
+      expect(hostEl.querySelectorAll('.quick-kpis-grid .kpi-icon-box').length).toBe(4);
+      expect(hostEl.querySelectorAll('.quick-kpis-grid .kpi-sparkline').length).toBe(4);
+      expect(hostEl.querySelectorAll('.quick-kpis-grid .kpi-expand-chevron').length).toBe(0);
+    }
+  });
 });

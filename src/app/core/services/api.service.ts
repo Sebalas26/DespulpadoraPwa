@@ -22,6 +22,7 @@ import {
   CreateUserDto,
   DatabaseBackupInfoDto,
   DepartmentDto,
+  DispatchCourierRouteDto,
   EmployeeArea,
   EmployeeDto,
   EmployeeGender,
@@ -490,11 +491,16 @@ export class ApiService {
   /**
    * Dispatches a batch of orders on a delivery route via `POST /api/orders/dispatch-route`.
    */
-  dispatchOrdersRoute(payload: Record<string, unknown>): Observable<unknown> {
+  dispatchOrdersRoute(payload: DispatchCourierRouteDto | Record<string, unknown>): Observable<OrderDto[]> {
     try {
       return this.http
-        .post<unknown>(`${this.baseUrl}/orders/dispatch-route`, payload)
-        .pipe(catchError((error: unknown) => throwError(() => error)));
+        .post<Record<string, unknown>[]>(`${this.baseUrl}/orders/dispatch-route`, payload)
+        .pipe(
+          map((items: Record<string, unknown>[]) =>
+            Array.isArray(items) ? items.map(item => this.mapOrderFromApi(item)) : []
+          ),
+          catchError((error: unknown) => throwError(() => error))
+        );
     } catch (error: unknown) {
       return throwError(() => error);
     }
@@ -1057,12 +1063,16 @@ export class ApiService {
     try {
       const payload = {
         ...dto,
-        businessName: dto.companyName ?? dto.legalName ?? ''
+        businessName: dto.companyName ?? dto.legalName ?? '',
+        whatsAppNumber: dto.whatsapp ?? '',
+        invoiceFooterMessage: dto.invoiceFooterNote ?? '',
+        monthlySalesTarget: Number(dto.monthlySalesTarget ?? 0)
       };
       return this.http.put<Record<string, unknown>>(`${this.baseUrl}/company-settings`, payload).pipe(
         map((item: Record<string, unknown>) => ({
           ...(dto as CompanyConfig),
-          companyName: String(item['companyName'] ?? item['businessName'] ?? dto.companyName ?? '')
+          companyName: String(item['companyName'] ?? item['businessName'] ?? dto.companyName ?? ''),
+          monthlySalesTarget: Number(item['monthlySalesTarget'] ?? dto.monthlySalesTarget ?? 0)
         })),
         catchError((error: unknown) => throwError(() => error))
       );
@@ -1725,6 +1735,8 @@ export class ApiService {
         paymentMethodName: String(item['paymentMethod'] ?? item['paymentMethodName'] ?? ''),
         courierId: item['courierId'] ? Number(item['courierId']) : undefined,
         courierName: item['courierName'] ? String(item['courierName']) : undefined,
+        routeSequenceOrder: item['routeSequenceOrder'] ? Number(item['routeSequenceOrder']) : undefined,
+        dispatchedAtUtc: item['dispatchedAtUtc'] ? String(item['dispatchedAtUtc']) : undefined,
         isPaid: Boolean(item['isPaid'] ?? false),
         isPriority: Boolean(item['isPriority'] ?? false),
         isBilled: Boolean(item['isBilled'] ?? false),

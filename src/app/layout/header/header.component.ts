@@ -803,7 +803,7 @@ export class HeaderComponent implements OnInit, OnDestroy {
         }
         return 'Configuración de la Planta & Sistema';
       }
-      if (url.startsWith('/accounting')) return 'Clientes & Facturación';
+      if (url.startsWith('/accounting')) return 'Clientes';
       if (url.startsWith('/shifts')) return 'Control de Turnos & Marcación';
       if (url.startsWith('/hr')) return 'Gestión de Personal & Talento Humano';
       if (url.startsWith('/reports')) return 'Centro de Reportes & Analítica';

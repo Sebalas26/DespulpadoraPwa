@@ -284,6 +284,7 @@ describe('AuthService', () => {
     expect(commercialGroup).toBeTruthy();
     expect(commercialGroup?.modules.some(m => m.frontendRoute === '/portal-clientes')).toBeFalse();
     expect(commercialGroup?.modules.some(m => m.name === 'Portal Web Clientes')).toBeFalse();
+    expect(commercialGroup?.modules.find(m => m.slug === 'accounting')?.name).toBe('Clientes');
     expect(service.hasModuleAccess('/portal-clientes')).toBeTrue();
   });
 });

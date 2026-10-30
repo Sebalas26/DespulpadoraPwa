@@ -45,6 +45,7 @@ export interface Courier {
   routeCode?: string;
   routeDay?: string;
   routeStatus?: 'en_preparacion' | 'en_ruta' | 'completada' | 'liquidada';
+  isRouteCreated?: boolean;
 }
 
 /**
@@ -598,6 +599,39 @@ export const MAP_STYLES: MapStyleOption[] = [
                 />
               </div>
 
+              @if (drawerCouriersWithStops().length > 0) {
+                <div class="drawer-courier-routes-bar">
+                  @for (c of drawerCouriersWithStops(); track c.id) {
+                    <div class="drawer-courier-route-row" [class.is-route-created]="c.isRouteCreated">
+                      <div class="dcr-left">
+                        <span class="dcr-dot" [style.background]="c.color"></span>
+                        <span class="dcr-name">{{ c.name }}</span>
+                        <span class="dcr-count">{{ getCourierAssignedStopsCount(c.id) }} entrega(s)</span>
+                      </div>
+                      <div class="dcr-right">
+                        @if (c.isRouteCreated) {
+                          <button
+                            type="button"
+                            class="btn-edit-courier-route"
+                            (click)="enableEditCourierRoute(c.id)"
+                          >
+                            Editar
+                          </button>
+                        } @else {
+                          <button
+                            type="button"
+                            class="btn-create-courier-route"
+                            (click)="openConfirmCreateRouteModal(c.id)"
+                          >
+                            Crear Ruta
+                          </button>
+                        }
+                      </div>
+                    </div>
+                  }
+                </div>
+              }
+
               
               @if (activeUnbilledAlert(); as alert) {
                 <div class="drawer-unbilled-alert-banner">
@@ -656,7 +690,8 @@ export const MAP_STYLES: MapStyleOption[] = [
                   <div
                     class="drawer-stop-item"
                     [class.is-priority]="isStopPriority(stop)"
-                    draggable="true"
+                    [class.is-route-locked]="isStopRouteLocked(stop)"
+                    [attr.draggable]="isStopRouteLocked(stop) ? 'false' : 'true'"
                     [class.is-dragging]="draggedRouteStopId() === stop.id"
                     [class.is-drag-over]="dragOverRouteStopId() === stop.id && draggedRouteStopId() !== stop.id"
                     (dragstart)="onRouteStopDragStart($event, stop)"
@@ -665,7 +700,7 @@ export const MAP_STYLES: MapStyleOption[] = [
                     (drop)="onRouteStopDrop($event, stop)"
                     (dragend)="onRouteStopDragEnd()"
                     (click)="focusStopOnMap(stop)"
-                    title="Mantén presionado y arrastra para cambiar el orden de entrega en la ruta"
+                    [title]="isStopRouteLocked(stop) ? 'Ruta confirmada (Pulsa Editar en el mensajero para modificar)' : 'Mantén presionado y arrastra para cambiar el orden de entrega en la ruta'"
                   >
                     <span class="stop-drag-grip" title="Arrastrar para reordenar ruta">⋮⋮</span>
 
@@ -729,6 +764,7 @@ export const MAP_STYLES: MapStyleOption[] = [
                             class="drawer-stop-courier-select"
                             [ngModel]="stop.assignedCourierId || ''"
                             (ngModelChange)="onCourierSelectChange(stop, $event)"
+                            [disabled]="isStopRouteLocked(stop)"
                             title="Asignar o cambiar mensajero de esta entrega"
                           >
                             <option value="">Sin mensajero</option>
@@ -744,6 +780,7 @@ export const MAP_STYLES: MapStyleOption[] = [
                             type="button"
                             class="drawer-stop-priority-btn"
                             [class.is-active-priority]="isStopPriority(stop)"
+                            [disabled]="isStopRouteLocked(stop)"
                             [title]="isStopPriority(stop) ? 'Quitar alerta de prioridad' : 'Marcar alerta de prioridad urgente en inventario'"
                             (click)="toggleStopPriority(stop)"
                           >
@@ -756,6 +793,7 @@ export const MAP_STYLES: MapStyleOption[] = [
                           <button
                             type="button"
                             class="drawer-stop-del-btn"
+                            [disabled]="isStopRouteLocked(stop)"
                             title="Eliminar esta entrega del mapa"
                             (click)="deleteDeliveryStop(stop.id)"
                             style="display: flex; align-items: center; justify-content: center;"
@@ -960,6 +998,24 @@ export const MAP_STYLES: MapStyleOption[] = [
                         <span>Recibir Domiciliario</span>
                       </button>
                     } @else {
+                      @if (c.isRouteCreated) {
+                        <button
+                          type="button"
+                          class="btn-edit-courier-route"
+                          (click)="$event.stopPropagation(); enableEditCourierRoute(c.id)"
+                        >
+                          <span>Editar</span>
+                        </button>
+                      } @else {
+                        <button
+                          type="button"
+                          class="btn-create-courier-route"
+                          (click)="$event.stopPropagation(); openConfirmCreateRouteModal(c.id)"
+                        >
+                          <span>Crear Ruta</span>
+                        </button>
+                      }
+
                       <button
                         type="button"
                         class="btn-seq-link"
@@ -970,7 +1026,7 @@ export const MAP_STYLES: MapStyleOption[] = [
                           <path d="M9 19h8.5a3.5 3.5 0 0 0 0-7h-11a3.5 3.5 0 0 1 0-7H15"></path>
                           <circle cx="18" cy="5" r="3"></circle>
                         </svg>
-                        <span>Editar Ruta</span>
+                        <span>Secuenciar</span>
                       </button>
 
                       @if (c.orderIds.length > 0) {
@@ -1238,7 +1294,8 @@ export const MAP_STYLES: MapStyleOption[] = [
                   @for (stop of activePlannerStops(); track stop.id; let i = $index) {
                     <div
                       class="stop-card hover-lift"
-                      draggable="true"
+                      [class.is-route-locked]="isStopRouteLocked(stop)"
+                      [attr.draggable]="isStopRouteLocked(stop) ? 'false' : 'true'"
                       [class.is-dragging]="draggedRouteStopId() === stop.id"
                       [class.is-drag-over]="dragOverRouteStopId() === stop.id && draggedRouteStopId() !== stop.id"
                       (dragstart)="onRouteStopDragStart($event, stop)"
@@ -1656,6 +1713,54 @@ export const MAP_STYLES: MapStyleOption[] = [
                   <span>Confirmar Recepción y Cerrar Ruta</span>
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      }
+
+      @if (showConfirmCreateRouteModal() && pendingRouteCourier(); as routeCourier) {
+        <div class="modal-backdrop" (click)="cancelConfirmCreateRoute()">
+          <div class="modal-card confirm-route-modal" (click)="$event.stopPropagation()" style="max-width: 440px;">
+            <div class="modal-header">
+              <div class="modal-title-group">
+                <div class="modal-icon-badge" style="background: rgba(30, 94, 58, 0.14); color: #1e5e3a; display: flex; align-items: center; justify-content: center;">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="6" cy="19" r="3"></circle>
+                    <path d="M9 19h8.5a3.5 3.5 0 0 0 0-7h-11a3.5 3.5 0 0 1 0-7H15"></path>
+                    <circle cx="18" cy="5" r="3"></circle>
+                  </svg>
+                </div>
+                <div>
+                  <h2 class="modal-title">Confirmar Creación de Ruta</h2>
+                  <p class="modal-subtitle">Despacho y sincronización hacia la App del domiciliario</p>
+                </div>
+              </div>
+              <button type="button" class="btn-close" (click)="cancelConfirmCreateRoute()">✕</button>
+            </div>
+
+            <div class="modal-body" style="padding: 18px 20px;">
+              <p style="margin: 0 0 10px; font-size: 0.92rem; color: #0f172a; line-height: 1.45;">
+                ¿Deseas crear y confirmar la ruta de entrega para
+                <strong>{{ routeCourier.name }}</strong> con
+                <strong>{{ getCourierAssignedStopsCount(routeCourier.id) }} entrega(s)</strong> asignada(s)?
+              </p>
+              <p style="margin: 0; font-size: 0.78rem; color: #64748b; line-height: 1.4;">
+                Al confirmar, la ruta quedará guardada en la base de datos, se enviará a la App de Flutter del domiciliario y las tarjetas de las entregas quedarán bloqueadas hasta que pulses <strong>Editar</strong>.
+              </p>
+            </div>
+
+            <div class="modal-footer" style="justify-content: flex-end; gap: 10px;">
+              <button type="button" class="btn btn-secondary btn-cancel-create-route" (click)="cancelConfirmCreateRoute()">
+                No
+              </button>
+              <button
+                type="button"
+                class="btn btn-primary btn-confirm-create-route"
+                (click)="confirmCreateCourierRoute()"
+                style="background: #1e5e3a; border-color: #1e5e3a; font-weight: 800;"
+              >
+                Sí, crear ruta
+              </button>
             </div>
           </div>
         </div>
@@ -3950,6 +4055,134 @@ export const MAP_STYLES: MapStyleOption[] = [
     .drawer-search-input:focus {
       border-color: #1e5e3a;
       background: #ffffff;
+    }
+
+    .drawer-courier-routes-bar {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      padding: 8px 12px;
+      background: #f8fafc;
+      border-bottom: 1px solid #e2e8f0;
+    }
+
+    .drawer-courier-route-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      padding: 6px 10px;
+      border-radius: 9px;
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+
+      &.is-route-created {
+        background: #f1f5f9;
+        border-color: #cbd5e1;
+      }
+
+      .dcr-left {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        min-width: 0;
+        flex: 1;
+      }
+
+      .dcr-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        flex-shrink: 0;
+      }
+
+      .dcr-name {
+        font-size: 0.78rem;
+        font-weight: 800;
+        color: #0f172a;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      .dcr-count {
+        font-size: 0.68rem;
+        font-weight: 700;
+        color: #64748b;
+        background: #f1f5f9;
+        padding: 2px 7px;
+        border-radius: 999px;
+        flex-shrink: 0;
+      }
+    }
+
+    .btn-create-courier-route {
+      background: #1e5e3a;
+      color: #ffffff;
+      border: 1px solid #1e5e3a;
+      font-size: 0.72rem;
+      font-weight: 800;
+      padding: 4px 10px;
+      border-radius: 7px;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.15s ease;
+
+      &:hover {
+        background: #16482c;
+        border-color: #16482c;
+      }
+    }
+
+    .btn-edit-courier-route {
+      background: #ffffff;
+      color: #334155;
+      border: 1px solid #cbd5e1;
+      font-size: 0.72rem;
+      font-weight: 800;
+      padding: 4px 10px;
+      border-radius: 7px;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.15s ease;
+
+      &:hover {
+        background: #f1f5f9;
+        border-color: #94a3b8;
+        color: #0f172a;
+      }
+    }
+
+    .drawer-stop-item.is-route-locked,
+    .stop-card.is-route-locked {
+      background: #f1f5f9 !important;
+      border-color: #cbd5e1 !important;
+      color: #64748b !important;
+      opacity: 0.78;
+      cursor: not-allowed !important;
+
+      .drawer-stop-client,
+      .drawer-stop-amount,
+      .drawer-stop-addr,
+      .stop-client-name,
+      .stop-address {
+        color: #64748b !important;
+      }
+
+      .stop-drag-grip {
+        color: #cbd5e1 !important;
+        cursor: not-allowed !important;
+      }
+
+      .drawer-stop-courier-select:disabled,
+      .drawer-stop-priority-btn:disabled,
+      .drawer-stop-del-btn:disabled {
+        opacity: 0.6;
+        cursor: not-allowed !important;
+        background: #e2e8f0 !important;
+        color: #64748b !important;
+        border-color: #cbd5e1 !important;
+      }
     }
 
     
@@ -7456,12 +7689,180 @@ export class DeliveryMapComponent implements OnInit, AfterViewInit, OnDestroy {
   readonly draggedRouteStopId = signal<number | null>(null);
   readonly dragOverRouteStopId = signal<number | null>(null);
   readonly dragOverCourierPillId = signal<string | null>(null);
+  readonly showConfirmCreateRouteModal = signal<boolean>(false);
+  readonly pendingRouteCourierId = signal<string>('');
+
+  /**
+   * Resolves the courier currently pending route creation confirmation.
+   */
+  readonly pendingRouteCourier = computed<Courier | null>(() => {
+    try {
+      const id = this.pendingRouteCourierId();
+      if (!id) return null;
+      return this.couriers().find((c: Courier) => c.id === id) || null;
+    } catch {
+      return null;
+    }
+  });
+
+  /**
+   * Lists couriers with assigned stops to display in the drawer route action bar.
+   */
+  readonly drawerCouriersWithStops = computed<Courier[]>(() => {
+    try {
+      const filter = this.drawerCourierFilter();
+      const assigned = this.assignedCouriers();
+      if (filter !== 'all') {
+        return assigned.filter((c: Courier) => c.id === filter);
+      }
+      return assigned;
+    } catch {
+      return [];
+    }
+  });
+
+  /**
+   * Returns true if the delivery stop belongs to a courier whose route is already created and locked.
+   */
+  isStopRouteLocked(stop: DeliveryWaypoint): boolean {
+    try {
+      if (!stop.assignedCourierId) return false;
+      const courier = this.couriers().find((c: Courier) => c.id === stop.assignedCourierId);
+      return courier?.isRouteCreated === true;
+    } catch {
+      return false;
+    }
+  }
+
+  /**
+   * Returns the total number of stops currently assigned to the specified courier.
+   */
+  getCourierAssignedStopsCount(courierId: string): number {
+    try {
+      const courier = this.couriers().find((c: Courier) => c.id === courierId);
+      const stopsCount = this.deliveryStops().filter((s: DeliveryWaypoint) => s.assignedCourierId === courierId).length;
+      return Math.max(courier?.orderIds.length || 0, stopsCount);
+    } catch {
+      return 0;
+    }
+  }
+
+  /**
+   * Opens the confirmation modal before creating and locking a courier's delivery route.
+   */
+  openConfirmCreateRouteModal(courierId: string): void {
+    try {
+      const courier = this.couriers().find((c: Courier) => c.id === courierId);
+      if (!courier) return;
+      const assignedStops = this.deliveryStops().filter(
+        (s: DeliveryWaypoint) => s.assignedCourierId === courierId || courier.orderIds.includes(s.id)
+      );
+      if (assignedStops.length === 0) {
+        this.notification.warning('Sin Entregas Asignadas', `Asigna al menos una entrega a ${courier.name} antes de crear la ruta.`);
+        return;
+      }
+      const unbilledStop = assignedStops.find((s: DeliveryWaypoint) => !this.isStopBilled(s));
+      if (unbilledStop) {
+        this.showUnbilledOrderAlert(unbilledStop, courierId);
+        return;
+      }
+      this.pendingRouteCourierId.set(courierId);
+      this.showConfirmCreateRouteModal.set(true);
+    } catch (error: unknown) {
+      console.error('Error opening confirm create route modal:', error);
+    }
+  }
+
+  /**
+   * Cancels and closes the route creation confirmation modal.
+   */
+  cancelConfirmCreateRoute(): void {
+    try {
+      this.showConfirmCreateRouteModal.set(false);
+      this.pendingRouteCourierId.set('');
+    } catch {
+      return;
+    }
+  }
+
+  /**
+   * Confirms route creation, locks the courier's delivery cards in light gray, and dispatches the route to the API/database.
+   */
+  confirmCreateCourierRoute(): void {
+    try {
+      const courierId = this.pendingRouteCourierId();
+      const courier = this.couriers().find((c: Courier) => c.id === courierId);
+      if (!courier) {
+        this.cancelConfirmCreateRoute();
+        return;
+      }
+
+      const stopMap = new Map(this.deliveryStops().map((s: DeliveryWaypoint) => [s.id, s]));
+      const orderedIds = courier.orderIds.filter((id: number) => stopMap.has(id));
+      const extraIds = this.deliveryStops()
+        .filter((s: DeliveryWaypoint) => s.assignedCourierId === courierId && !orderedIds.includes(s.id))
+        .map((s: DeliveryWaypoint) => s.id);
+      const finalOrderIds = [...orderedIds, ...extraIds];
+
+      this.couriers.update((list: Courier[]) =>
+        list.map((c: Courier) =>
+          c.id === courierId
+            ? { ...c, orderIds: finalOrderIds, isRouteCreated: true, status: 'en_ruta', routeStatus: 'en_ruta' }
+            : c
+        )
+      );
+
+      const numericId = Number(String(courierId).replace(/\D/g, '')) || 0;
+      this.stateService.dispatchCourierRoute?.({
+        courierId: numericId,
+        courierName: courier.name,
+        orderIds: finalOrderIds
+      });
+
+      this.showConfirmCreateRouteModal.set(false);
+      this.pendingRouteCourierId.set('');
+      this.renderStopMarkers();
+      this.buildAndRenderRealRoadRoutes();
+
+      this.notification.success(
+        'Ruta Creada y Enviada',
+        `La ruta de ${courier.name} (${finalOrderIds.length} entrega(s)) fue guardada en BD y enviada a la App Móvil.`
+      );
+    } catch (error: unknown) {
+      console.error('Error confirming courier route creation:', error);
+      this.cancelConfirmCreateRoute();
+    }
+  }
+
+  /**
+   * Unlocks a courier's created route so its delivery cards become active and editable again.
+   */
+  enableEditCourierRoute(courierId: string): void {
+    try {
+      const courier = this.couriers().find((c: Courier) => c.id === courierId);
+      this.couriers.update((list: Courier[]) =>
+        list.map((c: Courier) => (c.id === courierId ? { ...c, isRouteCreated: false } : c))
+      );
+      if (courier) {
+        this.notification.info(
+          'Edición de Ruta Habilitada',
+          `Ahora puedes modificar las entregas de ${courier.name} y pulsar "Crear Ruta" para guardar.`
+        );
+      }
+    } catch (error: unknown) {
+      console.error('Error enabling edit courier route:', error);
+    }
+  }
 
   /**
    * Handles drag start for reordering a delivery stop in the drawer.
    */
   onRouteStopDragStart(event: DragEvent, stop: DeliveryWaypoint): void {
     try {
+      if (this.isStopRouteLocked(stop)) {
+        event.preventDefault();
+        return;
+      }
       this.draggedRouteStopId.set(stop.id);
       if (event.dataTransfer) {
         event.dataTransfer.effectAllowed = 'move';
@@ -8946,10 +9347,16 @@ export class DeliveryMapComponent implements OnInit, AfterViewInit, OnDestroy {
           const seedLngs = [-74.0550, -74.0950, -74.0450, -74.1400, -74.0650];
           const lat = seedLats[i % seedLats.length];
           const lng = seedLngs[i % seedLngs.length];
-          const matchedCourier = order.courierName
-            ? this.couriers().find((c: Courier) => c.name.toLowerCase().includes(order.courierName!.toLowerCase()))
-            : undefined;
+          const matchedCourier =
+            this.couriers().find(
+              (c: Courier) =>
+                (order.courierId && (c.id === 'u' + order.courierId || c.id === 'c' + order.courierId)) ||
+                (order.courierName && c.name.toLowerCase().includes(order.courierName.toLowerCase()))
+            );
           const assignedCourierId = matchedCourier ? matchedCourier.id : '';
+          const isOrderRouteDispatched =
+            Boolean(assignedCourierId) &&
+            (order.status === 'DISPATCHED' || (order.routeSequenceOrder !== undefined && order.routeSequenceOrder > 0));
 
           const stop: DeliveryWaypoint = {
             id: order.orderId,
@@ -8972,7 +9379,11 @@ export class DeliveryMapComponent implements OnInit, AfterViewInit, OnDestroy {
           if (assignedCourierId) {
             this.couriers.update((list: Courier[]) => list.map((c: Courier) => {
               if (c.id === assignedCourierId) {
-                return { ...c, orderIds: [...c.orderIds, stop.id] };
+                return {
+                  ...c,
+                  orderIds: c.orderIds.includes(stop.id) ? c.orderIds : [...c.orderIds, stop.id],
+                  isRouteCreated: c.isRouteCreated || isOrderRouteDispatched
+                };
               }
               return c;
             }));

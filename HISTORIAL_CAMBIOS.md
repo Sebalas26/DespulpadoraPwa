@@ -4,6 +4,172 @@ Este documento registra de manera cronológica y estructurada todas las interven
 
 ---
 
+## [2026-10-29] - Reordenamiento de Filtros de Fecha en Mobile Debajo de Módulos y Homologación de KPI Cards Estilo Dashboard General en Centro de Reportes
+
+### 💬 Prompt Original del Usuario
+> "Ayudame para que en la pwa version mobile, el modulode centro de reportes, los filtros de fechas se vean debajo de los 4 modulos, adicional las cards de informacion ejemplo total facturado y demas de todos los modulos de ese de centro de reportes, se vean como el estilo de las cards de la dashboard general version mobile, solo que esas de centro de reportes no tendan la flecha hacia abajo y no desplegaran nada cuando se opriman"
+
+### 🤖 Resumen Técnico para la IA
+- **1. Reordenamiento de Filtros de Fecha Debajo de las Pestañas de Módulos en Mobile (`src/app/features/reports/reports.component.html` y `reports.component.scss`)**:
+  - Se estructuró `.reports-top-shell` con 3 bloques hijos: `.reports-header-title-block`, `.reports-toolbar-actions` y `.reports-nav-tabs`.
+  - En Web (`>= 769px`), `.reports-top-shell` utiliza CSS Grid (`grid-template-areas: "title toolbar" "tabs tabs"`), conservando el diseño original de escritorio.
+  - En Mobile (`<= 768px`), `.reports-top-shell` usa `display: flex; flex-direction: column` con `.reports-header-title-block { order: 1; }`, `.reports-nav-tabs { order: 2; }` y `.reports-toolbar-actions { order: 3; }`, ubicando los filtros de período (`Hoy`, `Ayer`, `Mes`, `Año`, `Rango`), la cápsula de fecha y el botón `Exportar a Excel (CSV)` debajo de las pestañas de los módulos y justo antes de las KPI cards (y ocultando `.reports-print-btn.no-mobile` en mobile).
+- **2. Homologación de las 20 Cards KPI (5 Módulos de Centro de Reportes) con el Estilo 2x2 del Dashboard General Mobile (Sin Flecha ni Acción Desplegable)**:
+  - En las 5 pestañas (`Ventas & Facturación`, `Auditoría de Mermas`, `Inventario & Valoración`, `Gastos & Logística` y `Nómina Quincenal & RRHH`), las grillas KPI utilizan `.quick-kpis-grid.reports-kpis-grid` y `.quick-kpi-card.report-kpi-card`.
+  - Cada tarjeta incluye `.kpi-card-top-row` con `.kpi-icon-box` (`icon-green`, `icon-blue`, `icon-amber`, `icon-purple`, `icon-red`), `.kpi-label`, `.kpi-value-row` (`.kpi-big-value` + `.kpi-sparkline` SVG) y `.kpi-subtext`, con `cursor: default` y **sin `.kpi-expand-chevron` ni evento `(click)`**.
+  - En Mobile (`<= 768px`), las 4 tarjetas de cada módulo se disponen en cuadrícula **2x2** (`grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px;`) idéntica al Dashboard General mobile.
+- **3. Informes del Agente Verificador, Agente Auditor Punto por Punto y Revisión Par**:
+  - **Agente Verificador (`477ee3cc-69ba-4938-b923-725f8a099f95`)**: Inspeccionó `reports.component.html/.scss/.spec.ts` y `dashboard.component.scss`, certificando 0% de regresión en Web.
+  - **Agente Auditor Punto por Punto (`ca125707-701f-4be7-8bb9-7e0713c561be`)**: Dictamen **APROBADO AL 100% SIN DESVIACIONES**.
+  - **Agente de Revisión Par (`faaca0b6-3a60-4aa2-b028-8ac513d04efb`)**: Dictamen **APROBADO AL 100% CON 0 OBSERVACIONES — PASE A PRODUCCIÓN AUTORIZADO**.
+
+### 📦 Componentes Modificados
+- `src/app/features/reports/reports.component.html`
+- `src/app/features/reports/reports.component.scss`
+- `src/app/features/reports/reports.component.spec.ts`
+- `HISTORIAL_CAMBIOS.md`
+
+### ✅ Verificación, Build y Tests Unitarios
+- `npm test -- --watch=false`: **246 / 246 Pruebas Unitarias Exitosas (100% PASS, 0 fallos)**.
+- `npm run build`: **Compilación de producción completada con éxito (Exit code 0)**.
+- **Git**: Se cumplió estrictamente la prohibición de `git commit` y `git push`.
+
+---
+
+## [2026-10-29] - Botón "Crear Ruta" / "Editar" por Domiciliario con Diálogo de Confirmación, Cards Inactivas en Gris Claro y Sincronización BD + App Flutter
+
+### 💬 Prompt Original del Usuario
+> "Valida que cuando se le asigne la entrega a un domiciliario, exista un boton en la lista de cada mensajero, de "crear ruta," que muestre un dialog de confirmacion, si le doy si, la ruta se creara y las cards de las entregas saldran inactiva y en gris claro, el boton de crear ruta se modificara por editar 
+>
+> Valida que cuando haga esto, en al app de flutter le llegue por el servicio api y quede guardado en bd"
+
+### 🤖 Resumen Técnico para la IA
+- **1. Botón `Crear Ruta` / `Editar`, Diálogo de Confirmación y Bloqueo en Gris Claro de Cards de Entregas (`src/app/features/orders/delivery-map.component.ts`)**:
+  - Se extendió la interfaz `Courier` con `isRouteCreated?: boolean`.
+  - En la lista del drawer de entregas (`.drawer-courier-routes-bar`) y en la tarjeta de cada mensajero con entregas asignadas (`.couriers-deck-card`), se muestra el botón **`Crear Ruta`** (`.btn-create-courier-route`) cuando `!c.isRouteCreated`.
+  - Al pulsar **`Crear Ruta`** (`openConfirmCreateRouteModal`), se valida que los pedidos asignados estén facturados y se abre el diálogo de confirmación (`@if (showConfirmCreateRouteModal() && pendingRouteCourier(); as routeCourier)`).
+  - Al confirmar (**`Sí, crear ruta`** -> `confirmCreateCourierRoute()`), el mensajero pasa a `isRouteCreated: true`, las cards de sus entregas (`.drawer-stop-item.is-route-locked` y `.stop-card.is-route-locked`) quedan **inactivas y en gris claro** (`background: #f1f5f9`, `border-color: #cbd5e1`, `color: #64748b`, `draggable="false"` y controles internos deshabilitados), y el botón cambia dinámicamente a **`Editar`** (`.btn-edit-courier-route`).
+  - Al pulsar **`Editar`** (`enableEditCourierRoute()`), se desbloquean las cards de las entregas para permitir modificarlas/reordenarlas y el botón vuelve a **`Crear Ruta`**.
+- **2. Persistencia en Base de Datos y Sincronización con la App de Flutter (`state.service.ts`, `api.service.ts`, `business.models.ts` y `ApiDespulpadora`)**:
+  - Se implementó `StateService.dispatchCourierRoute(dto)` y se tipó `ApiService.dispatchOrdersRoute(payload)` hacia `POST /api/orders/dispatch-route`, actualizando `courierId`, `courierName`, `routeSequenceOrder` (`1..N`) y `status: 'DISPATCHED'` en las órdenes de la ruta (y descontando stock de pulpa por gramaje en el primer despacho).
+  - En el backend `.NET 10` (`OrderService.DispatchOrdersRouteAsync` y `DispatchOrdersRequestDto`), se reforzó la resolución/creación automática del perfil `Courier` en MySQL vinculado a `ResponsibleUserId` y `FullName`, desasignando órdenes retiradas al editar la ruta y persistiendo `CourierId`, `RouteSequenceOrder` y `Status = "EnRuta"`, de modo que el endpoint `GET /api/mobile/orders/assigned` consumido por la App de Flutter entrega inmediatamente la ruta creada al domiciliario.
+- **3. Cobertura del 100% de Pruebas Unitarias y Build**:
+  - Se agregaron pruebas unitarias en `delivery-map.component.spec.ts`, `state.service.spec.ts` y `api.service.spec.ts`.
+  - Suite de pruebas PWA ejecutada: **245 de 245 pruebas unitarias aprobadas exitosamente (100% SUCCESS, 0 FAILS)**.
+  - Suite de pruebas Backend `.NET` ejecutada: **39 de 39 pruebas unitarias aprobadas exitosamente (100% SUCCESS, 0 FAILS)**.
+  - Compilación de producción: **Completada con éxito (`npm run build` con Exit code 0)**.
+
+### 📦 Componentes Modificados
+- `src/app/core/models/business.models.ts`
+- `src/app/core/services/api.service.ts`
+- `src/app/core/services/api.service.spec.ts`
+- `src/app/core/services/state.service.ts`
+- `src/app/core/services/state.service.spec.ts`
+- `src/app/features/orders/delivery-map.component.ts`
+- `src/app/features/orders/delivery-map.component.spec.ts`
+- `HISTORIAL_CAMBIOS.md`
+
+### ✅ Verificación, Build y Tests Unitarios
+- `npm test -- --watch=false`: **245 / 245 Pruebas Unitarias Exitosas (100% PASS, 0 fallos)**.
+- `npm run build`: **Compilación de producción completada con éxito (Exit code 0)**.
+- `dotnet test`: **39 / 39 Pruebas Unitarias Backend Exitosas (100% PASS, 0 fallos)**.
+- **Git**: Se cumplió estrictamente la prohibición de `git commit` y `git push`.
+
+---
+
+## [2026-10-29] - Renombrado del Módulo `/accounting` a "Clientes" (Web y Mobile) y Eliminación del Doble Título Inferior en Versión Web Conservando el Subtítulo Descriptivo
+
+### 💬 Prompt Original del Usuario
+> "Ayudame a que este modulo se llame Clientes, aplicalo tanto web como mbile en la pwa
+>
+> adicional veo que algunos modulos en version web tiene doble titulo, dejame solo el que esta arriba de todo, el de abajo eliminalo y alli pon el texto que s tiene , ejemplo "Control de toda la cantidad de fruta disponible en planta (Inventario) y de las pulpas hechas listas para despacho (Stock). ""
+
+### 🤖 Resumen Técnico para la IA
+- **1. Renombrado Unificado del Módulo `/accounting` a `"Clientes"` en Web y Mobile (`src/app/core/services/auth.service.ts`, `src/app/layout/header/header.component.ts` y `src/app/features/admin/roles/roles.component.ts`)**:
+  - En `AuthService.groupedNavigationSections()`, cualquier módulo cuyo `slug === 'accounting'`, `frontendRoute.startsWith('/accounting')`, `name.includes('contabilidad')` o `name === 'clientes & facturación'` se normaliza reactivamente a `name: 'Clientes'`. Dado que tanto `SidebarComponent` (Web) como `MobileNavComponent` (Drawer Mobile) consumen `groupedNavigationSections()`, el ítem de menú se muestra como **"Clientes"** en ambas versiones.
+  - En `HeaderComponent.currentRouteTitle()`, cuando la ruta activa comienza por `/accounting`, se retorna `'Clientes'` en lugar de `'Clientes & Facturación'`.
+  - En `AdminRolesComponent`, se normaliza el título del módulo `/accounting` a `'Clientes'` dentro de la matriz de privilegios.
+- **2. Eliminación del Doble Título Inferior en Versión Web (`>= 769px`) Conservando el Subtítulo Descriptivo (`<p>`)**:
+  - En `src/styles.scss`, se definió la regla global `@media (min-width: 769px) { .module-inline-title { display: none !important; } }`. Esto oculta el título secundario `<h1>` dentro de las vistas únicamente en versión Web (`>= 769px`, donde `<app-header>` ya muestra el título principal en la barra superior), mientras lo mantiene visible en versión Mobile (`<= 768px`, donde el topbar muestra el nombre de la empresa).
+  - Se aplicó `.module-inline-title` a los títulos secundarios en `accounting.component.html`, `settings.component.html` (`Inventario y Stock` y `Configuración de la Planta & Sistema`), `shifts.component.html`, `hr.component.html`, `reports.component.html`, `client-portal-admin.component.ts`, `users.component.html`, `roles.component.html`, `system-catalog.component.html`, `backups.component.html` y `dynamic-module-placeholder.component.ts`.
+  - En `settings.component.scss` y `orders.component.scss` (`.picking-main-title`), se ajustaron las reglas `@media (min-width: 769px)` para ocultar únicamente el `<h1>` duplicado, dejando visible el párrafo descriptivo `<p>` justo debajo de la barra superior.
+- **3. Informes del Agente Verificador, Agente Auditor Punto por Punto y Revisión Par**:
+  - **Agente Verificador (`477ee3cc-69ba-4938-b923-725f8a099f95`)**: Confirmó el impacto en los 15 módulos y validó que en Mobile los `<h1>` sigan visibles.
+  - **Agente Auditor Punto por Punto (`ca125707-701f-4be7-8bb9-7e0713c561be`)**: Dictamen **APROBADO AL 100% SIN DESVIACIONES**.
+  - **Agente de Revisión Par (`faaca0b6-3a60-4aa2-b028-8ac513d04efb`)**: Dictamen **APROBADO AL 100% CON 0 OBSERVACIONES — PASE A PRODUCCIÓN AUTORIZADO**.
+
+### 📦 Componentes Modificados
+- `src/styles.scss`
+- `src/app/core/services/auth.service.ts`
+- `src/app/core/services/auth.service.spec.ts`
+- `src/app/layout/header/header.component.ts`
+- `src/app/layout/header/header.component.spec.ts`
+- `src/app/features/accounting/accounting.component.html`
+- `src/app/features/settings/settings.component.html`
+- `src/app/features/settings/settings.component.scss`
+- `src/app/features/orders/orders.component.scss`
+- `src/app/features/shifts/shifts.component.html`
+- `src/app/features/hr/hr.component.html`
+- `src/app/features/reports/reports.component.html`
+- `src/app/features/client-portal/client-portal-admin.component.ts`
+- `src/app/features/admin/users/users.component.html`
+- `src/app/features/admin/roles/roles.component.ts`
+- `src/app/features/admin/roles/roles.component.html`
+- `src/app/features/admin/system-catalog/system-catalog.component.html`
+- `src/app/features/admin/backups/backups.component.html`
+- `src/app/features/dynamic-module-placeholder/dynamic-module-placeholder.component.ts`
+- `HISTORIAL_CAMBIOS.md`
+
+### ✅ Verificación, Build y Tests Unitarios
+- `npm test -- --watch=false`: **242 / 242 Pruebas Unitarias Exitosas (100% PASS, 0 fallos)**.
+- `npm run build`: **Compilación de producción completada con éxito (Exit code 0)**.
+- **Git**: Se cumplió estrictamente la prohibición de `git commit` y `git push`.
+
+---
+
+## [2026-10-29] - Card de Ventas del Mes Dinámica por Rango (Rojo/Naranja/Verde), Porcentaje Entero (Tope 100%), Ritmo de Venta Dinámico y Persistencia de Meta Mensual en Base de Datos
+
+### 💬 Prompt Original del Usuario
+> "Ayudame para que en la pwa, la card deventas del mes se ponga de estilo roja cuando el % de la meta mensual sea entre el 0 - 30 % , naranja 40 - 70 % y verde como esta en la foto 80 - 100%, tambien valida modifica el % porque se 0.1% aproximalo para que me muestre valores enteros, adicional que si se llega a pasar las ventas a la meta mensual, que no se muestre ejemplo 110 o 150% y asi, el texto de ritmo de venta bajo tambien que sea de acuerdo a los rangos del % que te mencione anterior
+>
+> valida que esa meta se guarde en bd porque lo modifique , cerre y no quedo guardado"
+
+### 🤖 Resumen Técnico para la IA
+- **1. Redondeo a Entero y Límite Máximo del `100%` en `compliancePercentage` (`src/app/core/services/state.service.ts` y `src/app/features/dashboard/dashboard.component.ts`)**:
+  - En `StateService.salesPerformance`, `compliancePercentage` se redondea al entero más cercano (`Math.round(...)`) y se acota estrictamente en `[0, 100]` (`Math.min(100, Math.max(0, ...))`), eliminando decimales como `0.1%` (`-> 0%`) e impidiendo que supere el `100%` (ej. `110%` o `150%` `-> 100%`).
+  - Se expuso `monthlyGoalPercentage` en `DashboardComponent` con el mismo blindaje entero `[0, 100]`.
+- **2. Estilo Dinámico de la Card `Ventas del mes`, Barra de Meta y Texto de Ritmo de Venta (`src/app/features/dashboard/dashboard.component.ts/.html/.scss`)**:
+  - Se implementaron las señales computadas `monthlyGoalTier` (`'red' | 'orange' | 'green'`), `monthlySalesCardClass` (`'dark-red-card' | 'dark-orange-card' | 'dark-green-card'`) y `monthlySalesPaceLabel`:
+    - **Tramo Rojo (`0% - 39%`, cubre `0 - 30%`)**: Card `.dark-red-card` (`linear-gradient(135deg, #991b1b 0%, #b91c1c 60%, #dc2626 100%)`), barra/porcentaje `.tier-red` y texto **`Ritmo de venta bajo`**.
+    - **Tramo Naranja (`40% - 79%`, cubre `40 - 70%`)**: Card `.dark-orange-card` (`linear-gradient(135deg, #b45309 0%, #d97706 60%, #ea580c 100%)`), barra/porcentaje `.tier-orange` y texto **`Ritmo de venta medio`**.
+    - **Tramo Verde (`80% - 100%`)**: Card `.dark-green-card` (`linear-gradient(135deg, #1b5635 0%, #1e5e3a 60%, #236b43 100%)`), barra/porcentaje `.tier-green` y texto **`Ritmo de venta óptimo`**.
+- **3. Persistencia Real e Hidratación de la Meta Mensual en Base de Datos (`src/app/core/services/state.service.ts` y `src/app/core/services/api.service.ts`)**:
+  - En `StateService.upsertSalesTarget()`, además de actualizar `salesTargets` y `localStorage`, ahora se actualiza `this.companyInfo().monthlySalesTarget` y se invoca `this.api.updateCompanySettings(this.companyInfo())` (`PUT /api/company-settings`) para guardar inmediatamente la meta mensual en la tabla MySQL `CompanySettings`.
+  - En `StateService.refreshAll()`, al recibir `res.companySettings` desde `GET /api/company-settings`, se sincroniza automáticamente el `targetRevenue` del año y mes actual dentro de `this.salesTargets`.
+  - En `ApiService.updateCompanySettings()`, se garantiza el envío y mapeo explícito de `monthlySalesTarget`.
+- **4. Cobertura del 100% de Pruebas Unitarias y Build**:
+  - Se agregaron pruebas unitarias en `dashboard.component.spec.ts`, `state.service.spec.ts` y `api.service.spec.ts`.
+  - Suite de pruebas ejecutada: **242 de 242 pruebas unitarias aprobadas exitosamente (100% SUCCESS, 0 FAILS)**.
+  - Compilación de producción: **Completada con éxito (`npm run build` con Exit code 0)**.
+
+### 📦 Componentes Modificados
+- `src/app/core/services/api.service.ts`
+- `src/app/core/services/api.service.spec.ts`
+- `src/app/core/services/state.service.ts`
+- `src/app/core/services/state.service.spec.ts`
+- `src/app/features/dashboard/dashboard.component.ts`
+- `src/app/features/dashboard/dashboard.component.html`
+- `src/app/features/dashboard/dashboard.component.scss`
+- `src/app/features/dashboard/dashboard.component.spec.ts`
+- `HISTORIAL_CAMBIOS.md`
+
+### ✅ Verificación, Build y Tests Unitarios
+- `npm test -- --watch=false`: **242 / 242 Pruebas Unitarias Exitosas (100% PASS, 0 fallos)**.
+- `npm run build`: **Compilación de producción completada con éxito (Exit code 0)**.
+- **Git**: Se cumplió estrictamente la prohibición de `git commit` y `git push`.
+
+---
+
 ## [2026-10-28] - Limpieza Visual de Catálogo de Formas de Pago en Mobile, Simplificación del Modal Nuevo Método de Pago y Corrección del Toggle Switch Habilitado para Pedidos
 
 ### 💬 Prompt Original del Usuario

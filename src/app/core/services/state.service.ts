@@ -8,6 +8,7 @@ import {
   CompanyConfig,
   CreateClientDto,
   CreatePayrollSettlementDto,
+  DispatchCourierRouteDto,
   EmployeeArea,
   EmployeeDto,
   ExpenseDto,
@@ -265,8 +266,9 @@ export class StateService {
       const targetAccumulatedProrated =
         workingDays > 0 ? Math.round((monthTargetRevenue / workingDays) * currentDay) : 0;
 
-      const compliancePercentage =
-        monthTargetRevenue > 0 ? Number(((currentMonthRevenue / monthTargetRevenue) * 100).toFixed(1)) : 0;
+      const rawCompliancePercentage =
+        monthTargetRevenue > 0 ? Math.round((currentMonthRevenue / monthTargetRevenue) * 100) : 0;
+      const compliancePercentage = Math.min(100, Math.max(0, rawCompliancePercentage));
 
       const projectedClosingRevenue =
         currentDay > 0 ? Math.round((currentMonthRevenue / currentDay) * workingDays) : monthTargetRevenue;
@@ -894,6 +896,31 @@ private loadEmployeesFromStorage(): EmployeeDto[] {
               settings.logoUrl = DEFAULT_COMPANY_CONFIG.logoUrl;
             }
             this.companyInfo.set(settings);
+            const dbMonthlyTarget = Number(settings.monthlySalesTarget ?? 0);
+            if (dbMonthlyTarget > 0) {
+              const now = new Date();
+              const currentYear = now.getFullYear();
+              const currentMonth = now.getMonth() + 1;
+              this.salesTargets.update(list => {
+                const idx = list.findIndex(t => t.year === currentYear && t.month === currentMonth);
+                if (idx >= 0) {
+                  const updated = [...list];
+                  updated[idx] = { ...updated[idx], targetRevenue: dbMonthlyTarget };
+                  return updated;
+                }
+                return [
+                  {
+                    targetId: Date.now(),
+                    year: currentYear,
+                    month: currentMonth,
+                    targetRevenue: dbMonthlyTarget,
+                    workingDays: 26,
+                    createdAt: now.toISOString()
+                  },
+                  ...list
+                ];
+              });
+            }
           }
 
           this.paymentMethods.set(res.paymentMethods || []);
@@ -1501,6 +1528,65 @@ private loadEmployeesFromStorage(): EmployeeDto[] {
   }
 
   /**
+   * Dispatches and persists an ordered courier delivery route to the database via `POST /api/orders/dispatch-route`.
+   */
+  dispatchCourierRoute(dto: DispatchCourierRouteDto): void {
+    try {
+      const orderIdSet = new Set(dto.orderIds);
+      const normalizedCourierName = (dto.courierName || '').trim().toLowerCase();
+
+      this.orders.update(list =>
+        list.map(o => {
+          if (orderIdSet.has(o.orderId)) {
+            if (o.status !== 'DISPATCHED' && o.status !== 'DELIVERED') {
+              o.items.forEach(item => {
+                const gramKey = `g${item.grammage}` as 'g140' | 'g250' | 'g500' | 'g1000';
+                this.adjustStock(item.fruitName || '', gramKey, -item.quantity);
+              });
+            }
+            const seqIndex = dto.orderIds.indexOf(o.orderId) + 1;
+            return {
+              ...o,
+              courierId: dto.courierId,
+              courierName: dto.courierName || o.courierName,
+              routeSequenceOrder: seqIndex,
+              status: o.status === 'DELIVERED' ? 'DELIVERED' : 'DISPATCHED',
+              dispatchedAtUtc: o.dispatchedAtUtc || new Date().toISOString()
+            };
+          }
+
+          const belongedToCourier =
+            (dto.courierId > 0 && o.courierId === dto.courierId) ||
+            (normalizedCourierName.length > 0 && (o.courierName || '').trim().toLowerCase() === normalizedCourierName);
+          if (belongedToCourier && o.status !== 'DELIVERED' && o.status !== 'CANCELLED') {
+            return {
+              ...o,
+              courierId: undefined,
+              courierName: undefined,
+              routeSequenceOrder: undefined,
+              status: 'BILLED'
+            };
+          }
+          return o;
+        })
+      );
+
+      this.saveAllToStorage();
+      this.api
+        .dispatchOrdersRoute?.({
+          courierId: dto.courierId,
+          courierName: dto.courierName,
+          orderIds: dto.orderIds
+        })
+        ?.subscribe({
+          error: () => {}
+        });
+    } catch {
+      return;
+    }
+  }
+
+  /**
    * Updates the picked quantity of an order item and syncs to `PATCH /api/orders/{orderId}/items/{itemId}/picked`.
    */
   updateItemPickedQuantity(orderId: number, fruitId: number, grammage: number, pickedQty: number): void {
@@ -1652,7 +1738,14 @@ private loadEmployeesFromStorage(): EmployeeDto[] {
         }
       });
 
+      this.companyInfo.update(prev => ({
+        ...prev,
+        monthlySalesTarget: dto.targetRevenue
+      }));
       this.saveAllToStorage();
+      this.api.updateCompanySettings?.(this.companyInfo())?.subscribe({
+        error: () => {}
+      });
       this.notification.success(
         'Meta Actualizada',
         `Meta fijada en $${dto.targetRevenue.toLocaleString('es-CO')}`

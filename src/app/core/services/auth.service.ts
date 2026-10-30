@@ -126,6 +126,7 @@ export class AuthService {
         }
         const normSlug = (mod.slug || '').trim().toLowerCase();
         const normName = (mod.name || '').trim().toLowerCase();
+        const normRoute = (mod.frontendRoute || '').trim().toLowerCase();
         if (normSlug === 'inventory' || normName.includes('inventario') || normName === 'planta e inventario') {
           modules.push({
             ...mod,
@@ -135,6 +136,16 @@ export class AuthService {
             icon: 'package',
             menuSection: 'Operación',
             displayOrder: 2
+          });
+        } else if (
+          normSlug === 'accounting' ||
+          normRoute.startsWith('/accounting') ||
+          normName.includes('contabilidad') ||
+          normName === 'clientes & facturación'
+        ) {
+          modules.push({
+            ...mod,
+            name: 'Clientes'
           });
         } else {
           modules.push(mod);

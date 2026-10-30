@@ -15,6 +15,7 @@ describe('DeliveryMapComponent', () => {
   let fixture: ComponentFixture<DeliveryMapComponent>;
   let createOrderSpy: jasmine.Spy;
   let updateOrderStatusSpy: jasmine.Spy;
+  let dispatchCourierRouteSpy: jasmine.Spy;
 
   const mockFruits = signal<FruitConfig[]>([
     {
@@ -66,6 +67,7 @@ describe('DeliveryMapComponent', () => {
       items: dto.items || []
     }));
     updateOrderStatusSpy = jasmine.createSpy('updateOrderStatus');
+    dispatchCourierRouteSpy = jasmine.createSpy('dispatchCourierRoute');
 
     const stateServiceMock: Partial<StateService> = {
       fruits: mockFruits,
@@ -76,6 +78,7 @@ describe('DeliveryMapComponent', () => {
       companyInfo: mockCompanyInfo,
       createOrder: createOrderSpy,
       updateOrderStatus: updateOrderStatusSpy,
+      dispatchCourierRoute: dispatchCourierRouteSpy,
       setOrderPriority: jasmine.createSpy('setOrderPriority')
     };
 
@@ -219,5 +222,84 @@ describe('DeliveryMapComponent', () => {
     expect(component.couriers().length).toBe(1);
     expect(component.couriers()[0].id).toBe('u77');
     expect(component.couriers()[0].name).toBe('Andres Repartidor');
+  });
+
+  it('should show Crear Ruta button when courier has assigned stops, open confirmation dialog, lock stop cards in light gray on confirm, and switch button to Editar', () => {
+    mockRoles.set([
+      { roleId: 9, name: 'Repartidor VIP', isCourier: true, isSystemRole: false, isActive: true }
+    ]);
+    mockUsers.set([
+      {
+        userId: 77,
+        username: 'repartidor.vip',
+        fullName: 'Andres Repartidor',
+        roleId: 9,
+        roleName: 'Repartidor VIP',
+        isActive: true,
+        companyId: 1,
+        branches: [],
+        email: 'andres@example.com'
+      }
+    ]);
+    mockOrders.set([
+      {
+        orderId: 501,
+        orderNumber: 'ORD-501',
+        clientId: 1,
+        clientName: 'Cafeteria Central',
+        clientAddress: 'Calle 85 # 15-10',
+        branchId: 1,
+        status: 'BILLED',
+        isBilled: true,
+        isPaid: false,
+        totalAmount: 42000,
+        createdAt: new Date().toISOString(),
+        orderDate: new Date().toISOString().substring(0, 10),
+        items: []
+      }
+    ]);
+
+    component.enterAllDeliveriesMode();
+    fixture.detectChanges();
+
+    component.assignCourierToStop(501, 'u77');
+    fixture.detectChanges();
+
+    const createBtn = fixture.nativeElement.querySelector('.deliveries-drawer .btn-create-courier-route') as HTMLButtonElement;
+    expect(createBtn).toBeTruthy();
+    expect(createBtn.textContent?.trim()).toBe('Crear Ruta');
+
+    createBtn.click();
+    fixture.detectChanges();
+
+    expect(component.showConfirmCreateRouteModal()).toBeTrue();
+    const confirmModal = fixture.nativeElement.querySelector('.confirm-route-modal') as HTMLElement;
+    expect(confirmModal).toBeTruthy();
+
+    const confirmYesBtn = confirmModal.querySelector('.btn-confirm-create-route') as HTMLButtonElement;
+    confirmYesBtn.click();
+    fixture.detectChanges();
+
+    expect(component.showConfirmCreateRouteModal()).toBeFalse();
+    expect(dispatchCourierRouteSpy).toHaveBeenCalledWith({
+      courierId: 77,
+      courierName: 'Andres Repartidor',
+      orderIds: [501]
+    });
+
+    const stopCard = fixture.nativeElement.querySelector('.drawer-stop-item') as HTMLElement;
+    expect(stopCard.classList.contains('is-route-locked')).toBeTrue();
+    expect(stopCard.getAttribute('draggable')).toBe('false');
+
+    const editBtn = fixture.nativeElement.querySelector('.deliveries-drawer .btn-edit-courier-route') as HTMLButtonElement;
+    expect(editBtn).toBeTruthy();
+    expect(editBtn.textContent?.trim()).toBe('Editar');
+
+    editBtn.click();
+    fixture.detectChanges();
+
+    expect(stopCard.classList.contains('is-route-locked')).toBeFalse();
+    const restoredCreateBtn = fixture.nativeElement.querySelector('.deliveries-drawer .btn-create-courier-route') as HTMLButtonElement;
+    expect(restoredCreateBtn).toBeTruthy();
   });
 });

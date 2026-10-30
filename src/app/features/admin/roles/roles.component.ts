@@ -235,7 +235,12 @@ export class AdminRolesComponent implements OnInit {
             );
             const mappedModules: PermissionModule[] = visibleModules.map((m: SystemModuleCatalogDto) => ({
               moduleId: m.id,
-              name: m.name,
+              name:
+                (m.slug || '').trim().toLowerCase() === 'accounting' ||
+                (m.frontendRoute || '').trim().toLowerCase().startsWith('/accounting') ||
+                (m.name || '').trim().toLowerCase().includes('contabilidad')
+                  ? 'Clientes'
+                  : m.name,
               slug: m.slug,
               menuSection: m.menuSection,
               frontendRoute: m.frontendRoute,

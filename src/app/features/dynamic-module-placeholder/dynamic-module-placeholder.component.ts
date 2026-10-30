@@ -23,7 +23,7 @@ import { NavigationModuleDto } from '../../core/models/auth.models';
               <span class="badge badge-info">Orden #{{ mod.displayOrder }}</span>
               <span class="badge badge-warning">Módulo Registrado en Sistema (Pendiente de Implementación de Vista)</span>
             </div>
-            <h1 style="font-size: 1.85rem; font-weight: 800; margin-bottom: 6px; color: var(--text-main);">
+            <h1 class="module-inline-title" style="font-size: 1.85rem; font-weight: 800; margin-bottom: 6px; color: var(--text-main);">
               {{ mod.name }}
             </h1>
             <p style="color: var(--text-muted); font-size: 0.92rem; margin: 0;">

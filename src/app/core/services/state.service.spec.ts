@@ -52,6 +52,7 @@ describe('StateService', () => {
       'createOrder',
       'updateOrder',
       'updateOrderStatus',
+      'dispatchOrdersRoute',
       'updateOrderItemPicking',
       'deleteOrder',
       'createExpense',
@@ -147,6 +148,7 @@ describe('StateService', () => {
     apiSpy.createOrder.and.returnValue(of({} as OrderDto));
     apiSpy.updateOrder.and.returnValue(of({} as OrderDto));
     apiSpy.updateOrderStatus.and.returnValue(of({} as OrderDto));
+    apiSpy.dispatchOrdersRoute.and.returnValue(of([] as OrderDto[]));
     apiSpy.deleteOrder.and.returnValue(of({}));
     apiSpy.createExpense.and.returnValue(of({} as ExpenseDto));
     apiSpy.createClient.and.returnValue(of({} as ClientDto));
@@ -393,5 +395,99 @@ describe('StateService', () => {
     expect(service.fruits().length).toBe(0);
     expect(service.totalFreshStockKg()).toBe(0);
     expect(apiSpy.deleteFruit).toHaveBeenCalled();
+  });
+
+  it('should persist monthlySalesTarget to database via updateCompanySettings, round compliancePercentage to integer, and cap at 100', () => {
+    apiSpy.updateCompanySettings.and.returnValue(
+      of({ ...service.companyInfo(), monthlySalesTarget: 30000000 })
+    );
+
+    const now = new Date();
+    service.upsertSalesTarget({
+      year: now.getFullYear(),
+      month: now.getMonth() + 1,
+      targetRevenue: 30000000
+    });
+
+    expect(service.companyInfo().monthlySalesTarget).toBe(30000000);
+    expect(apiSpy.updateCompanySettings).toHaveBeenCalledWith(
+      jasmine.objectContaining({
+        monthlySalesTarget: 30000000
+      })
+    );
+
+    service.orders.set([
+      {
+        orderId: 901,
+        orderNumber: 'ORD-901',
+        clientId: 1,
+        clientName: 'Test Client',
+        branchId: 1,
+        status: 'DELIVERED',
+        isPaid: true,
+        paymentMethodName: 'Efectivo',
+        totalAmount: 20000,
+        createdAt: now.toISOString(),
+        orderDate: now.toISOString().substring(0, 10),
+        items: []
+      }
+    ]);
+
+    expect(service.salesPerformance().compliancePercentage).toBe(0);
+
+    service.orders.set([
+      {
+        orderId: 902,
+        orderNumber: 'ORD-902',
+        clientId: 1,
+        clientName: 'Test Client',
+        branchId: 1,
+        status: 'DELIVERED',
+        isPaid: true,
+        paymentMethodName: 'Efectivo',
+        totalAmount: 45000000,
+        createdAt: now.toISOString(),
+        orderDate: now.toISOString().substring(0, 10),
+        items: []
+      }
+    ]);
+
+    expect(service.salesPerformance().compliancePercentage).toBe(100);
+  });
+
+  it('should dispatch courier route, update order status and sequence, and call api.dispatchOrdersRoute', () => {
+    service.orders.set([
+      {
+        orderId: 701,
+        orderNumber: 'ORD-701',
+        clientId: 1,
+        clientName: 'Cliente Ruta 1',
+        branchId: 1,
+        status: 'BILLED',
+        isBilled: true,
+        isPaid: false,
+        totalAmount: 30000,
+        createdAt: new Date().toISOString(),
+        orderDate: new Date().toISOString().substring(0, 10),
+        items: []
+      }
+    ]);
+
+    service.dispatchCourierRoute({
+      courierId: 15,
+      courierName: 'Carlos Mensajero',
+      orderIds: [701]
+    });
+
+    const dispatchedOrder = service.orders()[0];
+    expect(dispatchedOrder.status).toBe('DISPATCHED');
+    expect(dispatchedOrder.courierId).toBe(15);
+    expect(dispatchedOrder.courierName).toBe('Carlos Mensajero');
+    expect(dispatchedOrder.routeSequenceOrder).toBe(1);
+    expect(apiSpy.dispatchOrdersRoute).toHaveBeenCalledWith({
+      courierId: 15,
+      courierName: 'Carlos Mensajero',
+      orderIds: [701]
+    });
   });
 });

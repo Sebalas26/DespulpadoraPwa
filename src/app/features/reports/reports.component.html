@@ -26,18 +26,18 @@
     </div>
   }
 
-    <div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 16px;">
-    <div>
-      <h1 style="font-size: 1.85rem; font-weight: 800; margin-bottom: 4px; color: var(--text-main);">
+  <div class="reports-top-shell no-print">
+    <div class="reports-header-title-block">
+      <h1 class="module-inline-title" style="font-size: 1.85rem; font-weight: 800; margin-bottom: 4px; color: var(--text-main);">
         Centro de Reportes
       </h1>
-      <p style="color: var(--text-muted); font-size: 0.92rem;">
+      <p style="color: var(--text-muted); font-size: 0.92rem; margin: 0;">
         Consolidado analítico de ventas, auditoría de mermas, inventario, gastos operativos y nómina quincenal.
       </p>
     </div>
 
-        <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 12px;">
-            <div class="period-filter-container no-print">
+    <div class="reports-toolbar-actions">
+      <div class="period-filter-container no-print">
         <span class="period-label">Período:</span>
 
         <div class="period-Segmented-group">
@@ -87,7 +87,7 @@
           </button>
         </div>
 
-                <div class="selected-date-capsule">
+        <div class="selected-date-capsule">
           <span class="capsule-cal-icon">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
               <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
@@ -171,7 +171,7 @@
 
       <button
         type="button"
-        class="btn btn-secondary no-print"
+        class="btn btn-secondary reports-print-btn no-mobile no-print"
         style="gap: 8px;"
         (click)="printReport()"
         title="Imprimir informe en PDF o papel"
@@ -186,7 +186,7 @@
 
       <button
         type="button"
-        class="btn btn-primary no-print"
+        class="btn btn-primary reports-export-csv-btn no-print"
         style="gap: 8px;"
         (click)="exportCurrentReportCsv()"
         title="Descargar reporte activo en formato Excel CSV"
@@ -199,109 +199,172 @@
         <span>Exportar a Excel (CSV)</span>
       </button>
     </div>
-  </div>
 
     <div class="reports-nav-tabs no-print">
-    <button
-      type="button"
-      class="report-tab-btn"
-      [class.active]="activeTab() === 'sales'"
-      (click)="setTab('sales')"
-    >
-      <span>Ventas & Facturación</span>
-      <span class="report-tab-badge">{{ filteredOrders().length }}</span>
-    </button>
+      <button
+        type="button"
+        class="report-tab-btn"
+        [class.active]="activeTab() === 'sales'"
+        (click)="setTab('sales')"
+      >
+        <span>Ventas & Facturación</span>
+        <span class="report-tab-badge">{{ filteredOrders().length }}</span>
+      </button>
 
-    <button
-      type="button"
-      class="report-tab-btn"
-      [class.active]="activeTab() === 'loss'"
-      (click)="setTab('loss')"
-    >
-      <span>Auditoría de Mermas (Ideal vs Real)</span>
-      <span class="report-tab-badge accent">{{ idealVsRealAudit().length }} frutas</span>
-    </button>
+      <button
+        type="button"
+        class="report-tab-btn"
+        [class.active]="activeTab() === 'loss'"
+        (click)="setTab('loss')"
+      >
+        <span>Auditoría de Mermas (Ideal vs Real)</span>
+        <span class="report-tab-badge accent">{{ idealVsRealAudit().length }} frutas</span>
+      </button>
 
-    <button
-      type="button"
-      class="report-tab-btn"
-      [class.active]="activeTab() === 'stock'"
-      (click)="setTab('stock')"
-    >
-      <span>Inventario & Valoración</span>
-      <span class="report-tab-badge">{{ cavaTotalStockKg() | number:'1.0-0' }} Kg</span>
-    </button>
+      <button
+        type="button"
+        class="report-tab-btn"
+        [class.active]="activeTab() === 'stock'"
+        (click)="setTab('stock')"
+      >
+        <span>Inventario & Valoración</span>
+        <span class="report-tab-badge">{{ cavaTotalStockKg() | number:'1.0-0' }} Kg</span>
+      </button>
 
-    <button
-      type="button"
-      class="report-tab-btn"
-      [class.active]="activeTab() === 'expenses'"
-      (click)="setTab('expenses')"
-    >
-      <span>Gastos & Logística</span>
-      <span class="report-tab-badge">{{ filteredExpenses().length }}</span>
-    </button>
+      <button
+        type="button"
+        class="report-tab-btn"
+        [class.active]="activeTab() === 'expenses'"
+        (click)="setTab('expenses')"
+      >
+        <span>Gastos & Logística</span>
+        <span class="report-tab-badge">{{ filteredExpenses().length }}</span>
+      </button>
 
-    <button
-      type="button"
-      class="report-tab-btn"
-      [class.active]="activeTab() === 'payroll'"
-      (click)="setTab('payroll')"
-    >
-      <span>Nómina Quincenal & RRHH</span>
-      <span class="report-tab-badge">{{ payrollSettlements().length }} colabs</span>
-    </button>
+      <button
+        type="button"
+        class="report-tab-btn"
+        [class.active]="activeTab() === 'payroll'"
+        (click)="setTab('payroll')"
+      >
+        <span>Nómina Quincenal & RRHH</span>
+        <span class="report-tab-badge">{{ payrollSettlements().length }} colabs</span>
+      </button>
+    </div>
   </div>
 
-        @if (activeTab() === 'sales') {
+  @if (activeTab() === 'sales') {
     <div style="display: flex; flex-direction: column; gap: 20px;">
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 16px;">
-        <div class="card hover-lift">
-          <div class="card-body">
-            <div style="font-size: 0.78rem; text-transform: uppercase; color: var(--text-muted); font-weight: 700;">Total Facturado</div>
-            <div style="font-size: 1.85rem; font-weight: 800; color: #1e5e3a; margin-top: 4px;">
-              {{ formatCOP(totalSalesRevenue()) }}
-            </div>
-            <div style="font-size: 0.75rem; color: var(--text-dim); margin-top: 2px;">
-              {{ filteredOrders().length }} pedidos procesados · {{ activeFilterSummaryLabel() }}
+      <div class="quick-kpis-grid reports-kpis-grid">
+        <div class="quick-kpi-card report-kpi-card">
+          <div class="kpi-card-top-row">
+            <div class="kpi-icon-box icon-green">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="2" y="6" width="20" height="12" rx="2"></rect>
+                <circle cx="12" cy="12" r="3"></circle>
+                <path d="M6 12h.01M18 12h.01"></path>
+              </svg>
             </div>
           </div>
+          <span class="kpi-label">Total Facturado</span>
+          <div class="kpi-value-row">
+            <span class="kpi-big-value">{{ formatCOP(totalSalesRevenue()) }}</span>
+            <svg class="kpi-sparkline" viewBox="0 0 68 34" fill="none" aria-hidden="true">
+              <defs>
+                <linearGradient id="repSalesGreen1" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stop-color="#22c55e" stop-opacity="0.32" />
+                  <stop offset="100%" stop-color="#22c55e" stop-opacity="0.0" />
+                </linearGradient>
+              </defs>
+              <path d="M2 10 C 22 14, 42 22, 64 26 L 64 34 L 2 34 Z" fill="url(#repSalesGreen1)" />
+              <path d="M2 10 C 22 14, 42 22, 64 26" stroke="#22c55e" stroke-width="1.8" stroke-linecap="round" />
+              <circle cx="64" cy="26" r="2.6" fill="#15803d" />
+            </svg>
+          </div>
+          <span class="kpi-subtext">{{ filteredOrders().length }} pedidos procesados · {{ activeFilterSummaryLabel() }}</span>
         </div>
 
-        <div class="card hover-lift">
-          <div class="card-body">
-            <div style="font-size: 0.78rem; text-transform: uppercase; color: var(--text-muted); font-weight: 700;">Utilidad Bruta Acumulada</div>
-            <div style="font-size: 1.85rem; font-weight: 800; color: #06b6d4; margin-top: 4px;">
-              {{ formatCOP(filteredGrossProfit()) }}
-            </div>
-            <div style="font-size: 0.75rem; color: var(--text-dim); margin-top: 2px;">
-              Margen bruto: {{ filteredGrossMarginPct().toFixed(1) }}%
+        <div class="quick-kpi-card report-kpi-card">
+          <div class="kpi-card-top-row">
+            <div class="kpi-icon-box icon-blue">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline>
+                <polyline points="17 6 23 6 23 12"></polyline>
+              </svg>
             </div>
           </div>
+          <span class="kpi-label">Utilidad Bruta Acumulada</span>
+          <div class="kpi-value-row">
+            <span class="kpi-big-value">{{ formatCOP(filteredGrossProfit()) }}</span>
+            <svg class="kpi-sparkline" viewBox="0 0 68 34" fill="none" aria-hidden="true">
+              <defs>
+                <linearGradient id="repSalesBlue2" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stop-color="#0ea5e9" stop-opacity="0.3" />
+                  <stop offset="100%" stop-color="#0ea5e9" stop-opacity="0.0" />
+                </linearGradient>
+              </defs>
+              <path d="M2 12 C 22 16, 42 21, 64 25 L 64 34 L 2 34 Z" fill="url(#repSalesBlue2)" />
+              <path d="M2 12 C 22 16, 42 21, 64 25" stroke="#0284c7" stroke-width="1.8" stroke-linecap="round" />
+              <circle cx="64" cy="25" r="2.6" fill="#0369a1" />
+            </svg>
+          </div>
+          <span class="kpi-subtext">Margen bruto: {{ filteredGrossMarginPct().toFixed(1) }}%</span>
         </div>
 
-        <div class="card hover-lift">
-          <div class="card-body">
-            <div style="font-size: 0.78rem; text-transform: uppercase; color: var(--text-muted); font-weight: 700;">Cumplimiento Meta Mensual</div>
-            <div style="font-size: 1.85rem; font-weight: 800; color: #f59e0b; margin-top: 4px;">
-              {{ filteredCompliancePct().toFixed(1) }}%
-            </div>
-            <div style="font-size: 0.75rem; color: var(--text-dim); margin-top: 2px;">
-              Meta: {{ formatCOP(stateService.salesPerformance().monthTargetRevenue) }}
+        <div class="quick-kpi-card report-kpi-card">
+          <div class="kpi-card-top-row">
+            <div class="kpi-icon-box icon-amber">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10"></circle>
+                <circle cx="12" cy="12" r="6"></circle>
+                <circle cx="12" cy="12" r="2"></circle>
+              </svg>
             </div>
           </div>
+          <span class="kpi-label">Cumplimiento Meta Mensual</span>
+          <div class="kpi-value-row">
+            <span class="kpi-big-value">{{ filteredCompliancePct().toFixed(1) }}%</span>
+            <svg class="kpi-sparkline" viewBox="0 0 68 34" fill="none" aria-hidden="true">
+              <defs>
+                <linearGradient id="repSalesAmber3" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stop-color="#f59e0b" stop-opacity="0.28" />
+                  <stop offset="100%" stop-color="#f59e0b" stop-opacity="0.0" />
+                </linearGradient>
+              </defs>
+              <path d="M2 11 C 22 15, 42 22, 64 26 L 64 34 L 2 34 Z" fill="url(#repSalesAmber3)" />
+              <path d="M2 11 C 22 15, 42 22, 64 26" stroke="#d97706" stroke-width="1.8" stroke-linecap="round" />
+              <circle cx="64" cy="26" r="2.6" fill="#b45309" />
+            </svg>
+          </div>
+          <span class="kpi-subtext">Meta: {{ formatCOP(stateService.salesPerformance().monthTargetRevenue) }}</span>
         </div>
 
-        <div class="card hover-lift">
-          <div class="card-body">
-            <div style="font-size: 0.78rem; text-transform: uppercase; color: var(--text-muted); font-weight: 700;">Unidades & Pedido Promedio</div>
-            <div style="font-size: 1.85rem; font-weight: 800; color: #8b5cf6; margin-top: 4px;">
-              {{ formatNum(totalUnitsSold()) }} unds
-            </div>
-            <div style="font-size: 0.75rem; color: var(--text-dim); margin-top: 2px;">
-              Pedido Prom: {{ formatCOP(averageTicket()) }}
+        <div class="quick-kpi-card report-kpi-card">
+          <div class="kpi-card-top-row">
+            <div class="kpi-icon-box icon-purple">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"></path>
+                <path d="M3 6h18"></path>
+                <path d="M16 10a4 4 0 0 1-8 0"></path>
+              </svg>
             </div>
           </div>
+          <span class="kpi-label">Unidades & Pedido Promedio</span>
+          <div class="kpi-value-row">
+            <span class="kpi-big-value">{{ formatNum(totalUnitsSold()) }} unds</span>
+            <svg class="kpi-sparkline" viewBox="0 0 68 34" fill="none" aria-hidden="true">
+              <defs>
+                <linearGradient id="repSalesPurple4" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stop-color="#8b5cf6" stop-opacity="0.28" />
+                  <stop offset="100%" stop-color="#8b5cf6" stop-opacity="0.0" />
+                </linearGradient>
+              </defs>
+              <path d="M2 11 C 22 15, 42 22, 64 26 L 64 34 L 2 34 Z" fill="url(#repSalesPurple4)" />
+              <path d="M2 11 C 22 15, 42 22, 64 26" stroke="#7c3aed" stroke-width="1.8" stroke-linecap="round" />
+              <circle cx="64" cy="26" r="2.6" fill="#6d28d9" />
+            </svg>
+          </div>
+          <span class="kpi-subtext">Pedido Prom: {{ formatCOP(averageTicket()) }}</span>
         </div>
       </div>
 
@@ -449,55 +512,117 @@
     </div>
   }
 
-        @if (activeTab() === 'loss') {
+  @if (activeTab() === 'loss') {
     <div style="display: flex; flex-direction: column; gap: 20px;">
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 16px;">
-        <div class="card hover-lift">
-          <div class="card-body">
-            <div style="font-size: 0.78rem; text-transform: uppercase; color: var(--text-muted); font-weight: 700;">Pulpa Producida Total</div>
-            <div style="font-size: 1.85rem; font-weight: 800; color: #1e5e3a; margin-top: 4px;">
-              {{ formatNum(lossTotalPulpKg()) }} Kg
-            </div>
-            <div style="font-size: 0.75rem; color: var(--text-dim); margin-top: 2px;">
-              Procesado en planta a través de lotes
+      <div class="quick-kpis-grid reports-kpis-grid">
+        <div class="quick-kpi-card report-kpi-card">
+          <div class="kpi-card-top-row">
+            <div class="kpi-icon-box icon-green">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z"></path>
+                <path d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12"></path>
+              </svg>
             </div>
           </div>
+          <span class="kpi-label">Pulpa Producida Total</span>
+          <div class="kpi-value-row">
+            <span class="kpi-big-value">{{ formatNum(lossTotalPulpKg()) }} Kg</span>
+            <svg class="kpi-sparkline" viewBox="0 0 68 34" fill="none" aria-hidden="true">
+              <defs>
+                <linearGradient id="repLossGreen1" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stop-color="#22c55e" stop-opacity="0.32" />
+                  <stop offset="100%" stop-color="#22c55e" stop-opacity="0.0" />
+                </linearGradient>
+              </defs>
+              <path d="M2 10 C 22 14, 42 22, 64 26 L 64 34 L 2 34 Z" fill="url(#repLossGreen1)" />
+              <path d="M2 10 C 22 14, 42 22, 64 26" stroke="#22c55e" stroke-width="1.8" stroke-linecap="round" />
+              <circle cx="64" cy="26" r="2.6" fill="#15803d" />
+            </svg>
+          </div>
+          <span class="kpi-subtext">Procesado en planta a través de lotes</span>
         </div>
 
-        <div class="card hover-lift">
-          <div class="card-body">
-            <div style="font-size: 0.78rem; text-transform: uppercase; color: var(--text-muted); font-weight: 700;">Venta Ideal Teórica</div>
-            <div style="font-size: 1.85rem; font-weight: 800; color: #0284c7; margin-top: 4px;">
-              {{ formatCOP(lossTotalIdealRevenue()) }}
-            </div>
-            <div style="font-size: 0.75rem; color: var(--text-dim); margin-top: 2px;">
-              Valoración al 100% de producto terminado
+        <div class="quick-kpi-card report-kpi-card">
+          <div class="kpi-card-top-row">
+            <div class="kpi-icon-box icon-blue">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline>
+                <polyline points="17 6 23 6 23 12"></polyline>
+              </svg>
             </div>
           </div>
+          <span class="kpi-label">Venta Ideal Teórica</span>
+          <div class="kpi-value-row">
+            <span class="kpi-big-value">{{ formatCOP(lossTotalIdealRevenue()) }}</span>
+            <svg class="kpi-sparkline" viewBox="0 0 68 34" fill="none" aria-hidden="true">
+              <defs>
+                <linearGradient id="repLossBlue2" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stop-color="#0ea5e9" stop-opacity="0.3" />
+                  <stop offset="100%" stop-color="#0ea5e9" stop-opacity="0.0" />
+                </linearGradient>
+              </defs>
+              <path d="M2 12 C 22 16, 42 21, 64 25 L 64 34 L 2 34 Z" fill="url(#repLossBlue2)" />
+              <path d="M2 12 C 22 16, 42 21, 64 25" stroke="#0284c7" stroke-width="1.8" stroke-linecap="round" />
+              <circle cx="64" cy="25" r="2.6" fill="#0369a1" />
+            </svg>
+          </div>
+          <span class="kpi-subtext">Valoración al 100% de producto terminado</span>
         </div>
 
-        <div class="card hover-lift">
-          <div class="card-body">
-            <div style="font-size: 0.78rem; text-transform: uppercase; color: var(--text-muted); font-weight: 700;">Venta Real Facturada</div>
-            <div style="font-size: 1.85rem; font-weight: 800; color: #1e5e3a; margin-top: 4px;">
-              {{ formatCOP(lossTotalRealRevenue()) }}
-            </div>
-            <div style="font-size: 0.75rem; color: var(--text-dim); margin-top: 2px;">
-              Ingresos efectivos registrados en despachos
+        <div class="quick-kpi-card report-kpi-card">
+          <div class="kpi-card-top-row">
+            <div class="kpi-icon-box icon-green">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="2" y="6" width="20" height="12" rx="2"></rect>
+                <circle cx="12" cy="12" r="3"></circle>
+                <path d="M6 12h.01M18 12h.01"></path>
+              </svg>
             </div>
           </div>
+          <span class="kpi-label">Venta Real Facturada</span>
+          <div class="kpi-value-row">
+            <span class="kpi-big-value">{{ formatCOP(lossTotalRealRevenue()) }}</span>
+            <svg class="kpi-sparkline" viewBox="0 0 68 34" fill="none" aria-hidden="true">
+              <defs>
+                <linearGradient id="repLossGreen3" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stop-color="#22c55e" stop-opacity="0.32" />
+                  <stop offset="100%" stop-color="#22c55e" stop-opacity="0.0" />
+                </linearGradient>
+              </defs>
+              <path d="M2 10 C 22 14, 42 22, 64 26 L 64 34 L 2 34 Z" fill="url(#repLossGreen3)" />
+              <path d="M2 10 C 22 14, 42 22, 64 26" stroke="#22c55e" stroke-width="1.8" stroke-linecap="round" />
+              <circle cx="64" cy="26" r="2.6" fill="#15803d" />
+            </svg>
+          </div>
+          <span class="kpi-subtext">Ingresos efectivos registrados en despachos</span>
         </div>
 
-        <div class="card hover-lift">
-          <div class="card-body">
-            <div style="font-size: 0.78rem; text-transform: uppercase; color: var(--text-muted); font-weight: 700;">Brecha de Merma / Fuga</div>
-            <div style="font-size: 1.85rem; font-weight: 800; color: #dc2626; margin-top: 4px;">
-              {{ formatCOP(lossTotalGapRevenue()) }}
-            </div>
-            <div style="font-size: 0.75rem; color: #dc2626; font-weight: 700; margin-top: 2px;">
-              Merma global estimada: {{ lossGlobalPercentage() }}%
+        <div class="quick-kpi-card report-kpi-card">
+          <div class="kpi-card-top-row">
+            <div class="kpi-icon-box icon-red">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"></path>
+                <line x1="12" y1="9" x2="12" y2="13"></line>
+                <line x1="12" y1="17" x2="12.01" y2="17"></line>
+              </svg>
             </div>
           </div>
+          <span class="kpi-label">Brecha de Merma / Fuga</span>
+          <div class="kpi-value-row">
+            <span class="kpi-big-value">{{ formatCOP(lossTotalGapRevenue()) }}</span>
+            <svg class="kpi-sparkline" viewBox="0 0 68 34" fill="none" aria-hidden="true">
+              <defs>
+                <linearGradient id="repLossRed4" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stop-color="#ef4444" stop-opacity="0.28" />
+                  <stop offset="100%" stop-color="#ef4444" stop-opacity="0.0" />
+                </linearGradient>
+              </defs>
+              <path d="M2 11 C 22 15, 42 22, 64 26 L 64 34 L 2 34 Z" fill="url(#repLossRed4)" />
+              <path d="M2 11 C 22 15, 42 22, 64 26" stroke="#dc2626" stroke-width="1.8" stroke-linecap="round" />
+              <circle cx="64" cy="26" r="2.6" fill="#b91c1c" />
+            </svg>
+          </div>
+          <span class="kpi-subtext kpi-subtext-danger">Merma global estimada: {{ lossGlobalPercentage() }}%</span>
         </div>
       </div>
 
@@ -605,55 +730,118 @@
     </div>
   }
 
-        @if (activeTab() === 'stock') {
+  @if (activeTab() === 'stock') {
     <div style="display: flex; flex-direction: column; gap: 20px;">
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 16px;">
-        <div class="card hover-lift">
-          <div class="card-body">
-            <div style="font-size: 0.78rem; text-transform: uppercase; color: var(--text-muted); font-weight: 700;">Pulpa Congelada en Inventario</div>
-            <div style="font-size: 1.85rem; font-weight: 800; color: #0284c7; margin-top: 4px;">
-              {{ formatNum(cavaTotalStockKg()) }} Kg
-            </div>
-            <div style="font-size: 0.75rem; color: var(--text-dim); margin-top: 2px;">
-              Producto terminado a -18°C listo para despacho
+      <div class="quick-kpis-grid reports-kpis-grid">
+        <div class="quick-kpi-card report-kpi-card">
+          <div class="kpi-card-top-row">
+            <div class="kpi-icon-box icon-blue">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
+                <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
+                <line x1="12" y1="22.08" x2="12" y2="12"></line>
+              </svg>
             </div>
           </div>
+          <span class="kpi-label">Pulpa Congelada en Inventario</span>
+          <div class="kpi-value-row">
+            <span class="kpi-big-value">{{ formatNum(cavaTotalStockKg()) }} Kg</span>
+            <svg class="kpi-sparkline" viewBox="0 0 68 34" fill="none" aria-hidden="true">
+              <defs>
+                <linearGradient id="repStockBlue1" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stop-color="#0ea5e9" stop-opacity="0.3" />
+                  <stop offset="100%" stop-color="#0ea5e9" stop-opacity="0.0" />
+                </linearGradient>
+              </defs>
+              <path d="M2 12 C 22 16, 42 21, 64 25 L 64 34 L 2 34 Z" fill="url(#repStockBlue1)" />
+              <path d="M2 12 C 22 16, 42 21, 64 25" stroke="#0284c7" stroke-width="1.8" stroke-linecap="round" />
+              <circle cx="64" cy="25" r="2.6" fill="#0369a1" />
+            </svg>
+          </div>
+          <span class="kpi-subtext">Producto terminado a -18°C listo para despacho</span>
         </div>
 
-        <div class="card hover-lift">
-          <div class="card-body">
-            <div style="font-size: 0.78rem; text-transform: uppercase; color: var(--text-muted); font-weight: 700;">Fruta Fresca en Bodega</div>
-            <div style="font-size: 1.85rem; font-weight: 800; color: #1e5e3a; margin-top: 4px;">
-              {{ formatNum(cavaFreshStockKg()) }} Kg
-            </div>
-            <div style="font-size: 0.75rem; color: var(--text-dim); margin-top: 2px;">
-              Materia prima disponible para proceso
+        <div class="quick-kpi-card report-kpi-card">
+          <div class="kpi-card-top-row">
+            <div class="kpi-icon-box icon-green">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z"></path>
+                <path d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12"></path>
+              </svg>
             </div>
           </div>
+          <span class="kpi-label">Fruta Fresca en Bodega</span>
+          <div class="kpi-value-row">
+            <span class="kpi-big-value">{{ formatNum(cavaFreshStockKg()) }} Kg</span>
+            <svg class="kpi-sparkline" viewBox="0 0 68 34" fill="none" aria-hidden="true">
+              <defs>
+                <linearGradient id="repStockGreen2" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stop-color="#22c55e" stop-opacity="0.32" />
+                  <stop offset="100%" stop-color="#22c55e" stop-opacity="0.0" />
+                </linearGradient>
+              </defs>
+              <path d="M2 10 C 22 14, 42 22, 64 26 L 64 34 L 2 34 Z" fill="url(#repStockGreen2)" />
+              <path d="M2 10 C 22 14, 42 22, 64 26" stroke="#22c55e" stroke-width="1.8" stroke-linecap="round" />
+              <circle cx="64" cy="26" r="2.6" fill="#15803d" />
+            </svg>
+          </div>
+          <span class="kpi-subtext">Materia prima disponible para proceso</span>
         </div>
 
-        <div class="card hover-lift">
-          <div class="card-body">
-            <div style="font-size: 0.78rem; text-transform: uppercase; color: var(--text-muted); font-weight: 700;">Valorización Comercial de Inventario</div>
-            <div style="font-size: 1.85rem; font-weight: 800; color: #1e5e3a; margin-top: 4px;">
-              {{ formatCOP(cavaCommercialValue()) }}
-            </div>
-            <div style="font-size: 0.75rem; color: var(--text-dim); margin-top: 2px;">
-              A precio de venta promedio COP
+        <div class="quick-kpi-card report-kpi-card">
+          <div class="kpi-card-top-row">
+            <div class="kpi-icon-box icon-green">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="2" y="6" width="20" height="12" rx="2"></rect>
+                <circle cx="12" cy="12" r="3"></circle>
+                <path d="M6 12h.01M18 12h.01"></path>
+              </svg>
             </div>
           </div>
+          <span class="kpi-label">Valorización Comercial de Inventario</span>
+          <div class="kpi-value-row">
+            <span class="kpi-big-value">{{ formatCOP(cavaCommercialValue()) }}</span>
+            <svg class="kpi-sparkline" viewBox="0 0 68 34" fill="none" aria-hidden="true">
+              <defs>
+                <linearGradient id="repStockGreen3" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stop-color="#22c55e" stop-opacity="0.32" />
+                  <stop offset="100%" stop-color="#22c55e" stop-opacity="0.0" />
+                </linearGradient>
+              </defs>
+              <path d="M2 10 C 22 14, 42 22, 64 26 L 64 34 L 2 34 Z" fill="url(#repStockGreen3)" />
+              <path d="M2 10 C 22 14, 42 22, 64 26" stroke="#22c55e" stroke-width="1.8" stroke-linecap="round" />
+              <circle cx="64" cy="26" r="2.6" fill="#15803d" />
+            </svg>
+          </div>
+          <span class="kpi-subtext">A precio de venta promedio COP</span>
         </div>
 
-        <div class="card hover-lift">
-          <div class="card-body">
-            <div style="font-size: 0.78rem; text-transform: uppercase; color: var(--text-muted); font-weight: 700;">Costo Estimado & Alertas</div>
-            <div style="font-size: 1.85rem; font-weight: 800; color: #f59e0b; margin-top: 4px;">
-              {{ formatCOP(cavaEstimatedCost()) }}
-            </div>
-            <div style="font-size: 0.75rem; color: #dc2626; font-weight: 700; margin-top: 2px;">
-              {{ cavaLowStockCount() }} frutas bajo stock mínimo
+        <div class="quick-kpi-card report-kpi-card">
+          <div class="kpi-card-top-row">
+            <div class="kpi-icon-box icon-amber">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"></path>
+                <line x1="12" y1="9" x2="12" y2="13"></line>
+                <line x1="12" y1="17" x2="12.01" y2="17"></line>
+              </svg>
             </div>
           </div>
+          <span class="kpi-label">Costo Estimado & Alertas</span>
+          <div class="kpi-value-row">
+            <span class="kpi-big-value">{{ formatCOP(cavaEstimatedCost()) }}</span>
+            <svg class="kpi-sparkline" viewBox="0 0 68 34" fill="none" aria-hidden="true">
+              <defs>
+                <linearGradient id="repStockAmber4" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stop-color="#f59e0b" stop-opacity="0.28" />
+                  <stop offset="100%" stop-color="#f59e0b" stop-opacity="0.0" />
+                </linearGradient>
+              </defs>
+              <path d="M2 11 C 22 15, 42 22, 64 26 L 64 34 L 2 34 Z" fill="url(#repStockAmber4)" />
+              <path d="M2 11 C 22 15, 42 22, 64 26" stroke="#d97706" stroke-width="1.8" stroke-linecap="round" />
+              <circle cx="64" cy="26" r="2.6" fill="#b45309" />
+            </svg>
+          </div>
+          <span class="kpi-subtext kpi-subtext-danger">{{ cavaLowStockCount() }} frutas bajo stock mínimo</span>
         </div>
       </div>
 
@@ -741,55 +929,119 @@
     </div>
   }
 
-        @if (activeTab() === 'expenses') {
+  @if (activeTab() === 'expenses') {
     <div style="display: flex; flex-direction: column; gap: 20px;">
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 16px;">
-        <div class="card hover-lift">
-          <div class="card-body">
-            <div style="font-size: 0.78rem; text-transform: uppercase; color: var(--text-muted); font-weight: 700;">Total Gastos Operativos</div>
-            <div style="font-size: 1.85rem; font-weight: 800; color: #dc2626; margin-top: 4px;">
-              {{ formatCOP(totalExpensesAmount()) }}
-            </div>
-            <div style="font-size: 0.75rem; color: var(--text-dim); margin-top: 2px;">
-              {{ filteredExpenses().length }} registros en período · {{ activeFilterSummaryLabel() }}
+      <div class="quick-kpis-grid reports-kpis-grid">
+        <div class="quick-kpi-card report-kpi-card">
+          <div class="kpi-card-top-row">
+            <div class="kpi-icon-box icon-red">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                <polyline points="14 2 14 8 20 8"></polyline>
+                <line x1="16" y1="13" x2="8" y2="13"></line>
+                <line x1="16" y1="17" x2="8" y2="17"></line>
+              </svg>
             </div>
           </div>
+          <span class="kpi-label">Total Gastos Operativos</span>
+          <div class="kpi-value-row">
+            <span class="kpi-big-value">{{ formatCOP(totalExpensesAmount()) }}</span>
+            <svg class="kpi-sparkline" viewBox="0 0 68 34" fill="none" aria-hidden="true">
+              <defs>
+                <linearGradient id="repExpRed1" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stop-color="#ef4444" stop-opacity="0.28" />
+                  <stop offset="100%" stop-color="#ef4444" stop-opacity="0.0" />
+                </linearGradient>
+              </defs>
+              <path d="M2 11 C 22 15, 42 22, 64 26 L 64 34 L 2 34 Z" fill="url(#repExpRed1)" />
+              <path d="M2 11 C 22 15, 42 22, 64 26" stroke="#dc2626" stroke-width="1.8" stroke-linecap="round" />
+              <circle cx="64" cy="26" r="2.6" fill="#b91c1c" />
+            </svg>
+          </div>
+          <span class="kpi-subtext">{{ filteredExpenses().length }} registros en período · {{ activeFilterSummaryLabel() }}</span>
         </div>
 
-        <div class="card hover-lift">
-          <div class="card-body">
-            <div style="font-size: 0.78rem; text-transform: uppercase; color: var(--text-muted); font-weight: 700;">Combustible & Fletes Domicilios</div>
-            <div style="font-size: 1.85rem; font-weight: 800; color: #f59e0b; margin-top: 4px;">
-              {{ formatCOP(logisticsExpensesAmount()) }}
-            </div>
-            <div style="font-size: 0.75rem; color: var(--text-dim); margin-top: 2px;">
-              Rodamiento y combustible de despachos
+        <div class="quick-kpi-card report-kpi-card">
+          <div class="kpi-card-top-row">
+            <div class="kpi-icon-box icon-amber">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="1" y="3" width="15" height="13"></rect>
+                <polygon points="16 8 20 8 23 11 23 16 16 16 16 8"></polygon>
+                <circle cx="5.5" cy="18.5" r="2.5"></circle>
+                <circle cx="18.5" cy="18.5" r="2.5"></circle>
+              </svg>
             </div>
           </div>
+          <span class="kpi-label">Combustible & Fletes Domicilios</span>
+          <div class="kpi-value-row">
+            <span class="kpi-big-value">{{ formatCOP(logisticsExpensesAmount()) }}</span>
+            <svg class="kpi-sparkline" viewBox="0 0 68 34" fill="none" aria-hidden="true">
+              <defs>
+                <linearGradient id="repExpAmber2" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stop-color="#f59e0b" stop-opacity="0.28" />
+                  <stop offset="100%" stop-color="#f59e0b" stop-opacity="0.0" />
+                </linearGradient>
+              </defs>
+              <path d="M2 11 C 22 15, 42 22, 64 26 L 64 34 L 2 34 Z" fill="url(#repExpAmber2)" />
+              <path d="M2 11 C 22 15, 42 22, 64 26" stroke="#d97706" stroke-width="1.8" stroke-linecap="round" />
+              <circle cx="64" cy="26" r="2.6" fill="#b45309" />
+            </svg>
+          </div>
+          <span class="kpi-subtext">Rodamiento y combustible de despachos</span>
         </div>
 
-        <div class="card hover-lift">
-          <div class="card-body">
-            <div style="font-size: 0.78rem; text-transform: uppercase; color: var(--text-muted); font-weight: 700;">Empaques, Bolsas & Insumos</div>
-            <div style="font-size: 1.85rem; font-weight: 800; color: #0284c7; margin-top: 4px;">
-              {{ formatCOP(packagingExpensesAmount()) }}
-            </div>
-            <div style="font-size: 0.75rem; color: var(--text-dim); margin-top: 2px;">
-              Bolsas termosellables, desinfección y BPM
+        <div class="quick-kpi-card report-kpi-card">
+          <div class="kpi-card-top-row">
+            <div class="kpi-icon-box icon-blue">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"></path>
+                <path d="M3 6h18"></path>
+                <path d="M16 10a4 4 0 0 1-8 0"></path>
+              </svg>
             </div>
           </div>
+          <span class="kpi-label">Empaques, Bolsas & Insumos</span>
+          <div class="kpi-value-row">
+            <span class="kpi-big-value">{{ formatCOP(packagingExpensesAmount()) }}</span>
+            <svg class="kpi-sparkline" viewBox="0 0 68 34" fill="none" aria-hidden="true">
+              <defs>
+                <linearGradient id="repExpBlue3" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stop-color="#0ea5e9" stop-opacity="0.3" />
+                  <stop offset="100%" stop-color="#0ea5e9" stop-opacity="0.0" />
+                </linearGradient>
+              </defs>
+              <path d="M2 12 C 22 16, 42 21, 64 25 L 64 34 L 2 34 Z" fill="url(#repExpBlue3)" />
+              <path d="M2 12 C 22 16, 42 21, 64 25" stroke="#0284c7" stroke-width="1.8" stroke-linecap="round" />
+              <circle cx="64" cy="25" r="2.6" fill="#0369a1" />
+            </svg>
+          </div>
+          <span class="kpi-subtext">Bolsas termosellables, desinfección y BPM</span>
         </div>
 
-        <div class="card hover-lift">
-          <div class="card-body">
-            <div style="font-size: 0.78rem; text-transform: uppercase; color: var(--text-muted); font-weight: 700;">Servicios & Mantenimiento Planta</div>
-            <div style="font-size: 1.85rem; font-weight: 800; color: #8b5cf6; margin-top: 4px;">
-              {{ formatCOP(facilityExpensesAmount()) }}
-            </div>
-            <div style="font-size: 0.75rem; color: var(--text-dim); margin-top: 2px;">
-              Energía inventario frigorífico y mantenimiento despulpadora
+        <div class="quick-kpi-card report-kpi-card">
+          <div class="kpi-card-top-row">
+            <div class="kpi-icon-box icon-purple">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+              </svg>
             </div>
           </div>
+          <span class="kpi-label">Servicios & Mantenimiento Planta</span>
+          <div class="kpi-value-row">
+            <span class="kpi-big-value">{{ formatCOP(facilityExpensesAmount()) }}</span>
+            <svg class="kpi-sparkline" viewBox="0 0 68 34" fill="none" aria-hidden="true">
+              <defs>
+                <linearGradient id="repExpPurple4" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stop-color="#8b5cf6" stop-opacity="0.28" />
+                  <stop offset="100%" stop-color="#8b5cf6" stop-opacity="0.0" />
+                </linearGradient>
+              </defs>
+              <path d="M2 11 C 22 15, 42 22, 64 26 L 64 34 L 2 34 Z" fill="url(#repExpPurple4)" />
+              <path d="M2 11 C 22 15, 42 22, 64 26" stroke="#7c3aed" stroke-width="1.8" stroke-linecap="round" />
+              <circle cx="64" cy="26" r="2.6" fill="#6d28d9" />
+            </svg>
+          </div>
+          <span class="kpi-subtext">Energía inventario frigorífico y mantenimiento despulpadora</span>
         </div>
       </div>
 
@@ -867,55 +1119,119 @@
     </div>
   }
 
-        @if (activeTab() === 'payroll') {
+  @if (activeTab() === 'payroll') {
     <div style="display: flex; flex-direction: column; gap: 20px;">
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 16px;">
-        <div class="card hover-lift">
-          <div class="card-body">
-            <div style="font-size: 0.78rem; text-transform: uppercase; color: var(--text-muted); font-weight: 700;">Total Nómina Quincenal</div>
-            <div style="font-size: 1.85rem; font-weight: 800; color: #1e5e3a; margin-top: 4px;">
-              {{ formatCOP(totalPayrollNet()) }}
-            </div>
-            <div style="font-size: 0.75rem; color: var(--text-dim); margin-top: 2px;">
-              Liquidación neta pagadera a colaboradores
+      <div class="quick-kpis-grid reports-kpis-grid">
+        <div class="quick-kpi-card report-kpi-card">
+          <div class="kpi-card-top-row">
+            <div class="kpi-icon-box icon-green">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="2" y="6" width="20" height="12" rx="2"></rect>
+                <circle cx="12" cy="12" r="3"></circle>
+                <path d="M6 12h.01M18 12h.01"></path>
+              </svg>
             </div>
           </div>
+          <span class="kpi-label">Total Nómina Quincenal</span>
+          <div class="kpi-value-row">
+            <span class="kpi-big-value">{{ formatCOP(totalPayrollNet()) }}</span>
+            <svg class="kpi-sparkline" viewBox="0 0 68 34" fill="none" aria-hidden="true">
+              <defs>
+                <linearGradient id="repPayGreen1" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stop-color="#22c55e" stop-opacity="0.32" />
+                  <stop offset="100%" stop-color="#22c55e" stop-opacity="0.0" />
+                </linearGradient>
+              </defs>
+              <path d="M2 10 C 22 14, 42 22, 64 26 L 64 34 L 2 34 Z" fill="url(#repPayGreen1)" />
+              <path d="M2 10 C 22 14, 42 22, 64 26" stroke="#22c55e" stroke-width="1.8" stroke-linecap="round" />
+              <circle cx="64" cy="26" r="2.6" fill="#15803d" />
+            </svg>
+          </div>
+          <span class="kpi-subtext">Liquidación neta pagadera a colaboradores</span>
         </div>
 
-        <div class="card hover-lift">
-          <div class="card-body">
-            <div style="font-size: 0.78rem; text-transform: uppercase; color: var(--text-muted); font-weight: 700;">Colaboradores en Planta</div>
-            <div style="font-size: 1.85rem; font-weight: 800; color: #0284c7; margin-top: 4px;">
-              {{ payrollSettlements().length }} activos
-            </div>
-            <div style="font-size: 0.75rem; color: var(--text-dim); margin-top: 2px;">
-              Operarios de producción y domiciliarios
+        <div class="quick-kpi-card report-kpi-card">
+          <div class="kpi-card-top-row">
+            <div class="kpi-icon-box icon-blue">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
+                <circle cx="9" cy="7" r="4"></circle>
+                <path d="M22 21v-2a4 4 0 0 0-3-3.87"></path>
+                <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+              </svg>
             </div>
           </div>
+          <span class="kpi-label">Colaboradores en Planta</span>
+          <div class="kpi-value-row">
+            <span class="kpi-big-value">{{ payrollSettlements().length }} activos</span>
+            <svg class="kpi-sparkline" viewBox="0 0 68 34" fill="none" aria-hidden="true">
+              <defs>
+                <linearGradient id="repPayBlue2" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stop-color="#0ea5e9" stop-opacity="0.3" />
+                  <stop offset="100%" stop-color="#0ea5e9" stop-opacity="0.0" />
+                </linearGradient>
+              </defs>
+              <path d="M2 12 C 22 16, 42 21, 64 25 L 64 34 L 2 34 Z" fill="url(#repPayBlue2)" />
+              <path d="M2 12 C 22 16, 42 21, 64 25" stroke="#0284c7" stroke-width="1.8" stroke-linecap="round" />
+              <circle cx="64" cy="25" r="2.6" fill="#0369a1" />
+            </svg>
+          </div>
+          <span class="kpi-subtext">Operarios de producción y domiciliarios</span>
         </div>
 
-        <div class="card hover-lift">
-          <div class="card-body">
-            <div style="font-size: 0.78rem; text-transform: uppercase; color: var(--text-muted); font-weight: 700;">Área Producción (Planta)</div>
-            <div style="font-size: 1.85rem; font-weight: 800; color: #1e5e3a; margin-top: 4px;">
-              {{ formatCOP(productionPayrollNet()) }}
-            </div>
-            <div style="font-size: 0.75rem; color: var(--text-dim); margin-top: 2px;">
-              Jefe de planta, despulpe y empaque
+        <div class="quick-kpi-card report-kpi-card">
+          <div class="kpi-card-top-row">
+            <div class="kpi-icon-box icon-green">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M2 20a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V8l-7 5V8l-7 5V4a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z"></path>
+              </svg>
             </div>
           </div>
+          <span class="kpi-label">Área Producción (Planta)</span>
+          <div class="kpi-value-row">
+            <span class="kpi-big-value">{{ formatCOP(productionPayrollNet()) }}</span>
+            <svg class="kpi-sparkline" viewBox="0 0 68 34" fill="none" aria-hidden="true">
+              <defs>
+                <linearGradient id="repPayGreen3" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stop-color="#22c55e" stop-opacity="0.32" />
+                  <stop offset="100%" stop-color="#22c55e" stop-opacity="0.0" />
+                </linearGradient>
+              </defs>
+              <path d="M2 10 C 22 14, 42 22, 64 26 L 64 34 L 2 34 Z" fill="url(#repPayGreen3)" />
+              <path d="M2 10 C 22 14, 42 22, 64 26" stroke="#22c55e" stroke-width="1.8" stroke-linecap="round" />
+              <circle cx="64" cy="26" r="2.6" fill="#15803d" />
+            </svg>
+          </div>
+          <span class="kpi-subtext">Jefe de planta, despulpe y empaque</span>
         </div>
 
-        <div class="card hover-lift">
-          <div class="card-body">
-            <div style="font-size: 0.78rem; text-transform: uppercase; color: var(--text-muted); font-weight: 700;">Área Domicilios (Rutas)</div>
-            <div style="font-size: 1.85rem; font-weight: 800; color: #f59e0b; margin-top: 4px;">
-              {{ formatCOP(deliveryPayrollNet()) }}
-            </div>
-            <div style="font-size: 0.75rem; color: var(--text-dim); margin-top: 2px;">
-              Salario base quincenal + bonos por entrega
+        <div class="quick-kpi-card report-kpi-card">
+          <div class="kpi-card-top-row">
+            <div class="kpi-icon-box icon-amber">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="1" y="3" width="15" height="13"></rect>
+                <polygon points="16 8 20 8 23 11 23 16 16 16 16 8"></polygon>
+                <circle cx="5.5" cy="18.5" r="2.5"></circle>
+                <circle cx="18.5" cy="18.5" r="2.5"></circle>
+              </svg>
             </div>
           </div>
+          <span class="kpi-label">Área Domicilios (Rutas)</span>
+          <div class="kpi-value-row">
+            <span class="kpi-big-value">{{ formatCOP(deliveryPayrollNet()) }}</span>
+            <svg class="kpi-sparkline" viewBox="0 0 68 34" fill="none" aria-hidden="true">
+              <defs>
+                <linearGradient id="repPayAmber4" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stop-color="#f59e0b" stop-opacity="0.28" />
+                  <stop offset="100%" stop-color="#f59e0b" stop-opacity="0.0" />
+                </linearGradient>
+              </defs>
+              <path d="M2 11 C 22 15, 42 22, 64 26 L 64 34 L 2 34 Z" fill="url(#repPayAmber4)" />
+              <path d="M2 11 C 22 15, 42 22, 64 26" stroke="#d97706" stroke-width="1.8" stroke-linecap="round" />
+              <circle cx="64" cy="26" r="2.6" fill="#b45309" />
+            </svg>
+          </div>
+          <span class="kpi-subtext">Salario base quincenal + bonos por entrega</span>
         </div>
       </div>
 

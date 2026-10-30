@@ -322,6 +322,8 @@ export interface OrderDto {
   paymentMethod?: string;
   courierId?: number;
   courierName?: string;
+  routeSequenceOrder?: number;
+  dispatchedAtUtc?: string;
   isPaid: boolean;
   notes?: string;
   createdAt: string;
@@ -329,6 +331,15 @@ export interface OrderDto {
   isBilled?: boolean;
   latitude?: number;
   longitude?: number;
+}
+
+/**
+ * Payload for dispatching and persisting a courier's ordered delivery route.
+ */
+export interface DispatchCourierRouteDto {
+  courierId: number;
+  courierName?: string;
+  orderIds: number[];
 }
 
 /**

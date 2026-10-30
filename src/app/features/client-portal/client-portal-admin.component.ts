@@ -38,7 +38,7 @@ export interface EditableCardDraft {
             <span class="cms-pill">ADMINISTRACIÓN DE CATÁLOGO</span>
             <span class="cards-counter">{{ visibleCardsCount() }} de {{ stateService.fruits().length }} cards activas en el portal</span>
           </div>
-          <h1 class="page-title">Administración del Portal Clientes</h1>
+          <h1 class="page-title module-inline-title">Administración del Portal Clientes</h1>
           <p class="page-subtitle">
             Carga o cambia las fotos de los productos, edita los títulos, descripciones, etiquetas y actualiza los precios de cada presentación (140g, 250g, 500g y 1 Kg).
           </p>

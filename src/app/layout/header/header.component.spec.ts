@@ -140,6 +140,9 @@ describe('HeaderComponent', () => {
     component.currentUrl.set('/orders?tab=despachos');
     expect(component.currentRouteTitle()).toBe('Despachos & Rutas');
 
+    component.currentUrl.set('/accounting');
+    expect(component.currentRouteTitle()).toBe('Clientes');
+
     component.currentUrl.set('/dashboard');
     expect(component.currentRouteTitle()).toBe('Dashboard general');
   });
