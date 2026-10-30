@@ -445,7 +445,11 @@ export const MAP_STYLES: MapStyleOption[] = [
                 title="Bloquear mapa y volver a la pantalla de selección"
                 (click)="lockMapOverlay()"
               >
-                Bloquear
+                <svg class="lock-btn-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                  <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                </svg>
+                <span class="lock-btn-label">Bloquear</span>
               </button>
             </div>
 
@@ -2514,12 +2518,32 @@ export const MAP_STYLES: MapStyleOption[] = [
       border-radius: 9999px;
       cursor: pointer;
       white-space: nowrap;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 5px;
+      flex-shrink: 0;
       transition: all 0.2s ease;
 
       &:hover {
         background: #fee2e2;
         color: #dc2626;
         border-color: #fecaca;
+      }
+
+      @media (max-width: 768px) {
+        width: 32px;
+        height: 32px;
+        min-width: 32px;
+        padding: 0;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.95);
+        border: 1.5px solid #dbe4de;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+
+        .lock-btn-label {
+          display: none;
+        }
       }
     }
 

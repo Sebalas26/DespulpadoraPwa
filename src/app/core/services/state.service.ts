@@ -131,10 +131,31 @@ export class StateService {
 
   readonly totalStockKg = computed<number>(() => {
     try {
-      return this.fruits().reduce((sum, f) => {
-        const kg = f.stock.g140 * 0.14 + f.stock.g250 * 0.25 + f.stock.g500 * 0.5 + f.stock.g1000 * 1.0;
+      const variants = this.productVariants();
+      const total = this.fruits().reduce((sum, f) => {
+        const matching = variants.filter(
+          v => (f.fruitId && v.fruitId === f.fruitId) || v.fruitName.toLowerCase() === f.name.toLowerCase()
+        );
+        const g140 =
+          (f.stock.g140 || 0) > 0
+            ? f.stock.g140
+            : matching.filter(v => v.grammage === 140).reduce((s, v) => s + (v.currentStock || 0), 0);
+        const g250 =
+          (f.stock.g250 || 0) > 0
+            ? f.stock.g250
+            : matching.filter(v => v.grammage === 250).reduce((s, v) => s + (v.currentStock || 0), 0);
+        const g500 =
+          (f.stock.g500 || 0) > 0
+            ? f.stock.g500
+            : matching.filter(v => v.grammage === 500).reduce((s, v) => s + (v.currentStock || 0), 0);
+        const g1000 =
+          (f.stock.g1000 || 0) > 0
+            ? f.stock.g1000
+            : matching.filter(v => v.grammage === 1000).reduce((s, v) => s + (v.currentStock || 0), 0);
+        const kg = g140 * 0.14 + g250 * 0.25 + g500 * 0.5 + g1000 * 1.0;
         return sum + kg;
       }, 0);
+      return Number(total.toFixed(2));
     } catch {
       return 0;
     }

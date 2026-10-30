@@ -4,6 +4,96 @@ Este documento registra de manera cronológica y estructurada todas las interven
 
 ---
 
+## [2026-10-29] - Ajustes PWA Mobile: Separación Card Buscador en Clientes, Nombre/Rol y Accesos KDS en Menú Desplegable, Sincronización Pulpa Total en Bodega, Candado en Bloquear Mapa y Títulos en Esquina de KPI Cards
+
+### 💬 Prompt Original del Usuario
+> "Ajuste para la pwa version mobile:
+> - en el modulo de clientes, veo que se esta mostrando la card de la lista del cleinte pegado con la del buscador
+> - en el menu desplegable , Dejame en vez del texto DGL Despulpadora, dejame el nombre del cliente y abajo el rol, adicional falta en los primero modulos donde esta portal clientes y admin potal cliente, ahi falta el kds de alistamiento y kds inventario
+> - Estoy viendo cuando entro a los detalles de las pulpas en total en bodega desde dashboard que me muestra KG de las pulpas que no tengo creadas, como si ell dialog no estuviera consulta la api y bd 
+> -en la visualizacion de ver todas las entregas, cuando es mobile quieroq ue el boton de bloquear sea un icono de candado
+> - en las cards de la dashboard y centro de reportes, no me pongas esos emojis en la parte esquinera e iiniciales, al contrario, reemplaza ese icono por el titulo de cada card"
+
+### 🤖 Resumen Técnico para la IA
+- **1. Separación entre Card del Buscador y Cards de la Lista de Clientes en Mobile (`src/app/features/accounting/accounting.component.scss`)**:
+  - En `@media (max-width: 768px)`, `.client-list-card` se configuró como `display: flex; flex-direction: column; gap: 14px; background: transparent; border: none; box-shadow: none; overflow: visible;` y `.list-card-header` como una card blanca independiente con bordes redondeados (`border: 1.5px solid #e2e8f0; border-radius: 14px; padding: 14px 16px;`) y `.client-search-box { width: 100%; }`, separando visualmente el buscador de las tarjetas de clientes inferiores.
+- **2. Nombre del Usuario / Rol y Accesos Rápidos KDS en el Menú Desplegable Mobile (`src/app/layout/mobile-nav/mobile-nav.component.ts` y `mobile-nav.component.spec.ts`)**:
+  - En `.mobile-drawer-header`, se reemplazó el texto de la empresa (`DGL Despulpadora`) por el nombre del usuario autenticado (`.drawer-user-name`: `{{ authService.user()?.fullName || authService.user()?.username }}`) en la línea superior y el rol (`.drawer-user-role`: `{{ authService.user()?.roleName }}`) debajo.
+  - En `.mobile-drawer-body`, se agregaron en la parte superior (junto a `Portal Clientes` y `Admin. Portal Clientes`) los accesos rápidos **`Pantalla de Alistamiento`** (`routerLink="/kds"`) y **`KDS Inventario & Stock`** (`routerLink="/kds-inventory"`).
+- **3. Sincronización Real de `Detalle de Pulpa Total en Bodega` (`src/app/features/dashboard/dashboard.component.ts`, `dashboard.component.html`, `src/app/core/services/state.service.ts` y `dashboard.component.spec.ts`)**:
+  - `preparedPulpsReport()` y `StateService.totalStockKg()` cruzan reactivamente `stateService.fruits()` con `stateService.productVariants()`, excluyendo frutas que tienen `0` unidades de pulpa empacada y ninguna presentación registrada en `productVariants()` (evitando que frutas registradas solo en `Fruta Disponible` como `Batido Verde` o cards creadas en `Admin. Portal Clientes` como `Maracuya` / `Pulpa de piña` aparezcan con `0 kg` / `0 uds` en el modal `Detalle de Pulpa Total en Bodega`).
+  - Se añadió el bloque `@empty` informativo en `dashboard.component.html` dentro de `.kpi-detail-list` del modal `pulpStock`, y se filtró `fruitInventoryReport()` para excluir ítems de catálogo sin stock fresco ni rendimiento configurado.
+- **4. Botón `Bloquear` con Icono de Candado en Mobile (`src/app/features/orders/delivery-map.component.ts` y `delivery-map.component.spec.ts`)**:
+  - En `.map-unlocked-mode-bar`, el botón `.unlocked-mode-close` incorpora el icono vectorial de candado (`svg.lock-btn-icon`) y `<span class="lock-btn-label">Bloquear</span>`. En `@media (max-width: 768px)`, `.lock-btn-label` se oculta (`display: none`) y el botón se presenta como un botón circular de `32px x 32px` con el icono de candado.
+- **5. Eliminación de Iconos Esqueros (`.kpi-icon-box`) y Reemplazo por el Título (`.kpi-label`) en Cards de Dashboard y Centro de Reportes (`dashboard.component.html/.scss` y `reports.component.html/.scss`)**:
+  - Se eliminaron los bloques `.kpi-icon-box` de las 4 tarjetas KPI superiores de `DashboardComponent` y de las 20 tarjetas KPI (5 pestañas × 4 cards) de `ReportsComponent`, ubicando `<span class="kpi-label">` en la esquina superior izquierda dentro de `.kpi-card-top-row`.
+- **6. Informes del Agente Verificador, Agente Auditor Punto por Punto y Revisión Par**:
+  - **Agente Verificador (`477ee3cc-69ba-4938-b923-725f8a099f95`)**: Inspeccionó los 5 puntos y certificó 0% de regresiones colaterales.
+  - **Agente Auditor Punto por Punto (`ca125707-701f-4be7-8bb9-7e0713c561be`)**: Dictamen **APROBADO AL 100% SIN DESVIACIONES**.
+  - **Agente de Revisión Par (`faaca0b6-3a60-4aa2-b028-8ac513d04efb`)**: Dictamen **APROBADO AL 100% CON 0 OBSERVACIONES — PASE A PRODUCCIÓN AUTORIZADO**.
+
+### 📦 Componentes Modificados
+- `src/app/features/accounting/accounting.component.scss`
+- `src/app/layout/mobile-nav/mobile-nav.component.ts`
+- `src/app/layout/mobile-nav/mobile-nav.component.spec.ts`
+- `src/app/core/services/state.service.ts`
+- `src/app/features/dashboard/dashboard.component.ts`
+- `src/app/features/dashboard/dashboard.component.html`
+- `src/app/features/dashboard/dashboard.component.scss`
+- `src/app/features/dashboard/dashboard.component.spec.ts`
+- `src/app/features/orders/delivery-map.component.ts`
+- `src/app/features/orders/delivery-map.component.spec.ts`
+- `src/app/features/reports/reports.component.html`
+- `src/app/features/reports/reports.component.scss`
+- `src/app/features/reports/reports.component.spec.ts`
+- `HISTORIAL_CAMBIOS.md`
+
+### ✅ Verificación, Build y Tests Unitarios
+- `npm test -- --watch=false`: **248 / 248 Pruebas Unitarias Exitosas (100% PASS, 0 fallos)**.
+- `npm run build`: **Compilación de producción completada con éxito (Exit code 0)**.
+- **Git**: Se cumplió estrictamente la prohibición de `git commit` y `git push`.
+
+---
+
+## [2026-10-29] - Diagnóstico y Corrección de Alertas de Error en Login Flutter (`AuthGate`), Auto-capitalización Móvil, Cambio de Contraseña en Editar Usuario (PWA) y Resolución de Perfil `Courier` en `.NET 10`
+
+### 💬 Prompt Original del Usuario
+> "porque cuando me logeo con domsebalas en la app no me permite, tampoco me muestra ningun error"
+
+### 🤖 Resumen Técnico para la IA
+- **1. Corrección de Desmontaje Prematuro de `LoginScreen` en `AuthGate` (`DespulpadoraApp/lib/main.dart` y `lib/views/login_screen.dart`)**:
+  - En `AuthGate.build` (`lib/main.dart`), la condición `if (state is AuthInitial || state is AuthLoading)` desmontaba por completo `LoginScreen` al presionar `"Iniciar Turno"`, impidiendo que el `BlocListener<AuthCubit, AuthState>` recibiera el estado `AuthError` y reiniciando los campos de texto en blanco. Se ajustó a `if (state is AuthInitial)`, manteniendo `LoginScreen` montado durante `AuthLoading` (mostrando el spinner integrado en el botón `"Iniciar Turno"`) y disparando inmediatamente `_showSoftErrorAlert(state.message)` ante cualquier fallo de autenticación.
+  - En `LoginScreen` (`lib/views/login_screen.dart`), se configuraron `autocorrect: false`, `enableSuggestions: false` y `textCapitalization: TextCapitalization.none` en los `TextFormField` de usuario y contraseña, además de `.trim()` en la contraseña enviada en `_submit()`.
+- **2. Prevención de Auto-capitalización Móvil y Restablecimiento de Contraseña en Gestión de Usuarios (`DespulpadoraPwa`)**:
+  - En `src/app/features/admin/users/users.component.html` y `users.component.ts`, se añadieron `autocapitalize="off" autocorrect="off" spellcheck="false"` en los inputs de credenciales de las modales de creación y edición, `.trim()` al crear usuario, y el nuevo campo **"Nueva Contraseña (Opcional)"** (`editPassword`) conectado con `ApiService.updateUser` (`PUT /api/users/{id}`) para permitir restablecer la contraseña de `domSebalas` o cualquier usuario en cualquier momento.
+- **3. Prioridad de Resolución de Perfil `Courier` en Backend `.NET 10` (`ApiDespulpadora.Core/Services/Mobile/MobileAppService.cs`)**:
+  - En `LoginAsync`, `GetProfileAsync` y `ResolveCourierAsync`, se priorizó la búsqueda exacta por `c.ResponsibleUserId == userId` antes del fallback por nombre/teléfono (`!c.ResponsibleUserId.HasValue || c.ResponsibleUserId == userId`), evitando colisiones cuando dos usuarios comparten número telefónico.
+- **4. Informes del Agente Verificador, Agente Auditor Punto por Punto y Revisión Par**:
+  - **Agente Verificador (`0f78d3de-c7c9-45df-89a3-fe9b1716a69c`)**: Diagnosticó la causa raíz en `AuthGate`, los logs `Logins` en MySQL (`FailureReason = 'Invalid password'`) y la colisión de teléfono en `MobileAppService.cs`.
+  - **Agente Auditor Punto por Punto (`27ebb697-ebfe-4b4f-8c0c-cf974da316af`)**: Dictamen **APROBADO AL 100% SIN DESVIACIONES**.
+  - **Agente de Revisión Par (`398124fc-e2af-48ca-86c6-97ed25b485c3`)**: Dictamen **APROBADO SIN OBSERVACIONES (100% CONFORME)**.
+
+### 📦 Componentes Modificados
+- `src/app/core/models/business.models.ts`
+- `src/app/core/services/api.service.ts`
+- `src/app/core/services/api.service.spec.ts`
+- `src/app/features/admin/users/users.component.ts`
+- `src/app/features/admin/users/users.component.html`
+- `src/app/features/admin/users/users.component.spec.ts`
+- `../Flutter/DespulpadoraApp/lib/main.dart`
+- `../Flutter/DespulpadoraApp/lib/views/login_screen.dart`
+- `../Flutter/DespulpadoraApp/test/widget_test.dart`
+- `../Api/ApiDespulpadora/ApiDespulpadora.Core/Services/Mobile/MobileAppService.cs`
+- `HISTORIAL_CAMBIOS.md`
+
+### ✅ Verificación, Build y Tests Unitarios
+- **Compilación PWA (`npm run build`)**: Exitosa (`0 errores`).
+- **Suite de Pruebas Unitarias PWA (`ng test --watch=false`)**: **247 de 247 pruebas exitosas (`100% PASS`)**.
+- **Suite de Pruebas Flutter (`dart analyze && flutter test`)**: **0 issues y 12 de 12 pruebas exitosas (`100% PASS`)**.
+- **Suite de Pruebas Backend .NET 10 (`dotnet test`)**: **39 de 39 pruebas exitosas (`100% PASS`)**.
+
+---
+
 ## [2026-10-29] - Reordenamiento de Filtros de Fecha en Mobile Debajo de Módulos y Homologación de KPI Cards Estilo Dashboard General en Centro de Reportes
 
 ### 💬 Prompt Original del Usuario

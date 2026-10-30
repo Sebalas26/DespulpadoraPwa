@@ -128,10 +128,15 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 8px;
   width: 100%;
-  margin-bottom: 14px;
+  margin-bottom: 10px;
 
   .kpi-icon-box {
+    margin-bottom: 0;
+  }
+
+  .kpi-label {
     margin-bottom: 0;
   }
 }
@@ -183,10 +188,11 @@
 }
 
 .kpi-label {
-  font-size: 0.8rem;
-  color: #6b7280;
-  font-weight: 500;
+  font-size: 0.82rem;
+  color: #4b5563;
+  font-weight: 700;
   margin-bottom: 4px;
+  min-width: 0;
 }
 
 .kpi-value-row {

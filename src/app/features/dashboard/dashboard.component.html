@@ -60,20 +60,13 @@
   <div class="quick-kpis-grid" [class.dgl-loading-hidden]="isLoading()">
     <div class="quick-kpi-card clickable-kpi-card" role="button" tabindex="0" (click)="openKpiDetail('billing')">
       <div class="kpi-card-top-row">
-        <div class="kpi-icon-box icon-green">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <rect x="2" y="6" width="20" height="12" rx="2"></rect>
-            <circle cx="12" cy="12" r="3"></circle>
-            <path d="M6 12h.01M18 12h.01"></path>
-          </svg>
-        </div>
+        <span class="kpi-label">Facturación hoy</span>
         <span class="kpi-expand-chevron" [class.expanded]="selectedKpiCard() === 'billing'" aria-hidden="true" title="Desplegar detalle">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
             <polyline points="6 9 12 15 18 9"></polyline>
           </svg>
         </span>
       </div>
-      <span class="kpi-label">Facturación hoy</span>
       <div class="kpi-value-row">
         <span class="kpi-big-value">{{ formatCOP(todayBillingStats().revenue) }}</span>
         <svg class="kpi-sparkline" viewBox="0 0 68 34" fill="none" aria-hidden="true">
@@ -92,19 +85,13 @@
 
     <div class="quick-kpi-card clickable-kpi-card" role="button" tabindex="0" (click)="openKpiDetail('pulpStock')">
       <div class="kpi-card-top-row">
-        <div class="kpi-icon-box icon-green">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z"></path>
-            <path d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12"></path>
-          </svg>
-        </div>
+        <span class="kpi-label">Pulpa total en bodega</span>
         <span class="kpi-expand-chevron" [class.expanded]="selectedKpiCard() === 'pulpStock'" aria-hidden="true" title="Desplegar detalle">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
             <polyline points="6 9 12 15 18 9"></polyline>
           </svg>
         </span>
       </div>
-      <span class="kpi-label">Pulpa total en bodega</span>
       <div class="kpi-value-row">
         <span class="kpi-big-value">{{ stateService.totalStockKg().toFixed(1) }} kg</span>
         <svg class="kpi-sparkline" viewBox="0 0 68 34" fill="none" aria-hidden="true">
@@ -123,20 +110,13 @@
 
     <div class="quick-kpi-card clickable-kpi-card" role="button" tabindex="0" (click)="openKpiDetail('pulpsSoldToday')">
       <div class="kpi-card-top-row">
-        <div class="kpi-icon-box icon-amber">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"></path>
-            <path d="M3 6h18"></path>
-            <path d="M16 10a4 4 0 0 1-8 0"></path>
-          </svg>
-        </div>
+        <span class="kpi-label">Pulpas vendidas hoy</span>
         <span class="kpi-expand-chevron" [class.expanded]="selectedKpiCard() === 'pulpsSoldToday'" aria-hidden="true" title="Desplegar detalle">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
             <polyline points="6 9 12 15 18 9"></polyline>
           </svg>
         </span>
       </div>
-      <span class="kpi-label">Pulpas vendidas hoy</span>
       <div class="kpi-value-row">
         <span class="kpi-big-value">{{ todayBillingStats().unitsSold }} pulpas</span>
         <svg class="kpi-sparkline" viewBox="0 0 68 34" fill="none" aria-hidden="true">
@@ -155,20 +135,13 @@
 
     <div class="quick-kpi-card clickable-kpi-card" role="button" tabindex="0" (click)="openKpiDetail('freshFruit')">
       <div class="kpi-card-top-row">
-        <div class="kpi-icon-box icon-purple">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
-            <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
-            <line x1="12" y1="22.08" x2="12" y2="12"></line>
-          </svg>
-        </div>
+        <span class="kpi-label">Fruta total en bodega</span>
         <span class="kpi-expand-chevron" [class.expanded]="selectedKpiCard() === 'freshFruit'" aria-hidden="true" title="Desplegar detalle">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
             <polyline points="6 9 12 15 18 9"></polyline>
           </svg>
         </span>
       </div>
-      <span class="kpi-label">Fruta total en bodega</span>
       <div class="kpi-value-row">
         <span class="kpi-big-value">{{ stateService.totalFreshStockKg() }} kg</span>
         <svg class="kpi-sparkline" viewBox="0 0 68 34" fill="none" aria-hidden="true">
@@ -830,6 +803,8 @@
                   <span>1000g: <strong>{{ row.g1000 }}</strong></span>
                 </div>
               </div>
+            } @empty {
+              <div class="kpi-empty-state">No hay pulpas preparadas registradas en bodega.</div>
             }
           </div>
         </div>

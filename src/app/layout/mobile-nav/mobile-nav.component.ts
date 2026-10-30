@@ -134,14 +134,40 @@ import { environment } from '../../../environments/environment';
             <div style="display: flex; align-items: center; gap: 8px;">
               <img [src]="stateService.companyInfo().logoUrl || '/logo-dgl.png'" [alt]="stateService.companyInfo().companyName" style="width: 32px; height: 32px; object-fit: contain;" />
               <div>
-                <div style="font-weight: 800; font-size: 1rem; color: #111827;">{{ stateService.companyInfo().companyName }}</div>
-                <div style="font-size: 0.72rem; color: #6b7280;">{{ authService.user()?.fullName }} ({{ authService.user()?.roleName }})</div>
+                <div class="drawer-user-name" style="font-weight: 800; font-size: 1rem; color: #111827;">{{ authService.user()?.fullName || authService.user()?.username }}</div>
+                <div class="drawer-user-role" style="font-size: 0.72rem; color: #6b7280;">{{ authService.user()?.roleName }}</div>
               </div>
             </div>
             <button class="modal-close" (click)="closeDrawer()">&times;</button>
           </div>
 
           <div class="mobile-drawer-body">
+            <a routerLink="/kds" class="drawer-link-item" (click)="closeDrawer()">
+              <span class="drawer-icon" style="background: rgba(30, 94, 58, 0.12); color: #1e5e3a;">
+                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
+                  <line x1="8" y1="21" x2="16" y2="21"></line>
+                  <line x1="12" y1="17" x2="12" y2="21"></line>
+                </svg>
+              </span>
+              <div>
+                <div class="drawer-title">Pantalla de Alistamiento</div>
+              </div>
+            </a>
+
+            <a routerLink="/kds-inventory" class="drawer-link-item" (click)="closeDrawer()">
+              <span class="drawer-icon" style="background: rgba(30, 94, 58, 0.12); color: #1e5e3a;">
+                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
+                  <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
+                  <line x1="12" y1="22.08" x2="12" y2="12"></line>
+                </svg>
+              </span>
+              <div>
+                <div class="drawer-title">KDS Inventario & Stock</div>
+              </div>
+            </a>
+
             <a routerLink="/portal-clientes" class="drawer-link-item" (click)="closeDrawer()">
               <span class="drawer-icon" style="background: rgba(30, 94, 58, 0.12); color: #1e5e3a;">
                 <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">

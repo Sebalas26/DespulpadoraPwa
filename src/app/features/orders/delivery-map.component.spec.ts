@@ -301,5 +301,10 @@ describe('DeliveryMapComponent', () => {
     expect(stopCard.classList.contains('is-route-locked')).toBeFalse();
     const restoredCreateBtn = fixture.nativeElement.querySelector('.deliveries-drawer .btn-create-courier-route') as HTMLButtonElement;
     expect(restoredCreateBtn).toBeTruthy();
+
+    const lockBtn = fixture.nativeElement.querySelector('.map-unlocked-mode-bar .unlocked-mode-close') as HTMLButtonElement;
+    expect(lockBtn).toBeTruthy();
+    expect(lockBtn.querySelector('svg.lock-btn-icon')).toBeTruthy();
+    expect(lockBtn.querySelector('.lock-btn-label')?.textContent?.trim()).toBe('Bloquear');
   });
 });

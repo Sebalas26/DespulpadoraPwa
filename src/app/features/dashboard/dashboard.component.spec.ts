@@ -80,6 +80,24 @@ describe('DashboardComponent', () => {
 
   beforeEach(async () => {
     upsertTargetSpy = jasmine.createSpy('upsertSalesTarget');
+    mockFruits.set([
+      {
+        id: 'mora',
+        fruitId: 1,
+        name: 'Mora',
+        scientificName: 'Rubus glaucus',
+        emoji: '',
+        color: '#16a34a',
+        bgColor: '#f0fdf4',
+        yieldRate: 0.7,
+        waterAdditionDefault: 0.08,
+        freshStockKg: 250,
+        category: 'PULPAS',
+        prices: { g140: 2000, g250: 3500, g500: 6500, g1000: 12000 },
+        stock: { g140: 5, g250: 20, g500: 15, g1000: 10 },
+        minStock: { g140: 10, g250: 10, g500: 10, g1000: 5 }
+      }
+    ]);
     mockTotalStockKg.set(17.2);
     mockTotalFreshStockKg.set(250);
 
@@ -203,12 +221,16 @@ describe('DashboardComponent', () => {
     expect(component.kpiSparklines().freshFruit.endY).toBe(17);
   });
 
-  it('should render downward expand chevron indicator in all 4 top KPI cards and toggle expanded class when selected', () => {
+  it('should render downward expand chevron indicator and title label in all 4 top KPI cards without icon boxes and toggle expanded class when selected', () => {
     fixture.detectChanges();
     const compiled = fixture.nativeElement as HTMLElement;
     const chevrons = Array.from(compiled.querySelectorAll('.quick-kpi-card .kpi-card-top-row .kpi-expand-chevron'));
+    const topLabels = Array.from(compiled.querySelectorAll('.quick-kpi-card .kpi-card-top-row .kpi-label'));
+    const topIcons = Array.from(compiled.querySelectorAll('.quick-kpis-grid .kpi-icon-box'));
 
     expect(chevrons.length).toBe(4);
+    expect(topLabels.length).toBe(4);
+    expect(topIcons.length).toBe(0);
     expect(chevrons.every(el => !el.classList.contains('expanded'))).toBeTrue();
 
     component.openKpiDetail('billing');
@@ -216,6 +238,49 @@ describe('DashboardComponent', () => {
 
     expect(chevrons[0].classList.contains('expanded')).toBeTrue();
     expect(chevrons[1].classList.contains('expanded')).toBeFalse();
+  });
+
+  it('should exclude fruits with 0 prepared pulp units and no registered variants from preparedPulpsReport', () => {
+    mockFruits.set([
+      {
+        id: 'batido_verde',
+        fruitId: 10,
+        name: 'Batido Verde',
+        scientificName: '',
+        emoji: '',
+        color: '#1e5e3a',
+        bgColor: '#f0fdf4',
+        yieldRate: 0.75,
+        waterAdditionDefault: 0,
+        freshStockKg: 300,
+        category: 'PULPAS',
+        prices: { g140: 0, g250: 0, g500: 0, g1000: 0 },
+        stock: { g140: 0, g250: 0, g500: 0, g1000: 0 },
+        minStock: { g140: 0, g250: 0, g500: 0, g1000: 0 }
+      },
+      {
+        id: 'maracuya_portal',
+        fruitId: 11,
+        name: 'Maracuya',
+        scientificName: '',
+        emoji: '',
+        color: '#1e5e3a',
+        bgColor: '#f0fdf4',
+        yieldRate: 0,
+        waterAdditionDefault: 0,
+        freshStockKg: 0,
+        category: 'PULPAS',
+        prices: { g140: 0, g250: 4000, g500: 0, g1000: 0 },
+        stock: { g140: 0, g250: 0, g500: 0, g1000: 0 },
+        minStock: { g140: 0, g250: 0, g500: 0, g1000: 0 }
+      }
+    ]);
+    fixture.detectChanges();
+
+    expect(component.preparedPulpsReport().items.length).toBe(0);
+    expect(component.preparedPulpsReport().totalUnits).toBe(0);
+    expect(component.fruitInventoryReport().length).toBe(1);
+    expect(component.fruitInventoryReport()[0].name).toBe('Batido Verde');
   });
 
   it('should round monthly goal percentage to integer, cap at 100%, and apply red/orange/green card and pace styles', () => {

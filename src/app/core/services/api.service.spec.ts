@@ -250,4 +250,25 @@ describe('ApiService', () => {
       { id: 102, orderCode: 'ORD-102', status: 'EnRuta', courierId: 9, courierName: 'Domi Norte', routeSequenceOrder: 2 }
     ]);
   });
+
+  it('should include optional password when updating user via PUT /api/users/{id}', () => {
+    service
+      .updateUser(6, {
+        username: 'domSebalas',
+        fullName: 'sebas domiciliario',
+        email: 'dom@p.c',
+        password: 'NuevaPassword123',
+        roleId: 4,
+        isActive: true
+      })
+      .subscribe(user => {
+        expect(user.userId).toBe(6);
+        expect(user.username).toBe('domSebalas');
+      });
+
+    const req = httpMock.expectOne(`${baseUrl}/users/6`);
+    expect(req.request.method).toBe('PUT');
+    expect(req.request.body.password).toBe('NuevaPassword123');
+    req.flush({ id: 6, username: 'domSebalas', fullName: 'sebas domiciliario', email: 'dom@p.c', roleId: 4, isActive: true });
+  });
 });

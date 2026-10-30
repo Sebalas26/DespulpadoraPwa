@@ -563,3 +563,27 @@
   color: #6b7280;
   font-size: 0.85rem;
 }
+
+@media (max-width: 768px) {
+  .client-list-card {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    background: transparent;
+    border: none;
+    box-shadow: none;
+    overflow: visible;
+  }
+
+  .list-card-header {
+    background: #ffffff;
+    border: 1.5px solid #e2e8f0;
+    border-radius: 14px;
+    padding: 14px 16px;
+    box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
+  }
+
+  .client-search-box {
+    width: 100%;
+  }
+}

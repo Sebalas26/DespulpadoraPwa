@@ -32,7 +32,7 @@ describe('MobileNavComponent', () => {
     localStorage.clear();
   });
 
-  it('should open and close the mobile drawer and display dynamic companyName', () => {
+  it('should open and close the mobile drawer and display user fullName on top and roleName below in header', () => {
     stateService.syncCompanyInfoSilent({ companyName: 'Mobile Plant Co' });
     authService.user.set({
       id: 1,
@@ -51,7 +51,9 @@ describe('MobileNavComponent', () => {
     expect(component.showMoreDrawer()).toBeTrue();
     expect(component.userInitials()).toBe('CR');
     const compiled = fixture.nativeElement as HTMLElement;
-    expect(compiled.querySelector('.mobile-drawer-header')?.textContent).toContain('Mobile Plant Co');
+    expect(compiled.querySelector('.mobile-drawer-header .drawer-user-name')?.textContent?.trim()).toBe('Carlos Ruiz');
+    expect(compiled.querySelector('.mobile-drawer-header .drawer-user-role')?.textContent?.trim()).toBe('Operator');
+    expect(compiled.querySelector('.mobile-drawer-header')?.textContent).not.toContain('Mobile Plant Co');
 
     component.closeDrawer();
     expect(component.showMoreDrawer()).toBeFalse();
@@ -166,8 +168,10 @@ describe('MobileNavComponent', () => {
     const subtexts: NodeListOf<HTMLElement> = compiled.querySelectorAll('.mobile-drawer-body .drawer-desc');
     const logoutBtn: HTMLElement | null = compiled.querySelector('.drawer-logout-btn');
 
-    expect(titles.length).toBeGreaterThanOrEqual(3);
+    expect(titles.length).toBeGreaterThanOrEqual(5);
     const titleTexts: string[] = Array.from(titles).map((el: HTMLElement) => (el.textContent || '').trim());
+    expect(titleTexts).toContain('Pantalla de Alistamiento');
+    expect(titleTexts).toContain('KDS Inventario & Stock');
     expect(titleTexts).toContain('Portal Clientes');
     expect(titleTexts).toContain('Admin. Portal Clientes');
     expect(titleTexts).toContain('Dashboard Operativo');

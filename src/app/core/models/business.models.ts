@@ -588,6 +588,7 @@ export interface UpdateUserDto {
   username?: string;
   fullName: string;
   email: string;
+  password?: string;
   phone?: string;
   documentNumber?: string;
   roleId: number;

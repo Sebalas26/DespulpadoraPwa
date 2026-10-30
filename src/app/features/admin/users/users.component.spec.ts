@@ -166,12 +166,21 @@ describe('AdminUsersComponent', () => {
     component.openEditModal(mockUsers[0]);
     expect(component.showEditModal()).toBeTrue();
     expect(component.editingUserId()).toBe(10);
+    expect(component.editPassword()).toBe('');
 
     component.editFullName.set('Juan Editado');
     component.editPhone.set('3159998877');
+    component.editPassword.set('  ClaveNueva2026  ');
     component.submitEditUser();
 
-    expect(apiSpy.updateUser).toHaveBeenCalled();
+    expect(apiSpy.updateUser).toHaveBeenCalledWith(
+      10,
+      jasmine.objectContaining({
+        fullName: 'Juan Editado',
+        phone: '3159998877',
+        password: 'ClaveNueva2026'
+      })
+    );
     expect(component.showEditModal()).toBeFalse();
     expect(component.users()[0].fullName).toBe('Juan Editado');
   });

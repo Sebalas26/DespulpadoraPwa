@@ -71,6 +71,7 @@ export class AdminUsersComponent implements OnInit {
   readonly editEmail = signal<string>('');
   readonly editPhone = signal<string>('');
   readonly editDocumentNumber = signal<string>('');
+  readonly editPassword = signal<string>('');
   readonly editRoleId = signal<number>(0);
   readonly editIsActive = signal<boolean>(true);
   readonly editIsSystemDeveloper = signal<boolean>(false);
@@ -160,7 +161,7 @@ export class AdminUsersComponent implements OnInit {
           email,
           phone: this.newPhone().trim() || undefined,
           documentNumber: this.newDocumentNumber().trim() || undefined,
-          password: this.newPassword(),
+          password: this.newPassword().trim(),
           roleId,
           isSystemDeveloper: this.newIsSystemDeveloper()
         })
@@ -330,6 +331,7 @@ export class AdminUsersComponent implements OnInit {
       this.editEmail.set(user.email);
       this.editPhone.set(user.phone ?? '');
       this.editDocumentNumber.set(user.documentNumber ?? '');
+      this.editPassword.set('');
       this.editRoleId.set(user.roleId);
       this.editIsActive.set(user.isActive);
       this.editIsSystemDeveloper.set(Boolean(user.isSystemDeveloper));
@@ -344,6 +346,7 @@ export class AdminUsersComponent implements OnInit {
    */
   closeEditModal(): void {
     try {
+      this.editPassword.set('');
       this.showEditModal.set(false);
     } catch {
       return;
@@ -371,6 +374,7 @@ export class AdminUsersComponent implements OnInit {
           username: this.editUsername().trim() || undefined,
           fullName,
           email,
+          password: this.editPassword().trim() || undefined,
           phone: this.editPhone().trim() || undefined,
           documentNumber: this.editDocumentNumber().trim() || undefined,
           roleId,

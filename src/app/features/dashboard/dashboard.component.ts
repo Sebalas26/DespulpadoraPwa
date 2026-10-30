@@ -563,10 +563,7 @@ export class DashboardComponent {
 
   readonly totalPreparedPulpUnits = computed<number>(() => {
     try {
-      return this.stateService.fruits().reduce(
-        (sum, f) => sum + (f.stock.g140 || 0) + (f.stock.g250 || 0) + (f.stock.g500 || 0) + (f.stock.g1000 || 0),
-        0
-      );
+      return this.preparedPulpsReport().totalUnits;
     } catch {
       return 0;
     }
@@ -586,7 +583,9 @@ export class DashboardComponent {
 
   readonly fruitInventoryReport = computed<FruitInventoryReportItem[]>(() => {
     try {
-      const fruits = this.stateService.fruits();
+      const fruits = this.stateService.fruits().filter(
+        f => (f.freshStockKg || 0) > 0 || (f.yieldRate || 0) > 0
+      );
       const maxKg = Math.max(...fruits.map(f => f.freshStockKg || 0), 100);
       const totalKg = this.stateService.totalFreshStockKg() || 1;
 
@@ -620,23 +619,121 @@ export class DashboardComponent {
   readonly preparedPulpsReport = computed<PreparedPulpsReport>(() => {
     try {
       const fruits = this.stateService.fruits();
+      const variants =
+        typeof this.stateService.productVariants === 'function'
+          ? this.stateService.productVariants()
+          : [];
       let totalUnits = 0;
       let totalRetailValue = 0;
       const byGrammage = { g140: 0, g250: 0, g500: 0, g1000: 0 };
+      const matchedVariantIds = new Set<number>();
 
-      const items = fruits.map(f => {
-        const g140 = f.stock.g140 || 0;
-        const g250 = f.stock.g250 || 0;
-        const g500 = f.stock.g500 || 0;
-        const g1000 = f.stock.g1000 || 0;
+      const items = fruits
+        .map(f => {
+          const matchingVariants = variants.filter(
+            v =>
+              (f.fruitId && v.fruitId === f.fruitId) ||
+              v.fruitName.toLowerCase() === f.name.toLowerCase()
+          );
+          matchingVariants.forEach(v => matchedVariantIds.add(v.variantId));
 
+          const v140 = matchingVariants
+            .filter(v => v.grammage === 140)
+            .reduce((s, v) => s + (v.currentStock || 0), 0);
+          const v250 = matchingVariants
+            .filter(v => v.grammage === 250)
+            .reduce((s, v) => s + (v.currentStock || 0), 0);
+          const v500 = matchingVariants
+            .filter(v => v.grammage === 500)
+            .reduce((s, v) => s + (v.currentStock || 0), 0);
+          const v1000 = matchingVariants
+            .filter(v => v.grammage === 1000)
+            .reduce((s, v) => s + (v.currentStock || 0), 0);
+
+          const g140 = (f.stock.g140 || 0) > 0 ? f.stock.g140 : v140;
+          const g250 = (f.stock.g250 || 0) > 0 ? f.stock.g250 : v250;
+          const g500 = (f.stock.g500 || 0) > 0 ? f.stock.g500 : v500;
+          const g1000 = (f.stock.g1000 || 0) > 0 ? f.stock.g1000 : v1000;
+
+          const p140 =
+            (f.prices?.g140 || 0) > 0
+              ? f.prices.g140
+              : matchingVariants.find(v => v.grammage === 140)?.basePrice || 0;
+          const p250 =
+            (f.prices?.g250 || 0) > 0
+              ? f.prices.g250
+              : matchingVariants.find(v => v.grammage === 250)?.basePrice || 0;
+          const p500 =
+            (f.prices?.g500 || 0) > 0
+              ? f.prices.g500
+              : matchingVariants.find(v => v.grammage === 500)?.basePrice || 0;
+          const p1000 =
+            (f.prices?.g1000 || 0) > 0
+              ? f.prices.g1000
+              : matchingVariants.find(v => v.grammage === 1000)?.basePrice || 0;
+
+          const units = g140 + g250 + g500 + g1000;
+          const isRegisteredPreparedPulp = units > 0 || matchingVariants.length > 0;
+          if (!isRegisteredPreparedPulp) {
+            return null;
+          }
+
+          const totalKg = Number(
+            (g140 * 0.14 + g250 * 0.25 + g500 * 0.5 + g1000 * 1.0).toFixed(1)
+          );
+          const retailValue = g140 * p140 + g250 * p250 + g500 * p500 + g1000 * p1000;
+
+          totalUnits += units;
+          totalRetailValue += retailValue;
+          byGrammage.g140 += g140;
+          byGrammage.g250 += g250;
+          byGrammage.g500 += g500;
+          byGrammage.g1000 += g1000;
+
+          const hasLowAlert =
+            g140 <= (f.minStock?.g140 || 0) ||
+            g250 <= (f.minStock?.g250 || 0) ||
+            g500 <= (f.minStock?.g500 || 0) ||
+            g1000 <= (f.minStock?.g1000 || 0);
+
+          return {
+            id: f.id,
+            name: f.name,
+            emoji: f.emoji || '',
+            color: f.color || '#16a34a',
+            g140,
+            g250,
+            g500,
+            g1000,
+            low140: g140 <= (f.minStock?.g140 || 0),
+            low250: g250 <= (f.minStock?.g250 || 0),
+            low500: g500 <= (f.minStock?.g500 || 0),
+            low1000: g1000 <= (f.minStock?.g1000 || 0),
+            units,
+            totalKg,
+            retailValue,
+            hasLowAlert
+          };
+        })
+        .filter((item): item is NonNullable<typeof item> => item !== null);
+
+      const unmatchedVariants = variants.filter(v => !matchedVariantIds.has(v.variantId));
+      const groupedUnmatched = new Map<string, typeof unmatchedVariants>();
+      unmatchedVariants.forEach(v => {
+        const key = (v.fruitName || v.name).trim();
+        const existingGroup = groupedUnmatched.get(key) || [];
+        existingGroup.push(v);
+        groupedUnmatched.set(key, existingGroup);
+      });
+
+      groupedUnmatched.forEach((group, fruitName) => {
+        const g140 = group.filter(v => v.grammage === 140).reduce((s, v) => s + (v.currentStock || 0), 0);
+        const g250 = group.filter(v => v.grammage === 250).reduce((s, v) => s + (v.currentStock || 0), 0);
+        const g500 = group.filter(v => v.grammage === 500).reduce((s, v) => s + (v.currentStock || 0), 0);
+        const g1000 = group.filter(v => v.grammage === 1000).reduce((s, v) => s + (v.currentStock || 0), 0);
         const units = g140 + g250 + g500 + g1000;
-        const totalKg = Number(((g140 * 0.14) + (g250 * 0.25) + (g500 * 0.5) + (g1000 * 1.0)).toFixed(1));
-        const retailValue =
-          g140 * (f.prices?.g140 || 0) +
-          g250 * (f.prices?.g250 || 0) +
-          g500 * (f.prices?.g500 || 0) +
-          g1000 * (f.prices?.g1000 || 0);
+        const totalKg = Number((g140 * 0.14 + g250 * 0.25 + g500 * 0.5 + g1000 * 1.0).toFixed(1));
+        const retailValue = group.reduce((s, v) => s + (v.currentStock || 0) * (v.basePrice || 0), 0);
 
         totalUnits += units;
         totalRetailValue += retailValue;
@@ -645,30 +742,24 @@ export class DashboardComponent {
         byGrammage.g500 += g500;
         byGrammage.g1000 += g1000;
 
-        const hasLowAlert =
-          g140 <= (f.minStock?.g140 || 0) ||
-          g250 <= (f.minStock?.g250 || 0) ||
-          g500 <= (f.minStock?.g500 || 0) ||
-          g1000 <= (f.minStock?.g1000 || 0);
-
-        return {
-          id: f.id,
-          name: f.name,
-          emoji: f.emoji || '',
-          color: f.color || '#16a34a',
+        items.push({
+          id: `variant_${fruitName.toLowerCase().replace(/\s+/g, '_')}`,
+          name: fruitName,
+          emoji: '',
+          color: '#16a34a',
           g140,
           g250,
           g500,
           g1000,
-          low140: g140 <= (f.minStock?.g140 || 0),
-          low250: g250 <= (f.minStock?.g250 || 0),
-          low500: g500 <= (f.minStock?.g500 || 0),
-          low1000: g1000 <= (f.minStock?.g1000 || 0),
+          low140: g140 === 0,
+          low250: g250 === 0,
+          low500: g500 === 0,
+          low1000: g1000 === 0,
           units,
           totalKg,
           retailValue,
-          hasLowAlert
-        };
+          hasLowAlert: units === 0
+        });
       });
 
       return {

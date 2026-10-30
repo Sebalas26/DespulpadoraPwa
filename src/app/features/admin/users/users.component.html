@@ -177,7 +177,7 @@
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
           <div class="form-group">
             <label class="form-label">Nombre de Usuario *</label>
-            <input type="text" class="form-control" [ngModel]="newUsername()" (ngModelChange)="newUsername.set($event)" placeholder="ej: jruiz" />
+            <input type="text" class="form-control" autocapitalize="off" autocorrect="off" spellcheck="false" [ngModel]="newUsername()" (ngModelChange)="newUsername.set($event)" placeholder="ej: jruiz" />
           </div>
 
           <div class="form-group">
@@ -194,7 +194,7 @@
         <div style="display: grid; grid-template-columns: 1.2fr 0.8fr; gap: 12px;">
           <div class="form-group">
             <label class="form-label">Correo Electrónico *</label>
-            <input type="email" class="form-control" [ngModel]="newEmail()" (ngModelChange)="newEmail.set($event)" placeholder="juan@pulpafresca.com" />
+            <input type="email" class="form-control" autocapitalize="off" autocorrect="off" spellcheck="false" [ngModel]="newEmail()" (ngModelChange)="newEmail.set($event)" placeholder="juan@pulpafresca.com" />
           </div>
 
           <div class="form-group">
@@ -206,7 +206,7 @@
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
           <div class="form-group">
             <label class="form-label">Contraseña Inicial *</label>
-            <input type="text" class="form-control" [ngModel]="newPassword()" (ngModelChange)="newPassword.set($event)" />
+            <input type="text" class="form-control" autocapitalize="off" autocorrect="off" spellcheck="false" [ngModel]="newPassword()" (ngModelChange)="newPassword.set($event)" />
           </div>
 
           <div class="form-group">
@@ -255,7 +255,7 @@
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
           <div class="form-group">
             <label class="form-label">Nombre de Usuario</label>
-            <input type="text" class="form-control" [ngModel]="editUsername()" (ngModelChange)="editUsername.set($event)" [disabled]="editingUserId() === 1" />
+            <input type="text" class="form-control" autocapitalize="off" autocorrect="off" spellcheck="false" [ngModel]="editUsername()" (ngModelChange)="editUsername.set($event)" [disabled]="editingUserId() === 1" />
           </div>
 
           <div class="form-group">
@@ -272,13 +272,18 @@
         <div style="display: grid; grid-template-columns: 1.2fr 0.8fr; gap: 12px;">
           <div class="form-group">
             <label class="form-label">Correo Electrónico *</label>
-            <input type="email" class="form-control" [ngModel]="editEmail()" (ngModelChange)="editEmail.set($event)" />
+            <input type="email" class="form-control" autocapitalize="off" autocorrect="off" spellcheck="false" [ngModel]="editEmail()" (ngModelChange)="editEmail.set($event)" />
           </div>
 
           <div class="form-group">
             <label class="form-label">Teléfono</label>
             <input type="text" class="form-control" [ngModel]="editPhone()" (ngModelChange)="editPhone.set($event)" placeholder="300 000 0000" />
           </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Nueva Contraseña (Opcional)</label>
+          <input type="text" class="form-control" autocapitalize="off" autocorrect="off" spellcheck="false" [ngModel]="editPassword()" (ngModelChange)="editPassword.set($event)" placeholder="Dejar en blanco para conservar la actual" />
         </div>
 
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">

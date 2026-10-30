@@ -268,7 +268,8 @@ describe('ReportsComponent', () => {
       fixture.detectChanges();
       const kpiCards = hostEl.querySelectorAll('.quick-kpis-grid .quick-kpi-card.report-kpi-card');
       expect(kpiCards.length).toBe(4);
-      expect(hostEl.querySelectorAll('.quick-kpis-grid .kpi-icon-box').length).toBe(4);
+      expect(hostEl.querySelectorAll('.quick-kpis-grid .kpi-icon-box').length).toBe(0);
+      expect(hostEl.querySelectorAll('.quick-kpis-grid .kpi-card-top-row .kpi-label').length).toBe(4);
       expect(hostEl.querySelectorAll('.quick-kpis-grid .kpi-sparkline').length).toBe(4);
       expect(hostEl.querySelectorAll('.quick-kpis-grid .kpi-expand-chevron').length).toBe(0);
     }

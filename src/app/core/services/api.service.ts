@@ -1147,7 +1147,8 @@ export class ApiService {
         documentNumber: dto.documentNumber ?? null,
         roleId: Number(dto.roleId),
         isSystemDeveloper: Boolean(dto.isSystemDeveloper),
-        isActive: Boolean(dto.isActive)
+        isActive: Boolean(dto.isActive),
+        ...(dto.password ? { password: dto.password } : {})
       };
       return this.http.put<Record<string, unknown>>(`${this.baseUrl}/users/${userId}`, payload).pipe(
         map((item: Record<string, unknown>) => this.mapUserFromApi(item)),

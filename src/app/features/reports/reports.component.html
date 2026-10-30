@@ -258,15 +258,8 @@
       <div class="quick-kpis-grid reports-kpis-grid">
         <div class="quick-kpi-card report-kpi-card">
           <div class="kpi-card-top-row">
-            <div class="kpi-icon-box icon-green">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <rect x="2" y="6" width="20" height="12" rx="2"></rect>
-                <circle cx="12" cy="12" r="3"></circle>
-                <path d="M6 12h.01M18 12h.01"></path>
-              </svg>
-            </div>
+            <span class="kpi-label">Total Facturado</span>
           </div>
-          <span class="kpi-label">Total Facturado</span>
           <div class="kpi-value-row">
             <span class="kpi-big-value">{{ formatCOP(totalSalesRevenue()) }}</span>
             <svg class="kpi-sparkline" viewBox="0 0 68 34" fill="none" aria-hidden="true">
@@ -286,14 +279,8 @@
 
         <div class="quick-kpi-card report-kpi-card">
           <div class="kpi-card-top-row">
-            <div class="kpi-icon-box icon-blue">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline>
-                <polyline points="17 6 23 6 23 12"></polyline>
-              </svg>
-            </div>
+            <span class="kpi-label">Utilidad Bruta Acumulada</span>
           </div>
-          <span class="kpi-label">Utilidad Bruta Acumulada</span>
           <div class="kpi-value-row">
             <span class="kpi-big-value">{{ formatCOP(filteredGrossProfit()) }}</span>
             <svg class="kpi-sparkline" viewBox="0 0 68 34" fill="none" aria-hidden="true">
@@ -313,15 +300,8 @@
 
         <div class="quick-kpi-card report-kpi-card">
           <div class="kpi-card-top-row">
-            <div class="kpi-icon-box icon-amber">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <circle cx="12" cy="12" r="10"></circle>
-                <circle cx="12" cy="12" r="6"></circle>
-                <circle cx="12" cy="12" r="2"></circle>
-              </svg>
-            </div>
+            <span class="kpi-label">Cumplimiento Meta Mensual</span>
           </div>
-          <span class="kpi-label">Cumplimiento Meta Mensual</span>
           <div class="kpi-value-row">
             <span class="kpi-big-value">{{ filteredCompliancePct().toFixed(1) }}%</span>
             <svg class="kpi-sparkline" viewBox="0 0 68 34" fill="none" aria-hidden="true">
@@ -341,15 +321,8 @@
 
         <div class="quick-kpi-card report-kpi-card">
           <div class="kpi-card-top-row">
-            <div class="kpi-icon-box icon-purple">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"></path>
-                <path d="M3 6h18"></path>
-                <path d="M16 10a4 4 0 0 1-8 0"></path>
-              </svg>
-            </div>
+            <span class="kpi-label">Unidades & Pedido Promedio</span>
           </div>
-          <span class="kpi-label">Unidades & Pedido Promedio</span>
           <div class="kpi-value-row">
             <span class="kpi-big-value">{{ formatNum(totalUnitsSold()) }} unds</span>
             <svg class="kpi-sparkline" viewBox="0 0 68 34" fill="none" aria-hidden="true">
@@ -517,14 +490,8 @@
       <div class="quick-kpis-grid reports-kpis-grid">
         <div class="quick-kpi-card report-kpi-card">
           <div class="kpi-card-top-row">
-            <div class="kpi-icon-box icon-green">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z"></path>
-                <path d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12"></path>
-              </svg>
-            </div>
+            <span class="kpi-label">Pulpa Producida Total</span>
           </div>
-          <span class="kpi-label">Pulpa Producida Total</span>
           <div class="kpi-value-row">
             <span class="kpi-big-value">{{ formatNum(lossTotalPulpKg()) }} Kg</span>
             <svg class="kpi-sparkline" viewBox="0 0 68 34" fill="none" aria-hidden="true">
@@ -544,14 +511,8 @@
 
         <div class="quick-kpi-card report-kpi-card">
           <div class="kpi-card-top-row">
-            <div class="kpi-icon-box icon-blue">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline>
-                <polyline points="17 6 23 6 23 12"></polyline>
-              </svg>
-            </div>
+            <span class="kpi-label">Venta Ideal Teórica</span>
           </div>
-          <span class="kpi-label">Venta Ideal Teórica</span>
           <div class="kpi-value-row">
             <span class="kpi-big-value">{{ formatCOP(lossTotalIdealRevenue()) }}</span>
             <svg class="kpi-sparkline" viewBox="0 0 68 34" fill="none" aria-hidden="true">
@@ -571,15 +532,8 @@
 
         <div class="quick-kpi-card report-kpi-card">
           <div class="kpi-card-top-row">
-            <div class="kpi-icon-box icon-green">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <rect x="2" y="6" width="20" height="12" rx="2"></rect>
-                <circle cx="12" cy="12" r="3"></circle>
-                <path d="M6 12h.01M18 12h.01"></path>
-              </svg>
-            </div>
+            <span class="kpi-label">Venta Real Facturada</span>
           </div>
-          <span class="kpi-label">Venta Real Facturada</span>
           <div class="kpi-value-row">
             <span class="kpi-big-value">{{ formatCOP(lossTotalRealRevenue()) }}</span>
             <svg class="kpi-sparkline" viewBox="0 0 68 34" fill="none" aria-hidden="true">
@@ -599,15 +553,8 @@
 
         <div class="quick-kpi-card report-kpi-card">
           <div class="kpi-card-top-row">
-            <div class="kpi-icon-box icon-red">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"></path>
-                <line x1="12" y1="9" x2="12" y2="13"></line>
-                <line x1="12" y1="17" x2="12.01" y2="17"></line>
-              </svg>
-            </div>
+            <span class="kpi-label">Brecha de Merma / Fuga</span>
           </div>
-          <span class="kpi-label">Brecha de Merma / Fuga</span>
           <div class="kpi-value-row">
             <span class="kpi-big-value">{{ formatCOP(lossTotalGapRevenue()) }}</span>
             <svg class="kpi-sparkline" viewBox="0 0 68 34" fill="none" aria-hidden="true">
@@ -735,15 +682,8 @@
       <div class="quick-kpis-grid reports-kpis-grid">
         <div class="quick-kpi-card report-kpi-card">
           <div class="kpi-card-top-row">
-            <div class="kpi-icon-box icon-blue">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
-                <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
-                <line x1="12" y1="22.08" x2="12" y2="12"></line>
-              </svg>
-            </div>
+            <span class="kpi-label">Pulpa Congelada en Inventario</span>
           </div>
-          <span class="kpi-label">Pulpa Congelada en Inventario</span>
           <div class="kpi-value-row">
             <span class="kpi-big-value">{{ formatNum(cavaTotalStockKg()) }} Kg</span>
             <svg class="kpi-sparkline" viewBox="0 0 68 34" fill="none" aria-hidden="true">
@@ -763,14 +703,8 @@
 
         <div class="quick-kpi-card report-kpi-card">
           <div class="kpi-card-top-row">
-            <div class="kpi-icon-box icon-green">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z"></path>
-                <path d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12"></path>
-              </svg>
-            </div>
+            <span class="kpi-label">Fruta Fresca en Bodega</span>
           </div>
-          <span class="kpi-label">Fruta Fresca en Bodega</span>
           <div class="kpi-value-row">
             <span class="kpi-big-value">{{ formatNum(cavaFreshStockKg()) }} Kg</span>
             <svg class="kpi-sparkline" viewBox="0 0 68 34" fill="none" aria-hidden="true">
@@ -790,15 +724,8 @@
 
         <div class="quick-kpi-card report-kpi-card">
           <div class="kpi-card-top-row">
-            <div class="kpi-icon-box icon-green">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <rect x="2" y="6" width="20" height="12" rx="2"></rect>
-                <circle cx="12" cy="12" r="3"></circle>
-                <path d="M6 12h.01M18 12h.01"></path>
-              </svg>
-            </div>
+            <span class="kpi-label">Valorización Comercial de Inventario</span>
           </div>
-          <span class="kpi-label">Valorización Comercial de Inventario</span>
           <div class="kpi-value-row">
             <span class="kpi-big-value">{{ formatCOP(cavaCommercialValue()) }}</span>
             <svg class="kpi-sparkline" viewBox="0 0 68 34" fill="none" aria-hidden="true">
@@ -818,15 +745,8 @@
 
         <div class="quick-kpi-card report-kpi-card">
           <div class="kpi-card-top-row">
-            <div class="kpi-icon-box icon-amber">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"></path>
-                <line x1="12" y1="9" x2="12" y2="13"></line>
-                <line x1="12" y1="17" x2="12.01" y2="17"></line>
-              </svg>
-            </div>
+            <span class="kpi-label">Costo Estimado & Alertas</span>
           </div>
-          <span class="kpi-label">Costo Estimado & Alertas</span>
           <div class="kpi-value-row">
             <span class="kpi-big-value">{{ formatCOP(cavaEstimatedCost()) }}</span>
             <svg class="kpi-sparkline" viewBox="0 0 68 34" fill="none" aria-hidden="true">
@@ -934,16 +854,8 @@
       <div class="quick-kpis-grid reports-kpis-grid">
         <div class="quick-kpi-card report-kpi-card">
           <div class="kpi-card-top-row">
-            <div class="kpi-icon-box icon-red">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-                <polyline points="14 2 14 8 20 8"></polyline>
-                <line x1="16" y1="13" x2="8" y2="13"></line>
-                <line x1="16" y1="17" x2="8" y2="17"></line>
-              </svg>
-            </div>
+            <span class="kpi-label">Total Gastos Operativos</span>
           </div>
-          <span class="kpi-label">Total Gastos Operativos</span>
           <div class="kpi-value-row">
             <span class="kpi-big-value">{{ formatCOP(totalExpensesAmount()) }}</span>
             <svg class="kpi-sparkline" viewBox="0 0 68 34" fill="none" aria-hidden="true">
@@ -963,16 +875,8 @@
 
         <div class="quick-kpi-card report-kpi-card">
           <div class="kpi-card-top-row">
-            <div class="kpi-icon-box icon-amber">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <rect x="1" y="3" width="15" height="13"></rect>
-                <polygon points="16 8 20 8 23 11 23 16 16 16 16 8"></polygon>
-                <circle cx="5.5" cy="18.5" r="2.5"></circle>
-                <circle cx="18.5" cy="18.5" r="2.5"></circle>
-              </svg>
-            </div>
+            <span class="kpi-label">Combustible & Fletes Domicilios</span>
           </div>
-          <span class="kpi-label">Combustible & Fletes Domicilios</span>
           <div class="kpi-value-row">
             <span class="kpi-big-value">{{ formatCOP(logisticsExpensesAmount()) }}</span>
             <svg class="kpi-sparkline" viewBox="0 0 68 34" fill="none" aria-hidden="true">
@@ -992,15 +896,8 @@
 
         <div class="quick-kpi-card report-kpi-card">
           <div class="kpi-card-top-row">
-            <div class="kpi-icon-box icon-blue">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"></path>
-                <path d="M3 6h18"></path>
-                <path d="M16 10a4 4 0 0 1-8 0"></path>
-              </svg>
-            </div>
+            <span class="kpi-label">Empaques, Bolsas & Insumos</span>
           </div>
-          <span class="kpi-label">Empaques, Bolsas & Insumos</span>
           <div class="kpi-value-row">
             <span class="kpi-big-value">{{ formatCOP(packagingExpensesAmount()) }}</span>
             <svg class="kpi-sparkline" viewBox="0 0 68 34" fill="none" aria-hidden="true">
@@ -1020,13 +917,8 @@
 
         <div class="quick-kpi-card report-kpi-card">
           <div class="kpi-card-top-row">
-            <div class="kpi-icon-box icon-purple">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
-              </svg>
-            </div>
+            <span class="kpi-label">Servicios & Mantenimiento Planta</span>
           </div>
-          <span class="kpi-label">Servicios & Mantenimiento Planta</span>
           <div class="kpi-value-row">
             <span class="kpi-big-value">{{ formatCOP(facilityExpensesAmount()) }}</span>
             <svg class="kpi-sparkline" viewBox="0 0 68 34" fill="none" aria-hidden="true">
@@ -1124,15 +1016,8 @@
       <div class="quick-kpis-grid reports-kpis-grid">
         <div class="quick-kpi-card report-kpi-card">
           <div class="kpi-card-top-row">
-            <div class="kpi-icon-box icon-green">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <rect x="2" y="6" width="20" height="12" rx="2"></rect>
-                <circle cx="12" cy="12" r="3"></circle>
-                <path d="M6 12h.01M18 12h.01"></path>
-              </svg>
-            </div>
+            <span class="kpi-label">Total Nómina Quincenal</span>
           </div>
-          <span class="kpi-label">Total Nómina Quincenal</span>
           <div class="kpi-value-row">
             <span class="kpi-big-value">{{ formatCOP(totalPayrollNet()) }}</span>
             <svg class="kpi-sparkline" viewBox="0 0 68 34" fill="none" aria-hidden="true">
@@ -1152,16 +1037,8 @@
 
         <div class="quick-kpi-card report-kpi-card">
           <div class="kpi-card-top-row">
-            <div class="kpi-icon-box icon-blue">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
-                <circle cx="9" cy="7" r="4"></circle>
-                <path d="M22 21v-2a4 4 0 0 0-3-3.87"></path>
-                <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
-              </svg>
-            </div>
+            <span class="kpi-label">Colaboradores en Planta</span>
           </div>
-          <span class="kpi-label">Colaboradores en Planta</span>
           <div class="kpi-value-row">
             <span class="kpi-big-value">{{ payrollSettlements().length }} activos</span>
             <svg class="kpi-sparkline" viewBox="0 0 68 34" fill="none" aria-hidden="true">
@@ -1181,13 +1058,8 @@
 
         <div class="quick-kpi-card report-kpi-card">
           <div class="kpi-card-top-row">
-            <div class="kpi-icon-box icon-green">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M2 20a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V8l-7 5V8l-7 5V4a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z"></path>
-              </svg>
-            </div>
+            <span class="kpi-label">Área Producción (Planta)</span>
           </div>
-          <span class="kpi-label">Área Producción (Planta)</span>
           <div class="kpi-value-row">
             <span class="kpi-big-value">{{ formatCOP(productionPayrollNet()) }}</span>
             <svg class="kpi-sparkline" viewBox="0 0 68 34" fill="none" aria-hidden="true">
@@ -1207,16 +1079,8 @@
 
         <div class="quick-kpi-card report-kpi-card">
           <div class="kpi-card-top-row">
-            <div class="kpi-icon-box icon-amber">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <rect x="1" y="3" width="15" height="13"></rect>
-                <polygon points="16 8 20 8 23 11 23 16 16 16 16 8"></polygon>
-                <circle cx="5.5" cy="18.5" r="2.5"></circle>
-                <circle cx="18.5" cy="18.5" r="2.5"></circle>
-              </svg>
-            </div>
+            <span class="kpi-label">Área Domicilios (Rutas)</span>
           </div>
-          <span class="kpi-label">Área Domicilios (Rutas)</span>
           <div class="kpi-value-row">
             <span class="kpi-big-value">{{ formatCOP(deliveryPayrollNet()) }}</span>
             <svg class="kpi-sparkline" viewBox="0 0 68 34" fill="none" aria-hidden="true">
