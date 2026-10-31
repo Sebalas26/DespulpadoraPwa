@@ -609,31 +609,74 @@ describe('DeliveryMapComponent', () => {
       }
     ]);
 
+    spyOn(
+      component as unknown as {
+        getRoadSegment: (lat1: number, lng1: number, lat2: number, lng2: number) => Promise<[number, number][]>;
+      },
+      'getRoadSegment'
+    ).and.callFake((lat1: number, lng1: number, lat2: number, lng2: number) =>
+      Promise.resolve([
+        [lat1, lng1],
+        [lat2, lng2]
+      ])
+    );
+
     component.enterAllDeliveriesMode();
     fixture.detectChanges();
     await fixture.whenStable();
 
     const stopMarkersMap = (component as unknown as { stopMarkers: Map<number, unknown> }).stopMarkers;
+    const courierMarkersMap = (component as unknown as { courierMarkers: Map<string, unknown> }).courierMarkers;
     expect(stopMarkersMap.has(601)).toBeTrue();
     expect(stopMarkersMap.has(602)).toBeTrue();
+    expect(courierMarkersMap.has('u88')).toBeTrue();
 
+    mockOrders.update(list => list.map(o => (o.orderNumber === 'ORD-601' ? { ...o, status: 'DELIVERED' } : o)));
     component.markOrderDeliveredByOrderNumber('ORD-601');
     await component.buildAndRenderRealRoadRoutes();
 
     expect(stopMarkersMap.has(601)).toBeFalse();
     expect(stopMarkersMap.has(602)).toBeTrue();
+    expect(courierMarkersMap.has('u88')).toBeTrue();
 
     const courier = component.couriers().find(c => c.id === 'u88')!;
     expect(component.getCourierCompletedStops(courier)).toBe(1);
     expect(component.isCourierReadyToReceive(courier)).toBeFalse();
 
+    mockOrders.update(list => list.map(o => (o.orderNumber === 'ORD-602' ? { ...o, status: 'DELIVERED' } : o)));
     component.markOrderDeliveredByOrderNumber('ORD-602');
     await component.buildAndRenderRealRoadRoutes();
 
     expect(stopMarkersMap.has(602)).toBeFalse();
+    expect(courierMarkersMap.has('u88')).toBeFalse();
     const courierFullRoadPaths = (component as unknown as { courierFullRoadPaths: Map<string, [number, number][]> }).courierFullRoadPaths;
     expect(courierFullRoadPaths.get('u88')).toEqual([]);
     expect(component.getCourierCompletedStops(courier)).toBe(2);
     expect(component.isCourierReadyToReceive(courier)).toBeTrue();
+  });
+
+  it('should not render courier location marker on map when courier has no assigned stops', () => {
+    mockRoles.set([
+      { roleId: 3, name: 'Domiciliario', isCourier: true, isSystemRole: true, isActive: true }
+    ]);
+    mockUsers.set([
+      {
+        userId: 6,
+        username: 'sebas',
+        fullName: 'sebas domiciliario',
+        roleId: 3,
+        roleName: 'Domiciliario',
+        isActive: true,
+        companyId: 1,
+        branches: [],
+        email: 'sebas@dgl.com',
+        phone: '3208992341'
+      }
+    ]);
+    mockOrders.set([]);
+    fixture.detectChanges();
+
+    const courierMarkersMap = (component as unknown as { courierMarkers: Map<string, unknown> }).courierMarkers;
+    expect(courierMarkersMap.has('u6')).toBeFalse();
   });
 });

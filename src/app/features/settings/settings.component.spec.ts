@@ -18,6 +18,7 @@ import {
   CompanyConfig,
   InventoryCategoryConfig,
   InventoryGrammageConfig,
+  InventoryMovementRecordDto,
   PaymentMethodDto,
   ProductVariantDto,
   ShiftScheduleConfig
@@ -84,6 +85,7 @@ describe('SettingsComponent', () => {
   ]);
 
   const mockPaymentMethods = signal<PaymentMethodDto[]>([]);
+  const mockInventoryMovements = signal<InventoryMovementRecordDto[]>([]);
 
   beforeEach(async () => {
     notificationSpy = jasmine.createSpyObj<NotificationService>('NotificationService', [
@@ -115,6 +117,7 @@ describe('SettingsComponent', () => {
       categoriesConfig: mockCategoriesConfig,
       grammagesConfig: mockGrammagesConfig,
       shiftSchedulesConfig: mockShiftSchedulesConfig,
+      inventoryMovements: mockInventoryMovements,
       activeCategories: computed(() => mockCategoriesConfig().filter(c => c.isActive)),
       activeGrammages: computed(() => mockGrammagesConfig().filter(g => g.isActive)),
       activeShiftSchedules: computed(() => mockShiftSchedulesConfig().filter(s => s.isActive)),
@@ -530,5 +533,90 @@ describe('SettingsComponent', () => {
     component.confirmDeleteShiftSchedule(added!);
     component.onConfirmDialog();
     expect(component.shiftSchedulesConfig().some(s => s.code === 'EXTENDIDO')).toBeFalse();
+  });
+
+  it('should omit status badge, SKU line, and progress bar on pulp cards and fruit cards, and display summary banner on both tabs', () => {
+    component.activeTab.set('inventory');
+    component.inventorySubTab.set('variants');
+    fixture.detectChanges();
+
+    const compiled: HTMLElement = fixture.nativeElement as HTMLElement;
+    const pulpSummaryBanner = compiled.querySelector('.inv-summary-banner');
+    expect(pulpSummaryBanner).not.toBeNull();
+    expect(pulpSummaryBanner?.textContent).toContain('Inventario de Pulpas Disponibles en Planta');
+    expect(pulpSummaryBanner?.querySelector('#btn-pulp-history-dropdown')).not.toBeNull();
+
+    const stockCard = compiled.querySelector('.inv-stock-card');
+    expect(stockCard).not.toBeNull();
+    expect(stockCard?.querySelector('.inv-status-badge')).toBeNull();
+    expect(stockCard?.querySelector('.inv-card-sku')).toBeNull();
+    expect(stockCard?.querySelector('.inv-stock-meter-track')).toBeNull();
+    expect(stockCard?.querySelector('.inv-stock-meter-labels')?.textContent).toContain('Mínimo alerta: 10 uds');
+
+    component.inventorySubTab.set('fruits');
+    fixture.detectChanges();
+
+    const fruitSummaryBanner = compiled.querySelector('.inv-summary-banner');
+    expect(fruitSummaryBanner).not.toBeNull();
+    expect(fruitSummaryBanner?.textContent).toContain('Inventario de Fruta Disponible en Planta');
+    expect(fruitSummaryBanner?.querySelector('#btn-fruit-history-dropdown')).not.toBeNull();
+
+    const fruitCard = compiled.querySelector('.inv-fruit-card');
+    expect(fruitCard).not.toBeNull();
+    expect(fruitCard?.querySelector('.inv-status-badge')).toBeNull();
+    expect(fruitCard?.querySelector('.inv-card-total-pill')).toBeNull();
+    expect(fruitCard?.querySelector('.inv-stock-meter-track')).toBeNull();
+    expect(fruitCard?.querySelector('.inv-stock-meter-labels')?.textContent).toContain('Alerta planta: 50 Kg');
+  });
+
+  it('should open inventory history modal via dropdown, filter by dates, and paginate up to 15 pages', () => {
+    const generatedMovements: InventoryMovementRecordDto[] = Array.from({ length: 25 }, (_, i) => ({
+      id: `MOV-${i + 1}`,
+      category: 'FRUIT',
+      movementType: i % 2 === 0 ? 'IN' : 'OUT',
+      itemId: '1',
+      itemName: 'Mora',
+      presentation: 'Fruta Fresca (Kg)',
+      quantity: 10,
+      previousStock: 100,
+      newStock: i % 2 === 0 ? 110 : 90,
+      unit: 'Kg',
+      reason: 'Ajuste rápido',
+      createdAt: i < 10 ? '2026-10-10T10:00:00.000Z' : '2026-10-25T14:30:00.000Z'
+    }));
+    mockInventoryMovements.set(generatedMovements);
+
+    component.activeTab.set('inventory');
+    component.inventorySubTab.set('fruits');
+    fixture.detectChanges();
+
+    component.toggleHistoryDropdown();
+    expect(component.showHistoryDropdown()).toBeTrue();
+
+    component.openInventoryHistoryModal('FRUIT', 'ALL');
+    fixture.detectChanges();
+
+    expect(component.showHistoryDropdown()).toBeFalse();
+    expect(component.showInventoryHistoryModal()).toBeTrue();
+    expect(component.historyTotalPages()).toBe(2);
+    expect(component.paginatedInventoryHistory().length).toBe(15);
+
+    component.setHistoryPage(2);
+    expect(component.historyCurrentPage()).toBe(2);
+    expect(component.paginatedInventoryHistory().length).toBe(10);
+
+    component.historyStartDate.set('2026-10-20');
+    component.historyEndDate.set('2026-10-30');
+    component.historyCurrentPage.set(1);
+    expect(component.filteredInventoryHistory().length).toBe(15);
+    expect(component.historyTotalPages()).toBe(1);
+
+    component.clearHistoryDateFilters();
+    expect(component.historyStartDate()).toBe('');
+    expect(component.historyEndDate()).toBe('');
+    expect(component.filteredInventoryHistory().length).toBe(25);
+
+    component.closeInventoryHistoryModal();
+    expect(component.showInventoryHistoryModal()).toBeFalse();
   });
 });

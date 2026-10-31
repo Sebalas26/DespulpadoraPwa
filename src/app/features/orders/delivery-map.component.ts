@@ -866,7 +866,7 @@ export const MAP_STYLES: MapStyleOption[] = [
                   </button>
 
                   
-                  @for (c of couriers(); track c.id) {
+                  @for (c of assignedCouriers(); track c.id) {
                     <button
                       type="button"
                       class="courier-fab-item"
@@ -932,7 +932,7 @@ export const MAP_STYLES: MapStyleOption[] = [
                   <div class="mobile-summary-header" (click)="toggleMobileCourierCard(c.id, $event); onCourierCardClick(c.id)">
                     <div class="ms-left">
                       <span class="ms-code-badge">{{ c.name }}</span>
-                      <span class="ms-subtitle">Placa: {{ c.vehiclePlate }} • #{{ getCourierRouteCode(c) }} · {{ c.vehicleType === 'moto' ? 'Moto' : 'Carro' }}</span>
+                      <span class="ms-subtitle">Placa: {{ c.vehiclePlate }} • #{{ c.routeCode || 'RUTA' }} · {{ c.vehicleType === 'moto' ? 'Moto' : 'Carro' }}</span>
                     </div>
                     <div class="ms-right">
                       <div class="ms-top-right">
@@ -972,7 +972,7 @@ export const MAP_STYLES: MapStyleOption[] = [
                         <span class="courier-name">{{ c.name }}</span>
                         <div class="courier-badges-inline">
                           <span class="courier-route-code-pill" [style.color]="c.color">
-                            {{ getCourierRouteCode(c) }}
+                            {{ c.routeCode || 'RUTA' }}
                           </span>
                           <span class="courier-stops-pill" title="Paradas completadas / asignadas">
                             Paradas: <strong>{{ getCourierCompletedStops(c) }}/{{ c.orderIds.length }}</strong>
@@ -5955,6 +5955,7 @@ export class DeliveryMapComponent implements OnInit, AfterViewInit, OnDestroy {
       }));
 
       this.renderStopMarkers();
+      this.renderCourierMarkers();
       this.buildAndRenderRealRoadRoutes();
       this.closeReceiveCourierModal();
 
@@ -6000,7 +6001,7 @@ export class DeliveryMapComponent implements OnInit, AfterViewInit, OnDestroy {
       }));
 
       this.renderStopMarkers();
-      void this.buildAndRenderRealRoadRoutes();
+      this.renderCourierMarkers();
       this.notification.success(
         'Paradas Completadas',
         `Todas las paradas de ${courier.name} han sido marcadas como entregadas. El botón "Recibir Domiciliario" ya está activo.`
@@ -6022,7 +6023,7 @@ export class DeliveryMapComponent implements OnInit, AfterViewInit, OnDestroy {
         return s;
       }));
       this.renderStopMarkers();
-      void this.buildAndRenderRealRoadRoutes();
+      this.renderCourierMarkers();
     } catch (error: unknown) {
       console.error('Error marking order delivered by order number:', error);
     }
@@ -7163,13 +7164,33 @@ export class DeliveryMapComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   /**
+   * Returns couriers that currently have at least one active (undelivered) stop assigned on the map.
+   */
+  private getCouriersWithActiveRouteOnMap(): Courier[] {
+    try {
+      const undeliveredStops = this.deliveryStops().filter((s: DeliveryWaypoint) => !s.isDelivered);
+      if (undeliveredStops.length === 0) return [];
+      const undeliveredStopIds = new Set<number>(undeliveredStops.map((s: DeliveryWaypoint) => s.id));
+      return this.couriers().filter(
+        (c: Courier) =>
+          c.orderIds.some((id: number) => undeliveredStopIds.has(id)) ||
+          undeliveredStops.some((s: DeliveryWaypoint) => s.assignedCourierId === c.id)
+      );
+    } catch (error: unknown) {
+      console.error('Error getting couriers with active route on map:', error);
+      return [];
+    }
+  }
+
+  /**
    * Renders courier vehicle markers on the Leaflet map, updating existing markers in place without duplication.
    */
   private renderCourierMarkers(): void {
     try {
       if (!this.map) return;
 
-      const activeCourierIds = new Set<string>(this.couriers().map((c: Courier) => c.id));
+      const couriersToRender = this.getCouriersWithActiveRouteOnMap();
+      const activeCourierIds = new Set<string>(couriersToRender.map((c: Courier) => c.id));
       this.courierMarkers.forEach((existingMarker: L.Marker, courierId: string) => {
         if (!activeCourierIds.has(courierId)) {
           existingMarker.remove();
@@ -7177,7 +7198,7 @@ export class DeliveryMapComponent implements OnInit, AfterViewInit, OnDestroy {
         }
       });
 
-      this.couriers().forEach((courier: Courier) => {
+      couriersToRender.forEach((courier: Courier) => {
         const plateTag = (courier.vehiclePlate || 'GPS').split('-')[0];
         const courierHtml = `
           <div style="
@@ -7457,6 +7478,7 @@ export class DeliveryMapComponent implements OnInit, AfterViewInit, OnDestroy {
       );
 
       this.renderStopMarkers();
+      this.renderCourierMarkers();
       this.buildAndRenderRealRoadRoutes();
 
       const courier = this.couriers().find((c: Courier) => c.id === courierId);
@@ -7902,13 +7924,13 @@ export class DeliveryMapComponent implements OnInit, AfterViewInit, OnDestroy {
         notes: `Pedido georreferenciado en ${this.newOrderZone()}`,
         items: fruitName
           ? [
-              {
-                fruitName,
-                grammage: 1000,
-                quantity: 10,
-                unitPrice: amount / 10
-              }
-            ]
+            {
+              fruitName,
+              grammage: 1000,
+              quantity: 10,
+              unitPrice: amount / 10
+            }
+          ]
           : []
       });
 
@@ -7953,6 +7975,7 @@ export class DeliveryMapComponent implements OnInit, AfterViewInit, OnDestroy {
       this.showPointOrderModal.set(false);
 
       this.renderStopMarkers();
+      this.renderCourierMarkers();
       this.buildAndRenderRealRoadRoutes();
 
       confetti({
@@ -8215,14 +8238,14 @@ export class DeliveryMapComponent implements OnInit, AfterViewInit, OnDestroy {
         list.map((c: Courier) =>
           c.id === courierId
             ? {
-                ...c,
-                orderIds: finalOrderIds,
-                routeCode: resolvedRouteCode,
-                isRouteCreated: true,
-                hasCreatedRoute: true,
-                status: 'en_ruta',
-                routeStatus: 'en_ruta'
-              }
+              ...c,
+              orderIds: finalOrderIds,
+              routeCode: resolvedRouteCode,
+              isRouteCreated: true,
+              hasCreatedRoute: true,
+              status: 'en_ruta',
+              routeStatus: 'en_ruta'
+            }
             : c
         )
       );
@@ -8238,6 +8261,7 @@ export class DeliveryMapComponent implements OnInit, AfterViewInit, OnDestroy {
       this.showConfirmCreateRouteModal.set(false);
       this.pendingRouteCourierId.set('');
       this.renderStopMarkers();
+      this.renderCourierMarkers();
       this.buildAndRenderRealRoadRoutes();
 
       this.notification.success(
@@ -8624,6 +8648,7 @@ export class DeliveryMapComponent implements OnInit, AfterViewInit, OnDestroy {
       const beforeCount = this.deliveryStops().length;
       this.syncWithStateServiceOrders();
       this.renderStopMarkers();
+      this.renderCourierMarkers();
       this.buildAndRenderRealRoadRoutes();
       const addedCount = this.deliveryStops().length - beforeCount;
 
@@ -8741,14 +8766,14 @@ export class DeliveryMapComponent implements OnInit, AfterViewInit, OnDestroy {
           list.map((c: Courier) =>
             c.id === courier.id
               ? {
-                  ...c,
-                  orderIds: finalOrderIds,
-                  routeCode: resolvedRouteCode,
-                  isRouteCreated: true,
-                  hasCreatedRoute: true,
-                  status: 'en_ruta',
-                  routeStatus: 'en_ruta'
-                }
+                ...c,
+                orderIds: finalOrderIds,
+                routeCode: resolvedRouteCode,
+                isRouteCreated: true,
+                hasCreatedRoute: true,
+                status: 'en_ruta',
+                routeStatus: 'en_ruta'
+              }
               : c
           )
         );
@@ -8770,6 +8795,7 @@ export class DeliveryMapComponent implements OnInit, AfterViewInit, OnDestroy {
       this.showConfirmAssignToActiveRouteModal.set(false);
       this.pendingActiveRouteAssignment.set(null);
       this.renderStopMarkers();
+      this.renderCourierMarkers();
       this.buildAndRenderRealRoadRoutes();
     } catch (error: unknown) {
       console.error('Error confirming assignment to active route:', error);
@@ -8920,6 +8946,7 @@ export class DeliveryMapComponent implements OnInit, AfterViewInit, OnDestroy {
       );
 
       this.renderStopMarkers();
+      this.renderCourierMarkers();
       this.buildAndRenderRealRoadRoutes();
     } catch (error: unknown) {
       console.error('Error assigning courier to stop:', error);
@@ -9013,6 +9040,7 @@ export class DeliveryMapComponent implements OnInit, AfterViewInit, OnDestroy {
       }
 
       this.renderStopMarkers();
+      this.renderCourierMarkers();
       this.buildAndRenderRealRoadRoutes();
 
       if (target) {
@@ -9083,13 +9111,13 @@ export class DeliveryMapComponent implements OnInit, AfterViewInit, OnDestroy {
         notes: `Agregado desde el mapa (${zone})`,
         items: defaultFruit
           ? [
-              {
-                fruitName: defaultFruit,
-                grammage: 1000,
-                quantity: 10,
-                unitPrice: Math.round(amount / 10)
-              }
-            ]
+            {
+              fruitName: defaultFruit,
+              grammage: 1000,
+              quantity: 10,
+              unitPrice: Math.round(amount / 10)
+            }
+          ]
           : []
       });
 
@@ -9125,6 +9153,7 @@ export class DeliveryMapComponent implements OnInit, AfterViewInit, OnDestroy {
       this.showDrawerQuickAdd.set(false);
 
       this.renderStopMarkers();
+      this.renderCourierMarkers();
       this.buildAndRenderRealRoadRoutes();
       this.focusStopOnMap(newStop);
 
@@ -9187,6 +9216,7 @@ export class DeliveryMapComponent implements OnInit, AfterViewInit, OnDestroy {
       }
 
       this.renderStopMarkers();
+      this.renderCourierMarkers();
       this.buildAndRenderRealRoadRoutes();
       this.focusStopOnMap(newStop);
     } catch (error: unknown) {
@@ -9365,6 +9395,7 @@ export class DeliveryMapComponent implements OnInit, AfterViewInit, OnDestroy {
       this.isSimulating.set(false);
       this.syncMapLayersForMode();
       this.renderStopMarkers();
+      this.renderCourierMarkers();
       if (this.map) {
         setTimeout(() => {
           this.map?.invalidateSize();
@@ -9470,11 +9501,11 @@ export class DeliveryMapComponent implements OnInit, AfterViewInit, OnDestroy {
       if (!this.map) return;
       const isLive = this.mapViewMode() === 'live';
       const relevantStops = isLive
-        ? this.deliveryStops().filter((s: DeliveryWaypoint) => !!s.assignedCourierId && !s.isDelivered)
-        : this.deliveryStops().filter((s: DeliveryWaypoint) => !s.isDelivered);
+        ? this.deliveryStops().filter((s: DeliveryWaypoint) => !!s.assignedCourierId)
+        : this.deliveryStops();
 
       const courierCoords = isLive
-        ? this.couriers().map((c: Courier) => [c.lat, c.lng] as [number, number])
+        ? this.getCouriersWithActiveRouteOnMap().map((c: Courier) => [c.lat, c.lng] as [number, number])
         : [];
 
       const coords: [number, number][] = [
@@ -9624,9 +9655,15 @@ export class DeliveryMapComponent implements OnInit, AfterViewInit, OnDestroy {
                   });
                 }
 
+                const undeliveredStops = this.deliveryStops().filter((s: DeliveryWaypoint) => !s.isDelivered);
+                const undeliveredStopIds = new Set<number>(undeliveredStops.map((s: DeliveryWaypoint) => s.id));
+                const hasAssignedActiveStops =
+                  c.orderIds.some((id: number) => undeliveredStopIds.has(id)) ||
+                  undeliveredStops.some((s: DeliveryWaypoint) => s.assignedCourierId === c.id);
+
                 const rawStatus = (matchedDto.status || '').toLowerCase();
                 let nextStatus: Courier['status'] = c.status;
-                if (rawStatus.includes('planta') || rawStatus.includes('inactivo')) {
+                if (!hasAssignedActiveStops || rawStatus.includes('planta') || rawStatus.includes('inactivo')) {
                   nextStatus = 'en_planta';
                 } else if (rawStatus.includes('sitio') || rawStatus.includes('entregando')) {
                   nextStatus = 'entregando';
@@ -9639,7 +9676,7 @@ export class DeliveryMapComponent implements OnInit, AfterViewInit, OnDestroy {
                   lat: nextLat,
                   lng: nextLng,
                   vehiclePlate: nextPlate,
-                  currentSpeedKmH: nextSpeedKmH,
+                  currentSpeedKmH: hasAssignedActiveStops ? nextSpeedKmH : 0,
                   status: nextStatus
                 };
               })
@@ -9775,7 +9812,7 @@ export class DeliveryMapComponent implements OnInit, AfterViewInit, OnDestroy {
         const courier = this.couriers().find((c: Courier) => c.id === id);
         if (courier) {
           const courierStops = this.deliveryStops().filter(
-            (s: DeliveryWaypoint) => !s.isDelivered && (s.assignedCourierId === id || courier.orderIds.includes(s.id))
+            (s: DeliveryWaypoint) => s.assignedCourierId === id || courier.orderIds.includes(s.id)
           );
           if (courierStops.length > 0) {
             const boundsCoords: [number, number][] = [
@@ -9853,7 +9890,7 @@ export class DeliveryMapComponent implements OnInit, AfterViewInit, OnDestroy {
         try {
           const cached = localStorage.getItem('dgl_roles_v2');
           if (cached) rolesList = JSON.parse(cached);
-        } catch {}
+        } catch { }
       }
       const courierRoleIds = new Set(
         rolesList
@@ -9866,7 +9903,7 @@ export class DeliveryMapComponent implements OnInit, AfterViewInit, OnDestroy {
         try {
           const cached = localStorage.getItem('dgl_users_v2');
           if (cached) usersList = JSON.parse(cached);
-        } catch {}
+        } catch { }
       }
       const courierUsers = usersList.filter(u =>
         u.isActive !== false &&
@@ -9955,21 +9992,12 @@ export class DeliveryMapComponent implements OnInit, AfterViewInit, OnDestroy {
       const deliveredOrderIds = new Set<number>(
         allOrders.filter((o: OrderDto) => o.status === 'DELIVERED').map((o: OrderDto) => o.orderId)
       );
-      let anyNewlyDelivered = false;
       if (deliveredOrderIds.size > 0) {
         this.deliveryStops.update((stops: DeliveryWaypoint[]) =>
-          stops.map((s: DeliveryWaypoint) => {
-            if (deliveredOrderIds.has(s.id) && !s.isDelivered) {
-              anyNewlyDelivered = true;
-              return { ...s, isDelivered: true };
-            }
-            return s;
-          })
+          stops.map((s: DeliveryWaypoint) =>
+            deliveredOrderIds.has(s.id) && !s.isDelivered ? { ...s, isDelivered: true } : s
+          )
         );
-      }
-      if (anyNewlyDelivered && this.map) {
-        this.renderStopMarkers();
-        void this.buildAndRenderRealRoadRoutes();
       }
 
       const stateOrders = allOrders.filter(

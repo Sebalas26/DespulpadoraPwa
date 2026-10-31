@@ -4,6 +4,78 @@ Este documento registra de manera cronológica y estructurada todas las interven
 
 ---
 
+## [2026-10-31] - Ajuste de Cards de Pulpa y Fruta, Cuadro Resumen Superior en Pulpas y Dialog Paginado de Histórico de Ingresos y Salidas de Inventario (`SettingsComponent` y `StateService`)
+
+### 💬 Prompt Original del Usuario
+> "ayudame ajustar para que esta card no muestrelo que tache con rojo y que el nombre de la pulpa se vea mas grandesito, no tanto pero si 
+> para la card de la fruta ogual 
+> Tambien quiero que el cuadro de "Inventario de Fruta Disponible en Planta Control en kilogramos (Kg) de toda la materia prima / fruta fresca disponible para despulpar ", tambien lo tenga el de pulpas, tambien a aregale otro boton que se a despplegable y muestre un dialog con el historico de ingresos y salida de ivnentario, ese dialog si solo quiero que tenga unos filtros de fechas, una lista de maximo 15 paginas y si no, muestre paginado, esto aplicado para inventario de fruta y pulpa"
+
+### 🤖 Resumen Técnico para la IA
+- **1. Limpieza Visual y Tamaño de Fuente en Cards de Pulpa y Fruta (`src/app/features/settings/settings.component.html` y `settings.component.scss`)**:
+  - **Card de Pulpa (`.inv-stock-card`)**: Se eliminaron el badge de estado (`Óptimo` / `¡Stock Bajo!`), la línea inferior `SKU: ... • ...g` (`.inv-card-sku`), la barra horizontal de progreso (`.inv-stock-meter-track`) y su etiqueta derecha (`Disponible para despacho` / `Reabastecer`), conservando `Mínimo alerta: {{ v.minStockAlert }} uds`.
+  - **Card de Fruta (`.inv-fruit-card`)**: Se eliminaron el badge de estado (`Disponible` / `Bajo Stock`), la píldora `~XXX Kg pulpa` (`.inv-card-total-pill`), la barra horizontal de progreso (`.inv-stock-meter-track`) y su etiqueta derecha (`Lista para despulpado` / `Solicitar cosecha`), conservando `Alerta planta: 50 Kg`.
+  - **Nombre de la Pulpa y Fruta (`.inv-card-title`)**: Se incrementó el tamaño de fuente de `1.02rem` a `1.15rem`.
+- **2. Cuadro Resumen Superior en Pulpas + Botón Desplegable y Dialog de Histórico de Inventario (`src/app/core/models/business.models.ts`, `src/app/core/services/state.service.ts`, `src/app/features/settings/`)**:
+  - Se definió `InventoryMovementRecordDto` en `business.models.ts` y la señal persistente `inventoryMovements` (`recordInventoryMovement`) en `StateService`, registrando automáticamente cada ingreso (`IN`) y salida (`OUT`) real de inventario de fruta (`Kg`) y pulpa (`uds`).
+  - Se incorporó el cuadro resumen superior `.inv-summary-banner` (`Inventario de Pulpas Disponibles en Planta`) en la pestaña `Stock • Pulpas Hechas`, homologado con el de `Inventario de Fruta Disponible en Planta`.
+  - En ambos cuadros resumen (Fruta y Pulpa) se añadió el botón desplegable **`Histórico de Inventario`** (`#btn-fruit-history-dropdown` / `#btn-pulp-history-dropdown`) que abre el **Dialog de Histórico de Ingresos y Salidas de Inventario** con filtros exclusivos de fechas (`Fecha Desde` y `Fecha Hasta`) y paginación de 15 registros por página con tope de hasta 15 páginas (`historyPageSize = 15`, `historyMaxPages = 15`).
+- **3. Informes del Agente Verificador, Agente Auditor Punto por Punto y Revisión Par**:
+  - **Agente Verificador (`4970ab2f-3ae0-47f0-8e2c-c43281436ee7`)**: Confirmó impacto 100% quirúrgico sin regresiones.
+  - **Agente Auditor Punto por Punto (`cfe942ca-817d-4595-915f-348d61b4cf3c`)**: Dictamen **APROBADO (100% CONFORME)**.
+  - **Agente de Revisión Par (`cb45d623-8cec-450a-854e-5d6c61c6a3e6`)**: Dictamen **APROBADO SIN OBSERVACIONES**.
+
+### 📦 Componentes Modificados
+- `src/app/core/models/business.models.ts`
+- `src/app/core/services/state.service.ts`
+- `src/app/features/settings/settings.component.html`
+- `src/app/features/settings/settings.component.ts`
+- `src/app/features/settings/settings.component.scss`
+- `src/app/features/settings/settings.component.spec.ts`
+
+### ✅ Verificación, Build y Tests Unitarios
+- `npm run build`: **OK (0 errores)**.
+- `npx ng test --watch=false --browsers=ChromeHeadless`: **274 de 274 SUCCESS (100% Unit Tests Passed, 0 fallos)**.
+
+---
+
+## [2026-10-31] - Filtro por Defecto "Hoy", Ordenamiento Descendente y Hora AM/PM en Centro de Reportes & Analítica, y Ocultamiento de Ubicación GPS de Domiciliarios sin Ruta Asignada en el Mapa (`ReportsComponent` y `DeliveryMapComponent`)
+
+### 💬 Prompt Original del Usuario
+> "Ayudame ajustar que por defecto me muestra el filtro de hoy al igresar al mdulo
+> Asi mismo cuando me filtre por mes o todo, que lo muestre del mas reciente al mas antiguo
+> Tambien que en la columna de fecha , la hora me la muestre am/ pm
+> Estoy notando que en el mapa me esta mostrando la ubicacion del domiciliario, pero mire la appflutter y el domiciliario no tiene aun una ruta asignada, recuerda que si en la app esta asi con ese escenario, no debe de mostrar la ubicacion de los domiciliarios"
+
+### 🤖 Resumen Técnico para la IA
+- **1. Filtro por Defecto `"Hoy"` al Ingresar a Centro de Reportes & Analítica (`src/app/features/reports/reports.component.ts` y `.spec.ts`)**:
+  - Se cambió el valor inicial de `selectedDateFilter` de `'month'` a `'today'` (`readonly selectedDateFilter = signal<ReportDateFilter>('today')`), mostrando por defecto los registros del día actual al entrar al módulo.
+- **2. Ordenamiento del Más Reciente al Más Antiguo en Todos los Periodos (`src/app/features/reports/reports.component.ts` y `.spec.ts`)**:
+  - Se implementaron los métodos privados `sortOrdersNewestFirst(list: OrderDto[]): OrderDto[]` y `sortExpensesNewestFirst(list: ExpenseDto[]): ExpenseDto[]`, aplicando ordenamiento descendente por marca de tiempo (`Date.parse`) y desempate por ID (`orderId` / `expenseId`) en `filteredOrders` y `filteredExpenses` para todos los períodos (`today`, `yesterday`, `month`, `year`, `range`).
+- **3. Hora en Formato 12h con `AM / PM` en la Columna `FECHA` (`src/app/features/reports/reports.component.ts` y `.spec.ts`)**:
+  - Se implementó `formatTime12Hour(hours24: number, minutes: number): string` y se actualizó `formatDateTime(dateStr?: string): string` para mostrar la fecha y hora en formato `DD/MM/YYYY hh:mm AM/PM` (ej. `31/10/2026 04:50 AM` o `31/10/2026 04:35 PM`).
+- **4. Ocultar Marcador de Ubicación del Domiciliario en el Mapa Cuando No Tiene Ruta/Entregas Activas Asignadas (`src/app/features/orders/delivery-map.component.ts` y `.spec.ts`)**:
+  - Se implementó `getCouriersWithActiveRouteOnMap(): Courier[]` que filtra únicamente los domiciliarios con al menos una parada activa no entregada (`!s.isDelivered`).
+  - En `renderCourierMarkers()`, se eliminan inmediatamente del mapa los marcadores de domiciliarios sin ruta/entregas activas y solo se renderizan los marcadores de domiciliarios con entregas activas.
+  - En `pollRealCourierLocations()`, si el domiciliario no tiene paradas activas asignadas, se mantiene su estado en `'en_planta'` y velocidad `0 km/h`.
+  - Se sincronizó `renderCourierMarkers()` en todas las acciones de asignación, creación de ruta, entrega y liquidación de paradas.
+- **5. Informes del Agente Verificador, Agente Auditor Punto por Punto y Revisión Par**:
+  - **Agente Verificador (`477ee3cc-69ba-4938-b923-725f8a099f95`)**: Confirmó impacto 100% aislado sin regresiones.
+  - **Agente Auditor Punto por Punto (`ca125707-701f-4be7-8bb9-7e0713c561be`)**: Dictamen **APROBADO AL 100% SIN DESVIACIONES**.
+  - **Agente de Revisión Par (`faaca0b6-3a60-4aa2-b028-8ac513d04efb`)**: Dictamen **100% APROBADO SIN OBSERVACIONES**.
+
+### 📦 Componentes Modificados
+- `src/app/features/reports/reports.component.ts`
+- `src/app/features/reports/reports.component.spec.ts`
+- `src/app/features/orders/delivery-map.component.ts`
+- `src/app/features/orders/delivery-map.component.spec.ts`
+
+### ✅ Verificación, Build y Tests Unitarios
+- `npm run build`: **OK (0 errores)**.
+- `npx ng test --watch=false --browsers=ChromeHeadless`: **272 SUCCESS (100% Unit Tests Passed, 0 fallos)**.
+
+---
+
 ## [2026-10-30] - Botón de Refrescar en Topbar, Eliminación de Card de Audio en Dashboard, Presentaciones Dinámicas en Detalles de Dashboard, Jornadas/Turnos Paramétricos en Configuración y Métodos de Pago Dinámicos en App Flutter (`HeaderComponent`, `DashboardComponent`, `SettingsComponent`, `StateService`, `ShiftsComponent`, `HrComponent` y `DeliveryConfirmationDialog`)
 
 ### 💬 Prompt Original del Usuario

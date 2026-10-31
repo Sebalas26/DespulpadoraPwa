@@ -84,7 +84,7 @@ export class ReportsComponent {
     { value: '12', label: 'Diciembre', shortLabel: 'Dic' }
   ];
 
-  readonly selectedDateFilter = signal<ReportDateFilter>('month');
+  readonly selectedDateFilter = signal<ReportDateFilter>('today');
   readonly selectedMonthNumber = signal<string>(
     String(new Date().getMonth() + 1).padStart(2, '0')
   );
@@ -197,36 +197,29 @@ export class ReportsComponent {
       const todayStr = new Date().toISOString().substring(0, 10);
       const yesterdayStr = new Date(Date.now() - 86400000).toISOString().substring(0, 10);
 
+      let matched: OrderDto[] = orders;
+
       if (filter === 'today') {
-        return orders.filter((o: OrderDto) => (o.createdAt || o.orderDate || '').substring(0, 10) === todayStr);
-      }
-
-      if (filter === 'yesterday') {
-        return orders.filter((o: OrderDto) => (o.createdAt || o.orderDate || '').substring(0, 10) === yesterdayStr);
-      }
-
-      if (filter === 'month') {
+        matched = orders.filter((o: OrderDto) => (o.createdAt || o.orderDate || '').substring(0, 10) === todayStr);
+      } else if (filter === 'yesterday') {
+        matched = orders.filter((o: OrderDto) => (o.createdAt || o.orderDate || '').substring(0, 10) === yesterdayStr);
+      } else if (filter === 'month') {
         const targetMonth = `${this.selectedYear()}-${this.selectedMonthNumber()}`;
-        return orders.filter((o: OrderDto) => (o.createdAt || o.orderDate || '').substring(0, 7) === targetMonth);
-      }
-
-      if (filter === 'year') {
+        matched = orders.filter((o: OrderDto) => (o.createdAt || o.orderDate || '').substring(0, 7) === targetMonth);
+      } else if (filter === 'year') {
         const targetYear = this.selectedYear() || todayStr.substring(0, 4);
-        return orders.filter((o: OrderDto) => (o.createdAt || o.orderDate || '').substring(0, 4) === targetYear);
-      }
-
-      if (filter === 'range') {
+        matched = orders.filter((o: OrderDto) => (o.createdAt || o.orderDate || '').substring(0, 4) === targetYear);
+      } else if (filter === 'range') {
         const start = this.rangeStartDate() || '0000-01-01';
         const end = this.rangeEndDate() || '9999-12-31';
         const [minDate, maxDate] = start <= end ? [start, end] : [end, start];
-        return orders.filter((o: OrderDto) => {
+        matched = orders.filter((o: OrderDto) => {
           const d = (o.createdAt || o.orderDate || '').substring(0, 10);
           return d >= minDate && d <= maxDate;
         });
       }
 
-      this.ordersCurrentPage.set(1);
-      return orders;
+      return this.sortOrdersNewestFirst(matched);
     } catch (error: unknown) {
       console.error('Error computing filtered orders:', error);
       return [];
@@ -287,30 +280,29 @@ export class ReportsComponent {
       const todayStr = new Date().toISOString().substring(0, 10);
       const yesterdayStr = new Date(Date.now() - 86400000).toISOString().substring(0, 10);
 
+      let matched: ExpenseDto[] = expenses;
+
       if (filter === 'today') {
-        return expenses.filter((e: ExpenseDto) => (e.expenseDate || e.createdAt || '').substring(0, 10) === todayStr);
-      }
-      if (filter === 'yesterday') {
-        return expenses.filter((e: ExpenseDto) => (e.expenseDate || e.createdAt || '').substring(0, 10) === yesterdayStr);
-      }
-      if (filter === 'month') {
+        matched = expenses.filter((e: ExpenseDto) => (e.expenseDate || e.createdAt || '').substring(0, 10) === todayStr);
+      } else if (filter === 'yesterday') {
+        matched = expenses.filter((e: ExpenseDto) => (e.expenseDate || e.createdAt || '').substring(0, 10) === yesterdayStr);
+      } else if (filter === 'month') {
         const targetMonth = `${this.selectedYear()}-${this.selectedMonthNumber()}`;
-        return expenses.filter((e: ExpenseDto) => (e.expenseDate || e.createdAt || '').substring(0, 7) === targetMonth);
-      }
-      if (filter === 'year') {
+        matched = expenses.filter((e: ExpenseDto) => (e.expenseDate || e.createdAt || '').substring(0, 7) === targetMonth);
+      } else if (filter === 'year') {
         const targetYear = this.selectedYear() || todayStr.substring(0, 4);
-        return expenses.filter((e: ExpenseDto) => (e.expenseDate || e.createdAt || '').substring(0, 4) === targetYear);
-      }
-      if (filter === 'range') {
+        matched = expenses.filter((e: ExpenseDto) => (e.expenseDate || e.createdAt || '').substring(0, 4) === targetYear);
+      } else if (filter === 'range') {
         const start = this.rangeStartDate() || '0000-01-01';
         const end = this.rangeEndDate() || '9999-12-31';
         const [minDate, maxDate] = start <= end ? [start, end] : [end, start];
-        return expenses.filter((e: ExpenseDto) => {
+        matched = expenses.filter((e: ExpenseDto) => {
           const d = (e.expenseDate || e.createdAt || '').substring(0, 10);
           return d >= minDate && d <= maxDate;
         });
       }
-      return expenses;
+
+      return this.sortExpensesNewestFirst(matched);
     } catch (error: unknown) {
       console.error('Error computing filtered expenses:', error);
       return [];
@@ -1081,7 +1073,73 @@ export class ReportsComponent {
   }
 
   /**
-   * Formats an ISO date-time string into DD/MM/YYYY HH:mm format.
+   * Sorts orders from most recent to oldest based on timestamp and orderId tie-breaker.
+   */
+  private sortOrdersNewestFirst(list: OrderDto[]): OrderDto[] {
+    try {
+      return [...list].sort((a: OrderDto, b: OrderDto) => {
+        const rawA = a.createdAt || a.orderDate || '';
+        const rawB = b.createdAt || b.orderDate || '';
+        const timeA = Date.parse(rawA);
+        const timeB = Date.parse(rawB);
+        if (Number.isFinite(timeA) && Number.isFinite(timeB) && timeB !== timeA) {
+          return timeB - timeA;
+        }
+        if (rawB !== rawA) {
+          return rawB.localeCompare(rawA);
+        }
+        return (b.orderId || 0) - (a.orderId || 0);
+      });
+    } catch (error: unknown) {
+      console.error('Error sorting orders newest first:', error);
+      return list;
+    }
+  }
+
+  /**
+   * Sorts expenses from most recent to oldest based on timestamp and expenseId tie-breaker.
+   */
+  private sortExpensesNewestFirst(list: ExpenseDto[]): ExpenseDto[] {
+    try {
+      return [...list].sort((a: ExpenseDto, b: ExpenseDto) => {
+        const rawA = a.createdAt || a.expenseDate || '';
+        const rawB = b.createdAt || b.expenseDate || '';
+        const timeA = Date.parse(rawA);
+        const timeB = Date.parse(rawB);
+        if (Number.isFinite(timeA) && Number.isFinite(timeB) && timeB !== timeA) {
+          return timeB - timeA;
+        }
+        if (rawB !== rawA) {
+          return rawB.localeCompare(rawA);
+        }
+        return (b.expenseId || 0) - (a.expenseId || 0);
+      });
+    } catch (error: unknown) {
+      console.error('Error sorting expenses newest first:', error);
+      return list;
+    }
+  }
+
+  /**
+   * Formats 24-hour hours and minutes into 12-hour hh:mm AM/PM format.
+   */
+  private formatTime12Hour(hours24: number, minutes: number): string {
+    try {
+      const safeHours = Number.isFinite(hours24) ? Math.max(0, Math.min(23, Math.floor(hours24))) : 0;
+      const safeMinutes = Number.isFinite(minutes) ? Math.max(0, Math.min(59, Math.floor(minutes))) : 0;
+      const period = safeHours >= 12 ? 'PM' : 'AM';
+      const hours12 = safeHours % 12 || 12;
+      const hh = String(hours12).padStart(2, '0');
+      const mm = String(safeMinutes).padStart(2, '0');
+      return `${hh}:${mm} ${period}`;
+    } catch (error: unknown) {
+      console.error('Error formatting 12-hour time:', error);
+      return '12:00 AM';
+    }
+  }
+
+  /**
+   * Formats an ISO date-time string into DD/MM/YYYY hh:mm AM/PM format.
    */
   formatDateTime(dateStr?: string): string {
     try {
@@ -1089,17 +1147,22 @@ export class ReportsComponent {
       if (dateStr.includes('T')) {
         const [dPart, tPart] = dateStr.split('T');
         const [y, m, d] = dPart.split('-');
-        const time = tPart ? tPart.substring(0, 5) : '00:00';
-        return `${d}/${m}/${y} ${time}`;
+        const timeRaw = tPart ? tPart.substring(0, 5) : '00:00';
+        const [rawH, rawM] = timeRaw.split(':');
+        const formatted12h = this.formatTime12Hour(Number(rawH), Number(rawM));
+        return `${d}/${m}/${y} ${formatted12h}`;
+      }
+      if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr.trim())) {
+        const [y, m, d] = dateStr.trim().split('-');
+        return `${d}/${m}/${y} 12:00 AM`;
       }
       const d = new Date(dateStr);
       if (isNaN(d.getTime())) return dateStr.substring(0, 10);
       const day = String(d.getDate()).padStart(2, '0');
       const month = String(d.getMonth() + 1).padStart(2, '0');
       const year = d.getFullYear();
-      const hours = String(d.getHours()).padStart(2, '0');
-      const minutes = String(d.getMinutes()).padStart(2, '0');
-      return `${day}/${month}/${year} ${hours}:${minutes}`;
+      const formatted12h = this.formatTime12Hour(d.getHours(), d.getMinutes());
+      return `${day}/${month}/${year} ${formatted12h}`;
     } catch (error: unknown) {
       console.error('Error formatting date time:', error);
       return '—';

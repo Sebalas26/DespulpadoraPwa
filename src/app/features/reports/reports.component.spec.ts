@@ -149,6 +149,32 @@ describe('ReportsComponent', () => {
   });
 
   beforeEach(async () => {
+    mockOrders.set([
+      {
+        orderId: 601,
+        orderNumber: 'ORD-601',
+        invoiceNumber: 'FAC-601',
+        clientId: 1,
+        clientName: 'Hotel Mirador',
+        branchId: 1,
+        status: 'DELIVERED',
+        isPaid: true,
+        paymentMethodName: 'Efectivo',
+        totalAmount: 120000,
+        createdAt: new Date().toISOString(),
+        orderDate: new Date().toISOString().substring(0, 10),
+        items: [
+          {
+            fruitId: 1,
+            fruitName: 'Mora',
+            grammage: 1000,
+            quantity: 10,
+            unitPrice: 12000,
+            subtotal: 120000
+          }
+        ]
+      }
+    ]);
     const stateServiceMock: Partial<StateService> = {
       fruits: mockFruits,
       productVariants: mockProductVariants,
@@ -280,5 +306,51 @@ describe('ReportsComponent', () => {
       expect(hostEl.querySelectorAll('.quick-kpis-grid .kpi-sparkline').length).toBe(4);
       expect(hostEl.querySelectorAll('.quick-kpis-grid .kpi-expand-chevron').length).toBe(0);
     }
+  });
+
+  it('should default selectedDateFilter to today, sort filteredOrders newest first across periods, and format date time with AM/PM', () => {
+    expect(component.selectedDateFilter()).toBe('today');
+
+    expect(component.formatDateTime('2026-10-31T04:50:00')).toBe('31/10/2026 04:50 AM');
+    expect(component.formatDateTime('2026-10-31T16:35:00')).toBe('31/10/2026 04:35 PM');
+    expect(component.formatDateTime('2026-10-31T00:05:00')).toBe('31/10/2026 12:05 AM');
+    expect(component.formatDateTime('2026-10-31T12:15:00')).toBe('31/10/2026 12:15 PM');
+
+    const currentYear = new Date().getFullYear();
+    const currentMonth = String(new Date().getMonth() + 1).padStart(2, '0');
+    mockOrders.set([
+      {
+        ...mockOrders()[0],
+        orderId: 701,
+        orderNumber: 'ORD-0001',
+        createdAt: `${currentYear}-${currentMonth}-05T08:15:00`,
+        orderDate: `${currentYear}-${currentMonth}-05`
+      },
+      {
+        ...mockOrders()[0],
+        orderId: 703,
+        orderNumber: 'ORD-0003',
+        createdAt: `${currentYear}-${currentMonth}-20T14:40:00`,
+        orderDate: `${currentYear}-${currentMonth}-20`
+      },
+      {
+        ...mockOrders()[0],
+        orderId: 702,
+        orderNumber: 'ORD-0002',
+        createdAt: `${currentYear}-${currentMonth}-12T10:30:00`,
+        orderDate: `${currentYear}-${currentMonth}-12`
+      }
+    ]);
+
+    component.setDateFilter('month');
+    component.selectedYear.set(String(currentYear));
+    component.selectedMonthNumber.set(currentMonth);
+    fixture.detectChanges();
+
+    expect(component.filteredOrders().map(o => o.orderNumber)).toEqual(['ORD-0003', 'ORD-0002', 'ORD-0001']);
+
+    component.setDateFilter('year');
+    fixture.detectChanges();
+    expect(component.filteredOrders().map(o => o.orderNumber)).toEqual(['ORD-0003', 'ORD-0002', 'ORD-0001']);
   });
 });

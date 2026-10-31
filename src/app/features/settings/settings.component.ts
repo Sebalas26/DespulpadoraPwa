@@ -17,6 +17,7 @@ import {
   InventoryCategoryConfig,
   InventoryColumnConfig,
   InventoryGrammageConfig,
+  InventoryMovementRecordDto,
   ProductCategory,
   ProductVariantDto,
   CompanyConfig,
@@ -200,6 +201,76 @@ export class SettingsComponent {
   readonly fruitFormYieldPercent = signal<number>(75);
   readonly fruitFormScientificName = signal<string>('');
   readonly expandedMobileRows = signal<Record<string, boolean>>({});
+
+  readonly showHistoryDropdown = signal<boolean>(false);
+  readonly showInventoryHistoryModal = signal<boolean>(false);
+  readonly historyCategoryFilter = signal<'FRUIT' | 'PULP'>('FRUIT');
+  readonly historyMovementTypeFilter = signal<'ALL' | 'IN' | 'OUT'>('ALL');
+  readonly historyStartDate = signal<string>('');
+  readonly historyEndDate = signal<string>('');
+  readonly historyCurrentPage = signal<number>(1);
+  readonly historyPageSize = 15;
+  readonly historyMaxPages = 15;
+
+  readonly filteredInventoryHistory = computed<InventoryMovementRecordDto[]>(() => {
+    try {
+      const cat = this.historyCategoryFilter();
+      const movType = this.historyMovementTypeFilter();
+      const start = this.historyStartDate().trim();
+      const end = this.historyEndDate().trim();
+      const all = this.stateService.inventoryMovements();
+
+      return all.filter(item => {
+        if (item.category !== cat) {
+          return false;
+        }
+        if (movType !== 'ALL' && item.movementType !== movType) {
+          return false;
+        }
+        const itemDate = (item.createdAt || '').substring(0, 10);
+        if (start && itemDate < start) {
+          return false;
+        }
+        if (end && itemDate > end) {
+          return false;
+        }
+        return true;
+      });
+    } catch {
+      return [];
+    }
+  });
+
+  readonly historyTotalPages = computed<number>(() => {
+    try {
+      const total = this.filteredInventoryHistory().length;
+      if (total === 0) {
+        return 1;
+      }
+      return Math.min(this.historyMaxPages, Math.ceil(total / this.historyPageSize));
+    } catch {
+      return 1;
+    }
+  });
+
+  readonly historyPageNumbers = computed<number[]>(() => {
+    try {
+      return Array.from({ length: this.historyTotalPages() }, (_, idx) => idx + 1);
+    } catch {
+      return [1];
+    }
+  });
+
+  readonly paginatedInventoryHistory = computed<InventoryMovementRecordDto[]>(() => {
+    try {
+      const cappedList = this.filteredInventoryHistory().slice(0, this.historyMaxPages * this.historyPageSize);
+      const page = Math.min(Math.max(1, this.historyCurrentPage()), this.historyTotalPages());
+      const startIndex = (page - 1) * this.historyPageSize;
+      return cappedList.slice(startIndex, startIndex + this.historyPageSize);
+    } catch {
+      return [];
+    }
+  });
 
   readonly filteredFruits = computed<FruitConfig[]>(() => {
     try {
@@ -1771,6 +1842,96 @@ export class SettingsComponent {
       }).format(num || 0);
     } catch {
       return '$0';
+    }
+  }
+
+  /**
+   * Toggles the visibility of the inventory movement history dropdown menu.
+   */
+  toggleHistoryDropdown(event?: Event): void {
+    try {
+      if (event) {
+        event.stopPropagation();
+      }
+      this.showHistoryDropdown.update(v => !v);
+    } catch {
+      return;
+    }
+  }
+
+  /**
+   * Opens the inventory movements history dialog for the specified category (fruit or pulp) and movement filter.
+   */
+  openInventoryHistoryModal(category: 'FRUIT' | 'PULP', movementType: 'ALL' | 'IN' | 'OUT' = 'ALL'): void {
+    try {
+      this.showHistoryDropdown.set(false);
+      this.historyCategoryFilter.set(category);
+      this.historyMovementTypeFilter.set(movementType);
+      this.historyCurrentPage.set(1);
+      this.showInventoryHistoryModal.set(true);
+    } catch {
+      return;
+    }
+  }
+
+  /**
+   * Closes the inventory movements history dialog.
+   */
+  closeInventoryHistoryModal(): void {
+    try {
+      this.showInventoryHistoryModal.set(false);
+    } catch {
+      return;
+    }
+  }
+
+  /**
+   * Clears the start and end date filters in the inventory movements history dialog.
+   */
+  clearHistoryDateFilters(): void {
+    try {
+      this.historyStartDate.set('');
+      this.historyEndDate.set('');
+      this.historyCurrentPage.set(1);
+    } catch {
+      return;
+    }
+  }
+
+  /**
+   * Navigates to a specific page in the inventory movements history dialog (1 to 15).
+   */
+  setHistoryPage(page: number): void {
+    try {
+      if (page >= 1 && page <= this.historyTotalPages()) {
+        this.historyCurrentPage.set(page);
+      }
+    } catch {
+      return;
+    }
+  }
+
+  /**
+   * Formats an ISO timestamp into a readable Spanish date and time string.
+   */
+  formatMovementDateTime(isoString: string): string {
+    try {
+      if (!isoString) {
+        return '';
+      }
+      const d = new Date(isoString);
+      if (Number.isNaN(d.getTime())) {
+        return isoString.substring(0, 10);
+      }
+      return d.toLocaleString('es-CO', {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+    } catch {
+      return isoString.substring(0, 10);
     }
   }
 }

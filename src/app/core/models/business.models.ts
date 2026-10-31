@@ -1107,3 +1107,22 @@ export interface DatabaseBackupInfoDto {
   createdByUsername: string;
 }
 
+/**
+ * Inventory movement record (inflow or outflow) for fresh fruit in kilograms or packed pulp in units.
+ */
+export interface InventoryMovementRecordDto {
+  id: string;
+  category: 'FRUIT' | 'PULP';
+  movementType: 'IN' | 'OUT';
+  itemId: string;
+  itemName: string;
+  presentation: string;
+  quantity: number;
+  previousStock: number;
+  newStock: number;
+  unit: 'Kg' | 'uds';
+  reason: string;
+  createdAt: string;
+}
+
+

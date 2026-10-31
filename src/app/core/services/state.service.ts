@@ -22,6 +22,7 @@ import {
   IdealVsRealAuditDto,
   InventoryCategoryConfig,
   InventoryGrammageConfig,
+  InventoryMovementRecordDto,
   OrderDto,
   OrderStatus,
   PaymentMethodDto,
@@ -94,6 +95,7 @@ export class StateService {
   readonly grammagesConfig = signal<InventoryGrammageConfig[]>(this.loadGrammagesConfigFromStorage());
   readonly categoriesConfig = signal<InventoryCategoryConfig[]>(this.loadCategoriesConfigFromStorage());
   readonly shiftSchedulesConfig = signal<ShiftScheduleConfig[]>(this.loadShiftSchedulesFromStorage());
+  readonly inventoryMovements = signal<InventoryMovementRecordDto[]>(this.loadInventoryMovementsFromStorage());
 
   readonly activePaymentMethods = computed<PaymentMethodDto[]>(() => {
     try {
@@ -460,6 +462,7 @@ export class StateService {
         this.fruits.set(this.loadFruitsFromStorage());
         this.productVariants.set(this.loadVariantsFromStorage());
         this.batches.set(this.loadBatchesFromStorage());
+        this.inventoryMovements.set(this.loadInventoryMovementsFromStorage());
       }
       if (domain === 'orders' || domain === 'routes' || domain === 'all') {
         this.orders.set(this.loadOrdersFromStorage());
@@ -528,6 +531,44 @@ export class StateService {
       }
     } catch {
       return;
+    }
+  }
+
+  /**
+   * Loads inventory movement history records from localStorage.
+   */
+  private loadInventoryMovementsFromStorage(): InventoryMovementRecordDto[] {
+    try {
+      const data = localStorage.getItem('despulpadora_inventory_movements');
+      if (!data) {
+        return [];
+      }
+      const parsed: unknown = JSON.parse(data);
+      return Array.isArray(parsed) ? (parsed as InventoryMovementRecordDto[]) : [];
+    } catch {
+      return [];
+    }
+  }
+
+  /**
+   * Appends a new inventory movement record (inflow or outflow) and persists to localStorage.
+   */
+  recordInventoryMovement(movement: Omit<InventoryMovementRecordDto, 'id' | 'createdAt'>): InventoryMovementRecordDto | null {
+    try {
+      if (movement.quantity <= 0) {
+        return null;
+      }
+      const nowIso = new Date().toISOString();
+      const record: InventoryMovementRecordDto = {
+        ...movement,
+        id: `MOV-${Date.now()}-${Math.floor(100 + Math.random() * 900)}`,
+        createdAt: nowIso
+      };
+      this.inventoryMovements.update(list => [record, ...list]);
+      localStorage.setItem('despulpadora_inventory_movements', JSON.stringify(this.inventoryMovements()));
+      return record;
+    } catch {
+      return null;
     }
   }
 
@@ -908,6 +949,7 @@ private loadEmployeesFromStorage(): EmployeeDto[] {
       localStorage.setItem('despulpadora_grammages_config', JSON.stringify(this.grammagesConfig()));
       localStorage.setItem('despulpadora_categories_config', JSON.stringify(this.categoriesConfig()));
       localStorage.setItem('despulpadora_shift_schedules_config', JSON.stringify(this.shiftSchedulesConfig()));
+      localStorage.setItem('despulpadora_inventory_movements', JSON.stringify(this.inventoryMovements()));
       if (!this.isApplyingExternalRealtimeEvent) {
         this.realtimeSync.publishDomainChange(domain, action);
       }
@@ -1133,15 +1175,30 @@ private loadEmployeesFromStorage(): EmployeeDto[] {
       this.batches.update(list => [newBatch, ...list]);
 
       if (fruit) {
+        const previousFresh = fruit.freshStockKg || 0;
+        const updatedFresh = Math.max(0, previousFresh - batchData.grossKg);
         this.fruits.update(list =>
           list.map(f => {
             if (f.name === fruit.name) {
-              const updatedFresh = Math.max(0, f.freshStockKg - batchData.grossKg);
               return { ...f, freshStockKg: updatedFresh };
             }
             return f;
           })
         );
+        if (batchData.grossKg > 0) {
+          this.recordInventoryMovement({
+            category: 'FRUIT',
+            movementType: 'OUT',
+            itemId: String(fruit.fruitId || fruit.id),
+            itemName: fruit.name,
+            presentation: 'Fruta Fresca (Kg)',
+            quantity: Number(batchData.grossKg.toFixed(1)),
+            previousStock: previousFresh,
+            newStock: updatedFresh,
+            unit: 'Kg',
+            reason: `Despulpado de lote ${newBatch.batchCode}`
+          });
+        }
       }
 
       this.saveAllToStorage();
@@ -1177,12 +1234,18 @@ private loadEmployeesFromStorage(): EmployeeDto[] {
   adjustStock(fruitName: string, grammage: 'g140' | 'g250' | 'g500' | 'g1000', delta: number): void {
     try {
       let targetFruitId = 0;
+      let prevStockVal = 0;
+      let nextStockVal = 0;
+      let matchedFruitName = fruitName;
       this.fruits.update(list =>
         list.map(f => {
           if (f.name.toLowerCase() === fruitName.toLowerCase()) {
             targetFruitId = f.fruitId || 0;
+            matchedFruitName = f.name;
             const current = f.stock[grammage] || 0;
             const nextVal = Math.max(0, current + delta);
+            prevStockVal = current;
+            nextStockVal = nextVal;
             return {
               ...f,
               stock: { ...f.stock, [grammage]: nextVal }
@@ -1191,6 +1254,21 @@ private loadEmployeesFromStorage(): EmployeeDto[] {
           return f;
         })
       );
+      if (delta !== 0) {
+        const numericGram = grammage.replace('g', '');
+        this.recordInventoryMovement({
+          category: 'PULP',
+          movementType: delta > 0 ? 'IN' : 'OUT',
+          itemId: String(targetFruitId || matchedFruitName),
+          itemName: `Pulpa ${matchedFruitName}`,
+          presentation: `${numericGram}g`,
+          quantity: Math.abs(delta),
+          previousStock: prevStockVal,
+          newStock: nextStockVal,
+          unit: 'uds',
+          reason: delta > 0 ? 'Ingreso operativo de pulpa' : 'Salida / Despacho de pulpa'
+        });
+      }
       this.saveAllToStorage();
       if (targetFruitId > 0) {
         const numericGrammage = Number(grammage.replace('g', '')) as 140 | 250 | 500 | 1000;
@@ -1216,17 +1294,35 @@ private loadEmployeesFromStorage(): EmployeeDto[] {
     try {
       let targetFruitName = fruitIdOrName;
       let targetFruitId = 0;
+      let prevKgVal = 0;
+      let nextKgVal = 0;
       this.fruits.update(list =>
         list.map(f => {
           if (f.id === fruitIdOrName || f.name.toLowerCase() === fruitIdOrName.toLowerCase()) {
             targetFruitName = f.name;
             targetFruitId = f.fruitId || 0;
-            const nextKg = Math.max(0, Number(((f.freshStockKg || 0) + deltaKg).toFixed(1)));
+            prevKgVal = f.freshStockKg || 0;
+            const nextKg = Math.max(0, Number((prevKgVal + deltaKg).toFixed(1)));
+            nextKgVal = nextKg;
             return { ...f, freshStockKg: nextKg };
           }
           return f;
         })
       );
+      if (deltaKg !== 0) {
+        this.recordInventoryMovement({
+          category: 'FRUIT',
+          movementType: deltaKg > 0 ? 'IN' : 'OUT',
+          itemId: String(targetFruitId || fruitIdOrName),
+          itemName: targetFruitName,
+          presentation: 'Fruta Fresca (Kg)',
+          quantity: Math.abs(Number(deltaKg.toFixed(1))),
+          previousStock: prevKgVal,
+          newStock: nextKgVal,
+          unit: 'Kg',
+          reason: deltaKg > 0 ? 'Ingreso rápido de fruta en planta' : 'Salida rápida de fruta en planta'
+        });
+      }
       this.saveAllToStorage();
       if (targetFruitId > 0) {
         this.api.adjustFruitStock(targetFruitId, { rawStockKgDelta: deltaKg }).subscribe({ error: () => {} });
@@ -1282,6 +1378,21 @@ private loadEmployeesFromStorage(): EmployeeDto[] {
         };
 
         this.fruits.update(list => list.map(f => (f.id === existing.id ? updatedFruit : f)));
+
+        if (deltaKg !== 0) {
+          this.recordInventoryMovement({
+            category: 'FRUIT',
+            movementType: deltaKg > 0 ? 'IN' : 'OUT',
+            itemId: String(existing.fruitId || existing.id),
+            itemName: cleanName,
+            presentation: 'Fruta Fresca (Kg)',
+            quantity: Math.abs(deltaKg),
+            previousStock: previousKg,
+            newStock: weightKg,
+            unit: 'Kg',
+            reason: deltaKg > 0 ? 'Actualización de stock de fruta (+)' : 'Actualización de stock de fruta (-)'
+          });
+        }
 
         if (previousName.toLowerCase() !== cleanName.toLowerCase()) {
           this.productVariants.update(variants =>
@@ -1350,6 +1461,20 @@ private loadEmployeesFromStorage(): EmployeeDto[] {
       };
 
       this.fruits.update(list => [resolvedFruit, ...list]);
+      if (weightKg > 0) {
+        this.recordInventoryMovement({
+          category: 'FRUIT',
+          movementType: 'IN',
+          itemId: String(resolvedFruit.fruitId || resolvedFruit.id),
+          itemName: cleanName,
+          presentation: 'Fruta Fresca (Kg)',
+          quantity: weightKg,
+          previousStock: 0,
+          newStock: weightKg,
+          unit: 'Kg',
+          reason: 'Registro inicial de fruta en planta'
+        });
+      }
       this.saveAllToStorage();
 
       this.api
@@ -2060,15 +2185,35 @@ private loadEmployeesFromStorage(): EmployeeDto[] {
    */
   adjustVariantStock(variantId: number, delta: number): void {
     try {
+      let targetVariant: ProductVariantDto | undefined;
+      let prevStock = 0;
+      let nextStock = 0;
       this.productVariants.update(list =>
         list.map(v => {
           if (v.variantId === variantId) {
-            const nextVal = Math.max(0, v.currentStock + delta);
+            targetVariant = v;
+            prevStock = v.currentStock || 0;
+            const nextVal = Math.max(0, prevStock + delta);
+            nextStock = nextVal;
             return { ...v, currentStock: nextVal };
           }
           return v;
         })
       );
+      if (targetVariant && delta !== 0) {
+        this.recordInventoryMovement({
+          category: 'PULP',
+          movementType: delta > 0 ? 'IN' : 'OUT',
+          itemId: String(targetVariant.variantId),
+          itemName: targetVariant.name,
+          presentation: `${targetVariant.grammage}g`,
+          quantity: Math.abs(delta),
+          previousStock: prevStock,
+          newStock: nextStock,
+          unit: 'uds',
+          reason: delta > 0 ? 'Ingreso rápido de pulpa empacada' : 'Salida rápida de pulpa empacada'
+        });
+      }
       this.saveAllToStorage();
     } catch {
       return;
@@ -2087,6 +2232,20 @@ private loadEmployeesFromStorage(): EmployeeDto[] {
       };
 
       this.productVariants.update(list => [newVariant, ...list]);
+      if ((newVariant.currentStock || 0) > 0) {
+        this.recordInventoryMovement({
+          category: 'PULP',
+          movementType: 'IN',
+          itemId: String(newVariant.variantId),
+          itemName: newVariant.name,
+          presentation: `${newVariant.grammage}g`,
+          quantity: newVariant.currentStock,
+          previousStock: 0,
+          newStock: newVariant.currentStock,
+          unit: 'uds',
+          reason: 'Creación de nueva presentación de pulpa'
+        });
+      }
       this.saveAllToStorage();
       this.notification.success('Presentación Creada', `${newVariant.name} agregada al inventario.`);
       return newVariant;
@@ -2100,14 +2259,36 @@ private loadEmployeesFromStorage(): EmployeeDto[] {
    */
   updateProductVariant(variantId: number, changes: Partial<ProductVariantDto>): void {
     try {
+      let existingVariant: ProductVariantDto | undefined;
+      let prevStock = 0;
+      let nextStock = 0;
       this.productVariants.update(list =>
         list.map(v => {
           if (v.variantId === variantId) {
-            return { ...v, ...changes };
+            existingVariant = v;
+            prevStock = v.currentStock || 0;
+            const updated = { ...v, ...changes };
+            nextStock = updated.currentStock ?? prevStock;
+            return updated;
           }
           return v;
         })
       );
+      if (existingVariant && changes.currentStock !== undefined && nextStock !== prevStock) {
+        const diff = nextStock - prevStock;
+        this.recordInventoryMovement({
+          category: 'PULP',
+          movementType: diff > 0 ? 'IN' : 'OUT',
+          itemId: String(variantId),
+          itemName: changes.name || existingVariant.name,
+          presentation: `${changes.grammage ?? existingVariant.grammage}g`,
+          quantity: Math.abs(diff),
+          previousStock: prevStock,
+          newStock: nextStock,
+          unit: 'uds',
+          reason: diff > 0 ? 'Edición de existencias de pulpa (+)' : 'Edición de existencias de pulpa (-)'
+        });
+      }
       this.saveAllToStorage();
       this.notification.success('Presentación Actualizada', 'Los cambios han sido guardados.');
     } catch {

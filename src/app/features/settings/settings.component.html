@@ -1599,7 +1599,58 @@
     
     @if (inventorySubTab() === 'variants') {
 
-    
+    <div class="card inv-summary-banner" style="padding: 16px 20px; margin-bottom: 12px; border: 1px solid var(--border-subtle);">
+      <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px;">
+        <div>
+          <h3 class="card-title" style="margin: 0; color: #111827; font-size: 1.15rem;">Inventario de Pulpas Disponibles en Planta</h3>
+          <p class="card-subtitle" style="margin: 2px 0 0 0; color: #6b7280;">Control en unidades (uds) de toda la pulpa procesada y empacada disponible para despacho</p>
+        </div>
+        <div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
+          <div style="background: var(--bg-card); border: 1px solid var(--border-subtle); padding: 8px 16px; border-radius: 10px; text-align: right;">
+            <div style="font-size: 0.7rem; font-weight: 700; color: #6b7280; text-transform: uppercase;">Total Pulpas en Planta</div>
+            <div style="font-size: 1.35rem; font-weight: 900; color: #111827;">{{ totalPulpUnitsStock() }} uds</div>
+          </div>
+          <div style="background: var(--bg-card); border: 1px solid var(--border-subtle); padding: 8px 16px; border-radius: 10px; text-align: right;">
+            <div style="font-size: 0.7rem; font-weight: 700; color: #6b7280; text-transform: uppercase;">Presentaciones de Pulpa</div>
+            <div style="font-size: 1.35rem; font-weight: 900; color: #111827;">{{ stateService.productVariants().length }} pulpas</div>
+          </div>
+          <div class="inv-history-dropdown-wrap">
+            <button
+              type="button"
+              id="btn-pulp-history-dropdown"
+              class="btn btn-outline inv-history-dropdown-btn"
+              (click)="toggleHistoryDropdown($event)"
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10"></circle>
+                <polyline points="12 6 12 12 16 14"></polyline>
+              </svg>
+              <span>Histórico de Inventario</span>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                <polyline points="6 9 12 15 18 9"></polyline>
+              </svg>
+            </button>
+            @if (showHistoryDropdown()) {
+              <div class="inv-history-dropdown-menu" (click)="$event.stopPropagation()">
+                <button type="button" class="inv-history-menu-item" (click)="openInventoryHistoryModal('PULP', 'ALL')">
+                  <span class="dot all"></span>
+                  <span>Histórico de Ingresos y Salidas</span>
+                </button>
+                <button type="button" class="inv-history-menu-item" (click)="openInventoryHistoryModal('PULP', 'IN')">
+                  <span class="dot in"></span>
+                  <span>Solo Ingresos de Pulpa (+)</span>
+                </button>
+                <button type="button" class="inv-history-menu-item" (click)="openInventoryHistoryModal('PULP', 'OUT')">
+                  <span class="dot out"></span>
+                  <span>Solo Salidas de Pulpa (-)</span>
+                </button>
+              </div>
+            }
+          </div>
+        </div>
+      </div>
+    </div>
+
     <div class="toolbar-container">
       
       <div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
@@ -1654,14 +1705,8 @@
                       {{ v.category }}
                     </span>
                     <span class="badge badge-purple">{{ v.grammage }}g</span>
-                    @if (v.currentStock <= v.minStockAlert) {
-                      <span class="badge badge-danger inv-status-badge">¡Stock Bajo!</span>
-                    } @else {
-                      <span class="badge badge-success inv-status-badge">Óptimo</span>
-                    }
                   </div>
                   <h4 class="inv-card-title ms-code-badge">{{ v.name }}</h4>
-                  <span class="inv-card-sku ms-subtitle">SKU: {{ v.sku }} • {{ v.grammage }}g</span>
                 </div>
 
                 <div class="inv-card-stock-box">
@@ -1675,16 +1720,8 @@
               </div>
 
               <div class="inv-stock-meter">
-                <div class="inv-stock-meter-track">
-                  <div
-                    class="inv-stock-meter-fill"
-                    [class.low]="v.currentStock <= v.minStockAlert"
-                    [style.width.%]="Math.min(100, Math.round(((v.currentStock || 0) / Math.max((v.minStockAlert || 10) * 3, 30)) * 100))"
-                  ></div>
-                </div>
                 <div class="inv-stock-meter-labels">
                   <span>Mínimo alerta: {{ v.minStockAlert }} uds</span>
-                  <span>{{ v.currentStock <= v.minStockAlert ? 'Reabastecer' : 'Disponible para despacho' }}</span>
                 </div>
               </div>
 
@@ -1831,7 +1868,7 @@
 
   } @else if (inventorySubTab() === 'fruits') {
 
-    <div class="card" style="padding: 16px 20px; margin-bottom: 12px; border: 1px solid var(--border-subtle);">
+    <div class="card inv-summary-banner" style="padding: 16px 20px; margin-bottom: 12px; border: 1px solid var(--border-subtle);">
       <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px;">
         <div>
           <h3 class="card-title" style="margin: 0; color: #111827; font-size: 1.15rem;">Inventario de Fruta Disponible en Planta</h3>
@@ -1845,6 +1882,39 @@
           <div style="background: var(--bg-card); border: 1px solid var(--border-subtle); padding: 8px 16px; border-radius: 10px; text-align: right;">
             <div style="font-size: 0.7rem; font-weight: 700; color: #6b7280; text-transform: uppercase;">Variedades de Fruta</div>
             <div style="font-size: 1.35rem; font-weight: 900; color: #111827;">{{ stateService.fruits().length }} frutas</div>
+          </div>
+          <div class="inv-history-dropdown-wrap">
+            <button
+              type="button"
+              id="btn-fruit-history-dropdown"
+              class="btn btn-outline inv-history-dropdown-btn"
+              (click)="toggleHistoryDropdown($event)"
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10"></circle>
+                <polyline points="12 6 12 12 16 14"></polyline>
+              </svg>
+              <span>Histórico de Inventario</span>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                <polyline points="6 9 12 15 18 9"></polyline>
+              </svg>
+            </button>
+            @if (showHistoryDropdown()) {
+              <div class="inv-history-dropdown-menu" (click)="$event.stopPropagation()">
+                <button type="button" class="inv-history-menu-item" (click)="openInventoryHistoryModal('FRUIT', 'ALL')">
+                  <span class="dot all"></span>
+                  <span>Histórico de Ingresos y Salidas</span>
+                </button>
+                <button type="button" class="inv-history-menu-item" (click)="openInventoryHistoryModal('FRUIT', 'IN')">
+                  <span class="dot in"></span>
+                  <span>Solo Ingresos de Fruta (+)</span>
+                </button>
+                <button type="button" class="inv-history-menu-item" (click)="openInventoryHistoryModal('FRUIT', 'OUT')">
+                  <span class="dot out"></span>
+                  <span>Solo Salidas de Fruta (-)</span>
+                </button>
+              </div>
+            }
           </div>
         </div>
       </div>
@@ -1884,11 +1954,6 @@
                 <div class="inv-card-identity">
                   <div class="inv-card-badges">
                     <span class="badge badge-emerald">FRUTA FRESCA</span>
-                    @if (fruit.freshStockKg <= 50) {
-                      <span class="badge badge-danger inv-status-badge">Bajo Stock</span>
-                    } @else {
-                      <span class="badge badge-success inv-status-badge">Disponible</span>
-                    }
                   </div>
                   <h4 class="inv-card-title">{{ fruit.name }}</h4>
                   @if (fruit.scientificName) {
@@ -1900,23 +1965,12 @@
                   <span class="inv-card-stock-val" [class.low]="fruit.freshStockKg <= 50">
                     {{ fruit.freshStockKg }} Kg
                   </span>
-                  <span class="inv-card-total-pill">
-                    ~{{ ((fruit.freshStockKg || 0) * (fruit.yieldRate || 0)).toFixed(0) }} Kg pulpa
-                  </span>
                 </div>
               </div>
 
               <div class="inv-stock-meter">
-                <div class="inv-stock-meter-track">
-                  <div
-                    class="inv-stock-meter-fill"
-                    [class.low]="fruit.freshStockKg <= 50"
-                    [style.width.%]="Math.min(100, Math.round(((fruit.freshStockKg || 0) / 300) * 100))"
-                  ></div>
-                </div>
                 <div class="inv-stock-meter-labels">
                   <span>Alerta planta: 50 Kg</span>
-                  <span>{{ fruit.freshStockKg <= 50 ? 'Solicitar cosecha' : 'Lista para despulpado' }}</span>
                 </div>
               </div>
 
@@ -3124,4 +3178,149 @@
     </div>
   </div>
 }
+
+@if (showInventoryHistoryModal()) {
+  <div class="modal-overlay" (click)="closeInventoryHistoryModal()">
+    <div class="modal-content modal-lg inv-history-modal" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <div class="inv-history-modal-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="10"></circle>
+              <polyline points="12 6 12 12 16 14"></polyline>
+            </svg>
+          </div>
+          <div>
+            <h3 class="modal-title" style="margin: 0;">
+              Histórico de Ingresos y Salidas de Inventario
+            </h3>
+            <p style="margin: 0; font-size: 0.78rem; color: var(--text-dim);">
+              {{ historyCategoryFilter() === 'FRUIT' ? 'Inventario de Fruta Disponible en Planta (Kg)' : 'Stock de Pulpas Hechas en Planta (uds)' }}
+            </p>
+          </div>
+        </div>
+        <button type="button" class="modal-close" (click)="closeInventoryHistoryModal()">&times;</button>
+      </div>
+
+      <div class="modal-body inv-history-modal-body">
+        <div class="inv-history-date-filters">
+          <div class="inv-history-date-field">
+            <label class="form-label" style="margin-bottom: 4px; font-size: 0.76rem;">Fecha Desde</label>
+            <input
+              type="date"
+              id="input-history-start-date"
+              class="form-control"
+              [ngModel]="historyStartDate()"
+              (ngModelChange)="historyStartDate.set($event); historyCurrentPage.set(1)"
+            />
+          </div>
+          <div class="inv-history-date-field">
+            <label class="form-label" style="margin-bottom: 4px; font-size: 0.76rem;">Fecha Hasta</label>
+            <input
+              type="date"
+              id="input-history-end-date"
+              class="form-control"
+              [ngModel]="historyEndDate()"
+              (ngModelChange)="historyEndDate.set($event); historyCurrentPage.set(1)"
+            />
+          </div>
+          @if (historyStartDate() || historyEndDate()) {
+            <button
+              type="button"
+              class="btn btn-outline inv-history-clear-btn"
+              (click)="clearHistoryDateFilters()"
+            >
+              Limpiar fechas
+            </button>
+          }
+        </div>
+
+        <div class="inv-history-list-wrapper">
+          @if (paginatedInventoryHistory().length > 0) {
+            <div class="inv-history-list">
+              @for (mov of paginatedInventoryHistory(); track mov.id) {
+                <div class="inv-history-row" [class.inflow]="mov.movementType === 'IN'" [class.outflow]="mov.movementType === 'OUT'">
+                  <div class="inv-history-row-left">
+                    <span class="badge" [ngClass]="mov.movementType === 'IN' ? 'badge-success' : 'badge-danger'">
+                      {{ mov.movementType === 'IN' ? 'INGRESO' : 'SALIDA' }}
+                    </span>
+                    <div class="inv-history-row-info">
+                      <div class="inv-history-item-name">
+                        {{ mov.itemName }}
+                        <span class="inv-history-presentation">• {{ mov.presentation }}</span>
+                      </div>
+                      <div class="inv-history-item-meta">
+                        <span>{{ formatMovementDateTime(mov.createdAt) }}</span>
+                        <span>•</span>
+                        <span>{{ mov.reason }}</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="inv-history-row-right">
+                    <div class="inv-history-qty" [class.in]="mov.movementType === 'IN'" [class.out]="mov.movementType === 'OUT'">
+                      {{ mov.movementType === 'IN' ? '+' : '-' }}{{ mov.quantity }} {{ mov.unit }}
+                    </div>
+                    <div class="inv-history-stock-trace">
+                      {{ mov.previousStock }} {{ mov.unit }} &rarr; <strong>{{ mov.newStock }} {{ mov.unit }}</strong>
+                    </div>
+                  </div>
+                </div>
+              }
+            </div>
+          } @else {
+            <div class="inv-history-empty">
+              <div style="font-weight: 700; color: var(--text-main);">Sin movimientos registrados en este rango</div>
+              <p style="color: var(--text-muted); font-size: 0.84rem; margin: 4px 0 0 0;">
+                Los ingresos y salidas de {{ historyCategoryFilter() === 'FRUIT' ? 'fruta en Kg' : 'pulpas en uds' }} aparecerán aquí automáticamente.
+              </p>
+            </div>
+          }
+        </div>
+
+        <div class="pagination-bar inv-history-pagination">
+          <div style="color: var(--text-muted); font-size: 0.8rem;">
+            Página <strong>{{ historyCurrentPage() }}</strong> de <strong>{{ historyTotalPages() }}</strong> (máx. {{ historyMaxPages }} páginas)
+          </div>
+          <div class="pagination-controls">
+            <button
+              type="button"
+              class="page-btn"
+              [disabled]="historyCurrentPage() <= 1"
+              (click)="setHistoryPage(historyCurrentPage() - 1)"
+              title="Página anterior"
+            >
+              &larr;
+            </button>
+            @for (pageNum of historyPageNumbers(); track pageNum) {
+              <button
+                type="button"
+                class="page-btn"
+                [class.active]="historyCurrentPage() === pageNum"
+                (click)="setHistoryPage(pageNum)"
+              >
+                {{ pageNum }}
+              </button>
+            }
+            <button
+              type="button"
+              class="page-btn"
+              [disabled]="historyCurrentPage() >= historyTotalPages()"
+              (click)="setHistoryPage(historyCurrentPage() + 1)"
+              title="Página siguiente"
+            >
+              &rarr;
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline" (click)="closeInventoryHistoryModal()">
+          Cerrar
+        </button>
+      </div>
+    </div>
+  </div>
+}
+
 
