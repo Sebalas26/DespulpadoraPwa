@@ -76,8 +76,15 @@
                     <div class="ms-right">
                       <div class="ms-top-right">
                         <span class="ms-value">{{ user.roleName }}</span>
+                        <span class="ms-chevron">
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="6 9 12 15 18 9"></polyline>
+                          </svg>
+                        </span>
                       </div>
-                      <span [style.color]="user.isActive ? '#1e5e3a' : '#ef4444'" style="font-weight: 700; font-size: 0.76rem;">{{ user.isActive ? 'Activo' : 'Inactivo' }}</span>
+                      <span class="ms-status-pill">
+                        {{ user.isActive ? 'Activo' : 'Inactivo' }}
+                      </span>
                     </div>
                   </div>
                 </td>

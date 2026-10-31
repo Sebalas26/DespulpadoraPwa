@@ -111,6 +111,28 @@ describe('RealtimeSyncService', () => {
     expect(locations[0].longitude).toBeCloseTo(-74.0834, 4);
     expect(service.latestCourierLocation()?.courierId).toBe('emp-4');
 
+    service.handleIncomingRawEvent(
+      {
+        eventId: 'flutter_ws_pkt_2',
+        event: 'courier_location_update',
+        data: {
+          courierId: '1',
+          courierName: 'sebas domiciliario',
+          latitude: 4.6698,
+          longitude: -74.0912,
+          speed: 24.6,
+          heading: 180.0,
+          batteryLevel: 78,
+          timestamp: '2026-10-30T19:55:05.000Z'
+        }
+      },
+      'websocket'
+    );
+
+    expect(locations.length).toBe(2);
+    expect(locations[1].speedKmh).toBeCloseTo(24.6, 1);
+    expect(locations[1].batteryLevel).toBe(78);
+
     sub.unsubscribe();
   });
 });

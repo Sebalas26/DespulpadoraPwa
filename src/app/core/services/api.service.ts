@@ -567,7 +567,34 @@ export class ApiService {
    */
   getCouriers(): Observable<CourierDto[]> {
     try {
-      return this.http.get<CourierDto[]>(`${this.baseUrl}/couriers`).pipe(
+      return this.http.get<Record<string, unknown>[]>(`${this.baseUrl}/couriers`).pipe(
+        map((items: Record<string, unknown>[]) =>
+          (items || []).map((item: Record<string, unknown>): CourierDto => {
+            const fullName = String(item['fullName'] ?? item['name'] ?? '').trim();
+            const rawLat = item['currentLatitude'] ?? item['latitude'] ?? item['lat'];
+            const rawLng = item['currentLongitude'] ?? item['longitude'] ?? item['lng'];
+            const parsedLat = rawLat !== undefined && rawLat !== null ? Number(rawLat) : undefined;
+            const parsedLng = rawLng !== undefined && rawLng !== null ? Number(rawLng) : undefined;
+            return {
+              id: Number(item['id'] ?? item['courierId'] ?? 0),
+              name: String(item['name'] ?? fullName),
+              fullName,
+              phone: String(item['phone'] ?? ''),
+              vehiclePlate: String(item['vehiclePlate'] ?? ''),
+              zone: String(item['zone'] ?? ''),
+              status: String(item['status'] ?? ''),
+              currentLatitude: parsedLat !== undefined && Number.isFinite(parsedLat) ? parsedLat : undefined,
+              currentLongitude: parsedLng !== undefined && Number.isFinite(parsedLng) ? parsedLng : undefined,
+              activeOrdersCount: Number(item['activeOrdersCount'] ?? 0),
+              maxCapacityKg: item['maxCapacityKg'] !== undefined ? Number(item['maxCapacityKg']) : undefined,
+              responsibleUserId:
+                item['responsibleUserId'] !== undefined && item['responsibleUserId'] !== null
+                  ? Number(item['responsibleUserId'])
+                  : undefined,
+              updatedAt: typeof item['updatedAt'] === 'string' ? item['updatedAt'] : undefined
+            };
+          })
+        ),
         catchError((error: unknown) => throwError(() => error))
       );
     } catch (error: unknown) {

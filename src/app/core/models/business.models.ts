@@ -322,6 +322,7 @@ export interface OrderDto {
   paymentMethod?: string;
   courierId?: number;
   courierName?: string;
+  routeCode?: string;
   routeSequenceOrder?: number;
   dispatchedAtUtc?: string;
   isPaid: boolean;
@@ -339,6 +340,7 @@ export interface OrderDto {
 export interface DispatchCourierRouteDto {
   courierId: number;
   courierName?: string;
+  routeCode?: string;
   orderIds: number[];
 }
 
@@ -398,6 +400,7 @@ export interface OrderMetricsDto {
 export interface CourierDto {
   id: number;
   name: string;
+  fullName?: string;
   phone: string;
   vehiclePlate: string;
   zone: string;
@@ -405,6 +408,9 @@ export interface CourierDto {
   currentLatitude?: number;
   currentLongitude?: number;
   activeOrdersCount: number;
+  maxCapacityKg?: number;
+  responsibleUserId?: number;
+  updatedAt?: string;
 }
 
 /**

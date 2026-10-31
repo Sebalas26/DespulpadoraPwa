@@ -8,7 +8,7 @@ import { NotificationService } from '../../core/services/notification.service';
 import { AuthService } from '../../core/services/auth.service';
 import { VoiceOrdersService } from '../../core/services/voice-orders.service';
 import { GeocodingService } from '../../core/services/geocoding.service';
-import { ClientDto, CompanyConfig, EmployeeDto, FruitConfig, OrderDto, PaymentMethodDto } from '../../core/models/business.models';
+import { ClientDto, CompanyConfig, EmployeeDto, FruitConfig, OrderDto, PaymentMethodDto, UserAdminDto, UserRoleDto } from '../../core/models/business.models';
 import { VoiceOrderMessageDto } from '../../core/models/voice-order.models';
 
 /**
@@ -44,10 +44,10 @@ describe('OrdersComponent', () => {
     {
       id: 10,
       employeeId: 10,
-      firstName: 'Juan',
-      lastName: 'Domiciliario',
-      fullName: 'Juan Domiciliario',
-      name: 'Juan Domiciliario',
+      firstName: 'Sandra',
+      lastName: 'NoCreadaEnUsuarios',
+      fullName: 'Sandra NoCreadaEnUsuarios',
+      name: 'Sandra NoCreadaEnUsuarios',
       identificationNumber: '1001',
       documentNumber: '1001',
       position: 'Mensajero Motorizado',
@@ -56,7 +56,33 @@ describe('OrdersComponent', () => {
       transportAllowance: 162000,
       hireDate: '2025-01-10',
       isActive: true,
-      phone: '3001112233'
+      phone: '3009998877'
+    }
+  ]);
+
+  const mockRoles = signal<UserRoleDto[]>([
+    {
+      roleId: 3,
+      name: 'Domiciliario',
+      description: 'Mensajero',
+      isCourier: true,
+      isSystemRole: true,
+      isActive: true
+    }
+  ]);
+
+  const mockUsers = signal<UserAdminDto[]>([
+    {
+      userId: 6,
+      username: 'jdomi',
+      fullName: 'Juan Domiciliario',
+      email: 'juan@dgl.com',
+      phone: '3001112233',
+      roleId: 3,
+      roleName: 'Domiciliario',
+      companyId: 1,
+      isActive: true,
+      branches: []
     }
   ]);
 
@@ -172,6 +198,8 @@ describe('OrdersComponent', () => {
     const stateServiceMock: Partial<StateService> = {
       fruits: mockFruits,
       employees: mockEmployees,
+      users: mockUsers,
+      roles: mockRoles,
       orders: mockOrders,
       clients: mockClients,
       paymentMethods: mockPaymentMethods,
@@ -239,11 +267,12 @@ describe('OrdersComponent', () => {
     expect(component.manualItems()).toEqual([]);
   });
 
-  it('should derive COURIER_CATALOG dynamically from DOMICILIOS employees', () => {
+  it('should derive COURIER_CATALOG strictly from active courier users in StateService and ignore HR employees not created as users', () => {
     const couriers = component.COURIER_CATALOG;
     expect(couriers.length).toBe(1);
     expect(couriers[0].name).toBe('Juan Domiciliario');
     expect(couriers[0].phone).toBe('3001112233');
+    expect(couriers.some(c => c.name.toLowerCase().includes('sandra'))).toBeFalse();
   });
 
   it('should return null from getCourierForOrder when order has no courierName', () => {

@@ -111,6 +111,9 @@ export class AdminUsersComponent implements OnInit {
               ? res.roles
               : res.roles.filter((r: UserRoleDto) => !this.authService.isSuperAdminRole(r));
             this.roles.set(filteredRoles);
+            if (this.stateService?.setRoles) {
+              this.stateService.setRoles(res.roles);
+            }
             if (filteredRoles.length > 0 && this.newRoleId() === 0) {
               this.newRoleId.set(filteredRoles[0].roleId);
             }

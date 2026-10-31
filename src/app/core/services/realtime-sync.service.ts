@@ -407,6 +407,16 @@ export class RealtimeSyncService implements OnDestroy {
           name: 'CourierLocationUpdated',
           domain: 'courier_location',
           event: 'courier_location_update'
+        },
+        {
+          name: 'ReceiveLocation',
+          domain: 'courier_location',
+          event: 'courier_location_update'
+        },
+        {
+          name: 'LocationUpdated',
+          domain: 'courier_location',
+          event: 'courier_location_update'
         }
       ];
 
@@ -803,25 +813,43 @@ export class RealtimeSyncService implements OnDestroy {
     data: Record<string, unknown>
   ): CourierRealtimeLocationPayload | null {
     try {
+      const rawId = data['courierId'] ?? data['userId'] ?? data['id'];
       const courierId =
-        typeof data['courierId'] === 'string' || typeof data['courierId'] === 'number'
-          ? String(data['courierId'])
-          : '';
-      const latitude = Number(data['latitude'] ?? data['lat']);
-      const longitude = Number(data['longitude'] ?? data['lng']);
+        typeof rawId === 'string' || typeof rawId === 'number' ? String(rawId).trim() : '';
+      const rawName = data['courierName'] ?? data['fullName'] ?? data['name'];
+      const courierName = typeof rawName === 'string' ? rawName.trim() : undefined;
+      const latitude = Number(data['latitude'] ?? data['lat'] ?? data['currentLatitude']);
+      const longitude = Number(data['longitude'] ?? data['lng'] ?? data['currentLongitude']);
 
-      if (!courierId || Number.isNaN(latitude) || Number.isNaN(longitude)) {
+      if (
+        (!courierId && !courierName) ||
+        Number.isNaN(latitude) ||
+        Number.isNaN(longitude) ||
+        Math.abs(latitude) < 0.0001 ||
+        Math.abs(longitude) < 0.0001
+      ) {
         return null;
       }
 
+      const rawSpeed = data['speedKmh'] ?? data['speed'];
+      const parsedSpeed = rawSpeed !== undefined && rawSpeed !== null ? Number(rawSpeed) : undefined;
+      const rawBattery = data['batteryLevel'] ?? data['batteryPct'];
+      const parsedBattery =
+        rawBattery !== undefined && rawBattery !== null ? Number(rawBattery) : undefined;
+      const rawHeading = data['heading'];
+      const parsedHeading =
+        rawHeading !== undefined && rawHeading !== null ? Number(rawHeading) : undefined;
+
       return {
-        courierId,
-        courierName: typeof data['courierName'] === 'string' ? data['courierName'] : undefined,
+        courierId: courierId || courierName || '',
+        courierName,
         latitude,
         longitude,
-        speedKmh: data['speedKmh'] !== undefined ? Number(data['speedKmh']) : undefined,
-        batteryLevel: data['batteryLevel'] !== undefined ? Number(data['batteryLevel']) : undefined,
-        heading: data['heading'] !== undefined ? Number(data['heading']) : undefined,
+        speedKmh: parsedSpeed !== undefined && Number.isFinite(parsedSpeed) ? parsedSpeed : undefined,
+        batteryLevel:
+          parsedBattery !== undefined && Number.isFinite(parsedBattery) ? parsedBattery : undefined,
+        heading:
+          parsedHeading !== undefined && Number.isFinite(parsedHeading) ? parsedHeading : undefined,
         timestamp:
           typeof data['timestamp'] === 'string' ? data['timestamp'] : new Date().toISOString()
       };

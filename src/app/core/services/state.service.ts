@@ -11,6 +11,7 @@ import {
   BatchDto,
   ClientDto,
   CompanyConfig,
+  CourierDto,
   CreateClientDto,
   CreatePayrollSettlementDto,
   DispatchCourierRouteDto,
@@ -956,20 +957,20 @@ private loadEmployeesFromStorage(): EmployeeDto[] {
           ? this.api.getShifts(branchId).pipe(catchError(() => of(null as WorkShiftDto[] | null)))
           : of(null as WorkShiftDto[] | null)),
         users: (this.api.getUsers
-          ? this.api.getUsers().pipe(catchError(() => of([] as UserAdminDto[])))
-          : of([] as UserAdminDto[])),
+          ? this.api.getUsers().pipe(catchError(() => of(null as UserAdminDto[] | null)))
+          : of(null as UserAdminDto[] | null)),
         roles: (this.api.getRoles
-          ? this.api.getRoles().pipe(catchError(() => of([] as UserRoleDto[])))
-          : of([] as UserRoleDto[]))
+          ? this.api.getRoles().pipe(catchError(() => of(null as UserRoleDto[] | null)))
+          : of(null as UserRoleDto[] | null))
       }).subscribe({
         next: res => {
           this.isLoading.set(false);
 
-          if (res.users && res.users.length > 0) {
+          if (Array.isArray(res.users)) {
             this.users.set(res.users);
             this.saveUsersToStorage(res.users);
           }
-          if (res.roles && res.roles.length > 0) {
+          if (Array.isArray(res.roles)) {
             this.roles.set(res.roles);
             this.saveRolesToStorage(res.roles);
           }
@@ -1713,6 +1714,7 @@ private loadEmployeesFromStorage(): EmployeeDto[] {
               ...o,
               courierId: dto.courierId,
               courierName: dto.courierName || o.courierName,
+              routeCode: dto.routeCode || o.routeCode,
               routeSequenceOrder: seqIndex,
               status: o.status === 'DELIVERED' ? 'DELIVERED' : 'DISPATCHED',
               dispatchedAtUtc: o.dispatchedAtUtc || new Date().toISOString()
@@ -1727,6 +1729,7 @@ private loadEmployeesFromStorage(): EmployeeDto[] {
               ...o,
               courierId: undefined,
               courierName: undefined,
+              routeCode: undefined,
               routeSequenceOrder: undefined,
               status: 'BILLED'
             };
@@ -1743,6 +1746,7 @@ private loadEmployeesFromStorage(): EmployeeDto[] {
           {
             courierId: dto.courierId,
             courierName: dto.courierName,
+            routeCode: dto.routeCode,
             orderIds: dto.orderIds
           },
           {
@@ -1756,6 +1760,7 @@ private loadEmployeesFromStorage(): EmployeeDto[] {
         .dispatchOrdersRoute?.({
           courierId: dto.courierId,
           courierName: dto.courierName,
+          ...(dto.routeCode !== undefined ? { routeCode: dto.routeCode } : {}),
           orderIds: dto.orderIds
         })
         ?.subscribe({
@@ -2686,6 +2691,20 @@ private loadEmployeesFromStorage(): EmployeeDto[] {
       }
     } catch {
       return;
+    }
+  }
+
+  /**
+   * Retrieves the latest live courier records and GPS coordinates from the backend REST endpoint.
+   */
+  fetchLiveCouriers(): Observable<CourierDto[]> {
+    try {
+      if (!this.api || typeof this.api.getCouriers !== 'function') {
+        return of([]);
+      }
+      return this.api.getCouriers().pipe(catchError(() => of([])));
+    } catch {
+      return of([]);
     }
   }
 }

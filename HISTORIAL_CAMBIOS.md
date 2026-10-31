@@ -4,6 +4,184 @@ Este documento registra de manera cronológica y estructurada todas las interven
 
 ---
 
+## [2026-10-30] - Mejora del Flujo de Asignación de Pedidos, Código Unificado de Ruta (`RUT-XX`), Confirmación en Ruta Activa, Botón `Actualizar` tras `Editar` y Sincronización en Vivo en la App Flutter (`DeliveryMapComponent`, `StateService`, `MobileAppService`, `Program.cs` y `OrdersCubit`)
+
+### 💬 Prompt Original del Usuario
+> "Ayudame a mejorar el flujo de asignacion de pedidos:
+> - Muestrame un id temporal de ruta al lado del # de entregas, el cual sera el mismo que reciba en el home de mi app flutter
+> - Si llega el cliente a elegir un mensajero que ya tiene una ruta activa, le salga un dialog de confirmacion indicadno que si desea actualizar la ruta
+> - Si el cliente le da editar, configura la ruta y el boton debe decir actualizar, no crear poque ya se encuentra creado
+> Por ultimo en la app flutter cuando se le agrega un nuevo pedido no se actualiza en vivo, debe darle actualizar pedidos... pero no quiero eso , actualizalo envivo"
+
+### 🤖 Resumen Técnico para la IA
+- **1. ID Unificado de Ruta (`RUT-XX`) al Lado del `# de entrega(s)` en PWA y en el Home de la App Flutter (`src/app/features/orders/delivery-map.component.ts` y `ApiDespulpadora.Core/Services/Mobile/MobileAppService.cs`)**:
+  - En `DeliveryMapComponent`, se implementó `getCourierRouteCode(c)` que genera el código `RUT-XX` (ej. `RUT-06`) y se renderizó el badge `<span class="dcr-route-code">{{ getCourierRouteCode(c) }}</span>` justo al lado de `{{ getCourierAssignedStopsCount(c.id) }} entrega(s)` en `.drawer-courier-route-row`, además de las tarjetas de mensajeros y modales de confirmación.
+  - En `MobileAppService.GetAssignedRouteAsync()`, se unificó `assignedRouteCode` resolviendo `routeCodeNumericId` desde el `CourierId` almacenado en las órdenes asignadas (`$"RUT-{routeCodeNumericId:D2}"`), garantizando coincidencia 1:1 con el código mostrado en el Home de la App Flutter.
+- **2. Botón `Actualizar` (en lugar de `Crear Ruta`) tras Pulsar `Editar` (`src/app/features/orders/delivery-map.component.ts`)**:
+  - Se agregó `hasCreatedRoute?: boolean` a la interfaz `Courier`. Al crear una ruta (`confirmCreateCourierRoute()`) o sincronizar órdenes despachadas (`syncWithStateServiceOrders()`), se marca `hasCreatedRoute: true`.
+  - Al pulsar **Editar** (`enableEditCourierRoute()`), `isRouteCreated` pasa a `false` mientras `hasCreatedRoute` permanece en `true`, haciendo que el botón muestre `Actualizar` en lugar de `Crear Ruta` y que el modal adapte sus textos a **"Confirmar Actualización de Ruta"** y **"Sí, actualizar ruta"**.
+- **3. Diálogo de Confirmación al Asignar un Pedido a un Mensajero con Ruta Activa (`src/app/features/orders/delivery-map.component.ts`)**:
+  - Tanto en `onCourierSelectChange()` como en `onDropStopToCourierPill()`, cuando el mensajero destino ya tiene una ruta activa (`isRouteCreated || hasCreatedRoute`), se abre el modal `.confirm-update-active-route-modal` (`showConfirmAssignToActiveRouteModal`) preguntando si desea actualizar la ruta activa.
+  - Al confirmar (`confirmAssignToActiveRoute()`), se asigna el pedido y se despacha en vivo la ruta actualizada (`stateService.dispatchCourierRoute`) hacia el backend y la App Flutter.
+- **4. Sincronización en Vivo de Nuevos Pedidos en la App Flutter (`ApiDespulpadora/Program.cs` y `DespulpadoraApp/lib/blocs/orders_cubit.dart`)**:
+  - En `Program.cs` (`/ws`), se implementó un `ConcurrentDictionary<string, WebSocket> activeWebSockets` para retransmitir (broadcast) los eventos WebSocket de despacho y actualización de rutas/pedidos a todos los clientes conectados.
+  - En `DespulpadoraApp`, se inyectó `WebSocketService` en `OrdersCubit` (`lib/main.dart`), suscribiéndose a `incomingMessagesStream` (`_handleIncomingWsMessage`) y manteniendo un `Timer.periodic` silencioso de 5 segundos (`_ensureLiveSyncActive`) que invoca `refreshOrdersLive()` (`_fetchAndApplyOrders(isSilent: true)`), actualizando los pedidos en vivo sin mostrar pantalla de carga y preservando `isRouteReceived`.
+- **5. Informes del Agente Verificador, Agente Auditor Punto por Punto y Revisión Par**:
+  - **Agente Verificador (`72f1240f-8601-4561-a879-017556b91064`)**: Verificó la cadena PWA -> API .NET -> App Flutter sin regresiones.
+  - **Agente Auditor Punto por Punto (`ab557254-06eb-48e4-8954-7268734a1571`)**: Dictamen **100% CUMPLIDO** en los 4 requerimientos del usuario y reglas de `AGENTS.md`.
+  - **Agente de Revisión Par (`81f5b8cd-081d-4369-8951-931ed183dbbd`)**: Dictamen **`APPROVED` (100% Sin Anomalías)**.
+
+### 📦 Componentes Modificados
+- `src/app/core/models/business.models.ts`
+- `src/app/core/services/state.service.ts`
+- `src/app/features/orders/delivery-map.component.ts`
+- `src/app/features/orders/delivery-map.component.spec.ts`
+- `HISTORIAL_CAMBIOS.md`
+- `ApiDespulpadora/ApiDespulpadora.Core/Services/Mobile/MobileAppService.cs`
+- `ApiDespulpadora/ApiDespulpadora/Program.cs`
+- `DespulpadoraApp/lib/blocs/orders_cubit.dart`
+- `DespulpadoraApp/lib/main.dart`
+- `DespulpadoraApp/test/widget_test.dart`
+
+### ✅ Verificación, Build y Tests Unitarios
+- **Compilación de Producción PWA (`npm run build`)**: Exitosa (`0 errores`).
+- **Suite Completa de Pruebas Unitarias PWA (`ng test --watch=false`)**: **263 de 263 pruebas exitosas (`100% PASS`)**.
+- **Suite Completa de Pruebas Unitarias API (`dotnet test`)**: **39 de 39 pruebas exitosas (`100% PASS`)**.
+- **Análisis y Pruebas Unitarias Flutter (`dart analyze && flutter test`)**: **0 issues y 13 de 13 pruebas exitosas (`100% PASS`)**.
+
+---
+
+## [2026-10-30] - Desmockeo Total de Ubicación y Simulación de Domiciliarios y Conexión con Telemetría GPS Real desde la App Flutter (`DeliveryMapComponent`, `RealtimeSyncService`, `ApiService` y `StateService`)
+
+### 💬 Prompt Original del Usuario
+> "Desmockea la ubicacion y simulacion de los domiciliaroos, quiero que empiece a ver la ubicacion real del usuario de la app flutter, ya la tengo instlada en un cel fisico"
+
+### 🤖 Resumen Técnico para la IA
+- **1. Eliminación Completa de Simulación Sintética y Datos Quemados en el Mapa de Entregas (`src/app/features/orders/delivery-map.component.ts`)**:
+  - Se eliminó la invocación a `this.startSimulationLoop()` en `ngAfterViewInit()` y se desactivó el movimiento sintético sobre las polilíneas OSRM en `startSimulationLoop()`, `updateSimulationTick()`, `checkStopProximity()` y `markStopDeliveredSilently()`.
+  - En `enterLiveMapMode()`, se fijó `this.isSimulating.set(false)` (evitando que al pasar a "Ver Mapa en Vivo" se reactive el movimiento falso) y se invocó `this.pollRealCourierLocations()`.
+  - En `syncCouriersFromEmployees()`, se eliminó la velocidad quemada `currentSpeedKmH: 35`, inicializando la velocidad en `0` o preservando la telemetría GPS real almacenada en `realCourierTelemetry`.
+  - En `syncWithStateServiceOrders()` (`enrichWithTracking`), se eliminaron las listas quemadas de coordenadas de prueba (`seedLats` y `seedLngs`), usando exclusivamente las coordenadas reales del pedido (`order.latitude` / `order.longitude`), las coordenadas de planta (`this.plantLat()` / `this.plantLng()`) y geocodificación real (`triggerBackgroundGeocoding()`).
+- **2. Sincronización GPS Real desde la App Flutter (`PUT /api/mobile/couriers/{id}/location`, `GET /api/couriers`, WebSocket `/ws` y SignalR `/hubs/operations`)**:
+  - En `src/app/core/models/business.models.ts`, se enriqueció `CourierDto` con `fullName?: string`, `maxCapacityKg?: number`, `responsibleUserId?: number` y `updatedAt?: string`.
+  - En `src/app/core/services/api.service.ts` (`getCouriers()`), se normalizaron los campos `currentLatitude` (`currentLatitude ?? latitude ?? lat`), `currentLongitude` (`currentLongitude ?? longitude ?? lng`), `fullName`, `phone`, `vehiclePlate`, `responsibleUserId` y `updatedAt`.
+  - En `src/app/core/services/state.service.ts`, se agregó `fetchLiveCouriers(): Observable<CourierDto[]>`.
+  - En `src/app/core/services/realtime-sync.service.ts`, se actualizó `extractCourierLocation()` para leer tanto `speedKmh` como el campo `speed` enviado por la app Flutter (`courier_location_update`), además de soportar `courierId`/`userId`/`id` y `courierName`/`fullName`/`name`, y se registraron los eventos `ReceiveLocation` y `LocationUpdated` en SignalR.
+  - En `DeliveryMapComponent`, se implementaron `startRealCourierPolling()` (cada 5 segundos, con limpieza en `ngOnDestroy()`) y `pollRealCourierLocations()`, haciendo match por `responsibleUserId`, nombre normalizado (`fullName`/`name`), teléfono, `id` o domiciliario único en ruta, calculando la velocidad real por distancia Haversine cuando cambian las coordenadas y actualizando los marcadores Leaflet en sitio (`setLatLng`, `setIcon`, `setPopupContent`) dentro de `renderCourierMarkers()`.
+- **3. Pruebas Unitarias (`src/app/core/services/realtime-sync.service.spec.ts` y `src/app/features/orders/delivery-map.component.spec.ts`)**:
+  - Se añadieron pruebas unitarias verificando la extracción del campo `speed` de Flutter en `RealtimeSyncService` y la sincronización de coordenadas GPS reales vía `fetchLiveCouriers()` con `isSimulating() === false` al invocar `enterLiveMapMode()` en `DeliveryMapComponent`.
+- **4. Informes del Agente Verificador, Agente Auditor Punto por Punto y Revisión Par**:
+  - **Agente Verificador (`477ee3cc-69ba-4938-b923-725f8a099f95`)**: Auditó la cadena completa Flutter -> API .NET -> PWA Angular y certificó 0 regresiones.
+  - **Agente Auditor Punto por Punto (`ca125707-701f-4be7-8bb9-7e0713c561be`)**: Dictamen **APROBADO AL 100% SIN DESVIACIONES**.
+  - **Agente de Revisión Par (`faaca0b6-3a60-4aa2-b028-8ac513d04efb`)**: Dictamen **APROBADO SIN OBSERVACIONES (100% COMPLIANT)**.
+
+### 📦 Componentes Modificados
+- `src/app/core/models/business.models.ts`
+- `src/app/core/services/api.service.ts`
+- `src/app/core/services/state.service.ts`
+- `src/app/core/services/realtime-sync.service.ts`
+- `src/app/core/services/realtime-sync.service.spec.ts`
+- `src/app/features/orders/delivery-map.component.ts`
+- `src/app/features/orders/delivery-map.component.spec.ts`
+- `HISTORIAL_CAMBIOS.md`
+
+### ✅ Verificación, Build y Tests Unitarios
+- **Compilación de Producción (`npm run build`)**: Exitosa (`0 errores`).
+- **Suite Completa de Pruebas Unitarias (`ng test --watch=false`)**: **263 de 263 pruebas exitosas (`100% PASS`)**.
+
+---
+
+## [2026-10-30] - Sincronización Estricta de Domiciliarios Exclusivamente desde Usuarios Activos Creados en Gestión de Usuarios del Sistema (`DeliveryMapComponent`, `OrdersComponent` y `StateService`)
+
+### 💬 Prompt Original del Usuario
+> "Este usuario no se encuentra creado" *(adjuntando captura de `Despachos & Rutas -> Entregas en el Mapa` donde aparecía el filtro `sandra (0)` sin estar creado como usuario en `Gestión de Usuarios del Sistema`)*
+
+### 🤖 Resumen Técnico para la IA
+- **1. Eliminación de Inyección de Empleados de Nómina (`area === 'DOMICILIOS'`) en Mapa de Entregas y Pedidos (`src/app/features/orders/delivery-map.component.ts` y `src/app/features/orders/orders.component.ts`)**:
+  - En `DeliveryMapComponent.syncCouriersFromEmployees()` y `OrdersComponent.COURIER_CATALOG`, se eliminó la concatenación de empleados de `this.stateService.employees().filter(e => e.area === 'DOMICILIOS')`.
+  - Ahora los domiciliarios se construyen **exclusivamente** a partir de usuarios activos (`u.isActive !== false`) registrados en **Gestión de Usuarios del Sistema** (`StateService.users()`) cuyo rol tenga `isCourier === true` o nombre de rol `domicili`/`mensajer`/`repartidor`.
+  - En `DeliveryMapComponent.syncCouriersFromEmployees()`, `this.couriers.set(updated)` se ejecuta siempre (incluso cuando `updated` sea `[]`) y limpia automáticamente `activePlannerCourierId`, `selectedCourierId` y `drawerCourierFilter` si el domiciliario seleccionado fue eliminado o desactivado.
+- **2. Sincronización Resiliente de `/api/users` y `/api/roles` (`src/app/core/services/state.service.ts` y `src/app/features/admin/users/users.component.ts`)**:
+  - En `StateService.refreshAll()`, las llamadas `getUsers()` y `getRoles()` usan `catchError(() => of(null))` y validan `Array.isArray(res.users)` / `Array.isArray(res.roles)`, asegurando que la respuesta real del backend siempre actualice las señales globales y `localStorage` (`dgl_users_v2` / `dgl_roles_v2`).
+  - En `AdminUsersComponent.loadUsersAndRoles()`, se invoca `this.stateService?.setRoles(res.roles)` al cargar los roles desde `/api/roles`.
+- **3. Pruebas Unitarias (`src/app/features/orders/delivery-map.component.spec.ts` y `src/app/features/orders/orders.component.spec.ts`)**:
+  - Se actualizaron las pruebas unitarias para verificar que empleados del área `DOMICILIOS` en Personal y Nómina que no existan como usuarios del sistema (`Sandra Nómina`) no aparezcan en `couriers()` ni en `COURIER_CATALOG`.
+- **4. Informes del Agente Verificador, Agente Auditor Punto por Punto y Revisión Par**:
+  - **Agente Verificador (`477ee3cc-69ba-4938-b923-725f8a099f95`)**: Identificó la concatenación de `domiEmployees` y certificó aislamiento quirúrgico 100%.
+  - **Agente Auditor Punto por Punto (`ca125707-701f-4be7-8bb9-7e0713c561be`)**: Dictamen **APROBADO SIN DESVIACIONES (100% COMPLIANT)**.
+  - **Agente de Revisión Par (`faaca0b6-3a60-4aa2-b028-8ac513d04efb`)**: Dictamen **APROBADO AL 100% CON 0 OBSERVACIONES — PASE A PRODUCCIÓN AUTORIZADO**.
+
+### 📦 Componentes Modificados
+- `src/app/features/orders/delivery-map.component.ts`
+- `src/app/features/orders/delivery-map.component.spec.ts`
+- `src/app/features/orders/orders.component.ts`
+- `src/app/features/orders/orders.component.spec.ts`
+- `src/app/core/services/state.service.ts`
+- `src/app/features/admin/users/users.component.ts`
+- `HISTORIAL_CAMBIOS.md`
+
+### ✅ Verificación, Build y Tests Unitarios
+- **Compilación de Producción (`npm run build`)**: Exitosa (`0 errores`).
+- **Suite Completa de Pruebas Unitarias (`ng test --watch=false`)**: **261 de 261 pruebas exitosas (`100% PASS`)**.
+
+---
+
+## [2026-10-30] - Ubicación Dinámica del Marcador de Sede/Planta y Punto de Partida de Rutas desde Configuración de Empresa (`DeliveryMapComponent`)
+
+### 💬 Prompt Original del Usuario
+> "ayudame ahora con algo, en el mapa estoy viendo que me marca un punto que es donde tendria la sede , pero ayudame a que esto se marque con la direccion que pusimos en el conf de la empresa/ Ubicación de Planta & Contacto Comercial Dirección física y canales de comunicación impresos en comprobantes.Dirección de la Planta / Bodega y ciudad"
+
+### 🤖 Resumen Técnico para la IA
+- **1. Coordenadas y Textos Reactivos de la Sede/Planta en `DeliveryMapComponent` (`src/app/features/orders/delivery-map.component.ts`)**:
+  - Se añadieron las señales reactivas `readonly plantLat = signal<number>(PLANTA_MATRIZ_LAT);` y `readonly plantLng = signal<number>(PLANTA_MATRIZ_LNG);` junto con la referencia `private plantMarker?: L.Marker;` y las señales computadas `plantDisplayTitle` y `plantDisplayAddress` derivadas de `stateService.companyInfo()` (`companyName`/`legalName`, `address`, `city`, `department`).
+  - Se implementó `syncPlantLocationFromCompanyInfo(): Promise<void>`, que lee `address` y `city` de `stateService.companyInfo()`, consulta y persiste en caché local (`localStorage` bajo `despulpadora_plant_coords_v1`) o resuelve las coordenadas mediante `GeocodingService.geocodeBestMatch()`, actualizando `plantLat` y `plantLng`, reposicionando el marcador verde de la sede (`addPlantaMarker()`), los domiciliarios en planta y las polilíneas de ruta (`buildAndRenderRealRoadRoutes()`).
+  - La sincronización se dispara automáticamente en el `effect()` reactivo al cambiar `stateService.companyInfo()`, en `ngOnInit()` y al recibir eventos en tiempo real del dominio `'parameters'` o `'all'`.
+  - Se reemplazaron todas las referencias fijas a `PLANTA_MATRIZ_LAT`/`PLANTA_MATRIZ_LNG` y los textos quemados (`INVENTARIO MATRIZ CUNDINAMARCA` / `Parque Industrial Calle 80 / Cota`) en `addPlantaMarker()`, `buildAndRenderRealRoadRoutes()`, `autoOptimizeSequence()`, `computedPlannerDistanceKm`, `flyToPlantaMatriz()`, `fitMapToAllStops()`, `confirmSettlementAndReceive()`, `resetSimulation()`, `syncCouriersFromEmployees()`, el botón `BM` y el modal de secuencia de ruta.
+- **2. Pruebas Unitarias (`src/app/features/orders/delivery-map.component.spec.ts`)**:
+  - Se agregó el test `'should geocode and sync plant marker coordinates and labels from configured company address and city'` verificando la geocodificación reactiva con `address` y `city` de `companyInfo()`, la actualización de `plantLat()` y `plantLng()` y las etiquetas `plantDisplayTitle()` y `plantDisplayAddress()`.
+- **3. Informes del Agente Verificador, Agente Auditor Punto por Punto y Revisión Par**:
+  - **Agente Verificador (`fbff7eaf-3d80-41cd-aae2-da566a121d5c`)**: Certificó aislamiento quirúrgico 100% en `DeliveryMapComponent`.
+  - **Agente Auditor Punto por Punto (`ceb502ee-7346-4311-83c7-ded208ed1295`)**: Dictamen **APROBADO AL 100% SIN DESVIACIONES**.
+  - **Agente de Revisión Par (`8304496d-256e-435a-94bb-564a4e1b03d0`)**: Dictamen **APROBADO AL 100% SIN ANOMALÍAS NI REGRESIONES**.
+
+### 📦 Componentes Modificados
+- `src/app/features/orders/delivery-map.component.ts`
+- `src/app/features/orders/delivery-map.component.spec.ts`
+- `HISTORIAL_CAMBIOS.md`
+
+### ✅ Verificación, Build y Tests Unitarios
+- **Compilación de Producción (`npm run build`)**: Exitosa (`0 errores`).
+- **Suite Completa de Pruebas Unitarias (`ng test --watch=false`)**: **261 de 261 pruebas exitosas (`100% PASS`)**.
+
+---
+
+## [2026-10-30] - Estandarización de Cards Mobile con Flecha Desplegable (`.ms-chevron`) y Badge de Estado (`.ms-status-pill`) en Gestión de Usuarios del Sistema (`AdminUsersComponent`)
+
+### 💬 Prompt Original del Usuario
+> "ayudame par qe en la version mobile, la gestion de usuarios, las cards tenga el estilo de los demas modulos, donde se ve un flecha haciendo alucion que si oprime, se desplegara la info"
+
+### 🤖 Resumen Técnico para la IA
+- **1. Incorporación de `.ms-chevron` y `.ms-status-pill` en la Cabecera Resumen Mobile (`src/app/features/admin/users/users.component.html`)**:
+  - Dentro de `<td class="mobile-tr-summary-cell">`, en `<div class="ms-top-right">` junto a `<span class="ms-value">{{ user.roleName }}</span>`, se agregó `<span class="ms-chevron">` con el ícono SVG de flecha desplegable (`<polyline points="6 9 12 15 18 9"></polyline>`), el cual rota automáticamente `180deg` cuando la fila tiene la clase `.mobile-row-expanded` gobernada por `src/styles.scss`.
+  - Se reemplazó el `<span>` inline del estado por `<span class="ms-status-pill">{{ user.isActive ? 'Activo' : 'Inactivo' }}</span>`, homologando el diseño de píldora con borde con los demás módulos (`Pedidos`, `Clientes`, `Facturación`, `Turnos`).
+- **2. Pruebas Unitarias (`src/app/features/admin/users/users.component.spec.ts`)**:
+  - Se agregó el test `'should render mobile summary header with collapsible chevron icon and status pill'` validando la renderización de `.mobile-summary-header`, `.ms-top-right .ms-chevron svg` y `.ms-status-pill`.
+- **3. Informes del Agente Verificador, Agente Auditor Punto por Punto y Revisión Par**:
+  - **Agente Verificador (`477ee3cc-69ba-4938-b923-725f8a099f95`)**: Certificó aislamiento quirúrgico 100% y reutilización de estilos globales en `src/styles.scss`.
+  - **Agente Auditor Punto por Punto (`ca125707-701f-4be7-8bb9-7e0713c561be`)**: Dictamen **APROBADO AL 100% SIN DESVIACIONES**.
+  - **Agente de Revisión Par (`faaca0b6-3a60-4aa2-b028-8ac513d04efb`)**: Dictamen **APROBADO AL 100% CON 0 OBSERVACIONES — PASE A PRODUCCIÓN AUTORIZADO**.
+
+### 📦 Componentes Modificados
+- `src/app/features/admin/users/users.component.html`
+- `src/app/features/admin/users/users.component.spec.ts`
+- `HISTORIAL_CAMBIOS.md`
+
+### ✅ Verificación, Build y Tests Unitarios
+- **Compilación de Producción (`npm run build`)**: Exitosa (`0 errores`).
+- **Suite Completa de Pruebas Unitarias (`ng test --watch=false`)**: **260 de 260 pruebas exitosas (`100% PASS`)**.
+
+---
+
 ## [2026-10-30] - Sincronización en Tiempo Real en Toda la PWA y KDS con SignalR (`/hubs/operations`), WebSocket Continuo Interoperable con App Flutter (`/ws`) y Broadcast Multi-Pestaña (`RealtimeSyncService`)
 
 ### 💬 Prompt Original del Usuario

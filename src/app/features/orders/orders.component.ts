@@ -6,7 +6,7 @@ import { StateService } from '../../core/services/state.service';
 import { NotificationService } from '../../core/services/notification.service';
 import { VoiceOrdersService } from '../../core/services/voice-orders.service';
 import { GeocodingService, GeocodedLocation } from '../../core/services/geocoding.service';
-import { EmployeeDto, FruitConfig, OrderDto, OrderItemDto, OrderStatus } from '../../core/models/business.models';
+import { FruitConfig, OrderDto, OrderItemDto, OrderStatus } from '../../core/models/business.models';
 import { DeliveryMapComponent } from './delivery-map.component';
 import { CopCurrencyInputDirective } from '../../shared/directives/cop-currency-input.directive';
 import confetti from 'canvas-confetti';
@@ -675,7 +675,7 @@ export class OrdersComponent {
   }
 
   /**
-   * Dynamically derives available couriers from active delivery employees in StateService.
+   * Dynamically derives available couriers strictly from active courier users in StateService.
    */
   get COURIER_CATALOG(): CourierCatalogEntry[] {
     try {
@@ -713,14 +713,14 @@ export class OrdersComponent {
           (u.roleName && (u.roleName.toLowerCase().includes('domicili') || u.roleName.toLowerCase().includes('mensajer') || u.roleName.toLowerCase().includes('repartidor'))))
       );
 
-      const domiEmployees = this.stateService.employees ? this.stateService.employees().filter((emp: EmployeeDto) => emp.area === 'DOMICILIOS') : [];
-
       const list: CourierCatalogEntry[] = [];
       const seenNames = new Set<string>();
 
       courierUsers.forEach((usr, idx) => {
         const name = usr.fullName || usr.username;
-        seenNames.add(name.toLowerCase());
+        const lowerName = name.toLowerCase();
+        if (seenNames.has(lowerName)) return;
+        seenNames.add(lowerName);
         const colors = palette[idx % palette.length];
         list.push({
           id: 'u' + usr.userId,
@@ -732,26 +732,6 @@ export class OrdersComponent {
           color: colors.color,
           colorLight: colors.colorLight,
           routeCode: 'RUTA-U' + usr.userId
-        });
-      });
-
-      domiEmployees.forEach((emp: EmployeeDto, idx: number) => {
-        const empName = emp.fullName || emp.name || '';
-        if (seenNames.has(empName.toLowerCase())) return;
-        seenNames.add(empName.toLowerCase());
-
-        const paletteIdx = (courierUsers.length + idx) % palette.length;
-        const colors = palette[paletteIdx];
-        list.push({
-          id: 'c' + emp.id,
-          name: empName,
-          vehicleType: 'moto',
-          vehiclePlate: emp.documentNumber || '',
-          vehicleModel: emp.position || '',
-          phone: emp.phone || '',
-          color: colors.color,
-          colorLight: colors.colorLight,
-          routeCode: ''
         });
       });
 

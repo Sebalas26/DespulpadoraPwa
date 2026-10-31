@@ -206,4 +206,18 @@ describe('AdminUsersComponent', () => {
 
     expect(component.visibleUsers().some(u => u.username === 'superadmin')).toBeFalse();
   });
+
+  it('should render mobile summary header with collapsible chevron icon and status pill', () => {
+    fixture.detectChanges();
+    const compiled: HTMLElement = fixture.nativeElement as HTMLElement;
+    const summaryCell: HTMLElement | null = compiled.querySelector('.mobile-tr-summary-cell .mobile-summary-header');
+    expect(summaryCell).not.toBeNull();
+
+    const chevronSvg: Element | null = summaryCell?.querySelector('.ms-top-right .ms-chevron svg') ?? null;
+    expect(chevronSvg).not.toBeNull();
+
+    const statusPill: HTMLElement | null = summaryCell?.querySelector('.ms-status-pill') ?? null;
+    expect(statusPill).not.toBeNull();
+    expect((statusPill?.textContent || '').trim()).toBe('Activo');
+  });
 });
