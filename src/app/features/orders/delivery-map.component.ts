@@ -1,8 +1,10 @@
 import {
   Component,
   computed,
+  effect,
   inject,
   signal,
+  untracked,
   OnDestroy,
   OnInit,
   AfterViewInit,
@@ -12,9 +14,11 @@ import {
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { Subscription } from 'rxjs';
 import { StateService } from '../../core/services/state.service';
 import { NotificationService } from '../../core/services/notification.service';
 import { GeocodingService } from '../../core/services/geocoding.service';
+import { RealtimeSyncService } from '../../core/services/realtime-sync.service';
 import { EmployeeDto, FruitConfig, OrderDto } from '../../core/models/business.models';
 import { CopCurrencyInputDirective } from '../../shared/directives/cop-currency-input.directive';
 import confetti from 'canvas-confetti';
@@ -5330,6 +5334,26 @@ export class DeliveryMapComponent implements OnInit, AfterViewInit, OnDestroy {
   readonly stateService = inject(StateService);
   private readonly notification = inject(NotificationService);
   private readonly geocodingService = inject(GeocodingService);
+  readonly realtimeSync = inject(RealtimeSyncService);
+
+  private realtimeSub?: Subscription;
+  private courierLocSub?: Subscription;
+
+  constructor() {
+    effect(() => {
+      try {
+        void this.stateService.orders();
+        void this.stateService.users?.();
+        void this.stateService.roles?.();
+        void this.stateService.employees();
+        untracked(() => {
+          this.syncWithStateServiceOrders();
+        });
+      } catch {
+        return;
+      }
+    });
+  }
 
   @ViewChild('mapElement') mapElement!: ElementRef<HTMLDivElement>;
 
@@ -6149,11 +6173,61 @@ export class DeliveryMapComponent implements OnInit, AfterViewInit, OnDestroy {
   });
 
   /**
-   * Initializes component state by syncing couriers and orders from StateService.
+   * Initializes component state by syncing couriers, orders, and real-time SignalR/WebSocket streams.
    */
   ngOnInit(): void {
     try {
+      this.realtimeSync.connect();
       this.syncWithStateServiceOrders();
+
+      this.realtimeSub = this.realtimeSync.domainEvents$.subscribe(evt => {
+        try {
+          if (
+            evt.domain === 'orders' ||
+            evt.domain === 'routes' ||
+            evt.domain === 'users' ||
+            evt.domain === 'all'
+          ) {
+            this.syncWithStateServiceOrders();
+            this.renderStopMarkers();
+            this.buildAndRenderRealRoadRoutes();
+            this.renderCourierMarkers();
+          }
+        } catch {
+          return;
+        }
+      });
+
+      this.courierLocSub = this.realtimeSync.courierLocations$.subscribe(loc => {
+        try {
+          this.couriers.update((list: Courier[]) =>
+            list.map((c: Courier) => {
+              const matchesId =
+                c.id === loc.courierId ||
+                c.id === `u${loc.courierId}` ||
+                c.id === `c${loc.courierId}`;
+              const matchesName =
+                Boolean(loc.courierName) &&
+                c.name.toLowerCase().includes((loc.courierName || '').toLowerCase());
+              if (matchesId || matchesName) {
+                return {
+                  ...c,
+                  lat: loc.latitude,
+                  lng: loc.longitude,
+                  currentSpeedKmH:
+                    loc.speedKmh !== undefined ? Math.round(loc.speedKmh) : c.currentSpeedKmH,
+                  batteryPct:
+                    loc.batteryLevel !== undefined ? Math.round(loc.batteryLevel) : c.batteryPct
+                };
+              }
+              return c;
+            })
+          );
+          this.renderCourierMarkers();
+        } catch {
+          return;
+        }
+      });
     } catch (error: unknown) {
       console.error('Error initializing DeliveryMapComponent:', error);
     }
@@ -6172,11 +6246,17 @@ export class DeliveryMapComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   /**
-   * Cleans up timers, animation frames, and the Leaflet map instance on destroy.
+   * Cleans up timers, real-time subscriptions, animation frames, and the Leaflet map instance on destroy.
    */
   ngOnDestroy(): void {
     try {
       document.body.style.overflow = '';
+      if (this.realtimeSub) {
+        this.realtimeSub.unsubscribe();
+      }
+      if (this.courierLocSub) {
+        this.courierLocSub.unsubscribe();
+      }
       if (this.searchDebounceTimer) {
         clearTimeout(this.searchDebounceTimer);
       }
@@ -9428,6 +9508,25 @@ export class DeliveryMapComponent implements OnInit, AfterViewInit, OnDestroy {
               }
             });
           }
+        } else {
+          this.deliveryStops.update((stops: DeliveryWaypoint[]) =>
+            stops.map((s: DeliveryWaypoint) => {
+              if (s.id === order.orderId) {
+                const updatedSummary =
+                  order.items.map(it => `${it.quantity}x ${it.fruitName}`).join(', ') ||
+                  s.itemsSummary;
+                return {
+                  ...s,
+                  clientName: order.clientName || s.clientName,
+                  clientPhone: order.clientPhone ?? s.clientPhone,
+                  totalAmount: order.totalAmount,
+                  itemsSummary: updatedSummary,
+                  orderRef: order
+                };
+              }
+              return s;
+            })
+          );
         }
       });
     } catch (error: unknown) {

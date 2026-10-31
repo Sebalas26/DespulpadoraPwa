@@ -179,4 +179,19 @@ describe('KdsComponent', () => {
     component.advanceStatus(order, 'PICKING');
     expect(updateOrderStatusSpy).toHaveBeenCalledWith(101, 'PICKING');
   });
+
+  it('should react to real-time order priority and creation events on KDS without page reload', () => {
+    expect(component.realtimeSync).toBeTruthy();
+    component.realtimeSync.handleIncomingRawEvent(
+      {
+        eventId: 'kds_prio_evt_1',
+        event: 'order_priority_changed',
+        domain: 'orders',
+        action: 'priority',
+        data: { orderId: 101, isPriority: true }
+      },
+      'signalr'
+    );
+    expect(component.realtimeSync.lastEvent()?.event).toBe('order_priority_changed');
+  });
 });

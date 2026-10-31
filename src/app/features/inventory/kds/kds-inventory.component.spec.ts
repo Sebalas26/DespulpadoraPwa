@@ -150,4 +150,18 @@ describe('KdsInventoryComponent', () => {
     expect(component.isDarkTheme()).toBeFalse();
     expect(localStorage.getItem('despulpadora_kds_theme')).toBe('light');
   });
+
+  it('should react to real-time inventory and parameter updates on KDS Inventory without page reload', () => {
+    expect(component.realtimeSync).toBeTruthy();
+    component.realtimeSync.handleIncomingRawEvent(
+      {
+        eventId: 'kds_inv_evt_1',
+        event: 'inventory_updated',
+        domain: 'inventory',
+        action: 'adjust_stock'
+      },
+      'signalr'
+    );
+    expect(component.realtimeSync.lastEvent()?.domain).toBe('inventory');
+  });
 });

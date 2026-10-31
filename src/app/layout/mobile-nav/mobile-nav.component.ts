@@ -4,6 +4,7 @@ import { NavigationEnd, Router, RouterLink } from '@angular/router';
 import { filter } from 'rxjs';
 import { StateService } from '../../core/services/state.service';
 import { AuthService } from '../../core/services/auth.service';
+import { NavigationModuleDto } from '../../core/models/auth.models';
 import { environment } from '../../../environments/environment';
 
 /**
@@ -200,25 +201,84 @@ import { environment } from '../../../environments/environment';
               <div style="font-size: 0.65rem; font-weight: 800; color: #9ca3af; letter-spacing: 0.05em; padding: 5px 10px 2px 10px; text-transform: uppercase;">
                 {{ section.sectionName }}
               </div>
-              @for (mod of section.modules; track mod.moduleId) {
-                <a
-                  [routerLink]="getRoutePath(mod.frontendRoute)"
-                  [queryParams]="getRouteQueryParams(mod.frontendRoute)"
-                  class="drawer-link-item"
-                  (click)="closeDrawer()"
-                >
-                  <span class="drawer-icon">
-                    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                      <rect x="3" y="3" width="7" height="7" rx="1.5"></rect>
-                      <rect x="14" y="3" width="7" height="7" rx="1.5"></rect>
-                      <rect x="14" y="14" width="7" height="7" rx="1.5"></rect>
-                      <rect x="3" y="14" width="7" height="7" rx="1.5"></rect>
-                    </svg>
-                  </span>
-                  <div>
-                    <div class="drawer-title">{{ mod.name }}</div>
-                  </div>
-                </a>
+              @for (mod of getMobileSectionModules(section.modules); track mod.moduleId) {
+                @if (mod.frontendRoute === '/orders' || mod.slug === 'orders') {
+                  <a
+                    routerLink="/orders"
+                    [queryParams]="{ tab: 'picking' }"
+                    class="drawer-link-item"
+                    (click)="closeDrawer()"
+                  >
+                    <span class="drawer-icon">
+                      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect x="3" y="3" width="7" height="7" rx="1.5"></rect>
+                        <rect x="14" y="3" width="7" height="7" rx="1.5"></rect>
+                        <rect x="14" y="14" width="7" height="7" rx="1.5"></rect>
+                        <rect x="3" y="14" width="7" height="7" rx="1.5"></rect>
+                      </svg>
+                    </span>
+                    <div>
+                      <div class="drawer-title">Pedidos</div>
+                    </div>
+                  </a>
+
+                  <a
+                    routerLink="/orders"
+                    [queryParams]="{ tab: 'facturacion' }"
+                    class="drawer-link-item"
+                    (click)="closeDrawer()"
+                  >
+                    <span class="drawer-icon">
+                      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect x="3" y="3" width="7" height="7" rx="1.5"></rect>
+                        <rect x="14" y="3" width="7" height="7" rx="1.5"></rect>
+                        <rect x="14" y="14" width="7" height="7" rx="1.5"></rect>
+                        <rect x="3" y="14" width="7" height="7" rx="1.5"></rect>
+                      </svg>
+                    </span>
+                    <div>
+                      <div class="drawer-title">Facturación & Alistamiento</div>
+                    </div>
+                  </a>
+
+                  <a
+                    routerLink="/orders"
+                    [queryParams]="{ tab: 'despachos' }"
+                    class="drawer-link-item"
+                    (click)="closeDrawer()"
+                  >
+                    <span class="drawer-icon">
+                      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect x="3" y="3" width="7" height="7" rx="1.5"></rect>
+                        <rect x="14" y="3" width="7" height="7" rx="1.5"></rect>
+                        <rect x="14" y="14" width="7" height="7" rx="1.5"></rect>
+                        <rect x="3" y="14" width="7" height="7" rx="1.5"></rect>
+                      </svg>
+                    </span>
+                    <div>
+                      <div class="drawer-title">Despachos & POS</div>
+                    </div>
+                  </a>
+                } @else {
+                  <a
+                    [routerLink]="getRoutePath(mod.frontendRoute)"
+                    [queryParams]="getRouteQueryParams(mod.frontendRoute)"
+                    class="drawer-link-item"
+                    (click)="closeDrawer()"
+                  >
+                    <span class="drawer-icon">
+                      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect x="3" y="3" width="7" height="7" rx="1.5"></rect>
+                        <rect x="14" y="3" width="7" height="7" rx="1.5"></rect>
+                        <rect x="14" y="14" width="7" height="7" rx="1.5"></rect>
+                        <rect x="3" y="14" width="7" height="7" rx="1.5"></rect>
+                      </svg>
+                    </span>
+                    <div>
+                      <div class="drawer-title">{{ mod.name }}</div>
+                    </div>
+                  </a>
+                }
               }
             }
 
@@ -571,6 +631,33 @@ export class MobileNavComponent implements OnDestroy {
       this.showMoreDrawer.set(false);
     } catch {
       return;
+    }
+  }
+
+  /**
+   * Orders the modules of a navigation section for the mobile drawer so that
+   * the inventory module is placed after the orders module (position 5 in Operación).
+   */
+  getMobileSectionModules(modules: NavigationModuleDto[]): NavigationModuleDto[] {
+    try {
+      if (!Array.isArray(modules)) {
+        return [];
+      }
+      return [...modules].sort((a: NavigationModuleDto, b: NavigationModuleDto) => {
+        const isAInventory: boolean =
+          a.slug === 'inventory' || (a.frontendRoute || '').includes('tab=inventory');
+        const isBInventory: boolean =
+          b.slug === 'inventory' || (b.frontendRoute || '').includes('tab=inventory');
+        if (isAInventory && !isBInventory) {
+          return 1;
+        }
+        if (!isAInventory && isBInventory) {
+          return -1;
+        }
+        return (a.displayOrder ?? 0) - (b.displayOrder ?? 0);
+      });
+    } catch {
+      return [];
     }
   }
 

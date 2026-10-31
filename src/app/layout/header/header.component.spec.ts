@@ -1,4 +1,4 @@
-import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { ComponentFixture, TestBed, fakeAsync, tick } from '@angular/core/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { NavigationEnd, Router, provideRouter } from '@angular/router';
@@ -146,4 +146,42 @@ describe('HeaderComponent', () => {
     component.currentUrl.set('/dashboard');
     expect(component.currentRouteTitle()).toBe('Dashboard general');
   });
+
+  it('should display user info tooltip when clicking mobile yellow avatar and auto-hide after 5 seconds', fakeAsync(() => {
+    authService.user.set({
+      id: 2,
+      username: 'adminGen',
+      email: 'admin@dgl.com',
+      fullName: 'Administrador General',
+      roleId: 2,
+      roleName: 'Administrador Operativo',
+      isSystemDeveloper: false
+    });
+    fixture.detectChanges();
+
+    const compiled: HTMLElement = fixture.nativeElement as HTMLElement;
+    const avatarEl: HTMLElement | null = compiled.querySelector('.mobile-user-avatar');
+    expect(avatarEl).not.toBeNull();
+    expect(component.isUserTooltipVisible()).toBeFalse();
+    expect(compiled.querySelector('.mobile-user-tooltip')).toBeNull();
+
+    avatarEl?.click();
+    fixture.detectChanges();
+
+    expect(component.isUserTooltipVisible()).toBeTrue();
+    const tooltipEl: HTMLElement | null = compiled.querySelector('.mobile-user-tooltip');
+    expect(tooltipEl).not.toBeNull();
+    expect(tooltipEl?.textContent).toContain('Administrador General');
+    expect(tooltipEl?.textContent).toContain('Administrador Operativo');
+    expect(tooltipEl?.textContent).toContain('admin@dgl.com');
+
+    tick(3000);
+    fixture.detectChanges();
+    expect(component.isUserTooltipVisible()).toBeTrue();
+
+    tick(2000);
+    fixture.detectChanges();
+    expect(component.isUserTooltipVisible()).toBeFalse();
+    expect(compiled.querySelector('.mobile-user-tooltip')).toBeNull();
+  }));
 });

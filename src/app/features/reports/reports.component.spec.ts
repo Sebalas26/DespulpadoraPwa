@@ -258,10 +258,17 @@ describe('ReportsComponent', () => {
     ];
 
     const hostEl = fixture.nativeElement as HTMLElement;
-    expect(hostEl.querySelector('.reports-top-shell')).toBeTruthy();
-    expect(hostEl.querySelector('.reports-nav-tabs')).toBeTruthy();
+    const topShell = hostEl.querySelector('.reports-top-shell');
+    expect(topShell).toBeTruthy();
+    const topShellChildren = Array.from(topShell?.children ?? []);
+    expect(topShellChildren.length).toBe(3);
+    expect(topShellChildren[0].classList.contains('reports-header-title-block')).toBeTrue();
+    expect(topShellChildren[1].classList.contains('reports-nav-tabs')).toBeTrue();
+    expect(topShellChildren[2].classList.contains('reports-toolbar-actions')).toBeTrue();
+    expect(hostEl.querySelector('.reports-header-subtitle')?.textContent).toContain('Consolidado analítico de ventas');
     expect(hostEl.querySelector('.reports-toolbar-actions .period-filter-container')).toBeTruthy();
     expect(hostEl.querySelector('.reports-print-btn.no-mobile')).toBeTruthy();
+    expect(hostEl.querySelector('.sales-report-card .sales-table-container .sales-report-table')).toBeTruthy();
 
     for (const tab of tabs) {
       component.setTab(tab);

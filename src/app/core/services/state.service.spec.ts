@@ -490,4 +490,61 @@ describe('StateService', () => {
       orderIds: [701]
     });
   });
+
+  it('should broadcast and reload domains in real time via RealtimeSyncService without page reload', () => {
+    const publishSpy = spyOn(service.realtimeSync, 'publishDomainChange').and.callThrough();
+
+    service.setUsers(
+      [
+        {
+          userId: 88,
+          username: 'domiciliario.live',
+          fullName: 'Domiciliario Tiempo Real',
+          email: 'live@despulpadora.com',
+          roleId: 3,
+          roleName: 'Domiciliario',
+          isActive: true,
+          companyId: 1,
+          branches: []
+        }
+      ],
+      {
+        userId: 88,
+        username: 'domiciliario.live',
+        fullName: 'Domiciliario Tiempo Real',
+        email: 'live@despulpadora.com',
+        roleId: 3,
+        roleName: 'Domiciliario',
+        isActive: true,
+        companyId: 1,
+        branches: []
+      }
+    );
+
+    expect(service.users().length).toBe(1);
+    expect(publishSpy).toHaveBeenCalledWith(
+      'users',
+      'courier',
+      jasmine.objectContaining({ username: 'domiciliario.live' }),
+      jasmine.objectContaining({ event: 'courier_updated', courierId: '88' })
+    );
+
+    localStorage.setItem(
+      'despulpadora_grammages_config',
+      JSON.stringify([{ id: 'g-500', grams: 500, label: '500g Especial', isActive: true }])
+    );
+
+    service.realtimeSync.handleIncomingRawEvent(
+      {
+        eventId: 'cross_tab_param_1',
+        event: 'parameters_updated',
+        domain: 'parameters',
+        action: 'grammages_updated'
+      },
+      'cross-tab'
+    );
+
+    expect(service.grammagesConfig().length).toBe(1);
+    expect(service.grammagesConfig()[0].label).toBe('500g Especial');
+  });
 });

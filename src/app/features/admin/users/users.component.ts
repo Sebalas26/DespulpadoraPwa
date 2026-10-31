@@ -6,6 +6,8 @@ import { ApiService } from '../../../core/services/api.service';
 import { AuthService } from '../../../core/services/auth.service';
 import { NotificationService } from '../../../core/services/notification.service';
 import { ConfirmDialogService } from '../../../core/services/confirm-dialog.service';
+import { StateService } from '../../../core/services/state.service';
+import { RealtimeSyncService } from '../../../core/services/realtime-sync.service';
 import { UserAdminDto, UserRoleDto } from '../../../core/models/business.models';
 
 const STORAGE_USERS_KEY = 'dgl_users_v2';
@@ -25,6 +27,8 @@ export class AdminUsersComponent implements OnInit {
   readonly authService = inject(AuthService);
   private readonly notification = inject(NotificationService);
   private readonly confirmDialog = inject(ConfirmDialogService);
+  private readonly stateService = inject(StateService, { optional: true });
+  private readonly realtimeSync = inject(RealtimeSyncService);
 
   readonly users = signal<UserAdminDto[]>([]);
   readonly roles = signal<UserRoleDto[]>([]);
@@ -169,7 +173,7 @@ export class AdminUsersComponent implements OnInit {
           next: (created: UserAdminDto) => {
             const updated = [...this.users(), created];
             this.users.set(updated);
-            this.saveUsersToStorage(updated);
+            this.saveUsersToStorage(updated, created);
             this.resetCreateForm();
             this.notification.success(
               'Usuario Creado',
@@ -200,7 +204,7 @@ export class AdminUsersComponent implements OnInit {
           this.users.update((list: UserAdminDto[]) =>
             list.map((u: UserAdminDto) => (u.userId === user.userId ? { ...u, ...updatedUser } : u))
           );
-          this.saveUsersToStorage(this.users());
+          this.saveUsersToStorage(this.users(), { ...user, ...updatedUser });
           this.notification.success(
             'Rol Actualizado',
             `El usuario @${user.username} ahora tiene el rol "${updatedUser.roleName}".`
@@ -394,7 +398,7 @@ export class AdminUsersComponent implements OnInit {
               u.userId === userId ? { ...u, ...updatedUser } : u
             );
             this.users.set(updatedList);
-            this.saveUsersToStorage(updatedList);
+            this.saveUsersToStorage(updatedList, updatedUser);
             this.showEditModal.set(false);
             this.notification.success(
               'Usuario Actualizado',
@@ -436,11 +440,12 @@ export class AdminUsersComponent implements OnInit {
    */
   private applyStatusChangeLocally(user: UserAdminDto, nextStatus: boolean): void {
     try {
+      const updatedUser: UserAdminDto = { ...user, isActive: nextStatus };
       const updated = this.users().map((u: UserAdminDto) =>
-        u.userId === user.userId ? { ...u, isActive: nextStatus } : u
+        u.userId === user.userId ? updatedUser : u
       );
       this.users.set(updated);
-      this.saveUsersToStorage(updated);
+      this.saveUsersToStorage(updated, updatedUser);
       this.notification.info(
         nextStatus ? 'Usuario Activado' : 'Usuario Desactivado',
         `El usuario "${user.username}" ahora está ${nextStatus ? 'activo' : 'inactivo'}.`
@@ -451,11 +456,25 @@ export class AdminUsersComponent implements OnInit {
   }
 
   /**
-   * Saves users list to `localStorage`.
+   * Saves users list to `localStorage` and broadcasts real-time updates to StateService and WebSocket/SignalR.
    */
-  private saveUsersToStorage(users: UserAdminDto[]): void {
+  private saveUsersToStorage(users: UserAdminDto[], changedUser?: UserAdminDto): void {
     try {
       localStorage.setItem(STORAGE_USERS_KEY, JSON.stringify(users));
+      if (this.stateService?.setUsers) {
+        this.stateService.setUsers(users, changedUser);
+      } else {
+        this.realtimeSync.publishDomainChange(
+          'users',
+          'user',
+          changedUser ? ({ ...changedUser } as Record<string, unknown>) : { count: users.length },
+          {
+            event: 'user_updated',
+            userId: changedUser ? String(changedUser.userId) : undefined,
+            courierId: changedUser ? String(changedUser.userId) : undefined
+          }
+        );
+      }
     } catch {
       return;
     }

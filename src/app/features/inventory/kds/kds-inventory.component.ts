@@ -9,8 +9,10 @@ import {
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
+import { Subscription } from 'rxjs';
 import { StateService } from '../../../core/services/state.service';
 import { NotificationService } from '../../../core/services/notification.service';
+import { RealtimeSyncService } from '../../../core/services/realtime-sync.service';
 import { FruitConfig, ProductVariantDto } from '../../../core/models/business.models';
 import confetti from 'canvas-confetti';
 
@@ -1703,6 +1705,7 @@ export class KdsInventoryComponent implements OnInit, OnDestroy {
   readonly stateService = inject(StateService);
   private readonly notification = inject(NotificationService);
   private readonly router = inject(Router);
+  readonly realtimeSync = inject(RealtimeSyncService);
   readonly Math = Math;
 
   readonly isDarkTheme = signal<boolean>(false);
@@ -1714,6 +1717,7 @@ export class KdsInventoryComponent implements OnInit, OnDestroy {
   readonly currentTime = signal<string>('');
   readonly currentDate = signal<string>('');
   private clockInterval?: ReturnType<typeof setInterval>;
+  private realtimeSub?: Subscription;
 
   private audioCtx?: AudioContext;
 
@@ -1815,7 +1819,7 @@ export class KdsInventoryComponent implements OnInit, OnDestroy {
   });
 
   /**
-   * Starts the live digital clock interval on component initialization.
+   * Starts the live digital clock interval and connects SignalR/WebSocket real-time sync on component initialization.
    */
   ngOnInit(): void {
     try {
@@ -1825,21 +1829,34 @@ export class KdsInventoryComponent implements OnInit, OnDestroy {
       } else {
         this.isDarkTheme.set(false);
       }
+      this.realtimeSync.connect();
       this.stateService.refreshAll?.();
       this.updateClock();
       this.clockInterval = setInterval(() => this.updateClock(), 1000);
+      this.realtimeSub = this.realtimeSync.domainEvents$.subscribe(evt => {
+        try {
+          if (evt.domain === 'inventory' || evt.domain === 'parameters') {
+            this.playSound('positive');
+          }
+        } catch {
+          return;
+        }
+      });
     } catch (error: unknown) {
       console.error('Error initializing KdsInventoryComponent:', error);
     }
   }
 
   /**
-   * Clears the clock interval and closes the audio context on destruction.
+   * Clears the clock interval, unsubscribes real-time stream, and closes the audio context on destruction.
    */
   ngOnDestroy(): void {
     try {
       if (this.clockInterval) {
         clearInterval(this.clockInterval);
+      }
+      if (this.realtimeSub) {
+        this.realtimeSub.unsubscribe();
       }
       if (this.audioCtx) {
         this.audioCtx.close().catch(() => undefined);

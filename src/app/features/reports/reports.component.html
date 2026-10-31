@@ -31,9 +31,61 @@
       <h1 class="module-inline-title" style="font-size: 1.85rem; font-weight: 800; margin-bottom: 4px; color: var(--text-main);">
         Centro de Reportes
       </h1>
-      <p style="color: var(--text-muted); font-size: 0.92rem; margin: 0;">
+      <p class="reports-header-subtitle">
         Consolidado analítico de ventas, auditoría de mermas, inventario, gastos operativos y nómina quincenal.
       </p>
+    </div>
+
+    <div class="reports-nav-tabs no-print">
+      <button
+        type="button"
+        class="report-tab-btn"
+        [class.active]="activeTab() === 'sales'"
+        (click)="setTab('sales')"
+      >
+        <span>Ventas & Facturación</span>
+        <span class="report-tab-badge">{{ filteredOrders().length }}</span>
+      </button>
+
+      <button
+        type="button"
+        class="report-tab-btn"
+        [class.active]="activeTab() === 'loss'"
+        (click)="setTab('loss')"
+      >
+        <span>Auditoría de Mermas (Ideal vs Real)</span>
+        <span class="report-tab-badge accent">{{ idealVsRealAudit().length }} frutas</span>
+      </button>
+
+      <button
+        type="button"
+        class="report-tab-btn"
+        [class.active]="activeTab() === 'stock'"
+        (click)="setTab('stock')"
+      >
+        <span>Inventario & Valoración</span>
+        <span class="report-tab-badge">{{ cavaTotalStockKg() | number:'1.0-0' }} Kg</span>
+      </button>
+
+      <button
+        type="button"
+        class="report-tab-btn"
+        [class.active]="activeTab() === 'expenses'"
+        (click)="setTab('expenses')"
+      >
+        <span>Gastos & Logística</span>
+        <span class="report-tab-badge">{{ filteredExpenses().length }}</span>
+      </button>
+
+      <button
+        type="button"
+        class="report-tab-btn"
+        [class.active]="activeTab() === 'payroll'"
+        (click)="setTab('payroll')"
+      >
+        <span>Nómina Quincenal & RRHH</span>
+        <span class="report-tab-badge">{{ payrollSettlements().length }} colabs</span>
+      </button>
     </div>
 
     <div class="reports-toolbar-actions">
@@ -199,58 +251,6 @@
         <span>Exportar a Excel (CSV)</span>
       </button>
     </div>
-
-    <div class="reports-nav-tabs no-print">
-      <button
-        type="button"
-        class="report-tab-btn"
-        [class.active]="activeTab() === 'sales'"
-        (click)="setTab('sales')"
-      >
-        <span>Ventas & Facturación</span>
-        <span class="report-tab-badge">{{ filteredOrders().length }}</span>
-      </button>
-
-      <button
-        type="button"
-        class="report-tab-btn"
-        [class.active]="activeTab() === 'loss'"
-        (click)="setTab('loss')"
-      >
-        <span>Auditoría de Mermas (Ideal vs Real)</span>
-        <span class="report-tab-badge accent">{{ idealVsRealAudit().length }} frutas</span>
-      </button>
-
-      <button
-        type="button"
-        class="report-tab-btn"
-        [class.active]="activeTab() === 'stock'"
-        (click)="setTab('stock')"
-      >
-        <span>Inventario & Valoración</span>
-        <span class="report-tab-badge">{{ cavaTotalStockKg() | number:'1.0-0' }} Kg</span>
-      </button>
-
-      <button
-        type="button"
-        class="report-tab-btn"
-        [class.active]="activeTab() === 'expenses'"
-        (click)="setTab('expenses')"
-      >
-        <span>Gastos & Logística</span>
-        <span class="report-tab-badge">{{ filteredExpenses().length }}</span>
-      </button>
-
-      <button
-        type="button"
-        class="report-tab-btn"
-        [class.active]="activeTab() === 'payroll'"
-        (click)="setTab('payroll')"
-      >
-        <span>Nómina Quincenal & RRHH</span>
-        <span class="report-tab-badge">{{ payrollSettlements().length }} colabs</span>
-      </button>
-    </div>
   </div>
 
   @if (activeTab() === 'sales') {
@@ -341,14 +341,14 @@
         </div>
       </div>
 
-            <div class="card" style="overflow: visible;">
+      <div class="card sales-report-card">
         <div class="card-header" style="justify-content: space-between;">
           <h3 class="card-title">Detalle de Ventas Registradas</h3>
           <span class="badge badge-success">{{ filteredOrders().length }} pedidos</span>
         </div>
-        <div class="card-body" style="padding: 0; overflow: visible;">
-          <div class="table-container" style="overflow: visible;">
-            <table>
+        <div class="card-body" style="padding: 0;">
+          <div class="table-container sales-table-container" [class.has-open-dropdown]="openActionOrderId() !== null">
+            <table class="sales-report-table">
               <thead>
                 <tr>
                   <th>Nro Pedido</th>

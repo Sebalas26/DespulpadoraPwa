@@ -307,4 +307,47 @@ describe('DeliveryMapComponent', () => {
     expect(lockBtn.querySelector('svg.lock-btn-icon')).toBeTruthy();
     expect(lockBtn.querySelector('.lock-btn-label')?.textContent?.trim()).toBe('Bloquear');
   });
+
+  it('should update courier live coordinates and stop status in real time via RealtimeSyncService without page reload', () => {
+    mockRoles.set([
+      { roleId: 9, name: 'Repartidor VIP', isCourier: true, isSystemRole: false, isActive: true }
+    ]);
+    mockUsers.set([
+      {
+        userId: 77,
+        username: 'repartidor.vip',
+        fullName: 'Andres Repartidor',
+        roleId: 9,
+        roleName: 'Repartidor VIP',
+        isActive: true,
+        companyId: 1,
+        branches: [],
+        email: 'andres@example.com'
+      }
+    ]);
+    fixture.detectChanges();
+
+    component.realtimeSync.handleIncomingRawEvent(
+      {
+        eventId: 'ws_loc_77',
+        event: 'courier_location_update',
+        data: {
+          courierId: 'u77',
+          latitude: 4.711,
+          longitude: -74.0721,
+          speedKmh: 34,
+          batteryLevel: 92,
+          timestamp: new Date().toISOString()
+        }
+      },
+      'websocket'
+    );
+
+    const updatedCourier = component.couriers().find(c => c.id === 'u77');
+    expect(updatedCourier).toBeTruthy();
+    expect(updatedCourier?.lat).toBeCloseTo(4.711, 3);
+    expect(updatedCourier?.lng).toBeCloseTo(-74.0721, 3);
+    expect(updatedCourier?.currentSpeedKmH).toBe(34);
+    expect(updatedCourier?.batteryPct).toBe(92);
+  });
 });

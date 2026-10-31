@@ -6,6 +6,8 @@ import { ApiService } from '../../../core/services/api.service';
 import { AuthService } from '../../../core/services/auth.service';
 import { NotificationService } from '../../../core/services/notification.service';
 import { ConfirmDialogService } from '../../../core/services/confirm-dialog.service';
+import { StateService } from '../../../core/services/state.service';
+import { RealtimeSyncService } from '../../../core/services/realtime-sync.service';
 import { NavigationModuleDto } from '../../../core/models/auth.models';
 import {
   RolePermissionsMatrixDto,
@@ -78,6 +80,8 @@ export class AdminRolesComponent implements OnInit {
   private readonly auth = inject(AuthService);
   private readonly notification = inject(NotificationService);
   private readonly confirmDialog = inject(ConfirmDialogService);
+  private readonly stateService = inject(StateService, { optional: true });
+  private readonly realtimeSync = inject(RealtimeSyncService);
 
   readonly roles = signal<UserRoleDto[]>([]);
   readonly selectedRoleId = signal<number>(0);
@@ -739,11 +743,21 @@ export class AdminRolesComponent implements OnInit {
   }
 
   /**
-   * Persists roles to `localStorage`.
+   * Persists roles to `localStorage` and broadcasts real-time updates to StateService and WebSocket/SignalR.
    */
   private saveRolesToStorage(roles: UserRoleDto[]): void {
     try {
       localStorage.setItem(STORAGE_ROLES_KEY, JSON.stringify(roles));
+      if (this.stateService?.setRoles) {
+        this.stateService.setRoles(roles);
+      } else {
+        this.realtimeSync.publishDomainChange(
+          'users',
+          'role',
+          { count: roles.length },
+          { event: 'role_updated' }
+        );
+      }
     } catch {
       return;
     }

@@ -1518,295 +1518,151 @@
           <h3 class="card-title">Stock de Pulpas Hechas en Tiempo Real</h3>
           <p class="card-subtitle">Existencias de pulpa procesada y empacada por presentación y gramaje lista para despacho</p>
         </div>
-        <div style="display: flex; align-items: center; gap: 8px;">
-          <span class="badge badge-info">{{ filteredVariants().length }} presentaciones encontradas</span>
-          <button
-            type="button"
-            class="btn btn-outline inventory-desktop-only-btn"
-            style="padding: 4px 8px; font-size: 0.75rem; gap: 4px;"
-            (click)="showSettingsModal.set(true)"
-            title="Ajustar columnas visibles"
-          >
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M12 20h9"></path>
-              <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
-            </svg>
-            <span>Configurar Columnas</span>
-          </button>
-        </div>
       </div>
 
-      <div class="card-body" style="padding: 0;">
-        <div class="table-container">
-          <table>
-            <thead>
-              <tr>
-                @if (isColumnVisible('product')) {
-                  <th class="sortable-th" (click)="setSort('name')">
-                    <span class="th-inner">
-                      Producto & SKU
-                      @if (sortField() === 'name') {
-                        <span class="sort-indicator">{{ sortDirection() === 'asc' ? '▲' : '▼' }}</span>
-                      }
+      <div class="card-body inv-cards-body">
+        <div class="inventory-cards-grid">
+          @for (v of paginatedVariants(); track v.variantId) {
+            <article class="inv-stock-card" [class.is-low-stock]="v.currentStock <= v.minStockAlert">
+              <div class="inv-card-top">
+                <div class="inv-card-identity">
+                  <div class="inv-card-badges">
+                    <span class="badge" [ngClass]="v.category === 'PULPAS' ? 'badge-warning' : (v.category === 'LIMONADAS' ? 'badge-info' : (v.category === 'BATIDOS' ? 'badge-emerald' : 'badge-purple'))">
+                      {{ v.category }}
                     </span>
-                  </th>
-                }
+                    <span class="badge badge-purple">{{ v.grammage }}g</span>
+                    @if (v.currentStock <= v.minStockAlert) {
+                      <span class="badge badge-danger inv-status-badge">¡Stock Bajo!</span>
+                    } @else {
+                      <span class="badge badge-success inv-status-badge">Óptimo</span>
+                    }
+                  </div>
+                  <h4 class="inv-card-title ms-code-badge">{{ v.name }}</h4>
+                  <span class="inv-card-sku ms-subtitle">SKU: {{ v.sku }} • {{ v.grammage }}g</span>
+                </div>
 
-                @if (isColumnVisible('category')) {
-                  <th class="sortable-th" (click)="setSort('category')">
-                    <span class="th-inner">
-                      Línea
-                      @if (sortField() === 'category') {
-                        <span class="sort-indicator">{{ sortDirection() === 'asc' ? '▲' : '▼' }}</span>
-                      }
-                    </span>
-                  </th>
-                }
+                <div class="inv-card-stock-box">
+                  <span class="inv-card-stock-val ms-value" [class.low]="v.currentStock <= v.minStockAlert">
+                    {{ v.currentStock }} uds
+                  </span>
+                  <span class="inv-card-total-pill ms-status-pill">
+                    {{ formatCOP((v.currentStock || 0) > 0 ? (v.currentStock * v.basePrice) : v.basePrice) }}
+                  </span>
+                </div>
+              </div>
 
-                @if (isColumnVisible('grammage')) {
-                  <th class="sortable-th" style="text-align: center;" (click)="setSort('grammage')">
-                    <span class="th-inner" style="justify-content: center;">
-                      Presentación
-                      @if (sortField() === 'grammage') {
-                        <span class="sort-indicator">{{ sortDirection() === 'asc' ? '▲' : '▼' }}</span>
-                      }
-                    </span>
-                  </th>
-                }
+              <div class="inv-stock-meter">
+                <div class="inv-stock-meter-track">
+                  <div
+                    class="inv-stock-meter-fill"
+                    [class.low]="v.currentStock <= v.minStockAlert"
+                    [style.width.%]="Math.min(100, Math.round(((v.currentStock || 0) / Math.max((v.minStockAlert || 10) * 3, 30)) * 100))"
+                  ></div>
+                </div>
+                <div class="inv-stock-meter-labels">
+                  <span>Mínimo alerta: {{ v.minStockAlert }} uds</span>
+                  <span>{{ v.currentStock <= v.minStockAlert ? 'Reabastecer' : 'Disponible para despacho' }}</span>
+                </div>
+              </div>
 
-                @if (isColumnVisible('unitCost')) {
-                  <th style="text-align: right;">Costo Producción</th>
-                }
+              <div class="inv-metrics-strip">
+                <div class="inv-metric-box">
+                  <span class="inv-metric-label">Precio Venta</span>
+                  <span class="inv-metric-val">{{ formatCOP(v.basePrice) }} <small>/ ud</small></span>
+                </div>
+                <div class="inv-metric-box">
+                  <span class="inv-metric-label">Costo Prod.</span>
+                  <span class="inv-metric-val muted">{{ formatCOP(v.unitCost) }}</span>
+                </div>
+                <div class="inv-metric-box">
+                  <span class="inv-metric-label">Margen Unit.</span>
+                  <span class="inv-metric-val positive">
+                    {{ formatCOP(v.basePrice - v.unitCost) }}
+                    <small>({{ Math.round(((v.basePrice - v.unitCost) / (v.basePrice || 1)) * 100) }}%)</small>
+                  </span>
+                </div>
+              </div>
 
-                @if (isColumnVisible('basePrice')) {
-                  <th class="sortable-th" style="text-align: right;" (click)="setSort('basePrice')">
-                    <span class="th-inner" style="justify-content: flex-end;">
-                      Precio Venta
-                      @if (sortField() === 'basePrice') {
-                        <span class="sort-indicator">{{ sortDirection() === 'asc' ? '▲' : '▼' }}</span>
-                      }
-                    </span>
-                  </th>
-                }
+              <div class="inv-card-actions">
+                <div class="inv-quick-adjust-group">
+                  <span class="inv-quick-label">Ajuste rápido:</span>
+                  <button
+                    type="button"
+                    class="inv-adjust-btn minus"
+                    title="Restar 10 unidades"
+                    (click)="adjustVariant(v.variantId, -10)"
+                  >
+                    -10
+                  </button>
+                  <button
+                    type="button"
+                    class="inv-adjust-btn plus"
+                    title="Sumar 10 unidades"
+                    (click)="adjustVariant(v.variantId, 10)"
+                  >
+                    +10
+                  </button>
+                  <button
+                    type="button"
+                    class="inv-adjust-btn plus-batch"
+                    title="Sumar 50 unidades (Lote)"
+                    (click)="adjustVariant(v.variantId, 50)"
+                  >
+                    +50
+                  </button>
+                </div>
 
-                @if (isColumnVisible('margin')) {
-                  <th class="sortable-th" style="text-align: right;" (click)="setSort('margin')">
-                    <span class="th-inner" style="justify-content: flex-end;">
-                      Margen Unitario
-                      @if (sortField() === 'margin') {
-                        <span class="sort-indicator">{{ sortDirection() === 'asc' ? '▲' : '▼' }}</span>
-                      }
-                    </span>
-                  </th>
-                }
-
-                @if (isColumnVisible('currentStock')) {
-                  <th class="sortable-th" style="text-align: center;" (click)="setSort('currentStock')">
-                    <span class="th-inner" style="justify-content: center;">
-                      Stock en Inventario
-                      @if (sortField() === 'currentStock') {
-                        <span class="sort-indicator">{{ sortDirection() === 'asc' ? '▲' : '▼' }}</span>
-                      }
-                    </span>
-                  </th>
-                }
-
-                @if (isColumnVisible('status')) {
-                  <th style="text-align: center;">Estado</th>
-                }
-
-                @if (isColumnVisible('quickAdjust')) {
-                  <th style="text-align: center;">Ajuste Rápido</th>
-                }
-
-                @if (isColumnVisible('actions')) {
-                  <th style="text-align: center;">Acciones</th>
-                }
-              </tr>
-            </thead>
-            <tbody>
-              @for (v of paginatedVariants(); track v.variantId) {
-                <tr [class.mobile-row-expanded]="isMobileRowExpanded('variant-' + v.variantId)">
-                  <td class="mobile-tr-summary-cell">
-                    <div class="mobile-summary-header" (click)="toggleMobileRow('variant-' + v.variantId, $event)">
-                      <div class="ms-left">
-                        <span class="ms-code-badge">{{ v.name }}</span>
-                        <span class="ms-subtitle">SKU: {{ v.sku }} • {{ v.grammage }}g</span>
-                      </div>
-                      <div class="ms-right">
-                        <div class="ms-top-right">
-                          <span class="ms-value">{{ v.currentStock }} uds</span>
-                          <span class="ms-chevron">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
-                              <polyline points="6 9 12 15 18 9"></polyline>
-                            </svg>
-                          </span>
-                        </div>
-                        <span class="ms-status-pill">{{ formatCOP((v.currentStock || 0) > 0 ? (v.currentStock * v.basePrice) : v.basePrice) }}</span>
-                      </div>
-                    </div>
-                  </td>
-                  @if (isColumnVisible('product')) {
-                    <td data-label="Producto & SKU">
-                      <div style="font-weight: 700; color: var(--text-main);">{{ v.name }}</div>
-                      <div style="font-size: 0.72rem; color: var(--text-dim); font-family: monospace;">{{ v.sku }}</div>
-                    </td>
-                  }
-
-                  @if (isColumnVisible('category')) {
-                    <td data-label="Línea">
-                      <span class="badge" [ngClass]="v.category === 'PULPAS' ? 'badge-warning' : (v.category === 'LIMONADAS' ? 'badge-info' : (v.category === 'BATIDOS' ? 'badge-emerald' : 'badge-purple'))">
-                        {{ v.category }}
-                      </span>
-                    </td>
-                  }
-
-                  @if (isColumnVisible('grammage')) {
-                    <td data-label="Presentación" style="text-align: center; font-weight: 700;">
-                      <span class="badge badge-purple">{{ v.grammage }}g</span>
-                    </td>
-                  }
-
-                  @if (isColumnVisible('unitCost')) {
-                    <td data-label="Costo Producción" style="text-align: right; color: var(--text-muted);">
-                      {{ formatCOP(v.unitCost) }}
-                    </td>
-                  }
-
-                  @if (isColumnVisible('basePrice')) {
-                    <td data-label="Precio Venta / Valor Stock" style="text-align: right; font-weight: 700; color: var(--text-main);">
-                      <div>{{ formatCOP(v.basePrice) }} <span style="font-size: 0.7rem; font-weight: 500; color: var(--text-muted);">/ ud</span></div>
-                      <span style="font-size: 0.72rem; color: #1e5e3a; font-weight: 700; display: block;">
-                        Total: {{ formatCOP((v.currentStock || 0) * (v.basePrice || 0)) }}
-                      </span>
-                    </td>
-                  }
-
-                  @if (isColumnVisible('margin')) {
-                    <td data-label="Margen Unitario" style="text-align: right; font-weight: 700; color: #1e5e3a;">
-                      {{ formatCOP(v.basePrice - v.unitCost) }}
-                      <span style="font-size: 0.72rem; color: var(--text-dim); display: block;">
-                        ({{ Math.round(((v.basePrice - v.unitCost) / (v.basePrice || 1)) * 100) }}%)
-                      </span>
-                    </td>
-                  }
-
-                  @if (isColumnVisible('currentStock')) {
-                    <td data-label="Stock en Inventario" style="text-align: center;">
-                      <span
-                        style="font-size: 1.05rem; font-weight: 800;"
-                        [style.color]="v.currentStock <= v.minStockAlert ? '#ef4444' : '#1e5e3a'"
-                      >
-                        {{ v.currentStock }} uds
-                      </span>
-                    </td>
-                  }
-
-                  @if (isColumnVisible('status')) {
-                    <td data-label="Estado" style="text-align: center;">
-                      @if (v.currentStock <= v.minStockAlert) {
-                        <span class="badge badge-danger" style="font-size: 0.7rem; padding: 2px 6px;">¡Stock Bajo!</span>
-                      } @else {
-                        <span class="badge badge-success" style="font-size: 0.7rem; padding: 2px 6px;">Óptimo</span>
-                      }
-                    </td>
-                  }
-
-                  @if (isColumnVisible('quickAdjust')) {
-                    <td data-label="Ajuste Rápido" data-full="true" style="text-align: center;">
-                      <div style="display: flex; gap: 6px; justify-content: center; flex-wrap: wrap;">
-                        <button
-                          type="button"
-                          class="btn btn-outline"
-                          style="padding: 4px 10px; font-size: 0.75rem;"
-                          title="Restar 10 unidades"
-                          (click)="adjustVariant(v.variantId, -10)"
-                        >
-                          -10
-                        </button>
-                        <button
-                          type="button"
-                          class="btn btn-outline"
-                          style="padding: 4px 10px; font-size: 0.75rem;"
-                          title="Sumar 10 unidades"
-                          (click)="adjustVariant(v.variantId, 10)"
-                        >
-                          +10
-                        </button>
-                        <button
-                          type="button"
-                          class="btn btn-outline"
-                          style="padding: 4px 10px; font-size: 0.75rem;"
-                          title="Sumar 50 unidades (Lote)"
-                          (click)="adjustVariant(v.variantId, 50)"
-                        >
-                          +50
-                        </button>
-                      </div>
-                    </td>
-                  }
-
-                  @if (isColumnVisible('actions')) {
-                    <td data-label="Acciones" style="text-align: center;">
-                      <div style="display: flex; gap: 6px; justify-content: center;">
-                        <button
-                          type="button"
-                          class="btn btn-outline"
-                          style="padding: 3px 6px; font-size: 0.75rem;"
-                          title="Editar presentación"
-                          (click)="openEditVariantModal(v)"
-                        >
-                          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
-                            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
-                          </svg>
-                        </button>
-                        <button
-                          type="button"
-                          class="btn btn-outline"
-                          style="padding: 3px 6px; font-size: 0.75rem; color: #ef4444; border-color: rgba(239,68,68,0.3);"
-                          title="Eliminar presentación"
-                          (click)="deleteVariant(v.variantId, v.name)"
-                        >
-                          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <polyline points="3 6 5 6 21 6"></polyline>
-                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-                          </svg>
-                        </button>
-                      </div>
-                    </td>
-                  }
-                </tr>
-              } @empty {
-                <tr>
-                  <td colspan="10" style="text-align: center; padding: 40px 20px;">
-                    <div style="width: 44px; height: 44px; border-radius: 12px; background: rgba(0,0,0,0.04); color: var(--text-muted); display: inline-flex; align-items: center; justify-content: center; margin-bottom: 8px;">
-                      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
-                        <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
-                        <line x1="12" y1="22.08" x2="12" y2="12"></line>
-                      </svg>
-                    </div>
-                    <div style="font-weight: 700; color: var(--text-main);">No se encontraron presentaciones</div>
-                    <p style="color: var(--text-muted); font-size: 0.85rem; margin-top: 4px;">
-                      Intenta cambiar los filtros de línea, gramaje o el término de búsqueda.
-                    </p>
-                    <button
-                      type="button"
-                      class="btn btn-primary"
-                      style="margin-top: 12px; font-size: 0.82rem;"
-                      (click)="categoryFilter.set('ALL'); grammageFilter.set('ALL'); searchQuery.set('')"
-                    >
-                      Restablecer Filtros
-                    </button>
-                  </td>
-                </tr>
-              }
-            </tbody>
-          </table>
+                <div class="inv-crud-group">
+                  <button
+                    type="button"
+                    class="inv-icon-btn"
+                    title="Editar presentación"
+                    (click)="openEditVariantModal(v)"
+                  >
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                      <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                    </svg>
+                  </button>
+                  <button
+                    type="button"
+                    class="inv-icon-btn danger"
+                    title="Eliminar presentación"
+                    (click)="deleteVariant(v.variantId, v.name)"
+                  >
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <polyline points="3 6 5 6 21 6"></polyline>
+                      <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                    </svg>
+                  </button>
+                </div>
+              </div>
+            </article>
+          } @empty {
+            <div class="inv-empty-state">
+              <div class="inv-empty-icon">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
+                  <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
+                  <line x1="12" y1="22.08" x2="12" y2="12"></line>
+                </svg>
+              </div>
+              <div style="font-weight: 700; color: var(--text-main);">No se encontraron presentaciones</div>
+              <p style="color: var(--text-muted); font-size: 0.85rem; margin-top: 4px;">
+                Intenta cambiar los filtros de línea, gramaje o el término de búsqueda.
+              </p>
+              <button
+                type="button"
+                class="btn btn-primary"
+                style="margin-top: 12px; font-size: 0.82rem;"
+                (click)="categoryFilter.set('ALL'); grammageFilter.set('ALL'); searchQuery.set('')"
+              >
+                Restablecer Filtros
+              </button>
+            </div>
+          }
         </div>
 
-        
         <div class="pagination-bar">
           <div style="color: var(--text-muted);">
             Mostrando <strong>{{ paginationInfo().start }}</strong> a <strong>{{ paginationInfo().end }}</strong> de <strong>{{ paginationInfo().total }}</strong> líneas de inventario
@@ -1895,173 +1751,147 @@
           <h3 class="card-title">Listado de Fruta Fresca en Planta</h3>
           <p class="card-subtitle">Materia prima registrada por variedad y peso disponible en kilogramos (Kg) sincronizada con producción y KDS</p>
         </div>
-        <div style="display: flex; align-items: center; gap: 8px;">
-          <span class="badge badge-info">{{ filteredFruits().length }} frutas registradas</span>
-        </div>
       </div>
 
-      <div class="card-body" style="padding: 0;">
-        <div class="table-container">
-          <table>
-            <thead>
-              <tr>
-                <th style="text-align: left;">Fruta / Variedad</th>
-                <th style="text-align: left;">Rendimiento Pulpa</th>
-                <th style="text-align: center;">Estado</th>
-                <th style="text-align: right;">Peso Disponible (Kg)</th>
-                <th style="text-align: center;">Ajustar Cantidad (Kg)</th>
-                <th style="text-align: center;">Acciones</th>
-              </tr>
-            </thead>
-            <tbody>
-              @for (fruit of filteredFruits(); track fruit.id) {
-                <tr [class.mobile-row-expanded]="isMobileRowExpanded('fruit-' + fruit.id)">
-                  <td class="mobile-tr-summary-cell">
-                    <div class="mobile-summary-header" (click)="toggleMobileRow('fruit-' + fruit.id, $event)">
-                      <div class="ms-left">
-                        <span class="ms-code-badge">{{ fruit.name }}</span>
-                        <span class="ms-subtitle">Rendimiento: {{ ((fruit.yieldRate || 0) * 100).toFixed(0) }}% • ~{{ ((fruit.freshStockKg || 0) * (fruit.yieldRate || 0)).toFixed(0) }} Kg pulpa est.</span>
-                      </div>
-                      <div class="ms-right">
-                        <div class="ms-top-right">
-                          <span class="ms-value">{{ fruit.freshStockKg }} Kg</span>
-                          <span class="ms-chevron">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
-                              <polyline points="6 9 12 15 18 9"></polyline>
-                            </svg>
-                          </span>
-                        </div>
-                        <span class="ms-status-pill">{{ fruit.freshStockKg <= 50 ? 'Bajo Stock' : 'Disponible' }}</span>
-                      </div>
-                    </div>
-                  </td>
-
-                  <td data-label="Fruta / Variedad">
-                    <div style="font-weight: 800; font-size: 0.95rem; color: #111827;">{{ fruit.name }}</div>
-                    @if (fruit.scientificName) {
-                      <div style="font-size: 0.75rem; color: #6b7280; font-style: italic; margin-top: 2px;">{{ fruit.scientificName }}</div>
-                    }
-                  </td>
-
-                  <td data-label="Rendimiento Pulpa">
-                    <div style="font-size: 0.88rem; font-weight: 700; color: #111827;">
-                      {{ ((fruit.yieldRate || 0) * 100).toFixed(0) }}%
-                    </div>
-                    <div style="font-size: 0.74rem; color: #6b7280; margin-top: 2px;">
-                      ~{{ ((fruit.freshStockKg || 0) * (fruit.yieldRate || 0)).toFixed(0) }} kg pulpa est.
-                    </div>
-                  </td>
-
-                  <td data-label="Estado" style="text-align: center;">
+      <div class="card-body inv-cards-body">
+        <div class="inventory-cards-grid">
+          @for (fruit of filteredFruits(); track fruit.id) {
+            <article class="inv-fruit-card" [class.is-low-stock]="fruit.freshStockKg <= 50">
+              <div class="inv-card-top">
+                <div class="inv-card-identity">
+                  <div class="inv-card-badges">
+                    <span class="badge badge-emerald">FRUTA FRESCA</span>
                     @if (fruit.freshStockKg <= 50) {
-                      <span class="badge badge-danger" style="font-size: 0.72rem; padding: 3px 8px;">Bajo Stock</span>
+                      <span class="badge badge-danger inv-status-badge">Bajo Stock</span>
                     } @else {
-                      <span class="badge badge-success" style="font-size: 0.72rem; padding: 3px 8px;">Disponible</span>
+                      <span class="badge badge-success inv-status-badge">Disponible</span>
                     }
-                  </td>
+                  </div>
+                  <h4 class="inv-card-title">{{ fruit.name }}</h4>
+                  @if (fruit.scientificName) {
+                    <span class="inv-card-sku" style="font-style: italic; font-family: inherit;">{{ fruit.scientificName }}</span>
+                  }
+                </div>
 
-                  <td data-label="Peso Disponible (Kg)" style="text-align: right;">
-                    <div style="font-size: 1.2rem; font-weight: 900; color: #1e5e3a; line-height: 1;">
-                      {{ fruit.freshStockKg }} <span style="font-size: 0.82rem; font-weight: 700; color: #6b7280;">Kg</span>
-                    </div>
-                  </td>
+                <div class="inv-card-stock-box">
+                  <span class="inv-card-stock-val" [class.low]="fruit.freshStockKg <= 50">
+                    {{ fruit.freshStockKg }} Kg
+                  </span>
+                  <span class="inv-card-total-pill">
+                    ~{{ ((fruit.freshStockKg || 0) * (fruit.yieldRate || 0)).toFixed(0) }} Kg pulpa
+                  </span>
+                </div>
+              </div>
 
-                  <td data-label="Ajustar Cantidad (Kg)" data-full="true" style="text-align: center;">
-                    <div style="display: flex; align-items: center; gap: 6px; justify-content: center; flex-wrap: wrap;">
-                      <button
-                        type="button"
-                        class="btn btn-outline"
-                        style="padding: 4px 10px; font-size: 0.75rem;"
-                        title="Descontar 10 Kg de fruta"
-                        (click)="adjustFreshFruit(fruit.id, -10)"
-                      >
-                        -10 Kg
-                      </button>
-                      <button
-                        type="button"
-                        class="btn btn-outline"
-                        style="padding: 4px 10px; font-size: 0.75rem;"
-                        title="Ingresar 10 Kg de fruta"
-                        (click)="adjustFreshFruit(fruit.id, 10)"
-                      >
-                        +10 Kg
-                      </button>
-                      <button
-                        type="button"
-                        class="btn btn-outline"
-                        style="padding: 4px 10px; font-size: 0.75rem;"
-                        title="Ingresar 50 Kg de fruta"
-                        (click)="adjustFreshFruit(fruit.id, 50)"
-                      >
-                        +50 Kg
-                      </button>
-                      <button
-                        type="button"
-                        class="btn btn-outline"
-                        style="padding: 4px 10px; font-size: 0.75rem;"
-                        title="Ingresar 100 Kg de fruta"
-                        (click)="adjustFreshFruit(fruit.id, 100)"
-                      >
-                        +100 Kg
-                      </button>
-                    </div>
-                  </td>
+              <div class="inv-stock-meter">
+                <div class="inv-stock-meter-track">
+                  <div
+                    class="inv-stock-meter-fill"
+                    [class.low]="fruit.freshStockKg <= 50"
+                    [style.width.%]="Math.min(100, Math.round(((fruit.freshStockKg || 0) / 300) * 100))"
+                  ></div>
+                </div>
+                <div class="inv-stock-meter-labels">
+                  <span>Alerta planta: 50 Kg</span>
+                  <span>{{ fruit.freshStockKg <= 50 ? 'Solicitar cosecha' : 'Lista para despulpado' }}</span>
+                </div>
+              </div>
 
-                  <td data-label="Acciones" style="text-align: center;">
-                    <div style="display: flex; gap: 6px; justify-content: center;">
-                      <button
-                        type="button"
-                        class="btn btn-outline"
-                        style="padding: 3px 6px; font-size: 0.75rem;"
-                        title="Editar nombre y peso en Kg"
-                        (click)="openEditFruitModal(fruit)"
-                      >
-                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                          <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
-                          <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
-                        </svg>
-                      </button>
-                      <button
-                        type="button"
-                        class="btn btn-outline"
-                        style="padding: 3px 6px; font-size: 0.75rem; color: #ef4444; border-color: rgba(239,68,68,0.3);"
-                        title="Eliminar fruta del inventario"
-                        (click)="deleteFreshFruit(fruit)"
-                      >
-                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                          <polyline points="3 6 5 6 21 6"></polyline>
-                          <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-                        </svg>
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              } @empty {
-                <tr>
-                  <td colspan="6" style="text-align: center; padding: 40px 20px;">
-                    <div style="width: 44px; height: 44px; border-radius: 12px; background: rgba(30, 94, 58, 0.08); color: var(--primary); display: inline-flex; align-items: center; justify-content: center; margin-bottom: 8px;">
-                      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z"></path>
-                        <path d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12"></path>
-                      </svg>
-                    </div>
-                    <div style="font-weight: 700; color: var(--text-main);">No hay frutas registradas en planta</div>
-                    <p style="color: var(--text-muted); font-size: 0.85rem; margin-top: 4px;">
-                      Agrega una fruta indicando su nombre y peso disponible en kilogramos (Kg) para sincronizarla con producción y el KDS.
-                    </p>
-                    <button
-                      type="button"
-                      class="btn btn-primary"
-                      style="margin-top: 12px; font-size: 0.82rem; gap: 6px;"
-                      (click)="openNewFruitModal()"
-                    >
-                      + Agregar Fruta Disponible
-                    </button>
-                  </td>
-                </tr>
-              }
-            </tbody>
-          </table>
+              <div class="inv-metrics-strip two-cols">
+                <div class="inv-metric-box">
+                  <span class="inv-metric-label">Rendimiento Pulpa</span>
+                  <span class="inv-metric-val">{{ ((fruit.yieldRate || 0) * 100).toFixed(0) }}%</span>
+                </div>
+                <div class="inv-metric-box">
+                  <span class="inv-metric-label">Pulpa Neta Estimada</span>
+                  <span class="inv-metric-val positive">~{{ ((fruit.freshStockKg || 0) * (fruit.yieldRate || 0)).toFixed(0) }} Kg</span>
+                </div>
+              </div>
+
+              <div class="inv-card-actions">
+                <div class="inv-quick-adjust-group">
+                  <button
+                    type="button"
+                    class="inv-adjust-btn minus"
+                    title="Descontar 10 Kg de fruta"
+                    (click)="adjustFreshFruit(fruit.id, -10)"
+                  >
+                    -10 Kg
+                  </button>
+                  <button
+                    type="button"
+                    class="inv-adjust-btn plus"
+                    title="Ingresar 10 Kg de fruta"
+                    (click)="adjustFreshFruit(fruit.id, 10)"
+                  >
+                    +10 Kg
+                  </button>
+                  <button
+                    type="button"
+                    class="inv-adjust-btn plus"
+                    title="Ingresar 50 Kg de fruta"
+                    (click)="adjustFreshFruit(fruit.id, 50)"
+                  >
+                    +50 Kg
+                  </button>
+                  <button
+                    type="button"
+                    class="inv-adjust-btn plus-batch"
+                    title="Ingresar 100 Kg de fruta"
+                    (click)="adjustFreshFruit(fruit.id, 100)"
+                  >
+                    +100 Kg
+                  </button>
+                </div>
+
+                <div class="inv-crud-group">
+                  <button
+                    type="button"
+                    class="inv-icon-btn"
+                    title="Editar nombre y peso en Kg"
+                    (click)="openEditFruitModal(fruit)"
+                  >
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                      <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                    </svg>
+                  </button>
+                  <button
+                    type="button"
+                    class="inv-icon-btn danger"
+                    title="Eliminar fruta del inventario"
+                    (click)="deleteFreshFruit(fruit)"
+                  >
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <polyline points="3 6 5 6 21 6"></polyline>
+                      <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                    </svg>
+                  </button>
+                </div>
+              </div>
+            </article>
+          } @empty {
+            <div class="inv-empty-state">
+              <div class="inv-empty-icon">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z"></path>
+                  <path d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12"></path>
+                </svg>
+              </div>
+              <div style="font-weight: 700; color: var(--text-main);">No hay frutas registradas en planta</div>
+              <p style="color: var(--text-muted); font-size: 0.85rem; margin-top: 4px;">
+                Agrega una fruta indicando su nombre y peso disponible en kilogramos (Kg) para sincronizarla con producción y el KDS.
+              </p>
+              <button
+                type="button"
+                class="btn btn-primary"
+                style="margin-top: 12px; font-size: 0.82rem; gap: 6px;"
+                (click)="openNewFruitModal()"
+              >
+                + Agregar Fruta Disponible
+              </button>
+            </div>
+          }
         </div>
       </div>
     </div>

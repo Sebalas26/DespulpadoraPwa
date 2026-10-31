@@ -1,9 +1,10 @@
-import { Component, computed, inject, signal } from '@angular/core';
+import { Component, computed, effect, inject, signal, untracked } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, ActivatedRoute } from '@angular/router';
 import { StateService } from '../../core/services/state.service';
 import { NotificationService } from '../../core/services/notification.service';
+import { RealtimeSyncService } from '../../core/services/realtime-sync.service';
 import {
   DEFAULT_CATEGORIES,
   DEFAULT_COMPANY_CONFIG,
@@ -70,6 +71,7 @@ export class SettingsComponent {
   readonly authService = inject(AuthService);
   readonly stateService = inject(StateService);
   readonly notification = inject(NotificationService);
+  readonly realtimeSync = inject(RealtimeSyncService);
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
   readonly Math = Math;
@@ -348,7 +350,20 @@ export class SettingsComponent {
    */
   constructor() {
     try {
+      this.realtimeSync.connect();
       this.stateService.refreshAll?.();
+      effect(() => {
+        try {
+          const info = this.stateService.companyInfo();
+          if (info) {
+            untracked(() => {
+              this.companyForm.set({ ...info });
+            });
+          }
+        } catch {
+          return;
+        }
+      });
       this.route.queryParams.subscribe(params => {
         const tab = params['tab'];
         const view = params['view'];

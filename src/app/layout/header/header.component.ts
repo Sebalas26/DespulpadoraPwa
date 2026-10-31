@@ -87,8 +87,32 @@ import { VoiceOrdersService } from '../../core/services/voice-orders.service';
           }
         </button>
 
-        <div class="mobile-user-avatar only-mobile" [title]="authService.user()?.roleName || ''">
-          <span>{{ userInitials() }}</span>
+        <div class="mobile-user-avatar-wrapper only-mobile">
+          <div
+            class="mobile-user-avatar"
+            role="button"
+            tabindex="0"
+            [title]="authService.user()?.roleName || ''"
+            (click)="onMobileAvatarClick($event)"
+          >
+            <span>{{ userInitials() }}</span>
+          </div>
+
+          @if (isUserTooltipVisible() && authService.user(); as currentUser) {
+            <div class="mobile-user-tooltip" role="tooltip">
+              <div class="mobile-user-tooltip-name">
+                {{ currentUser.fullName || currentUser.username }}
+              </div>
+              <div class="mobile-user-tooltip-role">
+                {{ currentUser.roleName }}
+              </div>
+              @if (currentUser.email || currentUser.username) {
+                <div class="mobile-user-tooltip-meta">
+                  {{ currentUser.email || ('@' + currentUser.username) }}
+                </div>
+              }
+            </div>
+          }
         </div>
 
         <button
@@ -463,6 +487,13 @@ import { VoiceOrdersService } from '../../core/services/voice-orders.service';
       border: 1.5px solid #ffffff;
     }
 
+    .mobile-user-avatar-wrapper {
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+
     .mobile-user-avatar {
       width: 34px;
       height: 34px;
@@ -475,6 +506,49 @@ import { VoiceOrdersService } from '../../core/services/voice-orders.service';
       font-size: 0.8rem;
       font-weight: 800;
       border: 1px solid #fde68a;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .mobile-user-tooltip {
+      position: absolute;
+      top: calc(100% + 8px);
+      right: 0;
+      min-width: 190px;
+      max-width: 240px;
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      padding: 10px 12px;
+      box-shadow: 0 10px 25px rgba(15, 23, 42, 0.14);
+      z-index: 250;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      text-align: left;
+    }
+
+    .mobile-user-tooltip-name {
+      font-size: 0.82rem;
+      font-weight: 800;
+      color: #0f172a;
+      line-height: 1.25;
+      word-break: break-word;
+    }
+
+    .mobile-user-tooltip-role {
+      font-size: 0.72rem;
+      font-weight: 700;
+      color: #1e5e3a;
+      line-height: 1.2;
+    }
+
+    .mobile-user-tooltip-meta {
+      font-size: 0.68rem;
+      font-weight: 500;
+      color: #64748b;
+      margin-top: 2px;
+      word-break: break-all;
     }
 
     .topbar-wa-btn {
@@ -642,9 +716,11 @@ export class HeaderComponent implements OnInit, OnDestroy {
   private readonly router = inject(Router);
 
   readonly isHeaderHidden = signal<boolean>(false);
+  readonly isUserTooltipVisible = signal<boolean>(false);
   private lastScrollY = 0;
   private readonly scrollThreshold = 8;
   private cleanupScrollListeners?: () => void;
+  private userTooltipTimeoutId: ReturnType<typeof setTimeout> | null = null;
 
   /**
    * Computes the two-letter avatar initials of the currently authenticated user.
@@ -713,12 +789,46 @@ export class HeaderComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * Cleans up registered window and document scroll listeners.
+   * Cleans up registered window and document scroll listeners and active tooltip timers.
    */
   ngOnDestroy(): void {
     try {
+      this.clearUserTooltipTimer();
       if (this.cleanupScrollListeners) {
         this.cleanupScrollListeners();
+      }
+    } catch {
+      return;
+    }
+  }
+
+  /**
+   * Shows the mobile user info tooltip when tapping the yellow avatar and auto-hides it after 5 seconds.
+   */
+  onMobileAvatarClick(event?: Event): void {
+    try {
+      if (event) {
+        event.stopPropagation();
+      }
+      this.clearUserTooltipTimer();
+      this.isUserTooltipVisible.set(true);
+      this.userTooltipTimeoutId = setTimeout(() => {
+        this.isUserTooltipVisible.set(false);
+        this.userTooltipTimeoutId = null;
+      }, 5000);
+    } catch {
+      return;
+    }
+  }
+
+  /**
+   * Clears any active auto-hide timer for the mobile user tooltip.
+   */
+  private clearUserTooltipTimer(): void {
+    try {
+      if (this.userTooltipTimeoutId) {
+        clearTimeout(this.userTooltipTimeoutId);
+        this.userTooltipTimeoutId = null;
       }
     } catch {
       return;

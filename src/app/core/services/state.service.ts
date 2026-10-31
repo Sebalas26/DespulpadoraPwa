@@ -3,6 +3,11 @@ import { ApiService } from './api.service';
 import { AuthService } from './auth.service';
 import { NotificationService } from './notification.service';
 import {
+  RealtimeDomainEvent,
+  RealtimeDomainType,
+  RealtimeSyncService
+} from './realtime-sync.service';
+import {
   BatchDto,
   ClientDto,
   CompanyConfig,
@@ -62,6 +67,8 @@ export class StateService {
   private readonly api = inject(ApiService);
   private readonly auth = inject(AuthService);
   private readonly notification = inject(NotificationService);
+  readonly realtimeSync = inject(RealtimeSyncService);
+  private isApplyingExternalRealtimeEvent = false;
 
   readonly fruits = signal<FruitConfig[]>(this.loadFruitsFromStorage());
   readonly batches = signal<BatchDto[]>(this.loadBatchesFromStorage());
@@ -389,7 +396,7 @@ export class StateService {
   });
 
   /**
-   * Initializes theme attributes and online/offline event listeners.
+   * Initializes theme attributes, online/offline event listeners, and real-time SignalR/WebSocket/Cross-Tab sync.
    */
   constructor() {
     try {
@@ -397,6 +404,114 @@ export class StateService {
       if (typeof window !== 'undefined') {
         window.addEventListener('online', () => this.isOnline.set(true));
         window.addEventListener('offline', () => this.isOnline.set(false));
+      }
+      this.realtimeSync.domainEvents$.subscribe(evt => {
+        this.handleRealtimeDomainEvent(evt);
+      });
+    } catch {
+      return;
+    }
+  }
+
+  /**
+   * Handles incoming real-time domain events from SignalR, WebSocket (/ws), or BroadcastChannel.
+   */
+  handleRealtimeDomainEvent(evt: RealtimeDomainEvent): void {
+    try {
+      this.isApplyingExternalRealtimeEvent = true;
+      this.reloadDomainFromStorage(evt.domain);
+      this.isApplyingExternalRealtimeEvent = false;
+
+      if (evt.origin === 'signalr' || evt.origin === 'websocket') {
+        this.refreshAll(true);
+      }
+    } catch {
+      this.isApplyingExternalRealtimeEvent = false;
+    }
+  }
+
+  /**
+   * Reloads reactive signals from localStorage for the specified domain without full page reload.
+   */
+  reloadDomainFromStorage(domain: RealtimeDomainType): void {
+    try {
+      if (domain === 'parameters' || domain === 'all') {
+        this.companyInfo.set(this.loadCompanyInfoFromStorage());
+        this.paymentMethods.set(this.loadPaymentMethodsFromStorage());
+        this.grammagesConfig.set(this.loadGrammagesConfigFromStorage());
+        this.categoriesConfig.set(this.loadCategoriesConfigFromStorage());
+        this.portalCmsConfig.set(this.loadPortalCmsConfigFromStorage());
+        this.salesTargets.set(this.loadSalesTargetsFromStorage());
+      }
+      if (domain === 'inventory' || domain === 'all') {
+        this.fruits.set(this.loadFruitsFromStorage());
+        this.productVariants.set(this.loadVariantsFromStorage());
+        this.batches.set(this.loadBatchesFromStorage());
+      }
+      if (domain === 'orders' || domain === 'routes' || domain === 'all') {
+        this.orders.set(this.loadOrdersFromStorage());
+        this.fruits.set(this.loadFruitsFromStorage());
+        this.productVariants.set(this.loadVariantsFromStorage());
+      }
+      if (domain === 'users' || domain === 'all') {
+        this.employees.set(this.loadEmployeesFromStorage());
+        this.users.set(this.loadUsersFromStorage());
+        this.roles.set(this.loadRolesFromStorage());
+        this.clients.set(this.loadClientsFromStorage());
+      }
+      if (domain === 'shifts' || domain === 'all') {
+        this.shifts.set(this.loadShiftsFromStorage());
+        this.expenses.set(this.loadExpensesFromStorage());
+        this.payrollPeriods.set(this.loadPayrollPeriodsFromStorage());
+        this.payrollSettlements.set(this.loadPayrollSettlementsFromStorage());
+      }
+    } catch {
+      return;
+    }
+  }
+
+  /**
+   * Updates the system users signal, persists to localStorage, and broadcasts a real-time user/courier update.
+   */
+  setUsers(users: UserAdminDto[], changedUser?: UserAdminDto): void {
+    try {
+      this.users.set(users);
+      this.saveUsersToStorage(users);
+      if (!this.isApplyingExternalRealtimeEvent) {
+        const isCourierUpdate = Boolean(
+          changedUser?.roleName?.toLowerCase().includes('domiciliario') ||
+            changedUser?.roleName?.toLowerCase().includes('mensajero')
+        );
+        this.realtimeSync.publishDomainChange(
+          'users',
+          isCourierUpdate ? 'courier' : 'user',
+          changedUser ? ({ ...changedUser } as Record<string, unknown>) : { count: users.length },
+          {
+            event: isCourierUpdate ? 'courier_updated' : 'user_updated',
+            userId: changedUser ? String(changedUser.userId) : undefined,
+            courierId: changedUser ? String(changedUser.userId) : undefined
+          }
+        );
+      }
+    } catch {
+      return;
+    }
+  }
+
+  /**
+   * Updates the system roles signal, persists to localStorage, and broadcasts a real-time role update.
+   */
+  setRoles(roles: UserRoleDto[]): void {
+    try {
+      this.roles.set(roles);
+      this.saveRolesToStorage(roles);
+      if (!this.isApplyingExternalRealtimeEvent) {
+        this.realtimeSync.publishDomainChange(
+          'users',
+          'role',
+          { count: roles.length },
+          { event: 'role_updated' }
+        );
       }
     } catch {
       return;
@@ -759,9 +874,9 @@ private loadEmployeesFromStorage(): EmployeeDto[] {
   }
 
   /**
-   * Persists all reactive collections to localStorage.
+   * Persists all reactive collections to localStorage and broadcasts real-time updates across tabs and sockets.
    */
-  private saveAllToStorage(): void {
+  private saveAllToStorage(domain: RealtimeDomainType = 'all', action: string = 'state_updated'): void {
     try {
       localStorage.setItem('despulpadora_fruits', JSON.stringify(this.fruits()));
       localStorage.setItem('despulpadora_batches', JSON.stringify(this.batches()));
@@ -779,6 +894,9 @@ private loadEmployeesFromStorage(): EmployeeDto[] {
       localStorage.setItem('despulpadora_payment_methods', JSON.stringify(this.paymentMethods()));
       localStorage.setItem('despulpadora_grammages_config', JSON.stringify(this.grammagesConfig()));
       localStorage.setItem('despulpadora_categories_config', JSON.stringify(this.categoriesConfig()));
+      if (!this.isApplyingExternalRealtimeEvent) {
+        this.realtimeSync.publishDomainChange(domain, action);
+      }
     } catch {
       return;
     }
@@ -814,13 +932,15 @@ private loadEmployeesFromStorage(): EmployeeDto[] {
   /**
    * Synchronizes all operational modules from the backend API in parallel.
    */
-  refreshAll(): void {
+  refreshAll(silent: boolean = false): void {
     try {
       if (!this.auth.isAuthenticated()) {
         return;
       }
 
-      this.isLoading.set(true);
+      if (!silent) {
+        this.isLoading.set(true);
+      }
       const branchId = this.auth.selectedBranch()?.branchId;
 
       forkJoin({
@@ -945,13 +1065,17 @@ private loadEmployeesFromStorage(): EmployeeDto[] {
           }
 
           this.paymentMethods.set(res.paymentMethods || []);
+          this.isApplyingExternalRealtimeEvent = true;
           this.saveAllToStorage();
+          this.isApplyingExternalRealtimeEvent = false;
         },
         error: () => {
+          this.isApplyingExternalRealtimeEvent = false;
           this.isLoading.set(false);
         }
       });
     } catch {
+      this.isApplyingExternalRealtimeEvent = false;
       this.isLoading.set(false);
     }
   }
@@ -1527,7 +1651,26 @@ private loadEmployeesFromStorage(): EmployeeDto[] {
         })
       );
 
-      this.saveAllToStorage();
+      this.saveAllToStorage('orders', 'status');
+      const changedOrder = this.orders().find(o => o.orderId === orderId);
+      if (!this.isApplyingExternalRealtimeEvent) {
+        this.realtimeSync.publishDomainChange(
+          'orders',
+          'status',
+          {
+            orderId,
+            orderNumber: changedOrder?.orderNumber,
+            status: newStatus,
+            isBilled: newStatus === 'BILLED' || newStatus === 'DISPATCHED' || newStatus === 'DELIVERED',
+            courierId: changedOrder?.courierId
+          },
+          {
+            event: 'order_status_changed',
+            courierId: changedOrder?.courierId ? String(changedOrder.courierId) : undefined,
+            orderIds: [String(orderId)]
+          }
+        );
+      }
 
       const statusLabels: Record<OrderStatus, string> = {
         PENDING: 'Pendiente',
@@ -1592,7 +1735,23 @@ private loadEmployeesFromStorage(): EmployeeDto[] {
         })
       );
 
-      this.saveAllToStorage();
+      this.saveAllToStorage('routes', 'dispatch');
+      if (!this.isApplyingExternalRealtimeEvent) {
+        this.realtimeSync.publishDomainChange(
+          'routes',
+          'dispatch',
+          {
+            courierId: dto.courierId,
+            courierName: dto.courierName,
+            orderIds: dto.orderIds
+          },
+          {
+            event: 'route_dispatched',
+            courierId: String(dto.courierId),
+            orderIds: dto.orderIds.map(id => String(id))
+          }
+        );
+      }
       this.api
         .dispatchOrdersRoute?.({
           courierId: dto.courierId,
@@ -1657,7 +1816,25 @@ private loadEmployeesFromStorage(): EmployeeDto[] {
           return o;
         })
       );
-      this.saveAllToStorage();
+      this.saveAllToStorage('orders', 'priority');
+      if (!this.isApplyingExternalRealtimeEvent) {
+        const targetOrder = this.orders().find(o => o.orderId === orderId);
+        this.realtimeSync.publishDomainChange(
+          'orders',
+          'priority',
+          {
+            orderId,
+            orderNumber: targetOrder?.orderNumber,
+            isPriority: resolvedPriority,
+            courierId: targetOrder?.courierId
+          },
+          {
+            event: 'order_priority_changed',
+            courierId: targetOrder?.courierId ? String(targetOrder.courierId) : undefined,
+            orderIds: [String(orderId)]
+          }
+        );
+      }
       if (this.api.toggleOrderPriority) {
         this.api.toggleOrderPriority(orderId, resolvedPriority).subscribe({ error: () => {} });
       }
@@ -2468,11 +2645,16 @@ private loadEmployeesFromStorage(): EmployeeDto[] {
   }
 
   /**
-   * Saves the inventory grammages configuration to localStorage.
+   * Saves the inventory grammages configuration to localStorage and broadcasts real-time parameter updates.
    */
   private saveGrammagesConfig(): void {
     try {
       localStorage.setItem('despulpadora_grammages_config', JSON.stringify(this.grammagesConfig()));
+      if (!this.isApplyingExternalRealtimeEvent) {
+        this.realtimeSync.publishDomainChange('parameters', 'grammages_updated', {
+          section: 'grammages'
+        });
+      }
     } catch {
       return;
     }
@@ -2492,11 +2674,16 @@ private loadEmployeesFromStorage(): EmployeeDto[] {
   }
 
   /**
-   * Saves the inventory categories configuration to localStorage.
+   * Saves the inventory categories configuration to localStorage and broadcasts real-time parameter updates.
    */
   private saveCategoriesConfig(): void {
     try {
       localStorage.setItem('despulpadora_categories_config', JSON.stringify(this.categoriesConfig()));
+      if (!this.isApplyingExternalRealtimeEvent) {
+        this.realtimeSync.publishDomainChange('parameters', 'categories_updated', {
+          section: 'categories'
+        });
+      }
     } catch {
       return;
     }

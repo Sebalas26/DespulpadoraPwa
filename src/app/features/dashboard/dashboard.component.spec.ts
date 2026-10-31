@@ -319,4 +319,13 @@ describe('DashboardComponent', () => {
     expect(component.monthlyGoalTier()).toBe('green');
     expect(pctEl.textContent?.trim()).toBe('100%');
   });
+
+  it('should display only Bodega principal in mobile-location-tag without En línea', () => {
+    fixture.detectChanges();
+    const compiled = fixture.nativeElement as HTMLElement;
+    const locationTag = compiled.querySelector('.mobile-location-tag') as HTMLElement;
+    expect(locationTag).not.toBeNull();
+    expect(locationTag.textContent?.trim()).toBe('Bodega principal');
+    expect(locationTag.textContent).not.toContain('En línea');
+  });
 });

@@ -1,6 +1,7 @@
 import {
   Component,
   computed,
+  effect,
   inject,
   signal,
   OnInit,
@@ -9,8 +10,10 @@ import {
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
+import { Subscription } from 'rxjs';
 import { StateService } from '../../../core/services/state.service';
 import { NotificationService } from '../../../core/services/notification.service';
+import { RealtimeSyncService } from '../../../core/services/realtime-sync.service';
 import { ClientDto, FruitConfig, OrderDto, OrderItemDto, OrderStatus } from '../../../core/models/business.models';
 import confetti from 'canvas-confetti';
 
@@ -1179,6 +1182,7 @@ export class KdsComponent implements OnInit, OnDestroy {
   private readonly stateService = inject(StateService);
   private readonly notification = inject(NotificationService);
   private readonly router = inject(Router);
+  readonly realtimeSync = inject(RealtimeSyncService);
 
   readonly viewMode = signal<'columns' | 'grid'>('columns');
   readonly isDarkTheme = signal<boolean>(false);
@@ -1186,8 +1190,25 @@ export class KdsComponent implements OnInit, OnDestroy {
   readonly currentTime = signal<string>('');
 
   private clockInterval?: ReturnType<typeof setInterval>;
+  private realtimeSub?: Subscription;
   private audioCtx?: AudioContext;
   private readonly orderTimers: Map<number, number> = new Map<number, number>();
+
+  constructor() {
+    effect(() => {
+      try {
+        const orders = this.stateService.orders();
+        const now = Date.now();
+        orders.forEach((o: OrderDto) => {
+          if (!this.orderTimers.has(o.orderId)) {
+            this.orderTimers.set(o.orderId, now);
+          }
+        });
+      } catch {
+        return;
+      }
+    });
+  }
 
   readonly pendingOrders = computed<OrderDto[]>(() => {
     try {
@@ -1252,10 +1273,11 @@ export class KdsComponent implements OnInit, OnDestroy {
   });
 
   /**
-   * Initializes the KDS clock, order timers, and persisted display theme.
+   * Initializes the KDS clock, order timers, real-time SignalR/WebSocket subscription, and persisted display theme.
    */
   ngOnInit(): void {
     try {
+      this.realtimeSync.connect();
       this.stateService.refreshAll?.();
       this.updateClock();
       this.clockInterval = setInterval(() => this.updateClock(), 1000);
@@ -1263,6 +1285,20 @@ export class KdsComponent implements OnInit, OnDestroy {
       const now = Date.now();
       this.stateService.orders().forEach((o: OrderDto, index: number) => {
         this.orderTimers.set(o.orderId, now - (index * 180000 + 120000));
+      });
+
+      this.realtimeSub = this.realtimeSync.domainEvents$.subscribe(evt => {
+        try {
+          if (
+            evt.event === 'order_created' ||
+            evt.event === 'order_priority_changed' ||
+            evt.action === 'priority'
+          ) {
+            this.playKitchenBellChime();
+          }
+        } catch {
+          return;
+        }
       });
 
       const savedTheme = localStorage.getItem('despulpadora_kds_theme');
@@ -1277,12 +1313,15 @@ export class KdsComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * Cleans up the clock interval and audio context upon component destruction.
+   * Cleans up the clock interval, real-time subscription, and audio context upon component destruction.
    */
   ngOnDestroy(): void {
     try {
       if (this.clockInterval) {
         clearInterval(this.clockInterval);
+      }
+      if (this.realtimeSub) {
+        this.realtimeSub.unsubscribe();
       }
       if (this.audioCtx) {
         this.audioCtx.close();

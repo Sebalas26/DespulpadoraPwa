@@ -365,7 +365,7 @@ describe('SettingsComponent', () => {
     expect(component.companyForm().logoUrl).toBe('/logo-dgl.png');
   });
 
-  it('should display units in ms-value and total value in ms-status-pill on mobile stock summary cards and mark desktop-only buttons', () => {
+  it('should display units in ms-value and total value in ms-status-pill on operational stock cards and remove presentaciones encontradas and Configurar Columnas', () => {
     component.activeTab.set('inventory');
     component.inventorySubTab.set('variants');
     fixture.detectChanges();
@@ -374,10 +374,13 @@ describe('SettingsComponent', () => {
     const settingsBtn = compiled.querySelector('#btn-open-inventory-settings');
     expect(settingsBtn?.classList.contains('inventory-desktop-only-btn')).toBeTrue();
 
-    const summaryCell = compiled.querySelector('td.mobile-tr-summary-cell');
-    expect(summaryCell).not.toBeNull();
-    const msValue = summaryCell?.querySelector('.ms-value')?.textContent?.trim() || '';
-    const msStatusPill = summaryCell?.querySelector('.ms-status-pill')?.textContent?.trim() || '';
+    expect(compiled.textContent).not.toContain('presentaciones encontradas');
+    expect(compiled.textContent).not.toContain('Configurar Columnas');
+
+    const stockCard = compiled.querySelector('.inv-stock-card');
+    expect(stockCard).not.toBeNull();
+    const msValue = stockCard?.querySelector('.ms-value')?.textContent?.trim() || '';
+    const msStatusPill = stockCard?.querySelector('.ms-status-pill')?.textContent?.trim() || '';
     expect(msValue).toBe('40 uds');
     expect(msStatusPill).toContain('140.000');
 

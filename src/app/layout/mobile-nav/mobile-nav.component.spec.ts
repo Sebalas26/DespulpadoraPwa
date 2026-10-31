@@ -179,4 +179,62 @@ describe('MobileNavComponent', () => {
     expect(logoutBtn).not.toBeNull();
     expect((logoutBtn?.textContent || '').trim()).toBe('Cerrar Sesión');
   });
+
+  it('should render the 5 Operación options in the exact requested order in the mobile drawer', () => {
+    spyOn(authService, 'hasModuleAccess').and.returnValue(true);
+    spyOn(authService, 'groupedNavigationSections').and.returnValue([
+      {
+        sectionName: 'Operación',
+        modules: [
+          {
+            moduleId: 1,
+            name: 'Dashboard Operativo',
+            slug: 'dashboard',
+            menuSection: 'Operación',
+            frontendRoute: '/dashboard',
+            icon: 'grid',
+            displayOrder: 1,
+            allowedActionSlugs: ['dashboard.view']
+          },
+          {
+            moduleId: 901,
+            name: 'Inventario de Pulpas y Frutas',
+            slug: 'inventory',
+            menuSection: 'Operación',
+            frontendRoute: '/settings?tab=inventory',
+            icon: 'package',
+            displayOrder: 2,
+            allowedActionSlugs: ['settings.view']
+          },
+          {
+            moduleId: 2,
+            name: 'Pedidos y Despacho',
+            slug: 'orders',
+            menuSection: 'Operación',
+            frontendRoute: '/orders',
+            icon: 'truck',
+            displayOrder: 3,
+            allowedActionSlugs: ['orders.view']
+          }
+        ]
+      }
+    ]);
+
+    component.openDrawer();
+    fixture.detectChanges();
+
+    const compiled: HTMLElement = fixture.nativeElement as HTMLElement;
+    const titleElements: NodeListOf<HTMLElement> = compiled.querySelectorAll('.mobile-drawer-body .drawer-title');
+    const titles: string[] = Array.from(titleElements).map((el: HTMLElement) => (el.textContent || '').trim());
+
+    const startIndex: number = titles.indexOf('Dashboard Operativo');
+    expect(startIndex).toBeGreaterThanOrEqual(0);
+    expect(titles.slice(startIndex, startIndex + 5)).toEqual([
+      'Dashboard Operativo',
+      'Pedidos',
+      'Facturación & Alistamiento',
+      'Despachos & POS',
+      'Inventario de Pulpas y Frutas'
+    ]);
+  });
 });
