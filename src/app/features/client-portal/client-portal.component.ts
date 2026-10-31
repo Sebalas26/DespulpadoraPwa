@@ -73,38 +73,40 @@ export interface CartItem {
         </div>
       </header>
 
-            <section class="portal-hero-banner">
-        <div class="section-container">
-          <div class="hero-card">
-            <div class="hero-main-info">
-              <span class="hero-badge">
-                <img src="/logo-dgl.png" alt="DGL" class="hero-logo-mini" />
-                {{ stateService.portalCmsConfig().heroBadge }}
-              </span>
-              <h2 class="hero-title">{{ stateService.portalCmsConfig().heroTitle }}</h2>
-              <p class="hero-desc">
-                {{ stateService.portalCmsConfig().heroDescription }}
-              </p>
+      <div class="portal-stage">
+        <div class="portal-board-shell">
+          <section class="portal-hero-banner">
+            <div class="section-container">
+              <div class="hero-card">
+                <div class="hero-main-info">
+                  <span class="hero-badge">
+                    <img src="/logo-dgl.png" alt="DGL" class="hero-logo-mini" />
+                    {{ stateService.portalCmsConfig().heroBadge }}
+                  </span>
+                  <h2 class="hero-title">{{ stateService.portalCmsConfig().heroTitle }}</h2>
+                  <p class="hero-desc">
+                    {{ stateService.portalCmsConfig().heroDescription }}
+                  </p>
+                </div>
+                <div class="hero-features-chips">
+                  <div class="feature-chip">
+                    <span class="chip-icon">✨</span>
+                    <span>{{ stateService.portalCmsConfig().chip1Text }}</span>
+                  </div>
+                  <div class="feature-chip">
+                    <span class="chip-icon">🧊</span>
+                    <span>{{ stateService.portalCmsConfig().chip2Text }}</span>
+                  </div>
+                  <div class="feature-chip">
+                    <span class="chip-icon">⚡</span>
+                    <span>{{ stateService.portalCmsConfig().chip3Text }}</span>
+                  </div>
+                </div>
+              </div>
             </div>
-            <div class="hero-features-chips">
-              <div class="feature-chip">
-                <span class="chip-icon">✨</span>
-                <span>{{ stateService.portalCmsConfig().chip1Text }}</span>
-              </div>
-              <div class="feature-chip">
-                <span class="chip-icon">🧊</span>
-                <span>{{ stateService.portalCmsConfig().chip2Text }}</span>
-              </div>
-              <div class="feature-chip">
-                <span class="chip-icon">⚡</span>
-                <span>{{ stateService.portalCmsConfig().chip3Text }}</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
+          </section>
 
-            <main class="portal-main">
+          <main class="portal-main">
         <div class="section-container">
                     <div class="catalog-toolbar">
             <div class="search-box">
@@ -280,6 +282,8 @@ export interface CartItem {
           </div>
         </div>
       </main>
+        </div>
+      </div>
 
             <button
         type="button"
@@ -625,37 +629,66 @@ export interface CartItem {
       margin: 0;
       padding: 0;
       font-family: var(--font-body, 'Lato', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif);
-      background: #f8fafc;
-      color: #0f172a;
+      background: #1b4d2e url('/auth-hero-bg.jpg') center center / cover no-repeat fixed;
+      color: #0f291e;
+      --bg-app: #f1f3f5;
+      --bg-card: #ffffff;
+      --color-primary: #1b5133;
+      --color-primary-hover: #143f27;
+      --color-primary-light: #eaf5ee;
+      --color-primary-border: #d1e7d8;
     }
 
     .portal-root {
       min-height: 100vh;
       display: flex;
       flex-direction: column;
+      background: #1b4d2e url('/auth-hero-bg.jpg') center center / cover no-repeat fixed;
+    }
+
+    .portal-stage {
+      flex: 1;
+      width: 100%;
+      max-width: 1360px;
+      margin: 0 auto;
+      padding: 28px 24px 72px 24px;
+      box-sizing: border-box;
+    }
+
+    .portal-board-shell {
+      background: #f1f3f5;
+      border-radius: 28px;
+      padding: 28px;
+      border: 1px solid rgba(255, 255, 255, 0.72);
+      box-shadow: 0 24px 60px -12px rgba(0, 0, 0, 0.42), 0 4px 16px rgba(0, 0, 0, 0.18);
+      display: flex;
+      flex-direction: column;
+      gap: 22px;
+      box-sizing: border-box;
     }
 
     .section-container {
       width: 100%;
       max-width: 1280px;
       margin: 0 auto;
-      padding: 0 20px;
+      padding: 0;
     }
 
     
     .portal-header {
-      background: #ffffff;
-      border-bottom: 1.5px solid #e2e8f0;
+      background: rgba(255, 255, 255, 0.96);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid rgba(226, 232, 240, 0.9);
       position: sticky;
       top: 0;
       z-index: 100;
-      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.14);
     }
 
     .header-inner {
-      max-width: 1280px;
+      max-width: 1312px;
       margin: 0 auto;
-      padding: 12px 20px;
+      padding: 12px 24px;
       display: flex;
       align-items: center;
       justify-content: space-between;
@@ -669,9 +702,14 @@ export interface CartItem {
       gap: 14px;
 
       .brand-logo {
-        width: 44px;
-        height: 44px;
+        width: 46px;
+        height: 46px;
         object-fit: contain;
+        border-radius: 14px;
+        background: #ffffff;
+        border: 1px solid #eceef0;
+        padding: 5px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
       }
 
       .brand-title-row {
@@ -817,19 +855,20 @@ export interface CartItem {
 
     
     .portal-hero-banner {
-      padding: 12px 0 6px 0;
+      padding: 0;
     }
 
     .hero-card {
-      background: linear-gradient(135deg, #064e3b 0%, #164a2d 50%, #1e5e3a 100%);
-      border-radius: 14px;
-      padding: 12px 22px;
+      background: #1b4d2e url('/auth-hero-bg.jpg') center center / cover no-repeat;
+      border-radius: 20px;
+      padding: 18px 24px;
       color: #ffffff;
       display: flex;
       align-items: center;
       justify-content: space-between;
       gap: 16px;
-      box-shadow: 0 6px 20px rgba(6, 78, 59, 0.15);
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      box-shadow: 0 12px 28px -8px rgba(17, 24, 39, 0.22);
       position: relative;
       overflow: hidden;
 
@@ -909,7 +948,7 @@ export interface CartItem {
 
     
     .portal-main {
-      padding: 10px 0 60px 0;
+      padding: 0;
       flex: 1;
     }
 
@@ -917,8 +956,13 @@ export interface CartItem {
       display: flex;
       align-items: center;
       gap: 16px;
-      margin-bottom: 24px;
+      margin-bottom: 22px;
       flex-wrap: wrap;
+      background: #ffffff;
+      border: 1px solid rgba(0, 0, 0, 0.05);
+      border-radius: 20px;
+      padding: 14px 18px;
+      box-shadow: 0 12px 32px -12px rgba(17, 24, 39, 0.08);
 
       .search-box {
         position: relative;
@@ -937,16 +981,19 @@ export interface CartItem {
         .search-input {
           width: 100%;
           padding: 10px 32px 10px 38px;
-          background: #ffffff;
-          border: 1.5px solid #cbd5e1;
+          background: #f9fafb;
+          border: 1.5px solid #e5e7eb;
           border-radius: 9999px;
           font-size: 0.85rem;
-          color: #0f172a;
+          color: #0f291e;
           outline: none;
           box-sizing: border-box;
+          transition: all 0.2s ease;
 
           &:focus {
-            border-color: #1e5e3a;
+            background: #ffffff;
+            border-color: #1b5133;
+            box-shadow: 0 0 0 3px rgba(27, 81, 51, 0.12);
           }
         }
 
@@ -1006,24 +1053,24 @@ export interface CartItem {
 
     .product-card {
       background: #ffffff;
-      border: 1.5px solid #e2e8f0;
-      border-radius: 18px;
+      border: 1px solid rgba(0, 0, 0, 0.05);
+      border-radius: 22px;
       overflow: hidden;
       display: flex;
       flex-direction: column;
       justify-content: space-between;
       transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
+      box-shadow: 0 16px 40px -12px rgba(17, 24, 39, 0.08);
 
       &:hover {
-        transform: translateY(-3px);
-        border-color: #1e5e3a;
-        box-shadow: 0 8px 24px rgba(30, 94, 58, 0.12);
+        transform: translateY(-4px);
+        border-color: #1b5133;
+        box-shadow: 0 20px 44px -12px rgba(27, 81, 51, 0.18);
       }
 
       &.in-cart {
-        border-color: #1e5e3a;
-        box-shadow: 0 4px 18px rgba(30, 94, 58, 0.16);
+        border-color: #1b5133;
+        box-shadow: 0 18px 42px -10px rgba(27, 81, 51, 0.22);
       }
     }
 
@@ -1830,15 +1877,30 @@ export interface CartItem {
     }
 
     @media (max-width: 768px) {
+      .portal-stage {
+        padding: 16px 12px 64px 12px;
+      }
+
+      .portal-board-shell {
+        padding: 16px;
+        border-radius: 22px;
+        gap: 16px;
+      }
+
       .hero-card {
         flex-direction: column;
         align-items: flex-start;
-        padding: 12px 16px;
+        padding: 14px 16px;
 
         .hero-features-chips {
           flex-wrap: wrap;
           margin-top: 4px;
         }
+      }
+
+      .catalog-toolbar {
+        padding: 12px 14px;
+        border-radius: 16px;
       }
 
       .cart-floating-btn {

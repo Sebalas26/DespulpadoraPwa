@@ -1,0 +1,17 @@
+{
+	"folders": [
+		{
+			"path": "../../../.."
+		},
+		{
+			"path": "../../../../../../Flutter/DespulpadoraApp"
+		},
+		{
+			"path": "../../../../../../Api/ApiDespulpadora"
+		}
+	],
+	"settings": {
+		"typescript.tsdk": "node_modules/typescript/lib",
+		"json.schemaDownload.enable": false
+	}
+}

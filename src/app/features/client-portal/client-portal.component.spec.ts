@@ -246,4 +246,20 @@ describe('ClientPortalComponent', () => {
       })
     );
   });
+
+  it('should render the 3-layer Login-inspired portal hierarchy with portal-root, gray portal-board-shell, and white product-card elements', () => {
+    fixture.detectChanges();
+    const compiled: HTMLElement = fixture.nativeElement as HTMLElement;
+    const portalRoot = compiled.querySelector('.portal-root');
+    const portalStage = compiled.querySelector('.portal-stage');
+    const boardShell = compiled.querySelector('.portal-board-shell');
+    const toolbar = compiled.querySelector('.portal-board-shell .catalog-toolbar');
+    const productCards = compiled.querySelectorAll('.portal-board-shell .product-card');
+
+    expect(portalRoot).not.toBeNull();
+    expect(portalStage).not.toBeNull();
+    expect(boardShell).not.toBeNull();
+    expect(toolbar).not.toBeNull();
+    expect(productCards.length).toBe(1);
+  });
 });

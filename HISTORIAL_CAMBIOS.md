@@ -4,6 +4,36 @@ Este documento registra de manera cronológica y estructurada todas las interven
 
 ---
 
+## [2026-10-31] - Rediseño Visual del Portal Cliente en 3 Capas Basado en el Estilo del Login (`auth-hero-bg.jpg`, Cuadro Gris `.portal-board-shell` y Cards Blancas `.product-card`) (`ClientPortalComponent`)
+
+### 💬 Prompt Original del Usuario
+> "Ayudame a mejorar la pagina de portal cliente, donde el fondo sea la auth-hero-bg.jpg y el cuadro gris y las cards blancas, basate en el estilo del login"
+> "ejecuta"
+
+### 🤖 Resumen Técnico para la IA
+- **1. Capa 1 — Fondo Exterior con `/auth-hero-bg.jpg` (`src/app/features/client-portal/client-portal.component.ts`)**:
+  - Se actualizaron `:host` y `.portal-root` para emplear el fondo botánico institucional del Login: `background: #1b4d2e url('/auth-hero-bg.jpg') center center / cover no-repeat fixed;`.
+  - Se estilizó `.portal-header` con fondo blanco traslúcido (`rgba(255, 255, 255, 0.96)`), `backdrop-filter: blur(12px)` y logo enmarcado estilo `.auth-brand-logo`, además de aplicar `url('/auth-hero-bg.jpg')` al banner `.hero-card`.
+- **2. Capa 2 — Cuadro Contenedor Gris Claro Flotante (`.portal-stage` -> `.portal-board-shell`)**:
+  - Se envolvió el banner hero y el catálogo de productos dentro de `<div class="portal-stage"><div class="portal-board-shell">...</div></div>`.
+  - `.portal-board-shell` define el contenedor central gris claro (`background: #f1f3f5;`, `border-radius: 28px;`, `padding: 28px;`, `border: 1px solid rgba(255, 255, 255, 0.72);`, `box-shadow: 0 24px 60px -12px rgba(0, 0, 0, 0.42), 0 4px 16px rgba(0, 0, 0, 0.18);`) que contrasta sobre el fondo verde `auth-hero-bg.jpg`.
+- **3. Capa 3 — Cards Internas Blancas (`.catalog-toolbar` y `.product-card`)**:
+  - Tanto la barra de filtros `.catalog-toolbar` como las tarjetas de producto `.product-card` se estilizaron como tarjetas blancas puras (`background: #ffffff;`, `border: 1px solid rgba(0, 0, 0, 0.05);`, `border-radius: 20px / 22px;`, `box-shadow: 0 16px 40px -12px rgba(17, 24, 39, 0.08);`) inspiradas en `.auth-card` del Login.
+- **4. Informes del Agente Verificador, Agente Auditor Punto por Punto y Revisión Par**:
+  - **Agente Verificador (`477ee3cc-69ba-4938-b923-725f8a099f95`)**: Confirmó impacto 100% aislado dentro de `ClientPortalComponent` sin regresiones.
+  - **Agente Auditor Punto por Punto (`ca125707-701f-4be7-8bb9-7e0713c561be`)**: Dictamen **AUDITORÍA APROBADA AL 100% SIN DESVIACIONES**.
+  - **Agente de Revisión Par (`faaca0b6-3a60-4aa2-b028-8ac513d04efb`)**: Dictamen **100% APROBADO SIN OBSERVACIONES**.
+
+### 📦 Componentes Modificados
+- `src/app/features/client-portal/client-portal.component.ts`
+- `src/app/features/client-portal/client-portal.component.spec.ts`
+
+### ✅ Verificación, Build y Tests Unitarios
+- `npm run build`: **OK (0 errores)**.
+- `npx ng test --watch=false --browsers=ChromeHeadless`: **281 de 281 SUCCESS (100% Unit Tests Passed, 0 fallos)**.
+
+---
+
 ## [2026-10-31] - Formato Legible de Fechas de Entrada/Salida (AM/PM), Nombre de Jornada Parametrizada y Cálculo Real de Horas Laboradas en Turnos (`HrComponent`, `ShiftsComponent` y `StateService`)
 
 ### 💬 Prompt Original del Usuario
@@ -2401,5 +2431,31 @@ por otr lado, la columna de accion dejamelo mejor, puede ser un lista desplegabl
 ### ✅ Verificación, Build y Tests Unitarios
 - **Build de Producción (`npm run build`)**: **0 Errores** (`dist/despulpadora-pwa` generado exitosamente).
 - **Pruebas Unitarias (`npx ng test --watch=false --browsers=ChromeHeadless`)**: **Executed 279 of 279 SUCCESS (TOTAL: 279 SUCCESS, 0 FAILED)**.
+
+---
+
+## [2026-10-31] - Limpieza de Cards de Presentaciones / Kilos y Botón "Nueva Presentación" (`SettingsComponent`)
+
+### 💬 Prompt Original del Usuario
+> "Ayudame a eliminar esto de las cards
+> adiciona dejame solo un +"
+
+### 🤖 Resumen Técnico para la IA
+- **1. Limpieza de Cards de Gramajes & Presentaciones del Producto (`src/app/features/settings/settings.component.html`)**:
+  - Se eliminó el bloque `<div class="param-card-meta">` (`{{ g.value }}g netos` y `{{ (g.value / 1000) }} Kg`) y el subtítulo móvil `.ms-subtitle` debajo del título `{{ g.label }}` en las tarjetas de presentaciones (`parametersSubTab() === 'grammages'`), dejando únicamente el título de la presentación (`140g`, `250g`), su ícono, el switch `Habilitado/Oculto` y el botón de eliminar.
+- **2. Corrección de Signo `+` Duplicado en el Botón "Nueva Presentación" (`src/app/features/settings/settings.component.html`)**:
+  - Se reemplazó `<span>+ Nueva Presentación</span>` por `<span>Nueva Presentación</span>` para conservar únicamente el signo `+` del ícono `<svg>`.
+- **3. Certificación de Agentes de Calidad**:
+  - **Agente Verificador de Impacto (`bf4a0a54-653b-4867-bcf2-4849146e8ef2`)**, **Agente Auditor Punto por Punto (`8b122d75-15ae-4b67-ac49-1398afdcd45b`)** y **Agente de Revisión Par (`87e3210a-ac45-4273-9574-823f0ccbd0e4`)**: Aprobaron el 100% de la implementación sin desviaciones ni regresiones.
+
+### 📦 Componentes Modificados
+- `src/app/features/settings/settings.component.html` [MODIFICADO]
+- `src/app/features/settings/settings.component.spec.ts` [MODIFICADO]
+- `HISTORIAL_CAMBIOS.md` [MODIFICADO]
+
+### ✅ Verificación, Build y Tests Unitarios
+- **Build de Producción (`npm run build`)**: **0 Errores** (`dist/despulpadora-pwa` generado exitosamente).
+- **Pruebas Unitarias (`npx ng test --watch=false --browsers=ChromeHeadless`)**: **Executed 280 of 280 SUCCESS (TOTAL: 280 SUCCESS, 0 FAILED)**.
+
 
 

@@ -619,4 +619,27 @@ describe('SettingsComponent', () => {
     component.closeInventoryHistoryModal();
     expect(component.showInventoryHistoryModal()).toBeFalse();
   });
+
+  it('should render clean grammage presentation cards without netos/Kg metadata and display single + icon in Nueva Presentación button', () => {
+    component.activeTab.set('parameters');
+    component.parametersSubTab.set('grammages');
+    fixture.detectChanges();
+
+    const compiled: HTMLElement = fixture.nativeElement as HTMLElement;
+    const grammageCards: NodeListOf<HTMLElement> = compiled.querySelectorAll('.param-list-grid .param-card');
+    expect(grammageCards.length).toBeGreaterThan(0);
+
+    grammageCards.forEach((card: HTMLElement) => {
+      expect(card.querySelector('.param-card-title')).not.toBeNull();
+      expect(card.querySelector('.param-card-meta')).toBeNull();
+      expect(card.querySelector('.ms-subtitle')).toBeNull();
+      expect(card.textContent).not.toContain('netos');
+    });
+
+    const buttons: HTMLElement[] = Array.from(compiled.querySelectorAll('button.btn-primary'));
+    const newPresentationBtn = buttons.find((btn: HTMLElement) => (btn.textContent || '').includes('Nueva Presentación'));
+    expect(newPresentationBtn).toBeDefined();
+    expect(newPresentationBtn?.querySelector('svg')).not.toBeNull();
+    expect((newPresentationBtn?.querySelector('span')?.textContent || '').trim()).toBe('Nueva Presentación');
+  });
 });
