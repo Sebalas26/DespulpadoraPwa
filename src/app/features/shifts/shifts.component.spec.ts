@@ -205,4 +205,9 @@ describe('ShiftsComponent', () => {
     expect(closeWorkShiftSpy).toHaveBeenCalledWith(100);
     expect(notificationSpy.info).toHaveBeenCalled();
   });
+
+  it('should expose parametric activeShiftSchedules and format shift schedule labels with getShiftTypeLabel', () => {
+    expect(component.activeShiftSchedules().length).toBeGreaterThan(0);
+    expect(component.getShiftTypeLabel('MORNING')).toContain('Turno Mañana');
+  });
 });

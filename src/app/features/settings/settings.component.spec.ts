@@ -7,13 +7,20 @@ import { StateService } from '../../core/services/state.service';
 import { AuthService } from '../../core/services/auth.service';
 import { NotificationService } from '../../core/services/notification.service';
 import { ApiService } from '../../core/services/api.service';
-import { DEFAULT_CATEGORIES, DEFAULT_COMPANY_CONFIG, DEFAULT_GRAMMAGES, FruitConfig } from '../../core/data/initial-data';
+import {
+  DEFAULT_CATEGORIES,
+  DEFAULT_COMPANY_CONFIG,
+  DEFAULT_GRAMMAGES,
+  DEFAULT_SHIFT_SCHEDULES,
+  FruitConfig
+} from '../../core/data/initial-data';
 import {
   CompanyConfig,
   InventoryCategoryConfig,
   InventoryGrammageConfig,
   PaymentMethodDto,
-  ProductVariantDto
+  ProductVariantDto,
+  ShiftScheduleConfig
 } from '../../core/models/business.models';
 
 /**
@@ -97,6 +104,7 @@ describe('SettingsComponent', () => {
 
     const mockCategoriesConfig = signal<InventoryCategoryConfig[]>([...DEFAULT_CATEGORIES]);
     const mockGrammagesConfig = signal<InventoryGrammageConfig[]>([...DEFAULT_GRAMMAGES]);
+    const mockShiftSchedulesConfig = signal<ShiftScheduleConfig[]>([...DEFAULT_SHIFT_SCHEDULES]);
 
     const stateServiceMock: Partial<StateService> = {
       companyInfo: mockCompany,
@@ -106,14 +114,22 @@ describe('SettingsComponent', () => {
       activePaymentMethods: mockPaymentMethods,
       categoriesConfig: mockCategoriesConfig,
       grammagesConfig: mockGrammagesConfig,
+      shiftSchedulesConfig: mockShiftSchedulesConfig,
       activeCategories: computed(() => mockCategoriesConfig().filter(c => c.isActive)),
       activeGrammages: computed(() => mockGrammagesConfig().filter(g => g.isActive)),
+      activeShiftSchedules: computed(() => mockShiftSchedulesConfig().filter(s => s.isActive)),
       addCategory: (cat: InventoryCategoryConfig) => mockCategoriesConfig.update(c => [...c, cat]),
       deleteCategory: (id: string) => mockCategoriesConfig.update(c => c.filter(x => x.id !== id)),
       toggleCategory: (id: string) => mockCategoriesConfig.update(c => c.map(x => x.id === id ? { ...x, isActive: !x.isActive } : x)),
       addGrammage: (gram: InventoryGrammageConfig) => mockGrammagesConfig.update(g => [...g, gram]),
       deleteGrammage: (key: string) => mockGrammagesConfig.update(g => g.filter(x => x.key !== key)),
       toggleGrammage: (key: string) => mockGrammagesConfig.update(g => g.map(x => x.key === key ? { ...x, isActive: !x.isActive } : x)),
+      addShiftSchedule: (schedule: ShiftScheduleConfig) => mockShiftSchedulesConfig.update(s => [...s, schedule]),
+      updateShiftSchedule: (id: string, changes: Partial<ShiftScheduleConfig>) =>
+        mockShiftSchedulesConfig.update(s => s.map(x => (x.id === id ? { ...x, ...changes } : x))),
+      toggleShiftSchedule: (id: string) =>
+        mockShiftSchedulesConfig.update(s => s.map(x => (x.id === id ? { ...x, isActive: !x.isActive } : x))),
+      deleteShiftSchedule: (id: string) => mockShiftSchedulesConfig.update(s => s.filter(x => x.id !== id)),
       totalFreshStockKg: signal<number>(100) as unknown as StateService['totalFreshStockKg'],
       addProductVariant: addVariantSpy,
       updateProductVariant: jasmine.createSpy('updateProductVariant'),
@@ -480,5 +496,39 @@ describe('SettingsComponent', () => {
     expect(modalBody?.textContent).not.toContain('Código Interno');
     expect(modalBody?.textContent).not.toContain('Descripción o Instrucciones');
     expect(modalBody?.querySelector('.switch-card .custom-switch .slider')).not.toBeNull();
+  });
+
+  it('should create, edit, toggle, and delete parametric shift schedules in Parámetros del Sistema', () => {
+    component.activeTab.set('parameters');
+    component.parametersSubTab.set('shifts');
+    fixture.detectChanges();
+
+    expect(component.shiftSchedulesConfig().length).toBe(3);
+
+    component.openCreateShiftScheduleModal();
+    expect(component.showShiftScheduleModal()).toBeTrue();
+    component.updateShiftScheduleFormField('name', 'Turno Extendido');
+    component.updateShiftScheduleFormField('startTime', '07:00 AM');
+    component.updateShiftScheduleFormField('endTime', '05:00 PM');
+    component.updateShiftScheduleFormField('code', 'EXTENDIDO');
+    component.saveShiftSchedule();
+
+    expect(component.showShiftScheduleModal()).toBeFalse();
+    const added = component.shiftSchedulesConfig().find(s => s.code === 'EXTENDIDO');
+    expect(added).toBeDefined();
+    expect(added?.name).toBe('Turno Extendido');
+
+    component.openEditShiftScheduleModal(added!);
+    expect(component.isEditingShiftSchedule()).toBeTrue();
+    component.updateShiftScheduleFormField('endTime', '06:00 PM');
+    component.saveShiftSchedule();
+    expect(component.shiftSchedulesConfig().find(s => s.code === 'EXTENDIDO')?.endTime).toBe('06:00 PM');
+
+    component.toggleShiftSchedule('EXTENDIDO');
+    expect(component.shiftSchedulesConfig().find(s => s.code === 'EXTENDIDO')?.isActive).toBeFalse();
+
+    component.confirmDeleteShiftSchedule(added!);
+    component.onConfirmDialog();
+    expect(component.shiftSchedulesConfig().some(s => s.code === 'EXTENDIDO')).toBeFalse();
   });
 });

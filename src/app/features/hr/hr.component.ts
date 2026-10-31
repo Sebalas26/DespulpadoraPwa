@@ -6,7 +6,8 @@ import { StateService } from '../../core/services/state.service';
 import { ApiService } from '../../core/services/api.service';
 import { NotificationService } from '../../core/services/notification.service';
 import { ConfirmDialogService } from '../../core/services/confirm-dialog.service';
-import { EmployeeArea, EmployeeDto, EmployeeGender, PayrollSettlementDto, WorkShiftDto } from '../../core/models/business.models';
+import { EmployeeArea, EmployeeDto, EmployeeGender, PayrollSettlementDto, ShiftScheduleConfig, WorkShiftDto } from '../../core/models/business.models';
+import { DEFAULT_SHIFT_SCHEDULES } from '../../core/data/initial-data';
 import { CopCurrencyInputDirective } from '../../shared/directives/cop-currency-input.directive';
 
 /**
@@ -78,8 +79,19 @@ export class HrComponent implements OnInit, OnDestroy {
   });
 
   readonly selectedShiftEmployeeId = signal<number>(1);
-  readonly selectedShiftType = signal<'MORNING' | 'AFTERNOON' | 'NIGHT'>('MORNING');
+  readonly selectedShiftType = signal<string>('MORNING');
   readonly shiftNotes = signal<string>('');
+  readonly activeShiftSchedules = computed<ShiftScheduleConfig[]>(() => {
+    try {
+      const list =
+        typeof this.stateService.activeShiftSchedules === 'function'
+          ? this.stateService.activeShiftSchedules()
+          : DEFAULT_SHIFT_SCHEDULES;
+      return list.length > 0 ? list : DEFAULT_SHIFT_SCHEDULES;
+    } catch {
+      return DEFAULT_SHIFT_SCHEDULES;
+    }
+  });
   readonly isLoading = computed<boolean>(() => {
     try {
       return typeof this.stateService.isLoading === 'function' ? this.stateService.isLoading() : false;

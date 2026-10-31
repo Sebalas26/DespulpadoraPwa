@@ -424,7 +424,7 @@ export interface WorkShiftDto {
   branchName?: string;
   startTime: string;
   endTime?: string;
-  shiftType: 'MORNING' | 'AFTERNOON' | 'NIGHT' | 'SPECIAL';
+  shiftType: 'MORNING' | 'AFTERNOON' | 'NIGHT' | 'SPECIAL' | string;
   status: 'ACTIVE' | 'CLOSED';
   notes?: string;
   hoursWorked?: number;
@@ -848,6 +848,19 @@ export interface InventoryGrammageConfig {
   key: string;
   value: number;
   label: string;
+  isCustom?: boolean;
+  isActive: boolean;
+}
+
+/**
+ * Parametric work shift schedule configuration.
+ */
+export interface ShiftScheduleConfig {
+  id: string;
+  code: string;
+  name: string;
+  startTime: string;
+  endTime: string;
   isCustom?: boolean;
   isActive: boolean;
 }

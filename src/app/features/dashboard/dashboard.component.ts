@@ -5,7 +5,8 @@ import { ActivatedRoute, RouterLink } from '@angular/router';
 import { StateService } from '../../core/services/state.service';
 import { AuthService } from '../../core/services/auth.service';
 import { VoiceOrdersService } from '../../core/services/voice-orders.service';
-import { OrderDto } from '../../core/models/business.models';
+import { InventoryGrammageConfig, OrderDto } from '../../core/models/business.models';
+import { DEFAULT_GRAMMAGES } from '../../core/data/initial-data';
 
 /**
  * Identifier for interactive KPI detail cards on the operational dashboard.
@@ -60,6 +61,7 @@ export interface TodaySoldPulpItem {
   g250: number;
   g500: number;
   g1000: number;
+  byGrammageMap: Record<number, number>;
   units: number;
   totalKg: number;
   revenue: number;
@@ -72,6 +74,7 @@ export interface TodaySoldPulpsBreakdown {
   totalUnits: number;
   totalKg: number;
   byGrammage: { g140: number; g250: number; g500: number; g1000: number };
+  byGrammageMap: Record<number, number>;
   items: TodaySoldPulpItem[];
 }
 
@@ -126,6 +129,8 @@ export interface PreparedPulpsReportItem {
   low250: boolean;
   low500: boolean;
   low1000: boolean;
+  byGrammageMap: Record<number, number>;
+  lowByGrammageMap: Record<number, boolean>;
   units: number;
   totalKg: number;
   retailValue: number;
@@ -139,6 +144,7 @@ export interface PreparedPulpsReport {
   totalUnits: number;
   totalRetailValue: number;
   byGrammage: { g140: number; g250: number; g500: number; g1000: number };
+  byGrammageMap: Record<number, number>;
   items: PreparedPulpsReportItem[];
 }
 
@@ -426,6 +432,7 @@ export class DashboardComponent {
       const orders = this.todayBillingStats().orders;
       const fruitsConfig = this.stateService.fruits();
       const byGrammage = { g140: 0, g250: 0, g500: 0, g1000: 0 };
+      const byGrammageMap: Record<number, number> = {};
       let totalUnits = 0;
       let totalKg = 0;
 
@@ -441,6 +448,7 @@ export class DashboardComponent {
 
           totalUnits += qty;
           totalKg += (qty * gram) / 1000;
+          byGrammageMap[gram] = (byGrammageMap[gram] || 0) + qty;
 
           if (gram === 140) byGrammage.g140 += qty;
           else if (gram === 250) byGrammage.g250 += qty;
@@ -454,11 +462,13 @@ export class DashboardComponent {
             g250: 0,
             g500: 0,
             g1000: 0,
+            byGrammageMap: {},
             units: 0,
             totalKg: 0,
             revenue: 0
           };
 
+          existing.byGrammageMap[gram] = (existing.byGrammageMap[gram] || 0) + qty;
           if (gram === 140) existing.g140 += qty;
           else if (gram === 250) existing.g250 += qty;
           else if (gram === 500) existing.g500 += qty;
@@ -477,6 +487,7 @@ export class DashboardComponent {
         totalUnits,
         totalKg: Number(totalKg.toFixed(1)),
         byGrammage,
+        byGrammageMap,
         items
       };
     } catch {
@@ -484,6 +495,7 @@ export class DashboardComponent {
         totalUnits: 0,
         totalKg: 0,
         byGrammage: { g140: 0, g250: 0, g500: 0, g1000: 0 },
+        byGrammageMap: {},
         items: []
       };
     }
@@ -616,6 +628,41 @@ export class DashboardComponent {
     }
   });
 
+  /**
+   * Computes the list of presentations active and created in the system.
+   */
+  readonly activePresentations = computed<InventoryGrammageConfig[]>(() => {
+    try {
+      const configured =
+        typeof this.stateService.activeGrammages === 'function'
+          ? this.stateService.activeGrammages()
+          : DEFAULT_GRAMMAGES;
+      const variants =
+        typeof this.stateService.productVariants === 'function'
+          ? this.stateService.productVariants()
+          : [];
+      const fruits = this.stateService.fruits();
+
+      if (variants.length === 0 && fruits.length === 0) {
+        return configured;
+      }
+
+      const usedInCatalog = configured.filter((g: InventoryGrammageConfig) => {
+        if (g.isCustom) {
+          return true;
+        }
+        const hasVariant = variants.some(v => Number(v.grammage) === g.value);
+        const stdKey = `g${g.value}` as 'g140' | 'g250' | 'g500' | 'g1000';
+        const hasFruitStock = fruits.some(f => (f.stock?.[stdKey] || 0) > 0);
+        return hasVariant || hasFruitStock;
+      });
+
+      return usedInCatalog.length > 0 ? usedInCatalog : configured;
+    } catch {
+      return DEFAULT_GRAMMAGES;
+    }
+  });
+
   readonly preparedPulpsReport = computed<PreparedPulpsReport>(() => {
     try {
       const fruits = this.stateService.fruits();
@@ -626,6 +673,7 @@ export class DashboardComponent {
       let totalUnits = 0;
       let totalRetailValue = 0;
       const byGrammage = { g140: 0, g250: 0, g500: 0, g1000: 0 };
+      const byGrammageMap: Record<number, number> = {};
       const matchedVariantIds = new Set<number>();
 
       const items = fruits
@@ -689,6 +737,32 @@ export class DashboardComponent {
           byGrammage.g250 += g250;
           byGrammage.g500 += g500;
           byGrammage.g1000 += g1000;
+          byGrammageMap[140] = (byGrammageMap[140] || 0) + g140;
+          byGrammageMap[250] = (byGrammageMap[250] || 0) + g250;
+          byGrammageMap[500] = (byGrammageMap[500] || 0) + g500;
+          byGrammageMap[1000] = (byGrammageMap[1000] || 0) + g1000;
+
+          const fruitByGrammageMap: Record<number, number> = {
+            140: g140,
+            250: g250,
+            500: g500,
+            1000: g1000
+          };
+          const fruitLowByGrammageMap: Record<number, boolean> = {
+            140: g140 <= (f.minStock?.g140 || 0),
+            250: g250 <= (f.minStock?.g250 || 0),
+            500: g500 <= (f.minStock?.g500 || 0),
+            1000: g1000 <= (f.minStock?.g1000 || 0)
+          };
+
+          matchingVariants.forEach(v => {
+            if (![140, 250, 500, 1000].includes(v.grammage)) {
+              const vUnits = v.currentStock || 0;
+              fruitByGrammageMap[v.grammage] = (fruitByGrammageMap[v.grammage] || 0) + vUnits;
+              fruitLowByGrammageMap[v.grammage] = vUnits <= (v.minStockAlert || 0);
+              byGrammageMap[v.grammage] = (byGrammageMap[v.grammage] || 0) + vUnits;
+            }
+          });
 
           const hasLowAlert =
             g140 <= (f.minStock?.g140 || 0) ||
@@ -709,6 +783,8 @@ export class DashboardComponent {
             low250: g250 <= (f.minStock?.g250 || 0),
             low500: g500 <= (f.minStock?.g500 || 0),
             low1000: g1000 <= (f.minStock?.g1000 || 0),
+            byGrammageMap: fruitByGrammageMap,
+            lowByGrammageMap: fruitLowByGrammageMap,
             units,
             totalKg,
             retailValue,
@@ -741,6 +817,23 @@ export class DashboardComponent {
         byGrammage.g250 += g250;
         byGrammage.g500 += g500;
         byGrammage.g1000 += g1000;
+        byGrammageMap[140] = (byGrammageMap[140] || 0) + g140;
+        byGrammageMap[250] = (byGrammageMap[250] || 0) + g250;
+        byGrammageMap[500] = (byGrammageMap[500] || 0) + g500;
+        byGrammageMap[1000] = (byGrammageMap[1000] || 0) + g1000;
+
+        const groupByGrammageMap: Record<number, number> = {
+          140: g140,
+          250: g250,
+          500: g500,
+          1000: g1000
+        };
+        const groupLowByGrammageMap: Record<number, boolean> = {
+          140: g140 === 0,
+          250: g250 === 0,
+          500: g500 === 0,
+          1000: g1000 === 0
+        };
 
         items.push({
           id: `variant_${fruitName.toLowerCase().replace(/\s+/g, '_')}`,
@@ -755,6 +848,8 @@ export class DashboardComponent {
           low250: g250 === 0,
           low500: g500 === 0,
           low1000: g1000 === 0,
+          byGrammageMap: groupByGrammageMap,
+          lowByGrammageMap: groupLowByGrammageMap,
           units,
           totalKg,
           retailValue,
@@ -766,6 +861,7 @@ export class DashboardComponent {
         totalUnits,
         totalRetailValue,
         byGrammage,
+        byGrammageMap,
         items
       };
     } catch {
@@ -773,6 +869,7 @@ export class DashboardComponent {
         totalUnits: 0,
         totalRetailValue: 0,
         byGrammage: { g140: 0, g250: 0, g500: 0, g1000: 0 },
+        byGrammageMap: {},
         items: []
       };
     }
@@ -781,9 +878,14 @@ export class DashboardComponent {
   readonly lowStockItems = computed<LowStockAlertItem[]>(() => {
     try {
       const list: LowStockAlertItem[] = [];
+      const activeGramValues = new Set<number>(this.activePresentations().map(p => p.value));
 
       this.stateService.fruits().forEach(f => {
         (['g140', 'g250', 'g500', 'g1000'] as const).forEach(sz => {
+          const gramVal = Number(sz.replace('g', ''));
+          if (!activeGramValues.has(gramVal)) {
+            return;
+          }
           const curr = f.stock[sz] || 0;
           const min = f.minStock[sz] || 0;
           if (curr <= min) {
@@ -984,6 +1086,61 @@ export class DashboardComponent {
       }).format(val || 0);
     } catch {
       return '$0';
+    }
+  }
+
+  /**
+   * Returns total prepared pulp units for a given grammage across all fruits.
+   */
+  getPreparedTotalByGrammage(gramValue: number): number {
+    try {
+      return this.preparedPulpsReport().byGrammageMap[gramValue] || 0;
+    } catch {
+      return 0;
+    }
+  }
+
+  /**
+   * Returns prepared pulp units for a specific fruit row and grammage.
+   */
+  getPreparedFruitGrammageUnits(row: PreparedPulpsReportItem, gramValue: number): number {
+    try {
+      return row.byGrammageMap?.[gramValue] || 0;
+    } catch {
+      return 0;
+    }
+  }
+
+  /**
+   * Checks whether a specific fruit row and grammage is in low stock state.
+   */
+  isPreparedFruitGrammageLow(row: PreparedPulpsReportItem, gramValue: number): boolean {
+    try {
+      return Boolean(row.lowByGrammageMap?.[gramValue]);
+    } catch {
+      return false;
+    }
+  }
+
+  /**
+   * Returns total units sold today for a given grammage across all fruits.
+   */
+  getSoldTodayTotalByGrammage(gramValue: number): number {
+    try {
+      return this.todaySoldPulpsBreakdown().byGrammageMap[gramValue] || 0;
+    } catch {
+      return 0;
+    }
+  }
+
+  /**
+   * Returns units sold today for a specific fruit item and grammage.
+   */
+  getSoldTodayFruitGrammageUnits(item: TodaySoldPulpItem, gramValue: number): number {
+    try {
+      return item.byGrammageMap?.[gramValue] || 0;
+    } catch {
+      return 0;
     }
   }
 

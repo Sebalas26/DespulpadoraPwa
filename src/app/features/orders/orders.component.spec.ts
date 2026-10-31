@@ -522,4 +522,79 @@ describe('OrdersComponent', () => {
     expect(component.tabOrders().length).toBe(1);
     expect(component.tabOrders()[0].orderNumber).toBe('ORD-777');
   });
+
+  it('should format order time in HH:mm format and resolve fruit names from catalog when item fruitName is empty', () => {
+    const sampleDate = new Date(2026, 9, 30, 21, 34, 0).toISOString();
+    expect(component.formatOrderTime(sampleDate)).toBe('21:34');
+    expect(component.formatOrderTime('')).toBe('');
+    expect(component.formatOrderTime('invalid-date')).toBe('');
+
+    expect(
+      component.getOrderItemFruitName({
+        fruitId: 1,
+        fruitName: '',
+        grammage: 140,
+        quantity: 2,
+        unitPrice: 2500,
+        subtotal: 5000
+      })
+    ).toBe('Mora');
+  });
+
+  it('should render order time, limit preview to 5 items, show Ver más button when order has 5 or more items, and open dialog with all products', () => {
+    const sampleCreatedAt = new Date(2026, 9, 30, 14, 45, 0).toISOString();
+    const sixItemsOrder: OrderDto = {
+      orderId: 888,
+      orderNumber: 'ORD-888',
+      invoiceNumber: 'FAC00008',
+      branchId: 1,
+      clientId: 10,
+      clientName: 'Luz Arango',
+      status: 'BILLED',
+      orderDate: '2026-10-30',
+      createdAt: sampleCreatedAt,
+      totalAmount: 150000,
+      isPaid: false,
+      isBilled: true,
+      paymentMethodName: 'Contra Entrega (Por Cobrar)',
+      items: [
+        { fruitId: 1, fruitName: 'Mora', grammage: 140, quantity: 10, unitPrice: 2500, subtotal: 25000 },
+        { fruitId: 1, fruitName: 'Lulo', grammage: 250, quantity: 10, unitPrice: 4000, subtotal: 40000 },
+        { fruitId: 1, fruitName: 'Maracuyá', grammage: 500, quantity: 5, unitPrice: 7000, subtotal: 35000 },
+        { fruitId: 1, fruitName: 'Mango', grammage: 140, quantity: 8, unitPrice: 2500, subtotal: 20000 },
+        { fruitId: 1, fruitName: 'Guanábana', grammage: 250, quantity: 4, unitPrice: 5000, subtotal: 20000 },
+        { fruitId: 1, fruitName: 'Fresa', grammage: 140, quantity: 4, unitPrice: 2500, subtotal: 10000 }
+      ]
+    };
+
+    mockOrders.set([sixItemsOrder]);
+    component.activeSubTab.set('facturacion');
+    fixture.detectChanges();
+
+    const compiled: HTMLElement = fixture.nativeElement as HTMLElement;
+    const timeEl = compiled.querySelector('.queue-order-time');
+    expect(timeEl).not.toBeNull();
+    expect(timeEl?.textContent?.trim()).toBe('14:45');
+
+    const previewRows = compiled.querySelectorAll('.queue-card-items-summary .queue-item-row');
+    expect(previewRows.length).toBe(5);
+
+    const viewMoreBtn = compiled.querySelector('.btn-view-more-items') as HTMLButtonElement | null;
+    expect(viewMoreBtn).not.toBeNull();
+    expect(viewMoreBtn?.textContent).toContain('Ver más (6 productos)');
+
+    viewMoreBtn?.click();
+    fixture.detectChanges();
+
+    expect(component.showOrderItemsModal()).toBeTrue();
+    expect(component.selectedOrderForItemsModal()?.orderId).toBe(888);
+
+    const dialogRows = compiled.querySelectorAll('.order-items-dialog-row');
+    expect(dialogRows.length).toBe(6);
+
+    component.closeOrderItemsModal();
+    fixture.detectChanges();
+    expect(component.showOrderItemsModal()).toBeFalse();
+    expect(component.selectedOrderForItemsModal()).toBeNull();
+  });
 });

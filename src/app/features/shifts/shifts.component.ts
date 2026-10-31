@@ -6,7 +6,8 @@ import { StateService } from '../../core/services/state.service';
 import { ApiService } from '../../core/services/api.service';
 import { AuthService } from '../../core/services/auth.service';
 import { NotificationService } from '../../core/services/notification.service';
-import { EmployeeDto, UserAdminDto, WorkShiftDto } from '../../core/models/business.models';
+import { EmployeeDto, ShiftScheduleConfig, UserAdminDto, WorkShiftDto } from '../../core/models/business.models';
+import { DEFAULT_SHIFT_SCHEDULES } from '../../core/data/initial-data';
 
 /**
  * Represents a selectable operator option in the plant shift clock-in terminal.
@@ -52,8 +53,20 @@ export class ShiftsComponent implements OnInit, OnDestroy {
     }
   });
   readonly selectedEmployeeId = signal<number>(1);
-  readonly selectedShiftType = signal<'MORNING' | 'AFTERNOON' | 'NIGHT'>('MORNING');
+  readonly selectedShiftType = signal<string>('MORNING');
   readonly shiftNotes = signal<string>('');
+
+  readonly activeShiftSchedules = computed<ShiftScheduleConfig[]>(() => {
+    try {
+      const list =
+        typeof this.stateService.activeShiftSchedules === 'function'
+          ? this.stateService.activeShiftSchedules()
+          : DEFAULT_SHIFT_SCHEDULES;
+      return list.length > 0 ? list : DEFAULT_SHIFT_SCHEDULES;
+    } catch {
+      return DEFAULT_SHIFT_SCHEDULES;
+    }
+  });
 
   readonly selectableUsers = computed<ShiftOperatorOption[]>(() => {
     try {
@@ -276,6 +289,21 @@ export class ShiftsComponent implements OnInit, OnDestroy {
       this.notification.info('Turno Cerrado', `${shift.employeeName} ha finalizado su jornada laboral`);
     } catch {
       this.notification.error('Error', 'No se pudo cerrar el turno.');
+    }
+  }
+
+  /**
+   * Resolves the human-readable schedule name and time range for a shift code.
+   */
+  getShiftTypeLabel(shiftType: string): string {
+    try {
+      const match = this.activeShiftSchedules().find(s => s.code === shiftType || s.id === shiftType);
+      if (match) {
+        return `${match.name} (${match.startTime} - ${match.endTime})`;
+      }
+      return shiftType;
+    } catch {
+      return shiftType;
     }
   }
 }

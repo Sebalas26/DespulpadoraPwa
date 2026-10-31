@@ -4,6 +4,178 @@ Este documento registra de manera cronológica y estructurada todas las interven
 
 ---
 
+## [2026-10-30] - Botón de Refrescar en Topbar, Eliminación de Card de Audio en Dashboard, Presentaciones Dinámicas en Detalles de Dashboard, Jornadas/Turnos Paramétricos en Configuración y Métodos de Pago Dinámicos en App Flutter (`HeaderComponent`, `DashboardComponent`, `SettingsComponent`, `StateService`, `ShiftsComponent`, `HrComponent` y `DeliveryConfirmationDialog`)
+
+### 💬 Prompt Original del Usuario
+> "Quiero que en la pwa mobile y web, en la parte superior al lado de los botones de en linea , exista un boton de refrescar la pantalla, esto es con un solo icono
+> Eliminame tambien la card de Pedidos por Audio (WhatsApp) Todas las notas de voz procesadas en Flujo de pedidos Del pedido a la entrega de a dashboard 
+> valida porque en los detalles de la dashboard me sigue mostando presentacionea que no tengo creadas en el sistema
+> las Jornada / Horario de Turno dejamelas parametricas en configuracion/ parametros del sistema
+> Quiero que en la app flutter , en el dialog de confirmar entrega y pago , las formas de pago que se muestran , sean las que tengo configuradas en el sistema en configuracion/ parametros del sistema"
+
+### 🤖 Resumen Técnico para la IA
+- **1. Botón de Refrescar Pantalla con un Solo Icono en Topbar Web y Mobile (`src/app/layout/header/header.component.ts` y `.spec.ts`)**:
+  - Se agregó el botón `<button type="button" class="topbar-icon-btn topbar-refresh-btn">` inmediatamente después de `.online-pill` en `.topbar-actions`, visible tanto en web como en mobile.
+  - Se implementó la señal `isRefreshingScreen = signal<boolean>(false)`, el método `onRefreshScreenClick(): void` que ejecuta `this.stateService.refreshAll(false)` y la animación CSS `@keyframes topbarRefreshSpin`.
+- **2. Eliminación Quirúrgica de la Card "Pedidos por Audio (WhatsApp)" en Dashboard (`src/app/features/dashboard/dashboard.component.html` y `.spec.ts`)**:
+  - Se eliminó el bloque `.wa-voice-dashboard-card` ("Pedidos por Audio (WhatsApp) / Todas las notas de voz procesadas") dentro de "Flujo de pedidos / Del pedido a la entrega", conservando intactas las filas de seguimiento de pedidos.
+- **3. Presentaciones Dinámicas en los Detalles e Informes del Dashboard (`src/app/features/dashboard/dashboard.component.ts`, `.html`, `.scss` y `.spec.ts`)**:
+  - Se implementó `activePresentations = computed<InventoryGrammageConfig[]>(...)` en `DashboardComponent`, filtrando las presentaciones activas en el sistema (`activeGrammages()`) que tienen variantes/stock creados en el catálogo.
+  - En `PreparedPulpsReport` y `TodaySoldPulpsBreakdown` se agregaron mapas dinámicos `byGrammageMap` y `lowByGrammageMap` junto con los métodos `getPreparedTotalByGrammage()`, `getPreparedFruitGrammageUnits()`, `isPreparedFruitGrammageLow()`, `getSoldTodayTotalByGrammage()` y `getSoldTodayFruitGrammageUnits()`.
+  - En `dashboard.component.html` se reemplazaron las columnas, píldoras y chips quemados (`140g`, `250g`, `500g`, `1000g`) por iteraciones dinámicas `@for (pres of activePresentations(); track pres.key)` en "Informe de pulpas preparadas", "Detalle de Pulpa Total en Bodega" y "Detalle de Pulpas Vendidas Hoy".
+- **4. Jornadas / Horarios de Turno Paramétricos en Configuración -> Parámetros del Sistema (`business.models.ts`, `initial-data.ts`, `state.service.ts`, `settings.component.*`, `shifts.component.*` y `hr.component.*`)**:
+  - Se creó la interfaz `ShiftScheduleConfig` y `DEFAULT_SHIFT_SCHEDULES`, junto con las señales `shiftSchedulesConfig`, `activeShiftSchedules` y métodos CRUD (`addShiftSchedule`, `updateShiftSchedule`, `toggleShiftSchedule`, `deleteShiftSchedule`) en `StateService`.
+  - En `SettingsComponent` (`Parámetros del Sistema`) se agregó la sub-pestaña **"Jornadas / Turnos"** (`parametersSubTab === 'shifts'`) con tarjetas `.param-card`, switch de estado y modal `@if (showShiftScheduleModal())`.
+  - Se conectaron dinámicamente los selectores de jornada en `ShiftsComponent` y `HrComponent` a `stateService.activeShiftSchedules()`.
+- **5. Formas de Pago Dinámicas en "Confirmar Entrega y Pago" de la App Flutter (`DespulpadoraApp/lib/services/api_service.dart` y `lib/views/widgets/delivery_confirmation_dialog.dart`)**:
+  - Se agregó `fetchActivePaymentMethods()` en `ApiService` consultando `GET /api/payment-methods` y filtrando métodos activos (`isActive == true`).
+  - En `DeliveryConfirmationDialog`, `_loadConfiguredPaymentMethods()` sincroniza dinámicamente `_paymentOptions` con los métodos configurados en `Configuración -> Parámetros del Sistema -> Métodos de Pago`.
+- **6. Informes del Agente Verificador, Agente Auditor Punto por Punto y Revisión Par**:
+  - **Agente Verificador (`477ee3cc-69ba-4938-b923-725f8a099f95`)**: Confirmó impacto 100% aislado sin regresiones.
+  - **Agente Auditor Punto por Punto (`ca125707-701f-4be7-8bb9-7e0713c561be`)**: Dictamen **APROBADO AL 100% SIN DESVIACIONES**.
+  - **Agente de Revisión Par (`faaca0b6-3a60-4aa2-b028-8ac513d04efb`)**: Dictamen **100% APROBADO SIN OBSERVACIONES**.
+
+### 📦 Componentes Modificados
+- `src/app/layout/header/header.component.ts`
+- `src/app/layout/header/header.component.spec.ts`
+- `src/app/features/dashboard/dashboard.component.ts`
+- `src/app/features/dashboard/dashboard.component.html`
+- `src/app/features/dashboard/dashboard.component.scss`
+- `src/app/features/dashboard/dashboard.component.spec.ts`
+- `src/app/core/models/business.models.ts`
+- `src/app/core/data/initial-data.ts`
+- `src/app/core/services/state.service.ts`
+- `src/app/features/settings/settings.component.ts`
+- `src/app/features/settings/settings.component.html`
+- `src/app/features/settings/settings.component.spec.ts`
+- `src/app/features/shifts/shifts.component.ts`
+- `src/app/features/shifts/shifts.component.html`
+- `src/app/features/shifts/shifts.component.spec.ts`
+- `src/app/features/hr/hr.component.ts`
+- `src/app/features/hr/hr.component.html`
+- `/Users/sebastiansalamanca/Documents/Flutter/DespulpadoraApp/lib/services/api_service.dart`
+- `/Users/sebastiansalamanca/Documents/Flutter/DespulpadoraApp/lib/views/widgets/delivery_confirmation_dialog.dart`
+
+### ✅ Verificación, Build y Tests Unitarios
+- `npm run build`: **OK (0 errores)**.
+- `npx ng test --watch=false --browsers=ChromeHeadless`: **270 SUCCESS (100% Unit Tests Passed, 0 fallos)**.
+- `dart analyze lib/services/api_service.dart lib/views/widgets/delivery_confirmation_dialog.dart`: **No issues found!**.
+
+---
+
+## [2026-10-30] - Ciclo de Transmisión GPS Solo en Ruta Activa, Mapa Completo con Botones Flotantes y Rediseño de Tarjeta de Entrega en la App Flutter (`TrackingCubit`, `OrdersCubit`, `CourierRouteMapScreen`, `OsmMapWidget`, `HomeOrdersScreen` y `RoutePreviewMapScreen`)
+
+### 💬 Prompt Original del Usuario
+> "En la app flutter, laubicacion del domiciliario empezara a transmitirla desde que le dan iniciar ruta, mientras entrega y cuando ya finalice, ya dejara de trnasmitir
+> Adicional quiero que el boton de agrandar , sea como de ver el mapa completo y los botones se vuelvan flotantes (disminuir mapa, el boton verde ver mi ubicacon en el mapa que ya esta y el boton confirmar entrega que estara abajo centrado
+> Quiero que modifiques el texto de pulpas, quiero que diga 'Pedido'
+> Elimina lo que te tache con una X, el boton de ver lista completa lo quiero esquineado derecha arriba
+> el boton de llegue a la parada, Dejalo como 'LLegue al punto' pero quiero que el boton sea verde del mismo clor de los otros botones"
+
+### 🤖 Resumen Técnico para la IA
+- **1. Transmisión de Ubicación GPS Solo al Iniciar Ruta, Mientras Entrega y Detención al Finalizar (`DespulpadoraApp/lib/blocs/tracking_cubit.dart` y `lib/blocs/orders_cubit.dart`)**:
+  - En `OrdersState`, se agregó el getter `bool get isDeliveringInRoute => isRouteActive && pendingCount > 0;`.
+  - En `OrdersCubit` (`_fetchAndApplyOrders`, `_updateStatusTransition` y `reportNovelty`), cuando todas las paradas han sido entregadas o cerradas (`pendingCount == 0`), `isRouteActive` pasa automáticamente a `false`.
+  - En `TrackingCubit.syncWithShiftStatus`, se agregó `bool isRouteInProgress = false`, iniciando `startTracking()` **únicamente** cuando `courier != null && courier.isOnline && isRouteInProgress` y ejecutando `stopTracking()` antes de iniciar ruta o tan pronto finalice la última entrega.
+- **2. Botón de Agrandar ("Ver Mapa Completo") y Controles Flotantes (`DespulpadoraApp/lib/views/widgets/osm_map_widget.dart` y `lib/views/courier_route_map_screen.dart`)**:
+  - Se agregaron `isFullScreen` y `onToggleFullScreen` en `OsmMapWidget` y `_isMapFullScreen` en `CourierRouteMapScreen`.
+  - Cuando `_isMapFullScreen == true`, el mapa ocupa toda la pantalla y muestra como botones flotantes: **Disminuir mapa** (`Icons.close_fullscreen_rounded`), **Mi ubicación GPS** (verde `AppColors.primary`) y el botón flotante **`Confirmar Entrega`** abajo centrado (`Key('btn_floating_confirm_delivery')`, verde `AppColors.primary`).
+- **3. Rediseño de Tarjeta de Entrega y Cabecera en `CourierRouteMapScreen` (`DespulpadoraApp/lib/views/courier_route_map_screen.dart`)**:
+  - Se cambió la etiqueta del 4to chip de acción rápida de `'Pulpas'` a **`'Pedido'`**.
+  - Se eliminaron la barra `'SECUENCIA DE ENRUTADO (...)'` y los badges `'PARADA #X DE Y'` / `'EN CAMINO'`, y se ubicó el botón **`Ver Lista Completa`** en la esquina superior derecha del `AppBar` (`AppBar.actions`).
+  - El botón de llegada cambió su texto a **`'Llegué al punto'`** y su color a `AppColors.primary` (el mismo verde corporativo de los demás botones).
+- **4. Informes del Agente Verificador, Agente Auditor Punto por Punto y Revisión Par**:
+  - **Agente Verificador (`ae40f403-7a5a-45b1-82ae-e8b4b6511cad`)**: Verificó los 6 puntos en `DespulpadoraApp` sin regresiones.
+  - **Agente Auditor Punto por Punto (`4f290c06-565e-449a-a93c-f5156b2d6721`)**: Dictamen **APROBADO SIN DESVIACIONES (`5/5` cumplidos)**.
+  - **Agente de Revisión Par (`8c37f496-273e-4875-868a-1e99f3c75ca4`)**: Dictamen **`APPROVED` (100% Sin Anomalías ni Regresiones)**.
+
+### 📦 Componentes Modificados
+- `HISTORIAL_CAMBIOS.md`
+- `DespulpadoraApp/lib/blocs/tracking_cubit.dart`
+- `DespulpadoraApp/lib/blocs/orders_cubit.dart`
+- `DespulpadoraApp/lib/views/home_orders_screen.dart`
+- `DespulpadoraApp/lib/views/route_preview_map_screen.dart`
+- `DespulpadoraApp/lib/views/widgets/osm_map_widget.dart`
+- `DespulpadoraApp/lib/views/courier_route_map_screen.dart`
+- `DespulpadoraApp/test/widget_test.dart`
+
+### ✅ Verificación, Build y Tests Unitarios
+- **Análisis Estático Flutter (`dart analyze`)**: **0 issues (`No issues found!`)**.
+- **Suite Completa de Pruebas Unitarias Flutter (`flutter test`)**: **13 de 13 pruebas exitosas (`100% PASS`)**.
+
+---
+
+## [2026-10-30] - Hora del Pedido, Límite de 5 Productos y Botón "Ver más" con Diálogo de Productos en Tarjetas de Facturación & POS (`OrdersComponent`)
+
+### 💬 Prompt Original del Usuario
+> "Ajistame esta card, donde si hay 5 mas de productos , muestre un boton de ver mas y ahi abra un dialog con todos los prductos del pedido , adicional agregale la hora del pedido"
+
+### 🤖 Resumen Técnico para la IA
+- **1. Lógica y Métodos en `OrdersComponent` (`src/app/features/orders/orders.component.ts`)**:
+  - Se declararon las señales reactivas `readonly showOrderItemsModal = signal<boolean>(false);` y `readonly selectedOrderForItemsModal = signal<OrderDto | null>(null);`.
+  - Se implementó `formatOrderTime(dateStr?: string): string` para extraer y formatear la hora en formato `HH:mm` a partir de `order.createdAt` sin alterar `formatInvoiceDate()` (preservando intacto el documento de impresión A4).
+  - Se implementaron `openOrderItemsModal(order: OrderDto): void`, `closeOrderItemsModal(): void` y `getOrderItemFruitName(item: OrderItemDto): string` (resolviendo el nombre de la fruta desde `item.fruitName` o desde `stateService.fruits()` por `fruitId` cuando `fruitName` viene vacío).
+- **2. Plantilla y Diálogo Modal en Facturación & POS (`src/app/features/orders/orders.component.html` y `src/app/features/orders/orders.component.scss`)**:
+  - En `.queue-card-meta` de `.billing-queue-card`, se agregó la hora del pedido (`<span class="queue-order-time">{{ orderTime }}</span>`) justo después de la fecha.
+  - En `.queue-card-items-summary`, se limitó la vista previa a los primeros 5 productos (`order.items.slice(0, 5)`), se usó `getOrderItemFruitName(item)` y, cuando `order.items.length >= 5`, se agregó el botón `.btn-view-more-items` (`Ver más ({{ order.items.length }} productos)`) que abre el diálogo `.order-items-dialog-box` con todos los productos del pedido, fecha, hora y total.
+- **3. Pruebas Unitarias (`src/app/features/orders/orders.component.spec.ts`)**:
+  - Se agregaron pruebas unitarias verificando `formatOrderTime()`, `getOrderItemFruitName()`, el límite de 5 ítems en la tarjeta, el renderizado del botón `.btn-view-more-items` cuando hay 5 o más productos y la apertura/cierre del diálogo con todos los productos del pedido.
+- **4. Informes del Agente Verificador, Agente Auditor Punto por Punto y Revisión Par**:
+  - **Agente Verificador (`477ee3cc-69ba-4938-b923-725f8a099f95`)**: Certificó aislamiento quirúrgico 100% en `OrdersComponent`.
+  - **Agente Auditor Punto por Punto (`ca125707-701f-4be7-8bb9-7e0713c561be`)**: Dictamen **APROBADO AL 100% SIN DESVIACIONES**.
+  - **Agente de Revisión Par (`faaca0b6-3a60-4aa2-b028-8ac513d04efb`)**: Dictamen **100% APROBADO SIN OBSERVACIONES**.
+
+### 📦 Componentes Modificados
+- `src/app/features/orders/orders.component.ts`
+- `src/app/features/orders/orders.component.html`
+- `src/app/features/orders/orders.component.scss`
+- `src/app/features/orders/orders.component.spec.ts`
+- `HISTORIAL_CAMBIOS.md`
+
+### ✅ Verificación, Build y Tests Unitarios
+- **Compilación de Producción (`npm run build`)**: Exitosa (`0 errores`).
+- **Suite Completa de Pruebas Unitarias (`ng test --watch=false`)**: **266 de 266 pruebas exitosas (`100% PASS`)**.
+
+---
+
+## [2026-10-30] - Corrección de `"Map data not yet available"` al Pasar a la 2da Entrega en la App Flutter y Eliminación en el Mapa PWA de Entregas Completadas y su Ruta (`DeliveryMapComponent`, `OsmMapWidget`, `CourierRouteMapScreen`, `OrdersCubit` y `LocationService`)
+
+### 💬 Prompt Original del Usuario
+> "Ayudame a ver porque cuadno hice la 1ra entrega desde la app flutter y pase a la 2da , el mapa me sale map data noy yet available. 
+> aidicional en el mapa de  la pwa, quiero que se borre las entregas que ya hizo y la rutahacia a el"
+
+### 🤖 Resumen Técnico para la IA
+- **1. Eliminación del Mapa de la PWA de las Entregas ya Realizadas y del Tramo de Ruta hacia Ellas (`src/app/features/orders/delivery-map.component.ts`)**:
+  - En `renderStopMarkers()`, se omiten del mapa Leaflet las paradas que ya fueron completadas (`if (stop.isDelivered) return;`), de modo que al limpiar `this.stopMarkers` en cada renderizado el pin con check `✓` desaparece inmediatamente del mapa.
+  - En `buildAndRenderRealRoadRoutes()`, únicamente se agregan a los waypoints del cálculo de ruta OSRM las paradas pendientes (`if (s && !s.isDelivered) stops.push([s.lat, s.lng]);`). Al completarse la 1ra entrega, el tramo de ruta hacia la 1ra entrega se borra y la polilínea se traza desde la posición actual del mensajero directamente hacia las paradas restantes; cuando todas las paradas se completan (`stops.length <= 1`), se elimina por completo la polilínea del mapa.
+  - En `markOrderDeliveredByOrderNumber()`, `markAllCourierStopsDelivered()` y `syncWithStateServiceOrders()` (cuando un pedido pasa a `DELIVERED` en vivo), se invocan `this.renderStopMarkers()` y `void this.buildAndRenderRealRoadRoutes()`.
+  - Los registros en `this.deliveryStops()` se preservan en memoria hasta liquidar la ruta (`Recibir Domiciliario`), manteniendo intactos `getCourierCompletedStops()`, `isCourierReadyToReceive()` y el cuadre de caja.
+- **2. Corrección de `"Map data not yet available"` al Pasar a la 2da Entrega y Overflow en la App Flutter (`DespulpadoraApp`)**:
+  - En `lib/services/location_service.dart` y `lib/blocs/orders_cubit.dart`, se agregó normalización de coordenadas dentro de Colombia (`LocationService.isWithinColombia` / `_resolvedOrderCoords`) y geocodificación automática en segundo plano (`LocationService.geocodeColombiaAddress` / `_geocodeMissingOrders`) para pedidos cuyas coordenadas lleguen en `(0.0, 0.0)`.
+  - En `lib/views/widgets/osm_map_widget.dart`, se implementaron `_safeDestinationLocation` y `_safeStopLocation(OrderModel stop)`, evitando en `didUpdateWidget()` que al cambiar `activeStopId` a la 2da parada la cámara vuele a `LatLng(0.0, 0.0)` (Océano Atlántico, donde Esri devuelve `"Map data not yet available"`), se ajustó `maxNativeZoom: 18` en `TileLayer` y se ocultaron los pines de paradas ya entregadas en modo navegación.
+  - En `lib/views/courier_route_map_screen.dart`, se corrigió el aviso `RIGHT OVERFLOWED BY 5.3 PIXELS` envolviendo el encabezado `SECUENCIA DE ENRUTADO (...)` en `Expanded` + `Flexible(overflow: TextOverflow.ellipsis)`.
+- **3. Informes del Agente Verificador, Agente Auditor Punto por Punto y Revisión Par**:
+  - **Agente Verificador (`a12bd4e8-af41-4e71-b22b-12e499bc249c`)**: Identificó la causa raíz exacta en `OsmMapWidget.didUpdateWidget` y en `DeliveryMapComponent.renderStopMarkers`/`buildAndRenderRealRoadRoutes` sin regresiones en liquidación.
+  - **Agente Auditor Punto por Punto (`f28e1c0b-588c-4ddc-94f2-67349606a946`)**: Dictamen **APROBADO (100% CONFORME CON REQUERIMIENTOS Y `AGENTS.md`)**.
+  - **Agente de Revisión Par (`f85555e3-9deb-4e3b-9052-6965a2eae126`)**: Dictamen **`APPROVED` (0 anomalías, 0 regresiones)**.
+
+### 📦 Componentes Modificados
+- `src/app/features/orders/delivery-map.component.ts`
+- `src/app/features/orders/delivery-map.component.spec.ts`
+- `HISTORIAL_CAMBIOS.md`
+- `DespulpadoraApp/lib/services/location_service.dart`
+- `DespulpadoraApp/lib/blocs/orders_cubit.dart`
+- `DespulpadoraApp/lib/views/widgets/osm_map_widget.dart`
+- `DespulpadoraApp/lib/views/courier_route_map_screen.dart`
+- `DespulpadoraApp/test/widget_test.dart`
+
+### ✅ Verificación, Build y Tests Unitarios
+- **Compilación de Producción PWA (`npm run build`)**: Exitosa (`0 errores`).
+- **Suite Completa de Pruebas Unitarias PWA (`ng test --watch=false`)**: **264 de 264 pruebas exitosas (`100% PASS`)**.
+- **Análisis y Pruebas Unitarias Flutter (`dart analyze && flutter test`)**: **0 issues y 13 de 13 pruebas exitosas (`100% PASS`)**.
+
+---
+
 ## [2026-10-30] - Mejora del Flujo de Asignación de Pedidos, Código Unificado de Ruta (`RUT-XX`), Confirmación en Ruta Activa, Botón `Actualizar` tras `Editar` y Sincronización en Vivo en la App Flutter (`DeliveryMapComponent`, `StateService`, `MobileAppService`, `Program.cs` y `OrdersCubit`)
 
 ### 💬 Prompt Original del Usuario

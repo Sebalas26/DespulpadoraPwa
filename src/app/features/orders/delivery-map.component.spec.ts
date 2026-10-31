@@ -547,4 +547,93 @@ describe('DeliveryMapComponent', () => {
     expect(updatedCourier?.lng).toBeCloseTo(-74.10245, 4);
     expect(updatedCourier?.vehiclePlate).toBe('FTR-98G');
   });
+
+  it('should remove completed delivery markers and route segments from the map while preserving settlement counters', async () => {
+    mockRoles.set([
+      { roleId: 3, name: 'Domiciliario', isCourier: true, isSystemRole: true, isActive: true }
+    ]);
+    mockUsers.set([
+      {
+        userId: 88,
+        username: 'domsebalas',
+        fullName: 'Sebas Domiciliario',
+        roleId: 3,
+        roleName: 'Domiciliario',
+        isActive: true,
+        companyId: 1,
+        branches: [],
+        email: 'sebas@dgl.com',
+        phone: '3109998877'
+      }
+    ]);
+    mockOrders.set([
+      {
+        orderId: 601,
+        orderNumber: 'ORD-601',
+        clientId: 1,
+        clientName: 'Adriana Redondo',
+        clientAddress: 'Centro Mayor',
+        latitude: 4.5921,
+        longitude: -74.1241,
+        branchId: 1,
+        status: 'DISPATCHED',
+        isBilled: true,
+        isPaid: false,
+        courierId: 88,
+        courierName: 'Sebas Domiciliario',
+        routeSequenceOrder: 1,
+        totalAmount: 2000,
+        createdAt: new Date().toISOString(),
+        orderDate: new Date().toISOString().substring(0, 10),
+        items: []
+      },
+      {
+        orderId: 602,
+        orderNumber: 'ORD-602',
+        clientId: 2,
+        clientName: 'Sebastian Salamanca',
+        clientAddress: 'Cra 69L # 64D-50',
+        latitude: 4.6685,
+        longitude: -74.1125,
+        branchId: 1,
+        status: 'DISPATCHED',
+        isBilled: true,
+        isPaid: false,
+        courierId: 88,
+        courierName: 'Sebas Domiciliario',
+        routeSequenceOrder: 2,
+        totalAmount: 14000,
+        createdAt: new Date().toISOString(),
+        orderDate: new Date().toISOString().substring(0, 10),
+        items: []
+      }
+    ]);
+
+    component.enterAllDeliveriesMode();
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    const stopMarkersMap = (component as unknown as { stopMarkers: Map<number, unknown> }).stopMarkers;
+    expect(stopMarkersMap.has(601)).toBeTrue();
+    expect(stopMarkersMap.has(602)).toBeTrue();
+
+    component.markOrderDeliveredByOrderNumber('ORD-601');
+    await component.buildAndRenderRealRoadRoutes();
+
+    expect(stopMarkersMap.has(601)).toBeFalse();
+    expect(stopMarkersMap.has(602)).toBeTrue();
+
+    const courier = component.couriers().find(c => c.id === 'u88')!;
+    expect(component.getCourierCompletedStops(courier)).toBe(1);
+    expect(component.isCourierReadyToReceive(courier)).toBeFalse();
+
+    component.markOrderDeliveredByOrderNumber('ORD-602');
+    await component.buildAndRenderRealRoadRoutes();
+
+    expect(stopMarkersMap.has(602)).toBeFalse();
+    const courierFullRoadPaths = (component as unknown as { courierFullRoadPaths: Map<string, [number, number][]> }).courierFullRoadPaths;
+    expect(courierFullRoadPaths.get('u88')).toEqual([]);
+    expect(component.getCourierCompletedStops(courier)).toBe(2);
+    expect(component.isCourierReadyToReceive(courier)).toBeTrue();
+  });
 });

@@ -328,4 +328,37 @@ describe('DashboardComponent', () => {
     expect(locationTag.textContent?.trim()).toBe('Bodega principal');
     expect(locationTag.textContent).not.toContain('En línea');
   });
+
+  it('should not render Pedidos por Audio (WhatsApp) card in Flujo de pedidos and should only show created/active presentations in Detalle de Pulpa Total en Bodega', () => {
+    mockFruits.set([
+      {
+        id: 'maracuya',
+        fruitId: 1,
+        name: 'Maracuyá',
+        scientificName: '',
+        emoji: '',
+        color: '#16a34a',
+        bgColor: '#f0fdf4',
+        yieldRate: 0.7,
+        waterAdditionDefault: 0,
+        freshStockKg: 100,
+        category: 'PULPAS',
+        prices: { g140: 2500, g250: 4000, g500: 0, g1000: 0 },
+        stock: { g140: 95, g250: 70, g500: 0, g1000: 0 },
+        minStock: { g140: 10, g250: 10, g500: 0, g1000: 0 }
+      }
+    ]);
+    component.openKpiDetail('pulpStock');
+    fixture.detectChanges();
+
+    const compiled = fixture.nativeElement as HTMLElement;
+    expect(compiled.querySelector('.wa-voice-dashboard-card')).toBeNull();
+    expect(compiled.textContent).not.toContain('Pedidos por Audio (WhatsApp)');
+
+    expect(component.activePresentations().map(p => p.value)).toEqual([140, 250]);
+    const modalGramChips = Array.from(compiled.querySelectorAll('.kpi-gram-chips span')).map(el =>
+      el.textContent?.trim()
+    );
+    expect(modalGramChips).toEqual(['140g: 95', '250g: 70']);
+  });
 });

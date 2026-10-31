@@ -6000,6 +6000,7 @@ export class DeliveryMapComponent implements OnInit, AfterViewInit, OnDestroy {
       }));
 
       this.renderStopMarkers();
+      void this.buildAndRenderRealRoadRoutes();
       this.notification.success(
         'Paradas Completadas',
         `Todas las paradas de ${courier.name} han sido marcadas como entregadas. El botón "Recibir Domiciliario" ya está activo.`
@@ -6021,6 +6022,7 @@ export class DeliveryMapComponent implements OnInit, AfterViewInit, OnDestroy {
         return s;
       }));
       this.renderStopMarkers();
+      void this.buildAndRenderRealRoadRoutes();
     } catch (error: unknown) {
       console.error('Error marking order delivered by order number:', error);
     }
@@ -6715,6 +6717,9 @@ export class DeliveryMapComponent implements OnInit, AfterViewInit, OnDestroy {
       const coordCountMap = new Map<string, number>();
 
       stops.forEach((stop: DeliveryWaypoint) => {
+        if (stop.isDelivered) {
+          return;
+        }
         const courier = stop.assignedCourierId ? this.couriers().find((c: Courier) => c.id === stop.assignedCourierId) : undefined;
         const isUnassigned = !courier && !stop.isDelivered;
 
@@ -7081,7 +7086,7 @@ export class DeliveryMapComponent implements OnInit, AfterViewInit, OnDestroy {
 
         courier.orderIds.forEach((id: number) => {
           const s = stopMap.get(id);
-          if (s) stops.push([s.lat, s.lng]);
+          if (s && !s.isDelivered) stops.push([s.lat, s.lng]);
         });
 
         if (stops.length > 1) {
@@ -9465,8 +9470,8 @@ export class DeliveryMapComponent implements OnInit, AfterViewInit, OnDestroy {
       if (!this.map) return;
       const isLive = this.mapViewMode() === 'live';
       const relevantStops = isLive
-        ? this.deliveryStops().filter((s: DeliveryWaypoint) => !!s.assignedCourierId)
-        : this.deliveryStops();
+        ? this.deliveryStops().filter((s: DeliveryWaypoint) => !!s.assignedCourierId && !s.isDelivered)
+        : this.deliveryStops().filter((s: DeliveryWaypoint) => !s.isDelivered);
 
       const courierCoords = isLive
         ? this.couriers().map((c: Courier) => [c.lat, c.lng] as [number, number])
@@ -9770,7 +9775,7 @@ export class DeliveryMapComponent implements OnInit, AfterViewInit, OnDestroy {
         const courier = this.couriers().find((c: Courier) => c.id === id);
         if (courier) {
           const courierStops = this.deliveryStops().filter(
-            (s: DeliveryWaypoint) => s.assignedCourierId === id || courier.orderIds.includes(s.id)
+            (s: DeliveryWaypoint) => !s.isDelivered && (s.assignedCourierId === id || courier.orderIds.includes(s.id))
           );
           if (courierStops.length > 0) {
             const boundsCoords: [number, number][] = [
@@ -9950,12 +9955,21 @@ export class DeliveryMapComponent implements OnInit, AfterViewInit, OnDestroy {
       const deliveredOrderIds = new Set<number>(
         allOrders.filter((o: OrderDto) => o.status === 'DELIVERED').map((o: OrderDto) => o.orderId)
       );
+      let anyNewlyDelivered = false;
       if (deliveredOrderIds.size > 0) {
         this.deliveryStops.update((stops: DeliveryWaypoint[]) =>
-          stops.map((s: DeliveryWaypoint) =>
-            deliveredOrderIds.has(s.id) && !s.isDelivered ? { ...s, isDelivered: true } : s
-          )
+          stops.map((s: DeliveryWaypoint) => {
+            if (deliveredOrderIds.has(s.id) && !s.isDelivered) {
+              anyNewlyDelivered = true;
+              return { ...s, isDelivered: true };
+            }
+            return s;
+          })
         );
+      }
+      if (anyNewlyDelivered && this.map) {
+        this.renderStopMarkers();
+        void this.buildAndRenderRealRoadRoutes();
       }
 
       const stateOrders = allOrders.filter(

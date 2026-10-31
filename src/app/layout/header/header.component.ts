@@ -75,6 +75,21 @@ import { VoiceOrdersService } from '../../core/services/voice-orders.service';
 
         <button
           type="button"
+          class="topbar-icon-btn topbar-refresh-btn"
+          [class.spinning]="isRefreshingScreen() || stateService.isLoading()"
+          title="Refrescar pantalla"
+          aria-label="Refrescar pantalla"
+          (click)="onRefreshScreenClick()"
+        >
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="23 4 23 10 17 10"></polyline>
+            <polyline points="1 20 1 14 7 14"></polyline>
+            <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+          </svg>
+        </button>
+
+        <button
+          type="button"
           class="topbar-icon-btn"
           title="Notificaciones operativas"
         >
@@ -474,6 +489,19 @@ import { VoiceOrdersService } from '../../core/services/voice-orders.service';
         color: #111827;
         border-color: #d1d5db;
       }
+
+      &.topbar-refresh-btn.spinning svg {
+        animation: topbarRefreshSpin 0.7s linear infinite;
+      }
+    }
+
+    @keyframes topbarRefreshSpin {
+      from {
+        transform: rotate(0deg);
+      }
+      to {
+        transform: rotate(360deg);
+      }
     }
 
     .notification-dot {
@@ -717,6 +745,7 @@ export class HeaderComponent implements OnInit, OnDestroy {
 
   readonly isHeaderHidden = signal<boolean>(false);
   readonly isUserTooltipVisible = signal<boolean>(false);
+  readonly isRefreshingScreen = signal<boolean>(false);
   private lastScrollY = 0;
   private readonly scrollThreshold = 8;
   private cleanupScrollListeners?: () => void;
@@ -994,6 +1023,21 @@ export class HeaderComponent implements OnInit, OnDestroy {
       void this.router.navigate(['/portal-clientes']);
     } catch {
       return;
+    }
+  }
+
+  /**
+   * Refreshes all operational data from the backend API and triggers the spin animation on the topbar icon.
+   */
+  onRefreshScreenClick(): void {
+    try {
+      this.isRefreshingScreen.set(true);
+      this.stateService.refreshAll(false);
+      setTimeout(() => {
+        this.isRefreshingScreen.set(false);
+      }, 700);
+    } catch {
+      this.isRefreshingScreen.set(false);
     }
   }
 }

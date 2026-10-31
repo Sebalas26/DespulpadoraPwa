@@ -184,4 +184,23 @@ describe('HeaderComponent', () => {
     expect(component.isUserTooltipVisible()).toBeFalse();
     expect(compiled.querySelector('.mobile-user-tooltip')).toBeNull();
   }));
+
+  it('should render single-icon refresh button next to online pill and invoke stateService.refreshAll on click', fakeAsync(() => {
+    const refreshSpy = spyOn(stateService, 'refreshAll');
+    fixture.detectChanges();
+
+    const compiled: HTMLElement = fixture.nativeElement as HTMLElement;
+    const refreshBtn = compiled.querySelector('.topbar-refresh-btn') as HTMLButtonElement | null;
+    expect(refreshBtn).not.toBeNull();
+
+    refreshBtn?.click();
+    fixture.detectChanges();
+
+    expect(refreshSpy).toHaveBeenCalledWith(false);
+    expect(component.isRefreshingScreen()).toBeTrue();
+
+    tick(750);
+    fixture.detectChanges();
+    expect(component.isRefreshingScreen()).toBeFalse();
+  }));
 });

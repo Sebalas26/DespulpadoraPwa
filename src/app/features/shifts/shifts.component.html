@@ -64,9 +64,11 @@
         <div class="form-group">
           <label class="form-label">Jornada / Horario de Turno</label>
           <select class="form-control" [ngModel]="selectedShiftType()" (ngModelChange)="selectedShiftType.set($event)">
-            <option value="MORNING">Turno Mañana (06:00 AM - 02:00 PM)</option>
-            <option value="AFTERNOON">Turno Tarde (02:00 PM - 10:00 PM)</option>
-            <option value="NIGHT">Turno Noche (10:00 PM - 06:00 AM)</option>
+            @for (schedule of activeShiftSchedules(); track schedule.code) {
+              <option [value]="schedule.code">
+                {{ schedule.name }} ({{ schedule.startTime }} - {{ schedule.endTime }})
+              </option>
+            }
           </select>
         </div>
 
@@ -160,7 +162,7 @@
                   <div class="mobile-summary-header">
                     <div class="ms-left">
                       <span class="ms-code-badge">{{ shift.employeeName }}</span>
-                      <span class="ms-subtitle">Jornada: {{ shift.shiftType }} • Inicio: {{ shift.startTime }}</span>
+                      <span class="ms-subtitle">Jornada: {{ getShiftTypeLabel(shift.shiftType) }} • Inicio: {{ shift.startTime }}</span>
                     </div>
                     <div class="ms-right">
                       <div class="ms-top-right">
@@ -178,7 +180,7 @@
                 <td data-label="Empleado" style="font-weight: 700;">{{ shift.employeeName }}</td>
                 <td data-label="Horario de Entrada" style="font-family: monospace; font-size: 0.9rem;">{{ shift.startTime }}</td>
                 <td data-label="Jornada">
-                  <span class="badge badge-info">{{ shift.shiftType }}</span>
+                  <span class="badge badge-info">{{ getShiftTypeLabel(shift.shiftType) }}</span>
                 </td>
                 <td data-label="Observaciones" style="font-size: 0.85rem; color: var(--text-muted);">{{ shift.notes }}</td>
                 <td data-label="Estado">

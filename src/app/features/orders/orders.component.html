@@ -300,18 +300,31 @@
 
         <div class="queue-card-meta">
           <span>{{ formatInvoiceDate(order.createdAt) }}</span>
+          @if (formatOrderTime(order.createdAt); as orderTime) {
+          <span>•</span>
+          <span class="queue-order-time">{{ orderTime }}</span>
+          }
           <span>•</span>
           <span>{{ order.items.length }} ítems</span>
           <span>•</span>
           <span>{{ order.paymentMethodName || 'Contado' }}</span>
         </div>
 
-                <div class="queue-card-items-summary">
-          @for (item of order.items; track (item.fruitName || '') + item.grammage) {
+        <div class="queue-card-items-summary">
+          @for (item of order.items.slice(0, 5); track (item.fruitName || '') + item.grammage + $index) {
           <div class="queue-item-row">
-            <span>[{{ item.grammage }}g] Pulpa de {{ item.fruitName }} <strong>× {{ item.quantity }}</strong></span>
+            <span>[{{ item.grammage }}g] Pulpa de {{ getOrderItemFruitName(item) }} <strong>× {{ item.quantity }}</strong></span>
             <span>$ {{ formatNumberES(item.quantity * item.unitPrice) }}</span>
           </div>
+          }
+          @if (order.items.length >= 5) {
+          <button type="button" class="btn-view-more-items" (click)="openOrderItemsModal(order)">
+            <span>Ver más ({{ order.items.length }} productos)</span>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"
+              stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="9 18 15 12 9 6"></polyline>
+            </svg>
+          </button>
           }
         </div>
 
@@ -1585,6 +1598,82 @@
           Cerrar
         </button>
       </div>
+    </div>
+  </div>
+</div>
+}
+
+@if (showOrderItemsModal() && selectedOrderForItemsModal(); as itemsOrder) {
+<div class="modal-overlay" (click)="closeOrderItemsModal()">
+  <div class="modal-content order-items-dialog-box" (click)="$event.stopPropagation()">
+    <div class="modal-header order-items-dialog-header">
+      <div class="order-items-dialog-title-group">
+        <div class="order-items-dialog-icon">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
+            <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
+            <line x1="12" y1="22.08" x2="12" y2="12"></line>
+          </svg>
+        </div>
+        <div>
+          <div class="order-items-dialog-badges">
+            <span class="queue-inv-code">{{ getInvoiceCode(itemsOrder) }}</span>
+            <span class="queue-origin-badge">{{ getOriginCode(itemsOrder) }}</span>
+          </div>
+          <h3 class="modal-title order-items-dialog-title">
+            Productos del Pedido · {{ itemsOrder.clientName }}
+          </h3>
+          <p class="order-items-dialog-subtitle">
+            <span>{{ formatInvoiceDate(itemsOrder.createdAt) }}</span>
+            @if (formatOrderTime(itemsOrder.createdAt); as modalOrderTime) {
+            <span> • {{ modalOrderTime }}</span>
+            }
+            <span> • {{ itemsOrder.items.length }} productos</span>
+            <span> • {{ itemsOrder.paymentMethodName || 'Contado' }}</span>
+          </p>
+        </div>
+      </div>
+      <button type="button" class="modal-close" (click)="closeOrderItemsModal()">&times;</button>
+    </div>
+
+    <div class="modal-body order-items-dialog-body">
+      <div class="order-items-dialog-table">
+        <div class="order-items-dialog-thead">
+          <span>Producto / Presentación</span>
+          <span>Subtotal</span>
+        </div>
+        <div class="order-items-dialog-tbody">
+          @for (item of itemsOrder.items; track (item.fruitName || '') + item.grammage + $index) {
+          <div class="order-items-dialog-row">
+            <div class="order-items-dialog-row-left">
+              <div class="order-items-dialog-product-line">
+                <span class="order-items-dialog-grammage">[{{ item.grammage }}g]</span>
+                <strong>Pulpa de {{ getOrderItemFruitName(item) }}</strong>
+              </div>
+              <div class="order-items-dialog-unit-meta">
+                {{ item.quantity }} uds × $ {{ formatNumberES(item.unitPrice) }} c/u
+              </div>
+            </div>
+            <div class="order-items-dialog-row-right">
+              <div class="order-items-dialog-subtotal">
+                $ {{ formatNumberES(item.quantity * item.unitPrice) }}
+              </div>
+              <span class="order-items-dialog-qty-chip">× {{ item.quantity }}</span>
+            </div>
+          </div>
+          }
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-footer order-items-dialog-footer">
+      <div class="order-items-dialog-total-block">
+        <span class="order-items-dialog-total-label">Total Factura ({{ itemsOrder.items.length }} ítems)</span>
+        <span class="order-items-dialog-total-val">$ {{ formatNumberES(getInvoiceTotalWithTax(itemsOrder)) }}</span>
+      </div>
+      <button type="button" class="btn btn-primary" (click)="closeOrderItemsModal()">
+        Cerrar
+      </button>
     </div>
   </div>
 </div>

@@ -20,7 +20,8 @@ import {
   ProductCategory,
   ProductVariantDto,
   CompanyConfig,
-  PaymentMethodDto
+  PaymentMethodDto,
+  ShiftScheduleConfig
 } from '../../core/models/business.models';
 import { AuthService } from '../../core/services/auth.service';
 import { AdminUsersComponent } from '../admin/users/users.component';
@@ -78,8 +79,26 @@ export class SettingsComponent {
 
   readonly activeTab = signal<'general' | 'inventory' | 'users' | 'roles' | 'catalog' | 'parameters'>('general');
   readonly inventorySubTab = signal<'variants' | 'fruits'>('variants');
-  readonly parametersSubTab = signal<'paymentMethods' | 'grammages' | 'categories'>('paymentMethods');
+  readonly parametersSubTab = signal<'paymentMethods' | 'grammages' | 'categories' | 'shifts'>('paymentMethods');
   readonly mobileConfigModuleSelected = signal<boolean>(false);
+
+  readonly shiftSchedulesConfig = this.stateService.shiftSchedulesConfig;
+  readonly showShiftScheduleModal = signal<boolean>(false);
+  readonly isEditingShiftSchedule = signal<boolean>(false);
+  readonly editingShiftScheduleId = signal<string | null>(null);
+  readonly shiftScheduleForm = signal<{
+    name: string;
+    code: string;
+    startTime: string;
+    endTime: string;
+    isActive: boolean;
+  }>({
+    name: '',
+    code: '',
+    startTime: '',
+    endTime: '',
+    isActive: true
+  });
 
   readonly showPaymentMethodModal = signal<boolean>(false);
   readonly isEditingPaymentMethod = signal<boolean>(false);
@@ -405,7 +424,7 @@ export class SettingsComponent {
    */
   openMobileConfigModule(
     tab: 'general' | 'users' | 'roles' | 'catalog' | 'parameters',
-    subTab?: 'paymentMethods' | 'grammages' | 'categories'
+    subTab?: 'paymentMethods' | 'grammages' | 'categories' | 'shifts'
   ): void {
     try {
       this.activeTab.set(tab);
@@ -1159,6 +1178,174 @@ export class SettingsComponent {
         this.grammageFilter.set('ALL');
       }
       this.notification.info('Gramaje Eliminado', `Gramaje de ${gram.label} eliminado.`);
+    } catch {
+      return;
+    }
+  }
+
+  /**
+   * Opens the modal dialog to create a new shift schedule.
+   */
+  openCreateShiftScheduleModal(): void {
+    try {
+      this.isEditingShiftSchedule.set(false);
+      this.editingShiftScheduleId.set(null);
+      this.shiftScheduleForm.set({
+        name: '',
+        code: '',
+        startTime: '',
+        endTime: '',
+        isActive: true
+      });
+      this.showShiftScheduleModal.set(true);
+    } catch {
+      return;
+    }
+  }
+
+  /**
+   * Opens the modal dialog to edit an existing shift schedule.
+   */
+  openEditShiftScheduleModal(schedule: ShiftScheduleConfig): void {
+    try {
+      this.isEditingShiftSchedule.set(true);
+      this.editingShiftScheduleId.set(schedule.id);
+      this.shiftScheduleForm.set({
+        name: schedule.name,
+        code: schedule.code,
+        startTime: schedule.startTime,
+        endTime: schedule.endTime,
+        isActive: schedule.isActive
+      });
+      this.showShiftScheduleModal.set(true);
+    } catch {
+      return;
+    }
+  }
+
+  /**
+   * Closes the shift schedule modal dialog.
+   */
+  closeShiftScheduleModal(): void {
+    try {
+      this.showShiftScheduleModal.set(false);
+      this.isEditingShiftSchedule.set(false);
+      this.editingShiftScheduleId.set(null);
+    } catch {
+      return;
+    }
+  }
+
+  /**
+   * Updates a field in the shift schedule form state.
+   */
+  updateShiftScheduleFormField(
+    field: 'name' | 'code' | 'startTime' | 'endTime' | 'isActive',
+    value: string | boolean
+  ): void {
+    try {
+      this.shiftScheduleForm.update(prev => ({
+        ...prev,
+        [field]: value
+      }));
+    } catch {
+      return;
+    }
+  }
+
+  /**
+   * Creates or updates a parametric shift schedule in StateService.
+   */
+  saveShiftSchedule(): void {
+    try {
+      const form = this.shiftScheduleForm();
+      const name = form.name.trim();
+      const startTime = form.startTime.trim();
+      const endTime = form.endTime.trim();
+      let code = form.code.trim().toUpperCase().replace(/\s+/g, '_');
+
+      if (!name || !startTime || !endTime) {
+        this.notification.error(
+          'Campos Requeridos',
+          'Ingresa el nombre de la jornada, hora de inicio y hora de fin.'
+        );
+        return;
+      }
+
+      if (!code) {
+        code = name.toUpperCase().replace(/[^A-Z0-9]+/g, '_');
+      }
+
+      if (this.isEditingShiftSchedule() && this.editingShiftScheduleId()) {
+        const targetId = this.editingShiftScheduleId()!;
+        this.stateService.updateShiftSchedule(targetId, {
+          name,
+          code,
+          startTime,
+          endTime,
+          isActive: form.isActive
+        });
+        this.notification.success(
+          'Jornada Actualizada',
+          `El horario "${name}" (${startTime} - ${endTime}) fue actualizado.`
+        );
+      } else {
+        if (this.shiftSchedulesConfig().some(s => s.code === code || s.id === code)) {
+          this.notification.error(
+            'Jornada Duplicada',
+            `Ya existe una jornada registrada con el código "${code}".`
+          );
+          return;
+        }
+        const newSchedule: ShiftScheduleConfig = {
+          id: code,
+          code,
+          name,
+          startTime,
+          endTime,
+          isCustom: true,
+          isActive: form.isActive
+        };
+        this.stateService.addShiftSchedule(newSchedule);
+        this.notification.success(
+          'Jornada Agregada',
+          `La jornada "${name}" (${startTime} - ${endTime}) ahora está disponible en Control de Turnos.`
+        );
+      }
+
+      this.closeShiftScheduleModal();
+    } catch {
+      return;
+    }
+  }
+
+  /**
+   * Toggles the active status of a parametric shift schedule.
+   */
+  toggleShiftSchedule(id: string): void {
+    try {
+      this.stateService.toggleShiftSchedule(id);
+    } catch {
+      return;
+    }
+  }
+
+  /**
+   * Prompts user confirmation before deleting a parametric shift schedule.
+   */
+  confirmDeleteShiftSchedule(schedule: ShiftScheduleConfig): void {
+    try {
+      this.openConfirmDialog({
+        title: '¿Eliminar Jornada / Horario de Turno?',
+        message: `¿Estás seguro de eliminar la jornada "${schedule.name}" (${schedule.startTime} - ${schedule.endTime})?`,
+        confirmButtonText: 'Eliminar',
+        cancelButtonText: 'Cancelar',
+        isDanger: true,
+        action: () => {
+          this.stateService.deleteShiftSchedule(schedule.id);
+          this.notification.info('Jornada Eliminada', `Horario "${schedule.name}" retirado.`);
+        }
+      });
     } catch {
       return;
     }

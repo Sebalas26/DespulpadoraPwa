@@ -106,6 +106,8 @@ export class OrdersComponent {
   readonly showNewOrderModal = signal<boolean>(false);
   readonly showInvoiceModal = signal<boolean>(false);
   readonly selectedOrderForInvoice = signal<OrderDto | null>(null);
+  readonly showOrderItemsModal = signal<boolean>(false);
+  readonly selectedOrderForItemsModal = signal<OrderDto | null>(null);
   readonly invoiceFormat = signal<'a4' | 'pos'>('a4');
   readonly invoiceTaxRate = signal<number>(19);
   readonly itemDiscounts = signal<Record<string, number>>({});
@@ -1671,6 +1673,68 @@ export class OrdersComponent {
     } catch (error: unknown) {
       console.error('Error formatting invoice date:', error);
       return '';
+    }
+  }
+
+  /**
+   * Formats the time portion (HH:mm) of an ISO date string.
+   */
+  formatOrderTime(dateStr?: string): string {
+    try {
+      if (!dateStr) return '';
+      const d = new Date(dateStr);
+      if (isNaN(d.getTime())) return '';
+      const hours = String(d.getHours()).padStart(2, '0');
+      const minutes = String(d.getMinutes()).padStart(2, '0');
+      return `${hours}:${minutes}`;
+    } catch (error: unknown) {
+      console.error('Error formatting order time:', error);
+      return '';
+    }
+  }
+
+  /**
+   * Opens the modal dialog displaying all products of an order in the billing queue.
+   */
+  openOrderItemsModal(order: OrderDto): void {
+    try {
+      this.selectedOrderForItemsModal.set(order);
+      this.showOrderItemsModal.set(true);
+    } catch (error: unknown) {
+      console.error('Error opening order items modal:', error);
+    }
+  }
+
+  /**
+   * Closes the modal dialog displaying all products of an order.
+   */
+  closeOrderItemsModal(): void {
+    try {
+      this.showOrderItemsModal.set(false);
+      this.selectedOrderForItemsModal.set(null);
+    } catch (error: unknown) {
+      console.error('Error closing order items modal:', error);
+    }
+  }
+
+  /**
+   * Resolves the display fruit name for an order line item.
+   */
+  getOrderItemFruitName(item: OrderItemDto): string {
+    try {
+      if (item.fruitName && item.fruitName.trim()) {
+        return item.fruitName.trim();
+      }
+      if (item.fruitId) {
+        const fruit = this.stateService.fruits().find((f: FruitConfig) => f.fruitId === item.fruitId);
+        if (fruit?.name) {
+          return fruit.name;
+        }
+      }
+      return '';
+    } catch (error: unknown) {
+      console.error('Error resolving order item fruit name:', error);
+      return item.fruitName || '';
     }
   }
 

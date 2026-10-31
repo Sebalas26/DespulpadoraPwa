@@ -15,10 +15,18 @@ import {
   ProductVariantDto,
   PromotionConfig,
   SalesTargetDto,
+  ShiftScheduleConfig,
   WorkShiftDto
 } from '../models/business.models';
 
-export type { FruitConfig, PromotionConfig, PortalCmsConfig, InventoryCategoryConfig, InventoryGrammageConfig };
+export type {
+  FruitConfig,
+  PromotionConfig,
+  PortalCmsConfig,
+  InventoryCategoryConfig,
+  InventoryGrammageConfig,
+  ShiftScheduleConfig
+};
 
 /**
  * Alias for production batch record.
@@ -155,5 +163,35 @@ export const DEFAULT_GRAMMAGES: InventoryGrammageConfig[] = [
   { key: 'g250', value: 250, label: '250g', isActive: true },
   { key: 'g500', value: 500, label: '500g (1/2 Kg)', isActive: true },
   { key: 'g1000', value: 1000, label: '1000g (1 Kg)', isActive: true }
+];
+
+/**
+ * Default parametric shift schedules for plant and delivery attendance.
+ */
+export const DEFAULT_SHIFT_SCHEDULES: ShiftScheduleConfig[] = [
+  {
+    id: 'MORNING',
+    code: 'MORNING',
+    name: 'Turno Mañana',
+    startTime: '06:00 AM',
+    endTime: '02:00 PM',
+    isActive: true
+  },
+  {
+    id: 'AFTERNOON',
+    code: 'AFTERNOON',
+    name: 'Turno Tarde',
+    startTime: '02:00 PM',
+    endTime: '10:00 PM',
+    isActive: true
+  },
+  {
+    id: 'NIGHT',
+    code: 'NIGHT',
+    name: 'Turno Noche',
+    startTime: '10:00 PM',
+    endTime: '06:00 AM',
+    isActive: true
+  }
 ];
 

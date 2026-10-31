@@ -30,6 +30,7 @@ import {
   ProductVariantDto,
   SalesPerformanceKpiDto,
   SalesTargetDto,
+  ShiftScheduleConfig,
   UpsertSalesTargetDto,
   UserAdminDto,
   UserRoleDto,
@@ -40,6 +41,7 @@ import {
   DEFAULT_COMPANY_CONFIG,
   DEFAULT_GRAMMAGES,
   DEFAULT_PORTAL_CMS_CONFIG,
+  DEFAULT_SHIFT_SCHEDULES,
   FruitConfig,
   INITIAL_BATCHES_SAMPLE,
   INITIAL_CLIENTS_SAMPLE,
@@ -91,6 +93,7 @@ export class StateService {
 
   readonly grammagesConfig = signal<InventoryGrammageConfig[]>(this.loadGrammagesConfigFromStorage());
   readonly categoriesConfig = signal<InventoryCategoryConfig[]>(this.loadCategoriesConfigFromStorage());
+  readonly shiftSchedulesConfig = signal<ShiftScheduleConfig[]>(this.loadShiftSchedulesFromStorage());
 
   readonly activePaymentMethods = computed<PaymentMethodDto[]>(() => {
     try {
@@ -111,6 +114,14 @@ export class StateService {
   readonly activeCategories = computed<InventoryCategoryConfig[]>(() => {
     try {
       return this.categoriesConfig().filter(c => c.isActive);
+    } catch {
+      return [];
+    }
+  });
+
+  readonly activeShiftSchedules = computed<ShiftScheduleConfig[]>(() => {
+    try {
+      return this.shiftSchedulesConfig().filter(s => s.isActive);
     } catch {
       return [];
     }
@@ -441,6 +452,7 @@ export class StateService {
         this.paymentMethods.set(this.loadPaymentMethodsFromStorage());
         this.grammagesConfig.set(this.loadGrammagesConfigFromStorage());
         this.categoriesConfig.set(this.loadCategoriesConfigFromStorage());
+        this.shiftSchedulesConfig.set(this.loadShiftSchedulesFromStorage());
         this.portalCmsConfig.set(this.loadPortalCmsConfigFromStorage());
         this.salesTargets.set(this.loadSalesTargetsFromStorage());
       }
@@ -895,6 +907,7 @@ private loadEmployeesFromStorage(): EmployeeDto[] {
       localStorage.setItem('despulpadora_payment_methods', JSON.stringify(this.paymentMethods()));
       localStorage.setItem('despulpadora_grammages_config', JSON.stringify(this.grammagesConfig()));
       localStorage.setItem('despulpadora_categories_config', JSON.stringify(this.categoriesConfig()));
+      localStorage.setItem('despulpadora_shift_schedules_config', JSON.stringify(this.shiftSchedulesConfig()));
       if (!this.isApplyingExternalRealtimeEvent) {
         this.realtimeSync.publishDomainChange(domain, action);
       }
@@ -2196,7 +2209,7 @@ private loadEmployeesFromStorage(): EmployeeDto[] {
    */
   startWorkShift(
     employeeId: number,
-    shiftType: 'MORNING' | 'AFTERNOON' | 'NIGHT',
+    shiftType: 'MORNING' | 'AFTERNOON' | 'NIGHT' | 'SPECIAL' | string,
     notes?: string,
     employeeName?: string
   ): WorkShiftDto {
@@ -2687,6 +2700,89 @@ private loadEmployeesFromStorage(): EmployeeDto[] {
       if (!this.isApplyingExternalRealtimeEvent) {
         this.realtimeSync.publishDomainChange('parameters', 'categories_updated', {
           section: 'categories'
+        });
+      }
+    } catch {
+      return;
+    }
+  }
+
+  /**
+   * Adds a new parametric shift schedule to the system.
+   */
+  addShiftSchedule(schedule: ShiftScheduleConfig): void {
+    try {
+      this.shiftSchedulesConfig.update(list => [...list, schedule]);
+      this.saveShiftSchedulesConfig();
+    } catch {
+      return;
+    }
+  }
+
+  /**
+   * Updates an existing parametric shift schedule.
+   */
+  updateShiftSchedule(id: string, changes: Partial<ShiftScheduleConfig>): void {
+    try {
+      this.shiftSchedulesConfig.update(list =>
+        list.map(s => (s.id === id ? { ...s, ...changes } : s))
+      );
+      this.saveShiftSchedulesConfig();
+    } catch {
+      return;
+    }
+  }
+
+  /**
+   * Toggles the active status of a parametric shift schedule.
+   */
+  toggleShiftSchedule(id: string): void {
+    try {
+      this.shiftSchedulesConfig.update(list =>
+        list.map(s => (s.id === id ? { ...s, isActive: !s.isActive } : s))
+      );
+      this.saveShiftSchedulesConfig();
+    } catch {
+      return;
+    }
+  }
+
+  /**
+   * Removes a parametric shift schedule from the system.
+   */
+  deleteShiftSchedule(id: string): void {
+    try {
+      this.shiftSchedulesConfig.update(list => list.filter(s => s.id !== id));
+      this.saveShiftSchedulesConfig();
+    } catch {
+      return;
+    }
+  }
+
+  /**
+   * Loads the shift schedules configuration from localStorage.
+   */
+  private loadShiftSchedulesFromStorage(): ShiftScheduleConfig[] {
+    try {
+      const data = localStorage.getItem('despulpadora_shift_schedules_config');
+      return data ? JSON.parse(data) : DEFAULT_SHIFT_SCHEDULES;
+    } catch {
+      return DEFAULT_SHIFT_SCHEDULES;
+    }
+  }
+
+  /**
+   * Saves the shift schedules configuration to localStorage and broadcasts real-time parameter updates.
+   */
+  private saveShiftSchedulesConfig(): void {
+    try {
+      localStorage.setItem(
+        'despulpadora_shift_schedules_config',
+        JSON.stringify(this.shiftSchedulesConfig())
+      );
+      if (!this.isApplyingExternalRealtimeEvent) {
+        this.realtimeSync.publishDomainChange('parameters', 'shifts_updated', {
+          section: 'shifts'
         });
       }
     } catch {
