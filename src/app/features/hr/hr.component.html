@@ -431,9 +431,9 @@
                       <div>
                         <div class="shift-card-name">{{ shift.employeeName }}</div>
                         <div class="shift-card-meta">
-                          <span>Entrada: <strong>{{ shift.startTime }}</strong></span>
+                          <span>Entrada: <strong>{{ formatShiftDateTime(shift.startTime) }}</strong></span>
                           <span>·</span>
-                          <span class="badge badge-purple" style="font-size: 0.68rem;">{{ shift.shiftType }}</span>
+                          <span class="badge badge-purple" style="font-size: 0.68rem;">{{ getShiftTypeLabel(shift.shiftType) }}</span>
                         </div>
                         @if (shift.notes) {
                           <div class="shift-card-notes">{{ shift.notes }}</div>
@@ -495,11 +495,11 @@
                       <div class="mobile-summary-header">
                         <div class="ms-left">
                           <span class="ms-code-badge">{{ shift.employeeName }}</span>
-                          <span class="ms-subtitle">#TUR-{{ shift.shiftId }} • Jornada: {{ shift.shiftType }}</span>
+                          <span class="ms-subtitle">#TUR-{{ shift.shiftId }} • Jornada: {{ getShiftTypeLabel(shift.shiftType) }}</span>
                         </div>
                         <div class="ms-right">
                           <div class="ms-top-right">
-                            <span class="ms-value">{{ shift.hoursWorked || 8 }} hrs</span>
+                            <span class="ms-value">{{ formatWorkedHours(shift) }}</span>
                             <span class="ms-chevron">
                               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
                                 <polyline points="6 9 12 15 18 9"></polyline>
@@ -511,10 +511,10 @@
                       </div>
                     </td>
                     <td data-label="Colaborador"><strong>{{ shift.employeeName }}</strong></td>
-                    <td data-label="Horario"><span class="badge badge-outline-gray">{{ shift.shiftType }}</span></td>
-                    <td data-label="Entrada">{{ shift.startTime }}</td>
-                    <td data-label="Salida">{{ shift.endTime || '18:00' }}</td>
-                    <td data-label="Horas Laboradas"><strong style="color: #1e5e3a;">{{ shift.hoursWorked || 8 }} horas</strong></td>
+                    <td data-label="Horario"><span class="badge badge-outline-gray">{{ getShiftTypeLabel(shift.shiftType) }}</span></td>
+                    <td data-label="Entrada">{{ formatShiftDateTime(shift.startTime) }}</td>
+                    <td data-label="Salida">{{ formatShiftDateTime(shift.endTime) }}</td>
+                    <td data-label="Horas Laboradas"><strong style="color: #1e5e3a;">{{ formatWorkedHours(shift) }}</strong></td>
                     <td data-label="Estado"><span class="badge badge-success">Cerrado</span></td>
                   </tr>
                 }

@@ -20,6 +20,7 @@ describe('OrdersComponent', () => {
   let createOrderSpy: jasmine.Spy;
   let updateOrderSpy: jasmine.Spy;
   let updateOrderStatusSpy: jasmine.Spy;
+  let createClientSpy: jasmine.Spy;
 
   const mockFruits = signal<FruitConfig[]>([
     {
@@ -194,6 +195,7 @@ describe('OrdersComponent', () => {
     }));
     updateOrderSpy = jasmine.createSpy('updateOrder');
     updateOrderStatusSpy = jasmine.createSpy('updateOrderStatus');
+    createClientSpy = jasmine.createSpy('createClient');
 
     const stateServiceMock: Partial<StateService> = {
       fruits: mockFruits,
@@ -208,6 +210,7 @@ describe('OrdersComponent', () => {
       createOrder: createOrderSpy,
       updateOrder: updateOrderSpy,
       updateOrderStatus: updateOrderStatusSpy,
+      createClient: createClientSpy,
       setOrderPriority: jasmine.createSpy('setOrderPriority'),
       deleteOrder: jasmine.createSpy('deleteOrder')
     };
@@ -596,5 +599,76 @@ describe('OrdersComponent', () => {
     fixture.detectChanges();
     expect(component.showOrderItemsModal()).toBeFalse();
     expect(component.selectedOrderForItemsModal()).toBeNull();
+  });
+
+  it('should keep Crear cliente checkbox checked and disabled when client already exists in stateService.clients()', () => {
+    component.openCreateOrderModal();
+    component.onClientNameInput('Restaurante Central');
+    component.manualPhone.set('3105556677');
+    component.manualAddress.set('Calle 50 # 10-20');
+    fixture.detectChanges();
+
+    expect(component.isClientAlreadyRegistered()).toBeTrue();
+    expect(component.isCreateClientCheckboxChecked()).toBeTrue();
+
+    const compiled: HTMLElement = fixture.nativeElement as HTMLElement;
+    const checkbox = compiled.querySelector('.create-client-checkbox') as HTMLInputElement | null;
+    expect(checkbox).not.toBeNull();
+    expect(checkbox?.checked).toBeTrue();
+    expect(checkbox?.disabled).toBeTrue();
+
+    component.onToggleCreateClientCheckbox(false);
+    expect(component.isCreateClientCheckboxChecked()).toBeTrue();
+
+    component.submitManualOrder();
+    expect(createOrderSpy).toHaveBeenCalled();
+    expect(createClientSpy).not.toHaveBeenCalled();
+  });
+
+  it('should enable Crear cliente checkbox for uncreated client (e.g. luz arango) and create client on submit when checked', () => {
+    component.openCreateOrderModal();
+    component.onClientNameInput('luz arango');
+    component.manualPhone.set('3158889900');
+    component.manualAddress.set('Carrera 70 # 25-10');
+    fixture.detectChanges();
+
+    expect(component.isClientAlreadyRegistered()).toBeFalse();
+    expect(component.isCreateClientCheckboxChecked()).toBeFalse();
+
+    const compiled: HTMLElement = fixture.nativeElement as HTMLElement;
+    const checkbox = compiled.querySelector('.create-client-checkbox') as HTMLInputElement | null;
+    expect(checkbox).not.toBeNull();
+    expect(checkbox?.checked).toBeFalse();
+    expect(checkbox?.disabled).toBeFalse();
+
+    component.onToggleCreateClientCheckbox(true);
+    fixture.detectChanges();
+    expect(component.shouldCreateClient()).toBeTrue();
+    expect(component.isCreateClientCheckboxChecked()).toBeTrue();
+
+    component.submitManualOrder();
+    expect(createClientSpy).toHaveBeenCalledWith(
+      jasmine.objectContaining({
+        fullName: 'luz arango',
+        phone: '3158889900',
+        address: 'Carrera 70 # 25-10'
+      })
+    );
+    expect(createOrderSpy).toHaveBeenCalled();
+  });
+
+  it('should not call createClient when Crear cliente checkbox is left unchecked for a new client', () => {
+    component.openCreateOrderModal();
+    component.onClientNameInput('luz arango');
+    component.manualPhone.set('3158889900');
+    component.manualAddress.set('Carrera 70 # 25-10');
+    fixture.detectChanges();
+
+    expect(component.isClientAlreadyRegistered()).toBeFalse();
+    expect(component.shouldCreateClient()).toBeFalse();
+
+    component.submitManualOrder();
+    expect(createClientSpy).not.toHaveBeenCalled();
+    expect(createOrderSpy).toHaveBeenCalled();
   });
 });

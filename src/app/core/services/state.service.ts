@@ -705,14 +705,111 @@ private loadEmployeesFromStorage(): EmployeeDto[] {
   }
 
   /**
-   * Loads product variants from localStorage.
+   * Determines whether a product variant record belongs to the deprecated legacy mock seed list.
+   */
+  private isLegacyMockVariant(v: ProductVariantDto): boolean {
+    try {
+      const legacySkus = new Set<string>([
+        'PULP-MAR-140G',
+        'PULP-MAR-250G',
+        'PULP-MAN-140G',
+        'PULP-MAN-250G',
+        'PULP-LUL-140G',
+        'PULP-LUL-250G',
+        'LIM-COC-140G',
+        'LIM-CER-140G',
+        'BAT-DTX-250G',
+        'BAT-RED-250G'
+      ]);
+      const legacyIds = new Set<number>([101, 102, 103, 104, 105, 106, 201, 202, 301, 302]);
+      const skuUpper = (v.sku || '').trim().toUpperCase();
+      if (legacySkus.has(skuUpper)) {
+        return true;
+      }
+      if (
+        legacyIds.has(v.variantId) &&
+        (v.name === 'Base Limonada de Coco 140g' ||
+          v.name === 'Base Limonada Cerezada 140g' ||
+          v.name === 'Batido Verde Detox (Espinaca/Piña/Manzana) 250g' ||
+          v.name === 'Batido Rojo Antioxidante (Frutos Rojos) 250g' ||
+          v.name === 'Pulpa de Mango Tommy 140g' ||
+          v.name === 'Pulpa de Mango Tommy 250g' ||
+          v.name === 'Pulpa de Lulo 140g' ||
+          v.name === 'Pulpa de Lulo 250g' ||
+          v.name === 'Pulpa de Maracuyá 140g' ||
+          v.name === 'Pulpa de Maracuyá 250g')
+      ) {
+        return true;
+      }
+      return false;
+    } catch {
+      return false;
+    }
+  }
+
+  /**
+   * Loads product variants from localStorage and purges any deprecated legacy mock entries.
    */
   private loadVariantsFromStorage(): ProductVariantDto[] {
     try {
       const data = localStorage.getItem('despulpadora_variants');
-      return data ? JSON.parse(data) : INITIAL_PRODUCT_VARIANTS;
+      if (!data) {
+        return INITIAL_PRODUCT_VARIANTS;
+      }
+      const parsed: unknown = JSON.parse(data);
+      if (!Array.isArray(parsed)) {
+        return INITIAL_PRODUCT_VARIANTS;
+      }
+      const rawList = parsed as ProductVariantDto[];
+      const cleaned = rawList.filter(v => !this.isLegacyMockVariant(v));
+      if (cleaned.length !== rawList.length) {
+        localStorage.setItem('despulpadora_variants', JSON.stringify(cleaned));
+      }
+      return cleaned;
     } catch {
       return INITIAL_PRODUCT_VARIANTS;
+    }
+  }
+
+  /**
+   * Synchronizes user-created product variants with the active fruits catalog from the database.
+   */
+  private syncVariantsWithFruits(fruits: FruitConfig[]): void {
+    try {
+      const currentVariants = this.productVariants().filter(v => !this.isLegacyMockVariant(v));
+      if (fruits.length === 0) {
+        this.productVariants.set(currentVariants);
+        return;
+      }
+
+      const syncedVariants: ProductVariantDto[] = [];
+      for (const variant of currentVariants) {
+        const matchedFruit = fruits.find(
+          f =>
+            (f.fruitId && variant.fruitId === f.fruitId) ||
+            f.name.toLowerCase() === (variant.fruitName || '').toLowerCase() ||
+            variant.name.toLowerCase().includes(f.name.toLowerCase())
+        );
+        if (!matchedFruit) {
+          continue;
+        }
+        const gramKey = `g${variant.grammage}` as 'g140' | 'g250' | 'g500' | 'g1000';
+        const dbStock = matchedFruit.stock[gramKey] ?? 0;
+        const resolvedStock = dbStock > 0 ? dbStock : (variant.currentStock || 0);
+        if (dbStock === 0 && resolvedStock > 0) {
+          matchedFruit.stock[gramKey] = resolvedStock;
+        }
+        syncedVariants.push({
+          ...variant,
+          fruitId: matchedFruit.fruitId || variant.fruitId,
+          fruitName: matchedFruit.name,
+          currentStock: resolvedStock
+        });
+      }
+
+      this.productVariants.set(syncedVariants);
+    } catch {
+      return;
     }
   }
 
@@ -757,14 +854,37 @@ private loadEmployeesFromStorage(): EmployeeDto[] {
   }
 
   /**
-   * Loads work shifts from localStorage.
+   * Loads work shifts from localStorage and normalizes elapsed hours for closed shifts.
    */
   private loadShiftsFromStorage(): WorkShiftDto[] {
     try {
       const data = localStorage.getItem('despulpadora_shifts');
-      return data ? JSON.parse(data) : INITIAL_SHIFTS_SAMPLE;
+      if (!data) {
+        return INITIAL_SHIFTS_SAMPLE;
+      }
+      const parsed: unknown = JSON.parse(data);
+      return Array.isArray(parsed) ? this.normalizeShiftsHours(parsed as WorkShiftDto[]) : INITIAL_SHIFTS_SAMPLE;
     } catch {
       return INITIAL_SHIFTS_SAMPLE;
+    }
+  }
+
+  /**
+   * Normalizes closed work shifts by recalculating real elapsed hours from startTime and endTime.
+   */
+  private normalizeShiftsHours(list: WorkShiftDto[]): WorkShiftDto[] {
+    try {
+      return (list || []).map(shift => {
+        if (shift.status === 'CLOSED' && shift.startTime && shift.endTime) {
+          return {
+            ...shift,
+            hoursWorked: this.calculateElapsedHours(shift.startTime, shift.endTime)
+          };
+        }
+        return shift;
+      });
+    } catch {
+      return list || [];
     }
   }
 
@@ -1076,6 +1196,7 @@ private loadEmployeesFromStorage(): EmployeeDto[] {
             };
           });
           this.fruits.set(mappedFruits);
+          this.syncVariantsWithFruits(mappedFruits);
 
           this.batches.set(res.batches || []);
           this.orders.set(res.orders || []);
@@ -1084,7 +1205,7 @@ private loadEmployeesFromStorage(): EmployeeDto[] {
           this.expenses.set(res.expenses || []);
 
           if (res.shifts) {
-            this.shifts.set(res.shifts);
+            this.shifts.set(this.normalizeShiftsHours(res.shifts));
           }
 
           if (res.companySettings) {
@@ -1255,7 +1376,20 @@ private loadEmployeesFromStorage(): EmployeeDto[] {
         })
       );
       if (delta !== 0) {
-        const numericGram = grammage.replace('g', '');
+        const numericGram = Number(grammage.replace('g', ''));
+        this.productVariants.update(variants =>
+          variants.map(v => {
+            if (
+              v.grammage === numericGram &&
+              ((targetFruitId > 0 && v.fruitId === targetFruitId) ||
+                v.fruitName.toLowerCase() === matchedFruitName.toLowerCase() ||
+                v.name.toLowerCase().includes(matchedFruitName.toLowerCase()))
+            ) {
+              return { ...v, currentStock: Math.max(0, (v.currentStock || 0) + delta) };
+            }
+            return v;
+          })
+        );
         this.recordInventoryMovement({
           category: 'PULP',
           movementType: delta > 0 ? 'IN' : 'OUT',
@@ -1530,6 +1664,15 @@ private loadEmployeesFromStorage(): EmployeeDto[] {
         return;
       }
       this.fruits.update(list => list.filter(f => f.id !== target.id));
+      this.productVariants.update(variants =>
+        variants.filter(
+          v =>
+            !(
+              (target.fruitId && v.fruitId === target.fruitId) ||
+              v.fruitName.toLowerCase() === target.name.toLowerCase()
+            )
+        )
+      );
       this.saveAllToStorage();
       if (target.fruitId && target.fruitId > 0) {
         this.api.deleteFruit?.(target.fruitId)?.subscribe({ error: () => {} });
@@ -2201,6 +2344,40 @@ private loadEmployeesFromStorage(): EmployeeDto[] {
         })
       );
       if (targetVariant && delta !== 0) {
+        const gramKey = `g${targetVariant.grammage}` as 'g140' | 'g250' | 'g500' | 'g1000';
+        let syncedFruitId = targetVariant.fruitId || 0;
+        this.fruits.update(list =>
+          list.map(f => {
+            if (
+              (targetVariant!.fruitId && f.fruitId === targetVariant!.fruitId) ||
+              f.name.toLowerCase() === (targetVariant!.fruitName || '').toLowerCase() ||
+              targetVariant!.name.toLowerCase().includes(f.name.toLowerCase())
+            ) {
+              syncedFruitId = f.fruitId || syncedFruitId;
+              return {
+                ...f,
+                stock: { ...f.stock, [gramKey]: nextStock }
+              };
+            }
+            return f;
+          })
+        );
+        if (
+          syncedFruitId > 0 &&
+          (targetVariant.grammage === 140 ||
+            targetVariant.grammage === 250 ||
+            targetVariant.grammage === 500 ||
+            targetVariant.grammage === 1000)
+        ) {
+          this.api
+            .adjustStock?.({
+              fruitId: syncedFruitId,
+              grammage: targetVariant.grammage,
+              quantityDelta: delta,
+              reason: delta > 0 ? 'Ingreso rápido de pulpa empacada' : 'Salida rápida de pulpa empacada'
+            })
+            ?.subscribe({ error: () => {} });
+        }
         this.recordInventoryMovement({
           category: 'PULP',
           movementType: delta > 0 ? 'IN' : 'OUT',
@@ -2232,7 +2409,45 @@ private loadEmployeesFromStorage(): EmployeeDto[] {
       };
 
       this.productVariants.update(list => [newVariant, ...list]);
+      const gramKey = `g${newVariant.grammage}` as 'g140' | 'g250' | 'g500' | 'g1000';
+      let syncedFruitId = newVariant.fruitId || 0;
+      this.fruits.update(list =>
+        list.map(f => {
+          if (
+            (newVariant.fruitId && f.fruitId === newVariant.fruitId) ||
+            f.name.toLowerCase() === (newVariant.fruitName || '').toLowerCase() ||
+            newVariant.name.toLowerCase().includes(f.name.toLowerCase())
+          ) {
+            syncedFruitId = f.fruitId || syncedFruitId;
+            return {
+              ...f,
+              stock: { ...f.stock, [gramKey]: newVariant.currentStock || 0 },
+              prices:
+                newVariant.basePrice > 0
+                  ? { ...f.prices, [gramKey]: newVariant.basePrice }
+                  : f.prices
+            };
+          }
+          return f;
+        })
+      );
       if ((newVariant.currentStock || 0) > 0) {
+        if (
+          syncedFruitId > 0 &&
+          (newVariant.grammage === 140 ||
+            newVariant.grammage === 250 ||
+            newVariant.grammage === 500 ||
+            newVariant.grammage === 1000)
+        ) {
+          this.api
+            .adjustStock?.({
+              fruitId: syncedFruitId,
+              grammage: newVariant.grammage,
+              quantityDelta: newVariant.currentStock,
+              reason: 'Creación de nueva presentación de pulpa'
+            })
+            ?.subscribe({ error: () => {} });
+        }
         this.recordInventoryMovement({
           category: 'PULP',
           movementType: 'IN',
@@ -2276,12 +2491,47 @@ private loadEmployeesFromStorage(): EmployeeDto[] {
       );
       if (existingVariant && changes.currentStock !== undefined && nextStock !== prevStock) {
         const diff = nextStock - prevStock;
+        const resolvedGrammage = changes.grammage ?? existingVariant.grammage;
+        const gramKey = `g${resolvedGrammage}` as 'g140' | 'g250' | 'g500' | 'g1000';
+        let syncedFruitId = existingVariant.fruitId || 0;
+        this.fruits.update(list =>
+          list.map(f => {
+            if (
+              (existingVariant!.fruitId && f.fruitId === existingVariant!.fruitId) ||
+              f.name.toLowerCase() === (existingVariant!.fruitName || '').toLowerCase() ||
+              existingVariant!.name.toLowerCase().includes(f.name.toLowerCase())
+            ) {
+              syncedFruitId = f.fruitId || syncedFruitId;
+              return {
+                ...f,
+                stock: { ...f.stock, [gramKey]: nextStock }
+              };
+            }
+            return f;
+          })
+        );
+        if (
+          syncedFruitId > 0 &&
+          (resolvedGrammage === 140 ||
+            resolvedGrammage === 250 ||
+            resolvedGrammage === 500 ||
+            resolvedGrammage === 1000)
+        ) {
+          this.api
+            .adjustStock?.({
+              fruitId: syncedFruitId,
+              grammage: resolvedGrammage,
+              quantityDelta: diff,
+              reason: diff > 0 ? 'Edición de existencias de pulpa (+)' : 'Edición de existencias de pulpa (-)'
+            })
+            ?.subscribe({ error: () => {} });
+        }
         this.recordInventoryMovement({
           category: 'PULP',
           movementType: diff > 0 ? 'IN' : 'OUT',
           itemId: String(variantId),
           itemName: changes.name || existingVariant.name,
-          presentation: `${changes.grammage ?? existingVariant.grammage}g`,
+          presentation: `${resolvedGrammage}g`,
           quantity: Math.abs(diff),
           previousStock: prevStock,
           newStock: nextStock,
@@ -2461,7 +2711,18 @@ private loadEmployeesFromStorage(): EmployeeDto[] {
       const startMs = Date.parse(startTime);
       const endMs = Date.parse(endTime);
       if (!Number.isNaN(startMs) && !Number.isNaN(endMs) && endMs >= startMs) {
-        return Number(((endMs - startMs) / (1000 * 60 * 60)).toFixed(2));
+        const rawHours = (endMs - startMs) / (1000 * 60 * 60);
+        return rawHours >= 0.1 ? Number(rawHours.toFixed(2)) : Number(rawHours.toFixed(4));
+      }
+      const startMatch = (startTime || '').trim().match(/^(\d{1,2}):(\d{2})/);
+      const endMatch = (endTime || '').trim().match(/^(\d{1,2}):(\d{2})/);
+      if (startMatch && endMatch) {
+        const startMin = Number(startMatch[1]) * 60 + Number(startMatch[2]);
+        let endMin = Number(endMatch[1]) * 60 + Number(endMatch[2]);
+        if (endMin < startMin) {
+          endMin += 24 * 60;
+        }
+        return Number(((endMin - startMin) / 60).toFixed(2));
       }
       return 0;
     } catch {
@@ -2701,6 +2962,17 @@ private loadEmployeesFromStorage(): EmployeeDto[] {
     try {
       const target = this.fruits().find(f => f.id === id);
       this.fruits.update(list => list.filter(f => f.id !== id));
+      if (target) {
+        this.productVariants.update(variants =>
+          variants.filter(
+            v =>
+              !(
+                (target.fruitId && v.fruitId === target.fruitId) ||
+                v.fruitName.toLowerCase() === target.name.toLowerCase()
+              )
+          )
+        );
+      }
       this.saveAllToStorage();
       if (target?.fruitId) {
         this.api.deleteFruit(target.fruitId).subscribe({ error: () => {} });

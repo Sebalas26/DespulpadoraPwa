@@ -6,7 +6,7 @@ import { StateService } from '../../core/services/state.service';
 import { NotificationService } from '../../core/services/notification.service';
 import { VoiceOrdersService } from '../../core/services/voice-orders.service';
 import { GeocodingService, GeocodedLocation } from '../../core/services/geocoding.service';
-import { FruitConfig, OrderDto, OrderItemDto, OrderStatus } from '../../core/models/business.models';
+import { ClientDto, FruitConfig, OrderDto, OrderItemDto, OrderStatus } from '../../core/models/business.models';
 import { DeliveryMapComponent } from './delivery-map.component';
 import { CopCurrencyInputDirective } from '../../shared/directives/cop-currency-input.directive';
 import confetti from 'canvas-confetti';
@@ -117,6 +117,7 @@ export class OrdersComponent {
   readonly manualClientName = signal<string>('');
   readonly manualPhone = signal<string>('');
   readonly manualAddress = signal<string>('');
+  readonly shouldCreateClient = signal<boolean>(false);
   readonly manualAddressSuggestions = signal<GeocodedLocation[]>([]);
   readonly selectedManualGeo = signal<GeocodedLocation | null>(null);
   readonly isSearchingManualAddress = signal<boolean>(false);
@@ -373,6 +374,31 @@ export class OrdersComponent {
     } catch (error: unknown) {
       console.error('Error computing filtered client suggestions:', error);
       return [];
+    }
+  });
+
+  readonly isClientAlreadyRegistered = computed<boolean>(() => {
+    try {
+      const normalizedInput = this.normalizeClientIdentity(this.manualClientName());
+      if (!normalizedInput) {
+        return false;
+      }
+      return this.stateService.clients().some((client: ClientDto) => {
+        const clientFullName = this.normalizeClientIdentity(client.fullName || client.name || '');
+        return clientFullName.length > 0 && clientFullName === normalizedInput;
+      });
+    } catch (error: unknown) {
+      console.error('Error computing whether client is already registered:', error);
+      return false;
+    }
+  });
+
+  readonly isCreateClientCheckboxChecked = computed<boolean>(() => {
+    try {
+      return this.isClientAlreadyRegistered() || this.shouldCreateClient();
+    } catch (error: unknown) {
+      console.error('Error computing create client checkbox state:', error);
+      return false;
     }
   });
 
@@ -1066,6 +1092,37 @@ export class OrdersComponent {
       this.stateService.updateOrderScheduledDay(orderId, dayName);
     } catch (error: unknown) {
       console.error('Error dropping order on day:', error);
+    }
+  }
+
+  /**
+   * Normalizes a client name string for case-insensitive and accent-insensitive comparison.
+   */
+  private normalizeClientIdentity(value: string): string {
+    try {
+      return (value || '')
+        .trim()
+        .toLowerCase()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .replace(/\s+/g, ' ');
+    } catch (error: unknown) {
+      console.error('Error normalizing client identity:', error);
+      return '';
+    }
+  }
+
+  /**
+   * Toggles the manual checkbox state for creating a new client when saving the order.
+   */
+  onToggleCreateClientCheckbox(checked: boolean): void {
+    try {
+      if (this.isClientAlreadyRegistered()) {
+        return;
+      }
+      this.shouldCreateClient.set(Boolean(checked));
+    } catch (error: unknown) {
+      console.error('Error toggling create client checkbox:', error);
     }
   }
 
@@ -1930,6 +1987,7 @@ export class OrdersComponent {
       this.manualClientName.set('');
       this.manualPhone.set('');
       this.manualAddress.set('');
+      this.shouldCreateClient.set(false);
       this.manualAddressSuggestions.set([]);
       this.selectedManualGeo.set(null);
       this.isManualOrderPaid.set(false);
@@ -1966,6 +2024,7 @@ export class OrdersComponent {
       this.manualClientName.set(order.clientName || '');
       this.manualPhone.set(order.clientPhone || '');
       this.manualAddress.set(order.clientAddress || '');
+      this.shouldCreateClient.set(false);
       this.manualAddressSuggestions.set([]);
       this.selectedManualGeo.set(null);
       this.isManualOrderPaid.set(order.isPaid || false);
@@ -2141,6 +2200,21 @@ export class OrdersComponent {
       const isPaid = this.isManualOrderPaid();
       const paymentMethodName = isPaid ? this.manualPaymentMethod() : 'Contra Entrega (Por Cobrar)';
 
+      if (!this.isClientAlreadyRegistered() && this.shouldCreateClient()) {
+        try {
+          this.stateService.createClient({
+            fullName: this.manualClientName().trim(),
+            identificationNumber: '',
+            phone: this.manualPhone().trim(),
+            address: finalAddress.trim(),
+            city: geo?.locality || geo?.zone || '',
+            notes: this.manualNotes().trim()
+          });
+        } catch (clientErr: unknown) {
+          console.error('Error creating client from manual order modal:', clientErr);
+        }
+      }
+
       if (editId !== null) {
         this.stateService.updateOrder(editId, {
           clientName: this.manualClientName(),
@@ -2176,6 +2250,7 @@ export class OrdersComponent {
       this.manualClientName.set('');
       this.manualPhone.set('');
       this.manualAddress.set('');
+      this.shouldCreateClient.set(false);
       this.manualAddressSuggestions.set([]);
       this.selectedManualGeo.set(null);
       this.isManualOrderPaid.set(false);

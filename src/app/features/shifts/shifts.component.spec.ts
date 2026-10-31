@@ -206,8 +206,27 @@ describe('ShiftsComponent', () => {
     expect(notificationSpy.info).toHaveBeenCalled();
   });
 
-  it('should expose parametric activeShiftSchedules and format shift schedule labels with getShiftTypeLabel', () => {
+  it('should expose parametric activeShiftSchedules and format shift schedule labels, dates, and worked hours', () => {
     expect(component.activeShiftSchedules().length).toBeGreaterThan(0);
-    expect(component.getShiftTypeLabel('MORNING')).toContain('Turno Mañana');
+    expect(component.getShiftTypeLabel('MORNING')).toBe('Turno Mañana');
+    expect(component.getShiftTypeLabel('AFTERNOON')).toBe('Turno Tarde');
+
+    expect(component.formatShiftDateTime('2026-10-31T19:59:14.761Z')).toMatch(
+      /^\d{2}\/\d{2}\/\d{4}\s\d{2}:\d{2}\s(AM|PM)$/
+    );
+    expect(component.formatShiftDateTime('06:00')).toBe('06:00 AM');
+
+    const closedShift: WorkShiftDto = {
+      shiftId: 201,
+      employeeId: 8,
+      employeeName: 'Carlos Cajero',
+      branchId: 1,
+      startTime: '2026-10-31T10:00:00.000Z',
+      endTime: '2026-10-31T10:45:00.000Z',
+      hoursWorked: 0.75,
+      shiftType: 'MORNING',
+      status: 'CLOSED'
+    };
+    expect(component.formatWorkedHours(closedShift)).toBe('45 min');
   });
 });

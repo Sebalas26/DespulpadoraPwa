@@ -4,6 +4,71 @@ Este documento registra de manera cronológica y estructurada todas las interven
 
 ---
 
+## [2026-10-31] - Formato Legible de Fechas de Entrada/Salida (AM/PM), Nombre de Jornada Parametrizada y Cálculo Real de Horas Laboradas en Turnos (`HrComponent`, `ShiftsComponent` y `StateService`)
+
+### 💬 Prompt Original del Usuario
+> "En el registro de entrada y salida, dejame las fechas bien, con otro formato
+> horario pon el nombre de la jornada
+> y ajusta las horas laboradas de acuerdo a la entrada y salida"
+> "ejecuta"
+
+### 🤖 Resumen Técnico para la IA
+- **1. Formato de Fecha y Hora Legible 12h AM/PM en Entrada y Salida (`formatShiftDateTime`)**:
+  - Se implementó `formatShiftDateTime(value?: string): string` en `HrComponent` (`src/app/features/hr/hr.component.ts`) y `ShiftsComponent` (`src/app/features/shifts/shifts.component.ts`) que convierte cadenas ISO UTC (`2026-10-31T19:59:05.080Z`) a formato local `DD/MM/YYYY hh:mm AM/PM` y horas cortas (`HH:mm`) a formato 12h `hh:mm AM/PM`.
+  - En `src/app/features/hr/hr.component.html` y `src/app/features/shifts/shifts.component.html` se reemplazaron las interpolaciones crudas `{{ shift.startTime }}` y `{{ shift.endTime }}` por `{{ formatShiftDateTime(...) }}`, eliminando además el fallback quemado `|| '18:00'`.
+- **2. Nombre Real de la Jornada Parametrizada en `Horario` / `Jornada` (`getShiftTypeLabel`)**:
+  - Se implementó `getShiftTypeLabel(shiftType?: string): string` en `HrComponent` y se actualizó en `ShiftsComponent`, buscando en el catálogo parametrizado (`activeShiftSchedules()`, `shiftSchedulesConfig()`, `DEFAULT_SHIFT_SCHEDULES`) por `code`, `id` o `name` para mostrar el nombre real de la jornada (`Turno Mañana`, `Turno Tarde`, `Turno Noche` o cualquier jornada creada en *Parámetros del Sistema*) en lugar de los códigos técnicos `MORNING`, `AFTERNOON` o `NIGHT`.
+- **3. Cálculo Exacto de Horas Laboradas según Entrada y Salida Real (`formatWorkedHours`, `calculateElapsedHours`, `normalizeShiftsHours`)**:
+  - Se eliminaron de raíz los fallbacks quemados `{{ shift.hoursWorked || 8 }} hrs` y `{{ shift.hoursWorked || 8 }} horas` en `src/app/features/hr/hr.component.html`.
+  - Se implementó `formatWorkedHours(shift: WorkShiftDto): string` en `HrComponent` y `ShiftsComponent`, calculando la diferencia exacta entre `startTime` y `endTime` (`X h Y min`, `X hora(s)`, `Y min` o `Z seg` para turnos de segundos).
+  - En `StateService` (`src/app/core/services/state.service.ts`), se actualizó `calculateElapsedHours` para preservar precisión en turnos cortos y se agregó `normalizeShiftsHours` al cargar o refrescar turnos cerrados.
+- **4. Informes del Agente Verificador, Agente Auditor Punto por Punto y Revisión Par**:
+  - **Agente Verificador (`477ee3cc-69ba-4938-b923-725f8a099f95`)**: Confirmó impacto 100% quirúrgico sin regresiones.
+  - **Agente Auditor Punto por Punto (`ca125707-701f-4be7-8bb9-7e0713c561be`)**: Dictamen **AUDITORÍA APROBADA AL 100% SIN DESVIACIONES**.
+  - **Agente de Revisión Par (`faaca0b6-3a60-4aa2-b028-8ac513d04efb`)**: Dictamen **100% APROBADO SIN OBSERVACIONES**.
+
+### 📦 Componentes Modificados
+- `src/app/features/hr/hr.component.ts`
+- `src/app/features/hr/hr.component.html`
+- `src/app/features/hr/hr.component.spec.ts`
+- `src/app/features/shifts/shifts.component.ts`
+- `src/app/features/shifts/shifts.component.html`
+- `src/app/features/shifts/shifts.component.spec.ts`
+- `src/app/core/services/state.service.ts`
+
+### ✅ Verificación, Build y Tests Unitarios
+- `npm run build`: **OK (0 errores)**.
+- `npx ng test --watch=false --browsers=ChromeHeadless`: **276 de 276 SUCCESS (100% Unit Tests Passed, 0 fallos)**.
+
+---
+
+## [2026-10-31] - Purga de Presentaciones Mock Heredadas en `localStorage` y Sincronización Bidireccional de Pulpas con Base de Datos (`StateService`)
+
+### 💬 Prompt Original del Usuario
+> "porque me muestra esa lista de pulpas si no las crre yo"
+> "procede"
+
+### 🤖 Resumen Técnico para la IA
+- **1. Purga Definitiva de las 10 Presentaciones Mock Heredadas (`src/app/core/services/state.service.ts`)**:
+  - Se implementó `isLegacyMockVariant(v: ProductVariantDto): boolean` y se integró en `loadVariantsFromStorage()` y `syncVariantsWithFruits()` para eliminar de raíz los 10 registros mock heredados en `localStorage` (`LIM-CER-140G`, `LIM-COC-140G`, `BAT-RED-250G`, `BAT-DTX-250G`, `PULP-MAN-140G`, `PULP-MAN-250G`, `PULP-LUL-140G`, `PULP-LUL-250G`, `PULP-MAR-140G`, `PULP-MAR-250G`), reescribiendo `despulpadora_variants` en `localStorage` con únicamente las presentaciones reales creadas por el usuario (ej. `"Pulpa Mora"`).
+- **2. Sincronización Bidireccional de Pulpas con `fruits` y la API (`/api/fruits`)**:
+  - `syncVariantsWithFruits(fruits: FruitConfig[])` se ejecuta en `refreshAll()` tras recibir `res.fruits`, eliminando variantes huérfanas de frutas eliminadas y sincronizando el stock por gramaje (`g140`, `g250`, `g500`, `g1000`).
+  - `addProductVariant`, `adjustVariantStock`, `updateProductVariant`, `adjustStock`, `deleteFreshFruitItem` y `deleteFruitCatalogCard` sincronizan el stock y precios entre `productVariants`, `fruits` y el backend (`this.api.adjustStock`).
+- **3. Informes del Agente Verificador, Agente Auditor Punto por Punto y Revisión Par**:
+  - **Agente Verificador (`d5983fa2-1c94-4b47-a48d-f5383721bc48`)**: Identificó la causa raíz en `loadVariantsFromStorage()` y `refreshAll()`.
+  - **Agente Auditor Punto por Punto (`a08338a5-2677-48ca-9b11-da05eeac81df`)**: Dictamen **APROBADO SIN DESVIACIONES (100% CONFORME A `AGENTS.md`)**.
+  - **Agente de Revisión Par (`fe70b26a-d8c3-4a91-8810-465f7a54ccd6`)**: Dictamen **APROBADO SIN OBSERVACIONES**.
+
+### 📦 Componentes Modificados
+- `src/app/core/services/state.service.ts`
+- `src/app/core/services/state.service.spec.ts`
+
+### ✅ Verificación, Build y Tests Unitarios
+- `npm run build`: **OK (0 errores)**.
+- `npx ng test --watch=false --browsers=ChromeHeadless`: **275 de 275 SUCCESS (100% Unit Tests Passed, 0 fallos)**.
+
+---
+
 ## [2026-10-31] - Ajuste de Cards de Pulpa y Fruta, Cuadro Resumen Superior en Pulpas y Dialog Paginado de Histórico de Ingresos y Salidas de Inventario (`SettingsComponent` y `StateService`)
 
 ### 💬 Prompt Original del Usuario
@@ -2300,4 +2365,41 @@ por otr lado, la columna de accion dejamelo mejor, puede ser un lista desplegabl
 ### ✅ Verificación, Build y Tests Unitarios
 - **Build de Producción (`npm run build`)**: **0 Errores** (`dist/despulpadora-pwa` generado exitosamente).
 - **Pruebas Unitarias (`npx ng test --watch=false --browsers=ChromeHeadless`)**: **Executed 194 of 194 SUCCESS (TOTAL: 194 SUCCESS, 0 FAILED)**.
+
+---
+
+## [2026-10-31] - Checkbox "Crear cliente" en el Modal de Crear Nuevo Pedido Manual (`OrdersComponent`)
+
+### 💬 Prompt Original del Usuario
+> "Esto ocurre en DGL Despulpadora por la diferencia en cómo cada pantalla obtiene la lista de clientes:
+> 1. ¿Por qué "luz arango" sí aparece al crear un pedido?
+> En el modal Crear Nuevo Pedido Manual (orders.component.ts), el autocompletado (allKnownClients) combina dos orígenes de datos:
+> Los clientes guardados en la tabla oficial de clientes (this.stateService.clients()).
+> Todos los pedidos históricos (this.stateService.orders()), extrayendo el clientName, clientPhone y clientAddress de cualquier pedido que se haya registrado anteriormente.
+> Por eso, aunque "luz arango" solo fue digitada alguna vez al crear un pedido (y nunca fue creada en el módulo de Clientes), el buscador de pedidos la recuerda a partir de sus pedidos anteriores.
+> --------------
+> Para lo anterior, creame un checkbox al crear pedido que diga Crear cliente , si ya se encuentra creado , dejalo marcado y inhabilitado"
+
+### 🤖 Resumen Técnico para la IA
+- **1. Detección Reactiva de Cliente Registrado y Control del Checkbox (`src/app/features/orders/orders.component.ts` & `.html`)**:
+  - Se agregó la señal `shouldCreateClient = signal<boolean>(false)` y las señales computadas `isClientAlreadyRegistered` e `isCreateClientCheckboxChecked`.
+  - `isClientAlreadyRegistered` normaliza el nombre ingresado (`normalizeClientIdentity`: sin tildes, en minúsculas y sin espacios duplicados) y verifica en tiempo real si ya existe en el directorio oficial `this.stateService.clients()`.
+  - Si el cliente **ya existe** en `this.stateService.clients()`, el checkbox **Crear cliente** se renderiza automáticamente **marcado (`checked = true`) e inhabilitado (`disabled = true`)**.
+  - Si el cliente **no existe** en `this.stateService.clients()` (ej. `"luz arango"`, que provenía de un pedido histórico o es un cliente nuevo), el checkbox **Crear cliente** permanece **habilitado (`disabled = false`)**; cuando el usuario lo marca y guarda el pedido en `submitManualOrder()`, se invoca `this.stateService.createClient(...)` con los datos reales del formulario (`fullName`, `phone`, `address`, `city`, `notes`).
+- **2. Estilos Aislados (`src/app/features/orders/orders.component.scss`)**:
+  - Se agregaron las clases encapsuladas `.create-client-checkbox-row`, `.create-client-checkbox` y `.create-client-checkbox-label` usando tokens del sistema de diseño sin alterar ningún otro modal o vista.
+- **3. Certificación de Agentes de Calidad**:
+  - **Agente Verificador de Impacto (`1a2ee6f9-ee83-4212-ab9e-ddba0e797260`)**, **Agente Auditor Punto por Punto (`da9e988d-0d17-46a5-8464-d50a5c39139f`)** y **Agente de Revisión Par (`4950b2e9-03ff-4e6e-96b3-dedf94da79bb`)**: Aprobaron el 100% de la implementación sin desviaciones ni regresiones.
+
+### 📦 Componentes Modificados
+- `src/app/features/orders/orders.component.ts` [MODIFICADO]
+- `src/app/features/orders/orders.component.html` [MODIFICADO]
+- `src/app/features/orders/orders.component.scss` [MODIFICADO]
+- `src/app/features/orders/orders.component.spec.ts` [MODIFICADO]
+- `HISTORIAL_CAMBIOS.md` [MODIFICADO]
+
+### ✅ Verificación, Build y Tests Unitarios
+- **Build de Producción (`npm run build`)**: **0 Errores** (`dist/despulpadora-pwa` generado exitosamente).
+- **Pruebas Unitarias (`npx ng test --watch=false --browsers=ChromeHeadless`)**: **Executed 279 of 279 SUCCESS (TOTAL: 279 SUCCESS, 0 FAILED)**.
+
 

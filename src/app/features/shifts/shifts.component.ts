@@ -293,17 +293,148 @@ export class ShiftsComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * Resolves the human-readable schedule name and time range for a shift code.
+   * Resolves the human-readable schedule name for a shift code or identifier.
    */
-  getShiftTypeLabel(shiftType: string): string {
+  getShiftTypeLabel(shiftType?: string): string {
     try {
-      const match = this.activeShiftSchedules().find(s => s.code === shiftType || s.id === shiftType);
-      if (match) {
-        return `${match.name} (${match.startTime} - ${match.endTime})`;
+      const clean = (shiftType || '').trim();
+      if (!clean) {
+        return '—';
       }
-      return shiftType;
+      const normalized = clean.toLowerCase();
+      const configured =
+        typeof this.stateService.shiftSchedulesConfig === 'function'
+          ? this.stateService.shiftSchedulesConfig()
+          : [];
+      const catalog: ShiftScheduleConfig[] = [
+        ...this.activeShiftSchedules(),
+        ...configured,
+        ...DEFAULT_SHIFT_SCHEDULES
+      ];
+      const match = catalog.find(
+        s =>
+          s.code.toLowerCase() === normalized ||
+          s.id.toLowerCase() === normalized ||
+          s.name.toLowerCase() === normalized
+      );
+      return match ? match.name : clean;
     } catch {
-      return shiftType;
+      return shiftType || '—';
+    }
+  }
+
+  /**
+   * Formats a shift timestamp or time string into a human-readable date and 12-hour AM/PM time.
+   */
+  formatShiftDateTime(value?: string): string {
+    try {
+      const raw = (value || '').trim();
+      if (!raw) {
+        return '—';
+      }
+      const timeOnlyMatch = raw.match(/^(\d{1,2}):(\d{2})(?::\d{2})?(?:\s*(AM|PM|am|pm))?$/);
+      if (timeOnlyMatch) {
+        let hours = Number(timeOnlyMatch[1]);
+        const minutes = timeOnlyMatch[2];
+        const explicitMeridiem = timeOnlyMatch[3]?.toUpperCase();
+        if (explicitMeridiem) {
+          return `${String(hours).padStart(2, '0')}:${minutes} ${explicitMeridiem}`;
+        }
+        const period = hours >= 12 ? 'PM' : 'AM';
+        hours = hours % 12 || 12;
+        return `${String(hours).padStart(2, '0')}:${minutes} ${period}`;
+      }
+
+      const parsedMs = Date.parse(raw);
+      if (!Number.isNaN(parsedMs)) {
+        const dateObj = new Date(parsedMs);
+        const day = String(dateObj.getDate()).padStart(2, '0');
+        const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+        const year = dateObj.getFullYear();
+        const hours24 = dateObj.getHours();
+        const minutes = String(dateObj.getMinutes()).padStart(2, '0');
+        const period = hours24 >= 12 ? 'PM' : 'AM';
+        const hours12 = String(hours24 % 12 || 12).padStart(2, '0');
+        return `${day}/${month}/${year} ${hours12}:${minutes} ${period}`;
+      }
+
+      return raw;
+    } catch {
+      return value || '—';
+    }
+  }
+
+  /**
+   * Calculates and formats the real elapsed time worked between shift check-in and check-out.
+   */
+  formatWorkedHours(shift: WorkShiftDto): string {
+    try {
+      const startRaw = (shift?.startTime || '').trim();
+      const endRaw = (shift?.endTime || '').trim();
+
+      if (startRaw && endRaw) {
+        const startMs = Date.parse(startRaw);
+        const endMs = Date.parse(endRaw);
+        if (!Number.isNaN(startMs) && !Number.isNaN(endMs) && endMs >= startMs) {
+          const totalSeconds = Math.floor((endMs - startMs) / 1000);
+          const hours = Math.floor(totalSeconds / 3600);
+          const minutes = Math.floor((totalSeconds % 3600) / 60);
+          const seconds = totalSeconds % 60;
+
+          if (hours > 0 && minutes > 0) {
+            return `${hours} h ${minutes} min`;
+          }
+          if (hours > 0) {
+            return `${hours} ${hours === 1 ? 'hora' : 'horas'}`;
+          }
+          if (minutes > 0) {
+            return `${minutes} min`;
+          }
+          return `${seconds} seg`;
+        }
+
+        const startMatch = startRaw.match(/^(\d{1,2}):(\d{2})/);
+        const endMatch = endRaw.match(/^(\d{1,2}):(\d{2})/);
+        if (startMatch && endMatch) {
+          const startMin = Number(startMatch[1]) * 60 + Number(startMatch[2]);
+          let endMin = Number(endMatch[1]) * 60 + Number(endMatch[2]);
+          if (endMin < startMin) {
+            endMin += 24 * 60;
+          }
+          const diffMin = endMin - startMin;
+          const hours = Math.floor(diffMin / 60);
+          const minutes = diffMin % 60;
+          if (hours > 0 && minutes > 0) {
+            return `${hours} h ${minutes} min`;
+          }
+          if (hours > 0) {
+            return `${hours} ${hours === 1 ? 'hora' : 'horas'}`;
+          }
+          return `${minutes} min`;
+        }
+      }
+
+      if (shift?.hoursWorked !== undefined && shift?.hoursWorked !== null) {
+        const numericHours = Math.max(0, Number(shift.hoursWorked) || 0);
+        const totalSeconds = Math.round(numericHours * 3600);
+        const hours = Math.floor(totalSeconds / 3600);
+        const minutes = Math.floor((totalSeconds % 3600) / 60);
+        const seconds = totalSeconds % 60;
+        if (hours > 0 && minutes > 0) {
+          return `${hours} h ${minutes} min`;
+        }
+        if (hours > 0) {
+          return `${hours} ${hours === 1 ? 'hora' : 'horas'}`;
+        }
+        if (minutes > 0) {
+          return `${minutes} min`;
+        }
+        return `${seconds} seg`;
+      }
+
+      return '0 min';
+    } catch {
+      return '0 min';
     }
   }
 }

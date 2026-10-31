@@ -910,6 +910,15 @@
               title="Limpiar">✕</button>
             }
           </div>
+          <label class="create-client-checkbox-row" [class.is-disabled]="isClientAlreadyRegistered()">
+            <input
+              type="checkbox"
+              class="create-client-checkbox"
+              [checked]="isCreateClientCheckboxChecked()"
+              [disabled]="isClientAlreadyRegistered()"
+              (change)="onToggleCreateClientCheckbox($any($event.target).checked)" />
+            <span class="create-client-checkbox-label">Crear cliente</span>
+          </label>
 
                     @if (showClientSuggestions() && filteredClientSuggestions().length > 0) {
           <div class="client-suggestions-dropdown">

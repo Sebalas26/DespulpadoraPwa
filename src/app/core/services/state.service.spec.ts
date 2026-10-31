@@ -547,4 +547,65 @@ describe('StateService', () => {
     expect(service.grammagesConfig().length).toBe(1);
     expect(service.grammagesConfig()[0].label).toBe('500g Especial');
   });
+
+  it('should purge legacy mock variants from localStorage while preserving user-created variants and syncing stock with fruits and API', () => {
+    localStorage.setItem(
+      'despulpadora_variants',
+      JSON.stringify([
+        {
+          variantId: 202,
+          fruitId: 99,
+          fruitName: 'Limón',
+          category: 'LIMONADAS',
+          sku: 'LIM-CER-140G',
+          name: 'Base Limonada Cerezada 140g',
+          grammage: 140,
+          unitCost: 1350,
+          basePrice: 2500,
+          minStockAlert: 30,
+          currentStock: 60,
+          isActive: true
+        },
+        {
+          variantId: 1,
+          fruitId: 1,
+          fruitName: 'Mora',
+          category: 'PULPAS',
+          sku: 'PUL-MOR-140G',
+          name: 'Pulpa Mora',
+          grammage: 140,
+          unitCost: 4000,
+          basePrice: 5000,
+          minStockAlert: 0,
+          currentStock: 10,
+          isActive: true
+        }
+      ])
+    );
+
+    service.reloadDomainFromStorage('inventory');
+
+    expect(service.productVariants().length).toBe(1);
+    expect(service.productVariants()[0].name).toBe('Pulpa Mora');
+    expect(service.productVariants()[0].currentStock).toBe(10);
+
+    service.saveFreshFruitItem({
+      id: 'mora',
+      fruitId: 1,
+      name: 'Mora',
+      freshStockKg: 500,
+      yieldPercentage: 75
+    });
+
+    service.adjustVariantStock(1, 10);
+    expect(service.productVariants()[0].currentStock).toBe(20);
+    expect(service.fruits()[0].stock.g140).toBe(20);
+    expect(apiSpy.adjustStock).toHaveBeenCalledWith(
+      jasmine.objectContaining({
+        fruitId: 1,
+        grammage: 140,
+        quantityDelta: 10
+      })
+    );
+  });
 });

@@ -162,11 +162,11 @@
                   <div class="mobile-summary-header">
                     <div class="ms-left">
                       <span class="ms-code-badge">{{ shift.employeeName }}</span>
-                      <span class="ms-subtitle">Jornada: {{ getShiftTypeLabel(shift.shiftType) }} • Inicio: {{ shift.startTime }}</span>
+                      <span class="ms-subtitle">Jornada: {{ getShiftTypeLabel(shift.shiftType) }} • Inicio: {{ formatShiftDateTime(shift.startTime) }}</span>
                     </div>
                     <div class="ms-right">
                       <div class="ms-top-right">
-                        <span class="ms-value">{{ shift.startTime }}</span>
+                        <span class="ms-value">{{ formatShiftDateTime(shift.startTime) }}</span>
                         <span class="ms-chevron">
                           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
                             <polyline points="6 9 12 15 18 9"></polyline>
@@ -178,7 +178,7 @@
                   </div>
                 </td>
                 <td data-label="Empleado" style="font-weight: 700;">{{ shift.employeeName }}</td>
-                <td data-label="Horario de Entrada" style="font-family: monospace; font-size: 0.9rem;">{{ shift.startTime }}</td>
+                <td data-label="Horario de Entrada" style="font-family: monospace; font-size: 0.9rem;">{{ formatShiftDateTime(shift.startTime) }}</td>
                 <td data-label="Jornada">
                   <span class="badge badge-info">{{ getShiftTypeLabel(shift.shiftType) }}</span>
                 </td>
@@ -199,7 +199,9 @@
                       Cerrar Turno
                     </button>
                   } @else {
-                    <span style="font-size: 0.78rem; color: var(--text-dim);">Salida: {{ shift.endTime }}</span>
+                    <span style="font-size: 0.78rem; color: var(--text-dim);">
+                      Salida: {{ formatShiftDateTime(shift.endTime) }} ({{ formatWorkedHours(shift) }})
+                    </span>
                   }
                 </td>
               </tr>

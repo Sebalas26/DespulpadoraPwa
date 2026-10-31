@@ -228,4 +228,42 @@ describe('HrComponent', () => {
     );
     expect(stateServiceMock.deleteEmployee).toHaveBeenCalledWith(emp.employeeId);
   });
+
+  it('should resolve shift schedule names, format shift entry/exit dates, and calculate real worked hours without hardcoded 8 hours', () => {
+    expect(component.getShiftTypeLabel('MORNING')).toBe('Turno Mañana');
+    expect(component.getShiftTypeLabel('AFTERNOON')).toBe('Turno Tarde');
+    expect(component.getShiftTypeLabel('NIGHT')).toBe('Turno Noche');
+
+    const formattedIso = component.formatShiftDateTime('2026-10-31T19:59:05.080Z');
+    expect(formattedIso).toMatch(/^\d{2}\/\d{2}\/\d{4}\s\d{2}:\d{2}\s(AM|PM)$/);
+    expect(component.formatShiftDateTime('14:30')).toBe('02:30 PM');
+    expect(component.formatShiftDateTime('')).toBe('—');
+
+    const shortShift: WorkShiftDto = {
+      shiftId: 101,
+      employeeId: 1,
+      employeeName: 'Sandra Milena Arango Buitrago',
+      branchId: 1,
+      startTime: '2026-10-31T19:59:05.080Z',
+      endTime: '2026-10-31T19:59:09.030Z',
+      hoursWorked: 0,
+      shiftType: 'MORNING',
+      status: 'CLOSED'
+    };
+    expect(component.formatWorkedHours(shortShift)).toBe('3 seg');
+    expect(component.formatWorkedHours(shortShift)).not.toContain('8');
+
+    const fullShift: WorkShiftDto = {
+      shiftId: 102,
+      employeeId: 1,
+      employeeName: 'Sandra Milena Arango Buitrago',
+      branchId: 1,
+      startTime: '2026-10-31T11:00:00.000Z',
+      endTime: '2026-10-31T13:15:00.000Z',
+      hoursWorked: 2.25,
+      shiftType: 'MORNING',
+      status: 'CLOSED'
+    };
+    expect(component.formatWorkedHours(fullShift)).toBe('2 h 15 min');
+  });
 });
