@@ -6,6 +6,11 @@ import { StateService } from '../../core/services/state.service';
 import { NotificationService } from '../../core/services/notification.service';
 import { RealtimeSyncService } from '../../core/services/realtime-sync.service';
 import {
+  WhatsAppGatewayService,
+  WhatsAppGatewayStatusDto,
+  WhatsAppSendResponseDto
+} from '../../core/services/whatsapp-gateway.service';
+import {
   DEFAULT_CATEGORIES,
   DEFAULT_COMPANY_CONFIG,
   DEFAULT_GRAMMAGES,
@@ -74,9 +79,22 @@ export class SettingsComponent {
   readonly stateService = inject(StateService);
   readonly notification = inject(NotificationService);
   readonly realtimeSync = inject(RealtimeSyncService);
+  readonly whatsAppGateway = inject(WhatsAppGatewayService);
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
   readonly Math = Math;
+
+  readonly whatsAppGatewayStatus = signal<WhatsAppGatewayStatusDto>({
+    status: 'DISCONNECTED',
+    connected: false,
+    qrDataUrl: null,
+    phoneNumber: null,
+    name: null
+  });
+  readonly isLoadingWhatsAppStatus = signal<boolean>(false);
+  readonly isSendingWhatsAppTest = signal<boolean>(false);
+  readonly whatsAppTestPhone = signal<string>('');
+  readonly whatsAppTestMessage = signal<string>('');
 
   readonly activeTab = signal<'general' | 'inventory' | 'users' | 'roles' | 'catalog' | 'parameters'>('general');
   readonly inventorySubTab = signal<'variants' | 'fruits'>('variants');
@@ -442,6 +460,7 @@ export class SettingsComponent {
     try {
       this.realtimeSync.connect();
       this.stateService.refreshAll?.();
+      this.refreshWhatsAppGatewayStatus();
       effect(() => {
         try {
           const info = this.stateService.companyInfo();
@@ -1932,6 +1951,131 @@ export class SettingsComponent {
       });
     } catch {
       return isoString.substring(0, 10);
+    }
+  }
+
+  /**
+   * Queries the self-hosted WhatsApp Gateway for the current connection status and QR code.
+   */
+  refreshWhatsAppGatewayStatus(): void {
+    try {
+      this.isLoadingWhatsAppStatus.set(true);
+      this.whatsAppGateway.getStatus().subscribe({
+        next: (status: WhatsAppGatewayStatusDto) => {
+          this.whatsAppGatewayStatus.set(status);
+          this.isLoadingWhatsAppStatus.set(false);
+          if (status.status === 'CONNECTING' && !status.qrDataUrl && !status.connected) {
+            setTimeout(() => {
+              this.whatsAppGateway.getStatus().subscribe({
+                next: (retryStatus: WhatsAppGatewayStatusDto) => {
+                  this.whatsAppGatewayStatus.set(retryStatus);
+                }
+              });
+            }, 2000);
+          }
+        },
+        error: () => {
+          this.isLoadingWhatsAppStatus.set(false);
+        }
+      });
+    } catch {
+      this.isLoadingWhatsAppStatus.set(false);
+    }
+  }
+
+  /**
+   * Requests the WhatsApp Gateway to regenerate the QR code or reconnect the session.
+   */
+  reconnectWhatsAppGateway(): void {
+    try {
+      this.isLoadingWhatsAppStatus.set(true);
+      this.whatsAppGateway.reconnect().subscribe({
+        next: (res: { success: boolean } & Partial<WhatsAppGatewayStatusDto>) => {
+          if (res.status && (res.qrDataUrl || res.connected)) {
+            this.whatsAppGatewayStatus.set({
+              status: res.status,
+              connected: Boolean(res.connected),
+              qrDataUrl: res.qrDataUrl ?? null,
+              phoneNumber: res.phoneNumber ?? null,
+              name: res.name ?? null,
+              lastUpdatedAt: res.lastUpdatedAt
+            });
+            this.isLoadingWhatsAppStatus.set(false);
+            this.notification.info('Gateway WhatsApp', 'Código QR actualizado y listo para escanear.');
+          } else {
+            this.refreshWhatsAppGatewayStatus();
+            this.notification.info('Gateway WhatsApp', 'Solicitando nuevo código QR al servidor...');
+          }
+        },
+        error: () => {
+          this.isLoadingWhatsAppStatus.set(false);
+        }
+      });
+    } catch {
+      this.isLoadingWhatsAppStatus.set(false);
+    }
+  }
+
+  /**
+   * Logs out and unlinks the currently connected WhatsApp account from the Gateway.
+   */
+  logoutWhatsAppGateway(): void {
+    try {
+      this.isLoadingWhatsAppStatus.set(true);
+      this.whatsAppGateway.logout().subscribe({
+        next: (res: { success: boolean } & Partial<WhatsAppGatewayStatusDto>) => {
+          if (res.status && res.qrDataUrl) {
+            this.whatsAppGatewayStatus.set({
+              status: res.status,
+              connected: false,
+              qrDataUrl: res.qrDataUrl,
+              phoneNumber: null,
+              name: null,
+              lastUpdatedAt: res.lastUpdatedAt
+            });
+            this.isLoadingWhatsAppStatus.set(false);
+          } else {
+            this.refreshWhatsAppGatewayStatus();
+          }
+          this.notification.success('WhatsApp Desvinculado', 'Se cerró la sesión del número vinculado.');
+        },
+        error: () => {
+          this.isLoadingWhatsAppStatus.set(false);
+        }
+      });
+    } catch {
+      this.isLoadingWhatsAppStatus.set(false);
+    }
+  }
+
+  /**
+   * Sends a live test WhatsApp message through the linked Gateway session.
+   */
+  sendWhatsAppTestMessage(): void {
+    try {
+      const phone = this.whatsAppTestPhone().trim();
+      const message = this.whatsAppTestMessage().trim();
+      if (!phone || !message) {
+        this.notification.warning('Campos Requeridos', 'Ingresa el número de teléfono destino y el mensaje de prueba.');
+        return;
+      }
+      this.isSendingWhatsAppTest.set(true);
+      this.whatsAppGateway.sendMessage(phone, message).subscribe({
+        next: (res: WhatsAppSendResponseDto) => {
+          this.isSendingWhatsAppTest.set(false);
+          if (res.success) {
+            this.notification.success('Mensaje Enviado', `WhatsApp enviado automáticamente a ${phone}.`);
+          } else {
+            this.notification.warning('No se pudo enviar', res.error || 'Verifica que el código QR esté escaneado.');
+          }
+        },
+        error: () => {
+          this.isSendingWhatsAppTest.set(false);
+          this.notification.error('Error de Envío', 'No fue posible contactar con el Gateway de WhatsApp.');
+        }
+      });
+    } catch {
+      this.isSendingWhatsAppTest.set(false);
     }
   }
 }

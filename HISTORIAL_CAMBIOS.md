@@ -4,6 +4,40 @@ Este documento registra de manera cronológica y estructurada todas las interven
 
 ---
 
+## [2026-11-02] - Integración de Íconos Oficiales de Waze y Google Maps en Modal `"Navegar a..."` de la App Móvil Flutter (`DespulpadoraApp`)
+
+### 💬 Prompt Original del Usuario
+> "implemeta@[/Users/sebastiansalamanca/Downloads/IMG_4906.heic] estas imagenes en mi app flutter"
+> "ejecuta"
+
+### 🤖 Resumen Técnico para la IA
+- **1. Incorporación y Registro de Assets Oficiales (`DespulpadoraApp`)**:
+  - Se copiaron las imágenes oficiales proporcionadas por el usuario a `/Users/sebastiansalamanca/Documents/Flutter/DespulpadoraApp/assets/images/waze-icon.png` y `/Users/sebastiansalamanca/Documents/Flutter/DespulpadoraApp/assets/images/google-maps-icon.png`.
+  - Se registraron ambos assets explícitamente bajo `flutter -> assets` en `/Users/sebastiansalamanca/Documents/Flutter/DespulpadoraApp/pubspec.yaml`.
+- **2. Actualización Quirúrgica del Modal `_showExternalNavigationSheet` (`lib/views/courier_route_map_screen.dart`)**:
+  - En la opción **Waze**, se reemplazó el ícono vectorial genérico `Icons.navigation` por `ClipRRect(borderRadius: BorderRadius.circular(10), child: Image.asset('assets/images/waze-icon.png', width: 40, height: 40, fit: BoxFit.contain))`.
+  - En la opción **Google Maps**, se reemplazó el ícono vectorial genérico `Icons.map_rounded` por un contenedor redondeado de `40x40` con `Image.asset('assets/images/google-maps-icon.png', width: 32, height: 32, fit: BoxFit.contain)`.
+  - Se mantuvo 100% intacta la lógica de deep-linking (`waze.com/ul` y `google.com/maps/dir`) y el manejo de errores `try-catch`.
+- **3. Informes del Agente Verificador, Agente Auditor Punto por Punto y Revisión Par**:
+  - **Agente Verificador (`477ee3cc-69ba-4938-b923-725f8a099f95`)**: Confirmó impacto 100% quirúrgico sobre `_showExternalNavigationSheet` sin regresiones colaterales.
+  - **Agente Auditor Punto por Punto (`ca125707-701f-4be7-8bb9-7e0713c561be`)**: Dictamen **AUDITORÍA APROBADA AL 100% SIN DESVIACIONES**.
+  - **Agente de Revisión Par (`faaca0b6-3a60-4aa2-b028-8ac513d04efb`)**: Dictamen **APROBADO SIN OBSERVACIONES**.
+
+### 📦 Componentes Modificados
+- `../Flutter/DespulpadoraApp/assets/images/waze-icon.png`
+- `../Flutter/DespulpadoraApp/assets/images/google-maps-icon.png`
+- `../Flutter/DespulpadoraApp/pubspec.yaml`
+- `../Flutter/DespulpadoraApp/lib/views/courier_route_map_screen.dart`
+- `../Flutter/DespulpadoraApp/test/widget_test.dart`
+
+### ✅ Verificación, Build y Tests Unitarios
+- `dart analyze` (`DespulpadoraApp`): **No issues found! (0 errores)**.
+- `flutter test` (`DespulpadoraApp`): **14 de 14 All tests passed! (100% PASS)**.
+- `npm run build` (`DespulpadoraPwa`): **OK (0 errores)**.
+- `npx ng test --watch=false --browsers=ChromeHeadless` (`DespulpadoraPwa`): **286 de 286 SUCCESS (100% Unit Tests Passed, 0 fallos)**.
+
+---
+
 ## [2026-10-31] - Rediseño Visual del Portal Cliente en 3 Capas Basado en el Estilo del Login (`auth-hero-bg.jpg`, Cuadro Gris `.portal-board-shell` y Cards Blancas `.product-card`) (`ClientPortalComponent`)
 
 ### 💬 Prompt Original del Usuario
@@ -2456,6 +2490,76 @@ por otr lado, la columna de accion dejamelo mejor, puede ser un lista desplegabl
 ### ✅ Verificación, Build y Tests Unitarios
 - **Build de Producción (`npm run build`)**: **0 Errores** (`dist/despulpadora-pwa` generado exitosamente).
 - **Pruebas Unitarias (`npx ng test --watch=false --browsers=ChromeHeadless`)**: **Executed 280 of 280 SUCCESS (TOTAL: 280 SUCCESS, 0 FAILED)**.
+
+---
+
+## [2026-11-02] - Gateway Auto-Alojado de WhatsApp con Código QR (`WhatsAppQrGateway`), Panel de Vinculación en PWA (`SettingsComponent`) y Envío Automático en App Flutter (`DespulpadoraApp`)
+
+### 💬 Prompt Original del Usuario
+> "desde la app flutter tengo manera de enviar mensajes autmaticosen whatsapp?"
+> "Gateway auto-alojado (ej. Evolution API / Baileys / Waha): Se vincula un número de WhatsApp escaneando un código QR en el servidor y permite enviar mensajes ilimitados por API REST sin costo por mensaje. explica este"
+> "si hazlo para ver como sirve y lo hago mientras con mi numero"
+
+### 🤖 Resumen Técnico para la IA
+- **1. Microservicio Gateway de WhatsApp Multi-Device QR (`/Users/sebastiansalamanca/Documents/Api/WhatsAppQrGateway`)**:
+  - Se creó y levantó el servicio en Node.js con `@whiskeysockets/baileys`, `qrcode`, `express` y `cors` en el puerto `3005` (`http://0.0.0.0:3005/api/whatsapp`).
+  - Expone `GET /api/whatsapp/status` (con imagen QR en Base64 `qrDataUrl`, estado `QR_READY` / `CONNECTED` y número vinculado), `POST /api/whatsapp/send` (con normalización automática de indicativo `57` para celulares de Colombia), `POST /api/whatsapp/logout` y `POST /api/whatsapp/reconnect`.
+- **2. Panel de Escaneo QR y Prueba en Vivo en `DespulpadoraPwa` (`src/app/core/services/whatsapp-gateway.service.ts` y `src/app/features/settings/settings.component.*`)**:
+  - Se creó `WhatsAppGatewayService` con su suite de pruebas `whatsapp-gateway.service.spec.ts`.
+  - En `SettingsComponent` (pestaña `General`), se agregó la tarjeta `.whatsapp-gateway-card` (*"Vinculación de WhatsApp Automático (Código QR & Notificaciones de Ruta)"*) para visualizar el QR en pantalla, actualizar el estado, regenerar el QR, desvincular el número y enviar un mensaje de prueba en vivo.
+- **3. Disparo 100% Automático desde `DespulpadoraApp` (Flutter: `api_config.dart`, `api_service.dart`, `orders_cubit.dart`)**:
+  - Se agregó `sendWhatsAppNotification` en `ApiService` y `_dispatchAutomaticWhatsAppForStatus` en `OrdersCubit` para enviar automáticamente el mensaje de WhatsApp al teléfono del cliente al pasar a `OrderStatus.enCamino` (*"Iniciar Ruta"*), `OrderStatus.enPunto` (*"Llegué al punto"*) y `OrderStatus.entregado` (*"Confirmar Entrega"*).
+- **4. Certificación de Agentes de Calidad**:
+  - **Agente Verificador de Impacto (`37032259-600f-4d54-b12b-9dbf554de280`)**, **Agente Auditor Punto por Punto (`4c95826f-ede4-454a-8cfe-608ec42d9f9d`)** y **Agente de Revisión Par (`69b2e5dc-d0a1-4086-9313-0ffe0401be20`)**: Aprobaron el 100% de la implementación sin desviaciones ni regresiones.
+
+### 📦 Componentes Modificados
+- `/Users/sebastiansalamanca/Documents/Api/WhatsAppQrGateway/package.json` [NUEVO]
+- `/Users/sebastiansalamanca/Documents/Api/WhatsAppQrGateway/server.js` [NUEVO]
+- `src/app/core/services/whatsapp-gateway.service.ts` [NUEVO]
+- `src/app/core/services/whatsapp-gateway.service.spec.ts` [NUEVO]
+- `src/app/features/settings/settings.component.ts` [MODIFICADO]
+- `src/app/features/settings/settings.component.html` [MODIFICADO]
+- `src/app/features/settings/settings.component.spec.ts` [MODIFICADO]
+- `/Users/sebastiansalamanca/Documents/Flutter/DespulpadoraApp/lib/config/api_config.dart` [MODIFICADO]
+- `/Users/sebastiansalamanca/Documents/Flutter/DespulpadoraApp/lib/services/api_service.dart` [MODIFICADO]
+- `/Users/sebastiansalamanca/Documents/Flutter/DespulpadoraApp/lib/blocs/orders_cubit.dart` [MODIFICADO]
+- `/Users/sebastiansalamanca/Documents/Flutter/DespulpadoraApp/test/widget_test.dart` [MODIFICADO]
+- `HISTORIAL_CAMBIOS.md` [MODIFICADO]
+
+### ✅ Verificación, Build y Tests Unitarios
+- **Build de Producción PWA (`npm run build`)**: **0 Errores** (`dist/despulpadora-pwa` generado exitosamente).
+- **Pruebas Unitarias PWA (`npx ng test --watch=false --browsers=ChromeHeadless`)**: **Executed 286 of 286 SUCCESS (TOTAL: 286 SUCCESS, 0 FAILED)**.
+- **Análisis y Pruebas Flutter (`dart analyze && flutter test`)**: **No issues found! + 13/13 tests passed**.
+
+---
+
+## [2026-11-02] - Sincronización de Entrega Inmediata de Código QR en `WhatsAppQrGateway` y `SettingsComponent`
+
+### 💬 Prompt Original del Usuario
+> "no genera nada de qr"
+> "si"
+
+### 🤖 Resumen Técnico para la IA
+- **1. Espera Síncrona de Promesa QR en el Gateway (`/Users/sebastiansalamanca/Documents/Api/WhatsAppQrGateway/server.js`)**:
+  - Se implementaron `waitForQrOrConnection(timeoutMs)` y `notifyQrWaiters()` junto con `destroyCurrentSocket()` y `resolveBaileysVersion()` con caché para que `GET /api/whatsapp/status`, `POST /api/whatsapp/reconnect` y `POST /api/whatsapp/logout` esperen hasta que Baileys emita el evento `qr` y devuelvan directamente el `qrDataUrl` (`data:image/png;base64,...`) en la misma respuesta HTTP.
+  - Se levantó el proceso `node server.js` en segundo plano con `nohup` en el puerto `3005`.
+- **2. Recepción Directa del QR en `SettingsComponent` (`src/app/core/services/whatsapp-gateway.service.ts` y `src/app/features/settings/settings.component.ts` / `.html`)**:
+  - `reconnectWhatsAppGateway()` y `logoutWhatsAppGateway()` actualizan inmediatamente la señal `whatsAppGatewayStatus` con el `qrDataUrl` retornado por el `POST`, eliminando la condición de carrera, y se agregó un reintento automático a los 2 segundos cuando el estado está en `CONNECTING`.
+- **3. Certificación de Agentes de Calidad**:
+  - **Agente Verificador de Impacto (`4cfe665a-b3a1-4f19-9522-ce352faaa68f`)**, **Agente Auditor Punto por Punto (`a1272f26-f7ae-428d-ab86-362f9605d82b`)** y **Agente de Revisión Par (`4d99b2cd-8ed2-4740-92bd-18a87186105f`)**: Aprobaron el 100% de la implementación sin desviaciones ni regresiones.
+
+### 📦 Componentes Modificados
+- `/Users/sebastiansalamanca/Documents/Api/WhatsAppQrGateway/server.js` [MODIFICADO]
+- `src/app/core/services/whatsapp-gateway.service.ts` [MODIFICADO]
+- `src/app/features/settings/settings.component.ts` [MODIFICADO]
+- `src/app/features/settings/settings.component.html` [MODIFICADO]
+- `HISTORIAL_CAMBIOS.md` [MODIFICADO]
+
+### ✅ Verificación, Build y Tests Unitarios
+- **Build de Producción PWA (`npm run build`)**: **0 Errores**.
+- **Pruebas Unitarias PWA (`npx ng test --watch=false --browsers=ChromeHeadless`)**: **Executed 286 of 286 SUCCESS (TOTAL: 286 SUCCESS, 0 FAILED)**.
+
+
 
 
 

@@ -7,6 +7,7 @@ import { StateService } from '../../core/services/state.service';
 import { AuthService } from '../../core/services/auth.service';
 import { NotificationService } from '../../core/services/notification.service';
 import { ApiService } from '../../core/services/api.service';
+import { WhatsAppGatewayService } from '../../core/services/whatsapp-gateway.service';
 import {
   DEFAULT_CATEGORIES,
   DEFAULT_COMPANY_CONFIG,
@@ -39,6 +40,10 @@ describe('SettingsComponent', () => {
   let updateCompanyInfoSpy: jasmine.Spy;
   let saveFreshFruitItemSpy: jasmine.Spy;
   let deleteFreshFruitItemSpy: jasmine.Spy;
+  let whatsAppGetStatusSpy: jasmine.Spy;
+  let whatsAppSendMessageSpy: jasmine.Spy;
+  let whatsAppReconnectSpy: jasmine.Spy;
+  let whatsAppLogoutSpy: jasmine.Spy;
 
   const mockCompany = signal<CompanyConfig>({
     ...DEFAULT_COMPANY_CONFIG,
@@ -165,6 +170,29 @@ describe('SettingsComponent', () => {
         { provide: AuthService, useValue: authServiceMock },
         { provide: NotificationService, useValue: notificationSpy },
         { provide: ApiService, useValue: apiServiceMock },
+        {
+          provide: WhatsAppGatewayService,
+          useValue: {
+            getStatus: (whatsAppGetStatusSpy = jasmine.createSpy('getStatus').and.returnValue(
+              of({
+                status: 'QR_READY' as const,
+                connected: false,
+                qrDataUrl: 'data:image/png;base64,TESTQR',
+                phoneNumber: null,
+                name: null
+              })
+            )),
+            sendMessage: (whatsAppSendMessageSpy = jasmine.createSpy('sendMessage').and.returnValue(
+              of({ success: true, messageId: 'WA-100' })
+            )),
+            reconnect: (whatsAppReconnectSpy = jasmine.createSpy('reconnect').and.returnValue(
+              of({ success: true })
+            )),
+            logout: (whatsAppLogoutSpy = jasmine.createSpy('logout').and.returnValue(
+              of({ success: true })
+            ))
+          }
+        },
         { provide: Router, useValue: routerSpy },
         { provide: ActivatedRoute, useValue: { queryParams: of({ tab: 'general' }) } }
       ]
@@ -641,5 +669,30 @@ describe('SettingsComponent', () => {
     expect(newPresentationBtn).toBeDefined();
     expect(newPresentationBtn?.querySelector('svg')).not.toBeNull();
     expect((newPresentationBtn?.querySelector('span')?.textContent || '').trim()).toBe('Nueva Presentación');
+  });
+
+  it('should render WhatsApp QR Gateway card in general tab, refresh QR status, reconnect, logout, and send test message', () => {
+    component.activeTab.set('general');
+    fixture.detectChanges();
+
+    expect(whatsAppGetStatusSpy).toHaveBeenCalled();
+    expect(component.whatsAppGatewayStatus().status).toBe('QR_READY');
+
+    const compiled: HTMLElement = fixture.nativeElement as HTMLElement;
+    const qrImg = compiled.querySelector('.whatsapp-qr-image') as HTMLImageElement | null;
+    expect(qrImg).not.toBeNull();
+    expect(qrImg?.src).toContain('data:image/png;base64,TESTQR');
+
+    component.whatsAppTestPhone.set('3109998877');
+    component.whatsAppTestMessage.set('Prueba automática');
+    component.sendWhatsAppTestMessage();
+    expect(whatsAppSendMessageSpy).toHaveBeenCalledWith('3109998877', 'Prueba automática');
+    expect(notificationSpy.success).toHaveBeenCalled();
+
+    component.reconnectWhatsAppGateway();
+    expect(whatsAppReconnectSpy).toHaveBeenCalled();
+
+    component.logoutWhatsAppGateway();
+    expect(whatsAppLogoutSpy).toHaveBeenCalled();
   });
 });
