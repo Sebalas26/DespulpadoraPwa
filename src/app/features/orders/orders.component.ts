@@ -106,14 +106,14 @@ export class OrdersComponent {
     name: string;
     color: 'purple' | 'green' | 'blue' | 'cyan' | 'red';
   }> = [
-    { name: 'Lunes', color: 'purple' },
-    { name: 'Martes', color: 'green' },
-    { name: 'Miércoles', color: 'blue' },
-    { name: 'Jueves', color: 'green' },
-    { name: 'Viernes', color: 'cyan' },
-    { name: 'Sábado', color: 'red' },
-    { name: 'Domingo', color: 'green' }
-  ];
+      { name: 'Lunes', color: 'purple' },
+      { name: 'Martes', color: 'green' },
+      { name: 'Miércoles', color: 'blue' },
+      { name: 'Jueves', color: 'green' },
+      { name: 'Viernes', color: 'cyan' },
+      { name: 'Sábado', color: 'red' },
+      { name: 'Domingo', color: 'green' }
+    ];
 
   readonly selectedDay = signal<string>(this.getCurrentWeekDayName());
   readonly draggingOrderId = signal<number | null>(null);
@@ -872,7 +872,7 @@ export class OrdersComponent {
         try {
           const cached = localStorage.getItem('dgl_roles_v2');
           if (cached) rolesList = JSON.parse(cached);
-        } catch {}
+        } catch { }
       }
       const courierRoleIds = new Set(
         rolesList
@@ -885,7 +885,7 @@ export class OrdersComponent {
         try {
           const cached = localStorage.getItem('dgl_users_v2');
           if (cached) usersList = JSON.parse(cached);
-        } catch {}
+        } catch { }
       }
       const courierUsers = usersList.filter(u =>
         u.isActive !== false &&
@@ -1749,23 +1749,11 @@ export class OrdersComponent {
         } : o))
       );
 
-      const numericId = Number(String(courierId).replace(/\D/g, '')) || 0;
-      const courierOrderIds = this.stateService
-        .orders()
-        .filter(
-          (o: OrderDto) =>
-            o.status !== 'DELIVERED' &&
-            o.status !== 'CANCELLED' &&
-            (o.orderId === order.orderId ||
-              o.courierId === numericId ||
-              (o.courierName || '').trim().toLowerCase() === courier.name.trim().toLowerCase())
-        )
-        .map((o: OrderDto) => o.orderId);
-
+      const numericCourierId = Number(String(courier.id).replace(/\D/g, '')) || 1;
       this.stateService.dispatchCourierRoute?.({
-        courierId: numericId,
+        courierId: numericCourierId,
         courierName: courier.name,
-        orderIds: courierOrderIds.length > 0 ? courierOrderIds : [order.orderId]
+        orderIds: [order.orderId]
       });
 
       if (this.deliveryMapRef) {
@@ -2196,19 +2184,19 @@ export class OrdersComponent {
       const firstPulp = this.availableStockPulps()[0];
       const defaultPres = firstPulp
         ? (hasActiveVariants
-            ? firstPulp.presentations[0]
-            : (firstPulp.presentations.find((p: StockPulpPresentationOption) => p.grammage === 1000) ?? firstPulp.presentations[0]))
+          ? firstPulp.presentations[0]
+          : (firstPulp.presentations.find((p: StockPulpPresentationOption) => p.grammage === 1000) ?? firstPulp.presentations[0]))
         : undefined;
       this.manualItems.set(
         firstPulp && defaultPres
           ? [
-              {
-                fruitName: firstPulp.name,
-                grammage: defaultPres.grammage,
-                quantity: 1,
-                unitPrice: defaultPres.unitPrice
-              }
-            ]
+            {
+              fruitName: firstPulp.name,
+              grammage: defaultPres.grammage,
+              quantity: 1,
+              unitPrice: defaultPres.unitPrice
+            }
+          ]
           : []
       );
       this.showNewOrderModal.set(true);
@@ -2258,8 +2246,8 @@ export class OrdersComponent {
       const firstPulp = this.availableStockPulps()[0];
       const defaultPres = firstPulp
         ? (hasActiveVariants
-            ? firstPulp.presentations[0]
-            : (firstPulp.presentations.find((p: StockPulpPresentationOption) => p.grammage === 1000) ?? firstPulp.presentations[0]))
+          ? firstPulp.presentations[0]
+          : (firstPulp.presentations.find((p: StockPulpPresentationOption) => p.grammage === 1000) ?? firstPulp.presentations[0]))
         : undefined;
       const fruitName = firstPulp ? firstPulp.name : '';
       const grammage: 140 | 250 | 500 | 1000 = defaultPres ? defaultPres.grammage : 1000;

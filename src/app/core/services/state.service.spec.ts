@@ -829,4 +829,93 @@ describe('StateService', () => {
       })
     );
   });
+
+  it('should clear routeCode and routeSequenceOrder on previously DELIVERED orders of the courier when dispatching a new route', () => {
+    service.orders.set([
+      {
+        orderId: 701,
+        orderNumber: 'PED-701',
+        branchId: 1,
+        clientId: 11,
+        clientName: 'Entrega Anterior 1',
+        status: 'DELIVERED',
+        courierId: 9,
+        courierName: 'Laura Domiciliaria',
+        routeCode: 'RUT-09',
+        routeSequenceOrder: 1,
+        orderDate: '2026-11-02',
+        totalAmount: 22000,
+        isPaid: true,
+        paymentMethodName: 'Efectivo',
+        createdAt: '2026-11-02T13:00:00Z',
+        items: []
+      },
+      {
+        orderId: 702,
+        orderNumber: 'PED-702',
+        branchId: 1,
+        clientId: 12,
+        clientName: 'Entrega Anterior 2',
+        status: 'DELIVERED',
+        courierId: 9,
+        courierName: 'Laura Domiciliaria',
+        routeCode: 'RUT-09',
+        routeSequenceOrder: 2,
+        orderDate: '2026-11-02',
+        totalAmount: 28000,
+        isPaid: true,
+        paymentMethodName: 'Nequi',
+        createdAt: '2026-11-02T13:10:00Z',
+        items: []
+      },
+      {
+        orderId: 703,
+        orderNumber: 'PED-703',
+        branchId: 1,
+        clientId: 13,
+        clientName: 'Nueva Entrega Unica',
+        status: 'BILLED',
+        isBilled: true,
+        orderDate: '2026-11-02',
+        totalAmount: 35000,
+        isPaid: false,
+        paymentMethodName: 'Efectivo',
+        createdAt: '2026-11-02T16:00:00Z',
+        items: []
+      }
+    ]);
+
+    apiSpy.dispatchOrdersRoute.calls.reset();
+    service.dispatchCourierRoute({
+      courierId: 9,
+      courierName: 'Laura Domiciliaria',
+      routeCode: 'RUT-09',
+      orderIds: [701, 702, 703]
+    });
+
+    const old1: OrderDto | undefined = service.orders().find((o: OrderDto) => o.orderId === 701);
+    const old2: OrderDto | undefined = service.orders().find((o: OrderDto) => o.orderId === 702);
+    const activeNew: OrderDto | undefined = service.orders().find((o: OrderDto) => o.orderId === 703);
+
+    expect(old1?.status).toBe('DELIVERED');
+    expect(old1?.routeCode).toBeUndefined();
+    expect(old1?.routeSequenceOrder).toBeUndefined();
+
+    expect(old2?.status).toBe('DELIVERED');
+    expect(old2?.routeCode).toBeUndefined();
+    expect(old2?.routeSequenceOrder).toBeUndefined();
+
+    expect(activeNew?.status).toBe('DISPATCHED');
+    expect(activeNew?.routeCode).toBe('RUT-09');
+    expect(activeNew?.routeSequenceOrder).toBe(1);
+
+    expect(apiSpy.dispatchOrdersRoute).toHaveBeenCalledWith(
+      jasmine.objectContaining({
+        courierId: 9,
+        courierName: 'Laura Domiciliaria',
+        routeCode: 'RUT-09',
+        orderIds: [703]
+      })
+    );
+  });
 });

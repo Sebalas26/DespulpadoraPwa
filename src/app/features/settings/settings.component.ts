@@ -1991,7 +1991,23 @@ export class SettingsComponent {
         next: (status: WhatsAppGatewayStatusDto) => {
           this.whatsAppGatewayStatus.set(status);
           this.isLoadingWhatsAppStatus.set(false);
-          if (status.status === 'CONNECTING' && !status.qrDataUrl && !status.connected) {
+          if (status.status === 'DISCONNECTED' && !status.qrDataUrl && !status.connected) {
+            this.whatsAppGateway.reconnect().subscribe({
+              next: (reconnectRes: { success: boolean } & Partial<WhatsAppGatewayStatusDto>) => {
+                if (reconnectRes.status && (reconnectRes.qrDataUrl || reconnectRes.connected)) {
+                  this.whatsAppGatewayStatus.set({
+                    status: reconnectRes.status,
+                    connected: Boolean(reconnectRes.connected),
+                    qrDataUrl: reconnectRes.qrDataUrl ?? null,
+                    phoneNumber: reconnectRes.phoneNumber ?? null,
+                    name: reconnectRes.name ?? null,
+                    lastUpdatedAt: reconnectRes.lastUpdatedAt
+                  });
+                }
+              },
+              error: () => {}
+            });
+          } else if (status.status === 'CONNECTING' && !status.qrDataUrl && !status.connected) {
             setTimeout(() => {
               this.whatsAppGateway.getStatus().subscribe({
                 next: (retryStatus: WhatsAppGatewayStatusDto) => {

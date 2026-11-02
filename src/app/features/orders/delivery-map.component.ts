@@ -804,21 +804,21 @@ export const MAP_STYLES: MapStyleOption[] = [
                         </div>
 
                         <div class="drawer-stop-actions">
-                          
-                          <button
-                            type="button"
-                            class="drawer-stop-priority-btn"
-                            [class.is-active-priority]="isStopPriority(stop)"
-                            [disabled]="isStopRouteLocked(stop)"
-                            [title]="isStopPriority(stop) ? 'Quitar alerta de prioridad' : 'Marcar alerta de prioridad urgente en inventario'"
-                            (click)="toggleStopPriority(stop)"
-                          >
-                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                              <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
-                            </svg>
-                          </button>
+                          @if (!isStopBilled(stop)) {
+                            <button
+                              type="button"
+                              class="drawer-stop-priority-btn"
+                              [class.is-active-priority]="isStopPriority(stop)"
+                              [disabled]="isStopRouteLocked(stop)"
+                              [title]="isStopPriority(stop) ? 'Quitar alerta de prioridad' : 'Marcar alerta de prioridad urgente en inventario'"
+                              (click)="toggleStopPriority(stop)"
+                            >
+                              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                                <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+                              </svg>
+                            </button>
+                          }
 
-                          
                           <button
                             type="button"
                             class="drawer-stop-del-btn"
@@ -5925,16 +5925,12 @@ export class DeliveryMapComponent implements OnInit, AfterViewInit, OnDestroy {
       });
 
       const stopIds = new Set(courier.orderIds);
-      this.deliveryStops.update((all: DeliveryWaypoint[]) => all.map((s: DeliveryWaypoint) => {
-        if (stopIds.has(s.id)) {
-          return {
-            ...s,
-            isDelivered: this.getEffectiveStopDelivered(s),
-            paymentMethod: this.getEffectiveStopPaymentMethod(s)
-          };
-        }
-        return s;
-      }));
+      this.deliveryStops.update((all: DeliveryWaypoint[]) =>
+        all.filter(
+          (s: DeliveryWaypoint) =>
+            !stopIds.has(s.id) && !(s.assignedCourierId === courier.id && this.getEffectiveStopDelivered(s))
+        )
+      );
 
       this.couriers.update((list: Courier[]) => list.map((c: Courier) => {
         if (c.id === courier.id) {
@@ -8226,26 +8222,120 @@ export class DeliveryMapComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   /**
+   * Purges all previously delivered stops belonging to a courier from the active map manifest when starting a new route.
+   */
+  private purgeCompletedStopsForCourier(courierId: string): void {
+    try {
+      if (!courierId) return;
+      const courier: Courier | undefined = this.couriers().find((c: Courier) => c.id === courierId);
+      const courierOrderIds: Set<number> = new Set<number>(courier?.orderIds || []);
+      const completedStopIds: Set<number> = new Set<number>(
+        this.deliveryStops()
+          .filter(
+            (s: DeliveryWaypoint) =>
+              s.isDelivered && (s.assignedCourierId === courierId || courierOrderIds.has(s.id))
+          )
+          .map((s: DeliveryWaypoint) => s.id)
+      );
+
+      if (completedStopIds.size === 0) return;
+
+      completedStopIds.forEach((id: number) => {
+        const marker: L.Marker | undefined = this.stopMarkers.get(id);
+        if (marker) {
+          marker.remove();
+          this.stopMarkers.delete(id);
+        }
+      });
+
+      this.deliveryStops.update((stops: DeliveryWaypoint[]) =>
+        stops.filter((s: DeliveryWaypoint) => !completedStopIds.has(s.id))
+      );
+
+      this.couriers.update((list: Courier[]) =>
+        list.map((c: Courier) =>
+          c.id === courierId
+            ? {
+                ...c,
+                orderIds: c.orderIds.filter((id: number) => !completedStopIds.has(id))
+              }
+            : c
+        )
+      );
+    } catch (error: unknown) {
+      console.error('Error purging completed stops for courier:', error);
+    }
+  }
+
+  /**
+   * Returns true if the courier has existing assigned stops and 100% of them are already delivered.
+   */
+  private hasCourierFinishedAllPreviousStops(courierId: string, excludeStopId?: number): boolean {
+    try {
+      const courier: Courier | undefined = this.couriers().find((c: Courier) => c.id === courierId);
+      if (!courier) return false;
+      const stopMap: Map<number, DeliveryWaypoint> = new Map<number, DeliveryWaypoint>(
+        this.deliveryStops().map((s: DeliveryWaypoint) => [s.id, s])
+      );
+      const existingStops: DeliveryWaypoint[] = this.deliveryStops().filter(
+        (s: DeliveryWaypoint) =>
+          s.id !== excludeStopId &&
+          (s.assignedCourierId === courierId || courier.orderIds.includes(s.id))
+      );
+      for (const id of courier.orderIds) {
+        if (id !== excludeStopId && !existingStops.some((s: DeliveryWaypoint) => s.id === id)) {
+          const mapped: DeliveryWaypoint | undefined = stopMap.get(id);
+          if (mapped) {
+            existingStops.push(mapped);
+          }
+        }
+      }
+      return existingStops.length > 0 && existingStops.every((s: DeliveryWaypoint) => s.isDelivered);
+    } catch (error: unknown) {
+      console.error('Error checking finished stops for courier:', error);
+      return false;
+    }
+  }
+
+  /**
    * Confirms route creation, locks the courier's delivery cards in light gray, and dispatches the route to the API/database.
    */
   confirmCreateCourierRoute(): void {
     try {
-      const courierId = this.pendingRouteCourierId();
-      const courier = this.couriers().find((c: Courier) => c.id === courierId);
-      if (!courier) {
+      const courierId: string = this.pendingRouteCourierId();
+      const initialCourier: Courier | undefined = this.couriers().find((c: Courier) => c.id === courierId);
+      if (!initialCourier) {
         this.cancelConfirmCreateRoute();
         return;
       }
 
-      const wasAlreadyCreated = Boolean(courier.hasCreatedRoute);
-      const resolvedRouteCode = this.getCourierRouteCode(courier);
+      const wasAlreadyCreated: boolean = Boolean(initialCourier.hasCreatedRoute);
+      const resolvedRouteCode: string = this.getCourierRouteCode(initialCourier);
 
-      const stopMap = new Map(this.deliveryStops().map((s: DeliveryWaypoint) => [s.id, s]));
-      const orderedIds = courier.orderIds.filter((id: number) => stopMap.has(id));
-      const extraIds = this.deliveryStops()
-        .filter((s: DeliveryWaypoint) => s.assignedCourierId === courierId && !orderedIds.includes(s.id))
+      const hasUndeliveredForCourier: boolean = this.deliveryStops().some(
+        (s: DeliveryWaypoint) =>
+          !s.isDelivered &&
+          (s.assignedCourierId === courierId || initialCourier.orderIds.includes(s.id))
+      );
+      if (hasUndeliveredForCourier) {
+        this.purgeCompletedStopsForCourier(courierId);
+      }
+
+      const courier: Courier = this.couriers().find((c: Courier) => c.id === courierId) || initialCourier;
+      const stopMap: Map<number, DeliveryWaypoint> = new Map<number, DeliveryWaypoint>(
+        this.deliveryStops().map((s: DeliveryWaypoint) => [s.id, s])
+      );
+      const orderedIds: number[] = courier.orderIds.filter((id: number) => {
+        const st: DeliveryWaypoint | undefined = stopMap.get(id);
+        return Boolean(st) && !st!.isDelivered;
+      });
+      const extraIds: number[] = this.deliveryStops()
+        .filter(
+          (s: DeliveryWaypoint) =>
+            !s.isDelivered && s.assignedCourierId === courierId && !orderedIds.includes(s.id)
+        )
         .map((s: DeliveryWaypoint) => s.id);
-      const finalOrderIds = [...orderedIds, ...extraIds];
+      const finalOrderIds: number[] = [...orderedIds, ...extraIds];
 
       this.couriers.update((list: Courier[]) =>
         list.map((c: Courier) =>
@@ -8263,8 +8353,8 @@ export class DeliveryMapComponent implements OnInit, AfterViewInit, OnDestroy {
         )
       );
 
-      const numericId = Number(String(courierId).replace(/\D/g, '')) || 0;
-      const resolvedOrderIds = this.resolveStateOrderIdsForStopIds(finalOrderIds, courierId);
+      const numericId: number = Number(String(courierId).replace(/\D/g, '')) || 0;
+      const resolvedOrderIds: number[] = this.resolveStateOrderIdsForStopIds(finalOrderIds, courierId);
       this.stateService.dispatchCourierRoute?.({
         courierId: numericId,
         courierName: courier.name,
@@ -8494,7 +8584,16 @@ export class DeliveryMapComponent implements OnInit, AfterViewInit, OnDestroy {
         return;
       }
       const courier = this.couriers().find((c: Courier) => c.id === courierId);
-      if (stop && courier && (courier.isRouteCreated || courier.hasCreatedRoute) && stop.assignedCourierId !== courierId) {
+      if (stop && courier && this.hasCourierFinishedAllPreviousStops(courierId, stop.id)) {
+        this.purgeCompletedStopsForCourier(courierId);
+        this.couriers.update((list: Courier[]) =>
+          list.map((c: Courier) =>
+            c.id === courierId
+              ? { ...c, isRouteCreated: false, hasCreatedRoute: false, routeStatus: 'en_ruta' }
+              : c
+          )
+        );
+      } else if (stop && courier && (courier.isRouteCreated || courier.hasCreatedRoute) && stop.assignedCourierId !== courierId) {
         this.pendingActiveRouteAssignment.set({ stop, courier });
         this.showConfirmAssignToActiveRouteModal.set(true);
         return;
@@ -8623,7 +8722,13 @@ export class DeliveryMapComponent implements OnInit, AfterViewInit, OnDestroy {
       const mappedIds = new Set(this.deliveryStops().map((s: DeliveryWaypoint) => s.id));
       return this.stateService
         .orders()
-        .filter((o: OrderDto) => o.status !== 'CANCELLED' && o.status !== 'DELIVERED' && !mappedIds.has(o.orderId));
+        .filter(
+          (o: OrderDto) =>
+            o.status !== 'CANCELLED' &&
+            o.status !== 'DELIVERED' &&
+            this.isOrderForToday(o) &&
+            !mappedIds.has(o.orderId)
+        );
     } catch (error: unknown) {
       console.error('Error computing unmapped orders:', error);
       return [];
@@ -8716,21 +8821,32 @@ export class DeliveryMapComponent implements OnInit, AfterViewInit, OnDestroy {
       }
 
       if (newCourierId && stop.assignedCourierId !== newCourierId) {
-        const targetCourier = this.couriers().find((c: Courier) => c.id === newCourierId);
-        if (targetCourier && (targetCourier.isRouteCreated || targetCourier.hasCreatedRoute)) {
-          const currentAssigned = stop.assignedCourierId || '';
-          this.deliveryStops.update((stops: DeliveryWaypoint[]) =>
-            stops.map((s: DeliveryWaypoint) => (s.id === stop.id ? { ...s, assignedCourierId: '' } : s))
+        if (this.hasCourierFinishedAllPreviousStops(newCourierId, stop.id)) {
+          this.purgeCompletedStopsForCourier(newCourierId);
+          this.couriers.update((list: Courier[]) =>
+            list.map((c: Courier) =>
+              c.id === newCourierId
+                ? { ...c, isRouteCreated: false, hasCreatedRoute: false, routeStatus: 'en_ruta' }
+                : c
+            )
           );
-          setTimeout(() => {
+        } else {
+          const targetCourier = this.couriers().find((c: Courier) => c.id === newCourierId);
+          if (targetCourier && (targetCourier.isRouteCreated || targetCourier.hasCreatedRoute)) {
+            const currentAssigned = stop.assignedCourierId || '';
             this.deliveryStops.update((stops: DeliveryWaypoint[]) =>
-              stops.map((s: DeliveryWaypoint) => (s.id === stop.id ? { ...s, assignedCourierId: currentAssigned } : s))
+              stops.map((s: DeliveryWaypoint) => (s.id === stop.id ? { ...s, assignedCourierId: '' } : s))
             );
-          }, 50);
+            setTimeout(() => {
+              this.deliveryStops.update((stops: DeliveryWaypoint[]) =>
+                stops.map((s: DeliveryWaypoint) => (s.id === stop.id ? { ...s, assignedCourierId: currentAssigned } : s))
+              );
+            }, 50);
 
-          this.pendingActiveRouteAssignment.set({ stop, courier: targetCourier });
-          this.showConfirmAssignToActiveRouteModal.set(true);
-          return;
+            this.pendingActiveRouteAssignment.set({ stop, courier: targetCourier });
+            this.showConfirmAssignToActiveRouteModal.set(true);
+            return;
+          }
         }
       }
 
@@ -8885,11 +9001,24 @@ export class DeliveryMapComponent implements OnInit, AfterViewInit, OnDestroy {
    */
   isStopBilled(stop: DeliveryWaypoint): boolean {
     try {
-      if (stop.isBilled !== undefined) return stop.isBilled;
-      const order = this.stateService.orders().find((o: OrderDto) => o.orderId === stop.id || o.orderNumber === stop.orderNumber);
+      const order = this.stateService
+        .orders()
+        .find((o: OrderDto) => o.orderId === stop.id || o.orderNumber === stop.orderNumber);
       if (order) {
-        return order.isBilled === true || order.status === 'BILLED' || order.status === 'DISPATCHED' || order.status === 'DELIVERED';
+        if (
+          order.isBilled === true ||
+          order.status === 'BILLED' ||
+          order.status === 'DISPATCHED' ||
+          order.status === 'DELIVERED'
+        ) {
+          return true;
+        }
+        if (stop.isBilled !== undefined) {
+          return stop.isBilled;
+        }
+        return false;
       }
+      if (stop.isBilled !== undefined) return stop.isBilled;
       return stop.isDelivered;
     } catch (error: unknown) {
       console.error('Error checking if stop is billed:', error);
@@ -8916,6 +9045,9 @@ export class DeliveryMapComponent implements OnInit, AfterViewInit, OnDestroy {
    */
   toggleStopPriority(stop: DeliveryWaypoint, forceState?: boolean): void {
     try {
+      if (this.isStopBilled(stop)) {
+        return;
+      }
       const nextVal = forceState !== undefined ? forceState : !this.isStopPriority(stop);
 
       this.deliveryStops.update((stops: DeliveryWaypoint[]) =>
@@ -8946,6 +9078,17 @@ export class DeliveryMapComponent implements OnInit, AfterViewInit, OnDestroy {
    */
   assignCourierToStop(stopId: number, newCourierId: string): void {
     try {
+      if (newCourierId && this.hasCourierFinishedAllPreviousStops(newCourierId, stopId)) {
+        this.purgeCompletedStopsForCourier(newCourierId);
+        this.couriers.update((list: Courier[]) =>
+          list.map((c: Courier) =>
+            c.id === newCourierId
+              ? { ...c, isRouteCreated: false, hasCreatedRoute: false, routeStatus: 'en_ruta' }
+              : c
+          )
+        );
+      }
+
       this.deliveryStops.update((stops: DeliveryWaypoint[]) =>
         stops.map((s: DeliveryWaypoint) => (s.id === stopId ? { ...s, assignedCourierId: newCourierId } : s))
       );
@@ -9338,20 +9481,26 @@ export class DeliveryMapComponent implements OnInit, AfterViewInit, OnDestroy {
    */
   private resolveStateOrderIdsForStopIds(stopIds: number[], courierId?: string): number[] {
     try {
-      const stateOrders = this.stateService.orders();
-      const stopsMap = new Map(this.deliveryStops().map((s: DeliveryWaypoint) => [s.id, s]));
+      const stateOrders: OrderDto[] = this.stateService.orders();
+      const stopsMap: Map<number, DeliveryWaypoint> = new Map<number, DeliveryWaypoint>(
+        this.deliveryStops().map((s: DeliveryWaypoint) => [s.id, s])
+      );
       const candidateStops: DeliveryWaypoint[] = [];
 
       for (const id of stopIds) {
-        const stop = stopsMap.get(id);
-        if (stop) {
+        const stop: DeliveryWaypoint | undefined = stopsMap.get(id);
+        if (stop && !stop.isDelivered) {
           candidateStops.push(stop);
         }
       }
 
       if (courierId) {
         for (const s of this.deliveryStops()) {
-          if (s.assignedCourierId === courierId && !candidateStops.some(cs => cs.id === s.id)) {
+          if (
+            !s.isDelivered &&
+            s.assignedCourierId === courierId &&
+            !candidateStops.some((cs: DeliveryWaypoint) => cs.id === s.id)
+          ) {
             candidateStops.push(s);
           }
         }
@@ -9359,7 +9508,7 @@ export class DeliveryMapComponent implements OnInit, AfterViewInit, OnDestroy {
 
       const resolvedIds: number[] = [];
       for (const stop of candidateStops) {
-        const matched = stateOrders.find(
+        const matched: OrderDto | undefined = stateOrders.find(
           (o: OrderDto) =>
             o.orderId === stop.id ||
             (Boolean(stop.orderNumber) &&
@@ -9369,14 +9518,18 @@ export class DeliveryMapComponent implements OnInit, AfterViewInit, OnDestroy {
               Boolean(o.orderNumber) &&
               o.orderNumber.trim().toUpperCase() === stop.orderRef?.orderNumber.trim().toUpperCase())
         );
-        const targetId = matched ? matched.orderId : stop.id;
+        if (matched && matched.status === 'DELIVERED') {
+          continue;
+        }
+        const targetId: number = matched ? matched.orderId : stop.id;
         if (targetId > 0 && !resolvedIds.includes(targetId)) {
           resolvedIds.push(targetId);
         }
       }
 
       return resolvedIds.length > 0 ? resolvedIds : stopIds;
-    } catch {
+    } catch (error: unknown) {
+      console.error('Error resolving state order IDs for stop IDs:', error);
       return stopIds;
     }
   }
@@ -10087,6 +10240,179 @@ export class DeliveryMapComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   /**
+   * Returns the canonical Spanish weekday name for the given date.
+   */
+  getCurrentWeekDayName(date: Date = new Date()): string {
+    try {
+      const dayNames: readonly string[] = [
+        'Domingo',
+        'Lunes',
+        'Martes',
+        'Miércoles',
+        'Jueves',
+        'Viernes',
+        'Sábado'
+      ];
+      const dayIndex: number = Number.isNaN(date.getTime()) ? new Date().getDay() : date.getDay();
+      return dayNames[dayIndex] || 'Lunes';
+    } catch (error: unknown) {
+      console.error('Error getting current week day name:', error);
+      return 'Lunes';
+    }
+  }
+
+  /**
+   * Resolves the canonical Spanish weekday card assigned to an order.
+   */
+  getOrderDay(order: OrderDto): string {
+    try {
+      const validDays: readonly string[] = [
+        'Lunes',
+        'Martes',
+        'Miércoles',
+        'Jueves',
+        'Viernes',
+        'Sábado',
+        'Domingo'
+      ];
+
+      const raw: string = (order.scheduledDay || '').trim();
+
+      if (raw) {
+        const cleaned: string = raw
+          .toLowerCase()
+          .normalize('NFD')
+          .replace(/[\u0300-\u036f]/g, '');
+
+        for (const day of validDays) {
+          const canonicalCleaned: string = day
+            .toLowerCase()
+            .normalize('NFD')
+            .replace(/[\u0300-\u036f]/g, '');
+          if (cleaned === canonicalCleaned) {
+            return day;
+          }
+        }
+
+        if (cleaned.includes('hoy') || cleaned.includes('prioritario')) {
+          return this.getCurrentWeekDayName();
+        }
+
+        if (cleaned.includes('manana') || cleaned.includes('siguiente')) {
+          const tomorrow: Date = new Date(Date.now() + 86400000);
+          return this.getCurrentWeekDayName(tomorrow);
+        }
+
+        if (cleaned.includes('fin de semana') || cleaned.includes('sabado')) {
+          return 'Sábado';
+        }
+
+        if (cleaned.includes('domingo')) {
+          return 'Domingo';
+        }
+
+        for (const day of validDays) {
+          const canonicalCleaned: string = day
+            .toLowerCase()
+            .normalize('NFD')
+            .replace(/[\u0300-\u036f]/g, '');
+          if (cleaned.includes(canonicalCleaned)) {
+            return day;
+          }
+        }
+
+        const dateMatch: RegExpExecArray | null = /^(\d{4})-(\d{2})-(\d{2})/.exec(raw);
+        if (dateMatch) {
+          const parsed: Date = new Date(
+            Number(dateMatch[1]),
+            Number(dateMatch[2]) - 1,
+            Number(dateMatch[3]),
+            12,
+            0,
+            0
+          );
+          if (!Number.isNaN(parsed.getTime())) {
+            return this.getCurrentWeekDayName(parsed);
+          }
+        }
+      }
+
+      if (order.deliveryDate) {
+        const dateMatch: RegExpExecArray | null = /^(\d{4})-(\d{2})-(\d{2})/.exec(order.deliveryDate);
+        if (dateMatch) {
+          const parsed: Date = new Date(
+            Number(dateMatch[1]),
+            Number(dateMatch[2]) - 1,
+            Number(dateMatch[3]),
+            12,
+            0,
+            0
+          );
+          if (!Number.isNaN(parsed.getTime())) {
+            return this.getCurrentWeekDayName(parsed);
+          }
+        }
+      }
+
+      if (order.createdAt) {
+        const dateMatch: RegExpExecArray | null = /^(\d{4})-(\d{2})-(\d{2})/.exec(order.createdAt);
+        if (dateMatch && !order.createdAt.includes('T')) {
+          const parsed: Date = new Date(
+            Number(dateMatch[1]),
+            Number(dateMatch[2]) - 1,
+            Number(dateMatch[3]),
+            12,
+            0,
+            0
+          );
+          if (!Number.isNaN(parsed.getTime())) {
+            return this.getCurrentWeekDayName(parsed);
+          }
+        } else {
+          const parsed: Date = new Date(order.createdAt);
+          if (!Number.isNaN(parsed.getTime())) {
+            return this.getCurrentWeekDayName(parsed);
+          }
+        }
+      }
+
+      if (order.orderDate) {
+        const dateMatch: RegExpExecArray | null = /^(\d{4})-(\d{2})-(\d{2})/.exec(order.orderDate);
+        if (dateMatch) {
+          const parsed: Date = new Date(
+            Number(dateMatch[1]),
+            Number(dateMatch[2]) - 1,
+            Number(dateMatch[3]),
+            12,
+            0,
+            0
+          );
+          if (!Number.isNaN(parsed.getTime())) {
+            return this.getCurrentWeekDayName(parsed);
+          }
+        }
+      }
+
+      return this.getCurrentWeekDayName();
+    } catch (error: unknown) {
+      console.error('Error resolving order day in delivery map:', error);
+      return this.getCurrentWeekDayName();
+    }
+  }
+
+  /**
+   * Checks whether an order belongs to today's weekday card list.
+   */
+  isOrderForToday(order: OrderDto): boolean {
+    try {
+      return this.getOrderDay(order) === this.getCurrentWeekDayName();
+    } catch (error: unknown) {
+      console.error('Error checking if order is for today:', error);
+      return false;
+    }
+  }
+
+  /**
    * Synchronizes couriers and active orders from StateService into delivery waypoints.
    */
   private syncWithStateServiceOrders(): void {
@@ -10104,12 +10430,44 @@ export class DeliveryMapComponent implements OnInit, AfterViewInit, OnDestroy {
         );
       }
 
+      const allOrderIds = new Set<number>(allOrders.map((o: OrderDto) => o.orderId));
       const stateOrders = allOrders.filter(
-        (o: OrderDto) => o.status !== 'CANCELLED' && o.status !== 'DELIVERED'
+        (o: OrderDto) =>
+          o.status !== 'CANCELLED' &&
+          o.status !== 'DELIVERED' &&
+          this.isOrderForToday(o)
       );
+      const validTodayOrderIds = new Set<number>(stateOrders.map((o: OrderDto) => o.orderId));
+
+      const stopsToRemove = this.deliveryStops().filter(
+        (s: DeliveryWaypoint) =>
+          allOrderIds.has(s.id) &&
+          !s.isDelivered &&
+          !deliveredOrderIds.has(s.id) &&
+          !validTodayOrderIds.has(s.id)
+      );
+      if (stopsToRemove.length > 0) {
+        const removedIds = new Set<number>(stopsToRemove.map((s: DeliveryWaypoint) => s.id));
+        this.deliveryStops.update((stops: DeliveryWaypoint[]) =>
+          stops.filter((s: DeliveryWaypoint) => !removedIds.has(s.id))
+        );
+        this.couriers.update((list: Courier[]) =>
+          list.map((c: Courier) => ({
+            ...c,
+            orderIds: c.orderIds.filter((id: number) => !removedIds.has(id))
+          }))
+        );
+      }
+
       const existingIds = new Set(this.deliveryStops().map((s: DeliveryWaypoint) => s.id));
 
       stateOrders.forEach((order: OrderDto) => {
+        const isOrderBilled: boolean =
+          order.isBilled === true ||
+          order.status === 'BILLED' ||
+          order.status === 'DISPATCHED' ||
+          order.status === 'DELIVERED';
+
         if (!existingIds.has(order.orderId)) {
           const hasOrderCoords =
             order.latitude !== undefined &&
@@ -10144,6 +10502,8 @@ export class DeliveryMapComponent implements OnInit, AfterViewInit, OnDestroy {
             weightKg: 12.0,
             itemsSummary: order.items.map(it => `${it.quantity}x ${it.fruitName}`).join(', ') || 'Pulpas Variadas',
             isDelivered: order.status === 'DELIVERED',
+            isBilled: isOrderBilled,
+            isPriority: isOrderBilled ? false : (order.isPriority === true),
             assignedCourierId,
             orderRef: order
           };
@@ -10192,6 +10552,8 @@ export class DeliveryMapComponent implements OnInit, AfterViewInit, OnDestroy {
                   clientPhone: order.clientPhone ?? s.clientPhone,
                   totalAmount: order.totalAmount,
                   itemsSummary: updatedSummary,
+                  isBilled: isOrderBilled,
+                  isPriority: isOrderBilled ? false : (order.isPriority ?? s.isPriority),
                   orderRef: order
                 };
               }

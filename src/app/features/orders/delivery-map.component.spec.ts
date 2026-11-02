@@ -1,7 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { signal } from '@angular/core';
 import { of } from 'rxjs';
-import { DeliveryMapComponent } from './delivery-map.component';
+import { Courier, DeliveryMapComponent, DeliveryWaypoint } from './delivery-map.component';
 import { StateService } from '../../core/services/state.service';
 import { DEFAULT_COMPANY_CONFIG } from '../../core/data/initial-data';
 import { NotificationService } from '../../core/services/notification.service';
@@ -729,6 +729,266 @@ describe('DeliveryMapComponent', () => {
       courierName: 'Andres Repartidor',
       routeCode: 'RUT-77',
       orderIds: [701]
+    });
+  });
+
+  it('should hide the priority button when the order is billed and show it when unbilled', () => {
+    const todayIso: string = new Date().toISOString();
+    mockOrders.set([
+      {
+        orderId: 801,
+        orderNumber: 'ORD-801',
+        clientId: 1,
+        clientName: 'Cliente Pendiente',
+        clientAddress: 'Calle 70 # 10-20',
+        branchId: 1,
+        status: 'PENDING',
+        isBilled: false,
+        isPaid: false,
+        totalAmount: 25000,
+        createdAt: todayIso,
+        orderDate: todayIso.substring(0, 10),
+        items: []
+      },
+      {
+        orderId: 802,
+        orderNumber: 'ORD-802',
+        clientId: 2,
+        clientName: 'Cliente Facturado',
+        clientAddress: 'Carrera 69A # 63F-63',
+        branchId: 1,
+        status: 'BILLED',
+        isBilled: true,
+        isPaid: false,
+        totalAmount: 20000,
+        createdAt: todayIso,
+        orderDate: todayIso.substring(0, 10),
+        items: []
+      }
+    ]);
+
+    component.deliveryStops.set([]);
+    component.enterAllDeliveriesMode();
+    component.showDeliveriesDrawer.set(true);
+    fixture.detectChanges();
+
+    const stopItems: NodeListOf<HTMLElement> =
+      fixture.nativeElement.querySelectorAll('.drawer-stop-item');
+    expect(stopItems.length).toBe(2);
+
+    const billedCard: HTMLElement | undefined = Array.from(stopItems).find((el: HTMLElement) =>
+      el.textContent?.includes('ORD-802')
+    );
+    const unbilledCard: HTMLElement | undefined = Array.from(stopItems).find((el: HTMLElement) =>
+      el.textContent?.includes('ORD-801')
+    );
+
+    expect(billedCard).toBeDefined();
+    expect(unbilledCard).toBeDefined();
+    expect(billedCard?.querySelector('.drawer-stop-priority-btn')).toBeNull();
+    expect(unbilledCard?.querySelector('.drawer-stop-priority-btn')).not.toBeNull();
+
+    const billedStop = component.deliveryStops().find(s => s.id === 802)!;
+    component.toggleStopPriority(billedStop, true);
+    expect(component.isStopPriority(billedStop)).toBeFalse();
+  });
+
+  it('should only display orders from today weekday card in the map list and sync when scheduledDay changes', () => {
+    const todayDayName: string = component.getCurrentWeekDayName();
+    const otherDayName: string = todayDayName === 'Lunes' ? 'Martes' : 'Lunes';
+    const todayIso: string = new Date().toISOString();
+
+    mockOrders.set([
+      {
+        orderId: 901,
+        orderNumber: 'ORD-901',
+        clientId: 1,
+        clientName: 'Cliente Hoy',
+        clientAddress: 'Calle 100 # 15-20',
+        branchId: 1,
+        status: 'BILLED',
+        isBilled: true,
+        isPaid: false,
+        totalAmount: 30000,
+        scheduledDay: todayDayName,
+        createdAt: todayIso,
+        orderDate: todayIso.substring(0, 10),
+        items: []
+      },
+      {
+        orderId: 902,
+        orderNumber: 'ORD-902',
+        clientId: 2,
+        clientName: 'Cliente Otro Dia',
+        clientAddress: 'Calle 50 # 20-10',
+        branchId: 1,
+        status: 'BILLED',
+        isBilled: true,
+        isPaid: false,
+        totalAmount: 45000,
+        scheduledDay: otherDayName,
+        createdAt: todayIso,
+        orderDate: todayIso.substring(0, 10),
+        items: []
+      }
+    ]);
+
+    component.deliveryStops.set([]);
+    component.enterAllDeliveriesMode();
+    fixture.detectChanges();
+
+    expect(component.deliveryStops().map(s => s.id)).toEqual([901]);
+    expect(component.filteredDrawerStops().map(s => s.id)).toEqual([901]);
+
+    mockOrders.set([
+      {
+        orderId: 901,
+        orderNumber: 'ORD-901',
+        clientId: 1,
+        clientName: 'Cliente Hoy',
+        clientAddress: 'Calle 100 # 15-20',
+        branchId: 1,
+        status: 'BILLED',
+        isBilled: true,
+        isPaid: false,
+        totalAmount: 30000,
+        scheduledDay: otherDayName,
+        createdAt: todayIso,
+        orderDate: todayIso.substring(0, 10),
+        items: []
+      },
+      {
+        orderId: 902,
+        orderNumber: 'ORD-902',
+        clientId: 2,
+        clientName: 'Cliente Otro Dia',
+        clientAddress: 'Calle 50 # 20-10',
+        branchId: 1,
+        status: 'BILLED',
+        isBilled: true,
+        isPaid: false,
+        totalAmount: 45000,
+        scheduledDay: todayDayName,
+        createdAt: todayIso,
+        orderDate: todayIso.substring(0, 10),
+        items: []
+      }
+    ]);
+
+    component.enterAllDeliveriesMode();
+    fixture.detectChanges();
+
+    expect(component.deliveryStops().map(s => s.id)).toEqual([902]);
+    expect(component.filteredDrawerStops().map(s => s.id)).toEqual([902]);
+  });
+
+  it('should purge previously completed route stops when assigning and creating a new route for a courier so only the new stop is dispatched', () => {
+    const todayIso: string = new Date().toISOString();
+    mockRoles.set([
+      { roleId: 3, name: 'Domiciliario', isCourier: true, isSystemRole: true, isActive: true }
+    ]);
+    mockUsers.set([
+      {
+        userId: 88,
+        username: 'domsebalas',
+        fullName: 'Sebas Domiciliario',
+        roleId: 3,
+        roleName: 'Domiciliario',
+        isActive: true,
+        companyId: 1,
+        branches: [],
+        email: 'sebas@dgl.com',
+        phone: '3109998877'
+      }
+    ]);
+    mockOrders.set([
+      {
+        orderId: 951,
+        orderNumber: 'ORD-951',
+        clientId: 1,
+        clientName: 'Cliente Ruta Anterior 1',
+        clientAddress: 'Calle 10 # 10-10',
+        branchId: 1,
+        status: 'DISPATCHED',
+        isBilled: true,
+        isPaid: false,
+        courierId: 88,
+        courierName: 'Sebas Domiciliario',
+        routeSequenceOrder: 1,
+        totalAmount: 15000,
+        createdAt: todayIso,
+        orderDate: todayIso.substring(0, 10),
+        items: []
+      },
+      {
+        orderId: 952,
+        orderNumber: 'ORD-952',
+        clientId: 2,
+        clientName: 'Cliente Ruta Anterior 2',
+        clientAddress: 'Calle 20 # 20-20',
+        branchId: 1,
+        status: 'DISPATCHED',
+        isBilled: true,
+        isPaid: false,
+        courierId: 88,
+        courierName: 'Sebas Domiciliario',
+        routeSequenceOrder: 2,
+        totalAmount: 18000,
+        createdAt: todayIso,
+        orderDate: todayIso.substring(0, 10),
+        items: []
+      },
+      {
+        orderId: 953,
+        orderNumber: 'ORD-953',
+        clientId: 3,
+        clientName: 'Cliente Nueva Ruta',
+        clientAddress: 'Calle 30 # 30-30',
+        branchId: 1,
+        status: 'BILLED',
+        isBilled: true,
+        isPaid: false,
+        totalAmount: 25000,
+        createdAt: todayIso,
+        orderDate: todayIso.substring(0, 10),
+        items: []
+      }
+    ]);
+
+    component.deliveryStops.set([]);
+    component.enterAllDeliveriesMode();
+    fixture.detectChanges();
+
+    mockOrders.update((list: OrderDto[]) =>
+      list.map((o: OrderDto) =>
+        o.orderId === 951 || o.orderId === 952 ? { ...o, status: 'DELIVERED' } : o
+      )
+    );
+    component.markOrderDeliveredByOrderNumber('ORD-951');
+    component.markOrderDeliveredByOrderNumber('ORD-952');
+
+    const newStop: DeliveryWaypoint = component.deliveryStops().find(
+      (s: DeliveryWaypoint) => s.id === 953
+    )!;
+    expect(newStop).toBeTruthy();
+
+    dispatchCourierRouteSpy.calls.reset();
+    component.onCourierSelectChange(newStop, 'u88');
+    expect(component.showConfirmAssignToActiveRouteModal()).toBeFalse();
+
+    const courierAfterAssign: Courier = component.couriers().find(
+      (c: Courier) => c.id === 'u88'
+    )!;
+    expect(courierAfterAssign.orderIds).toEqual([953]);
+
+    component.openConfirmCreateRouteModal('u88');
+    component.confirmCreateCourierRoute();
+
+    expect(dispatchCourierRouteSpy).toHaveBeenCalledWith({
+      courierId: 88,
+      courierName: 'Sebas Domiciliario',
+      routeCode: 'RUT-88',
+      orderIds: [953]
     });
   });
 });

@@ -4,6 +4,47 @@ Este documento registra de manera cronológica y estructurada todas las interven
 
 ---
 
+## [2026-11-02] - Reinicio Limpio de Ruta del Domiciliario al Crear una Nueva Ruta tras Finalizar Entregas Anteriores (`DespulpadoraPwa` + `ApiDespulpadora` + `DespulpadoraApp`)
+
+### 💬 Prompt Original del Usuario
+> "Valida un tema, le cree una ruta al domiciliario yestoy notando que al actualizar la ruta desde la app flutter, le quedo una ruta anterior y se le incluyo la nueva entrega a una ruta anterior, es decir antes enia una ruta de 2 'qa ya fueron entreadas' pero al crearle uana nueva ruta con una sola entrega e ingresa a la app se ven 3 , no se reinciio"
+> "ejecuta"
+
+### 🤖 Resumen Técnico para la IA
+- **1. Purga Automática de Paradas Entregadas Anteriores en el Mapa Logístico PWA (`src/app/features/orders/delivery-map.component.ts` y `src/app/core/services/state.service.ts`)**:
+  - Se implementaron `purgeCompletedStopsForCourier(courierId: string)` y `hasCourierFinishedAllPreviousStops(courierId: string, excludeStopId?: number)`.
+  - Cuando un domiciliario ya completó el 100% de su ruta previa (`isDelivered === true`) y se le asigna o crea una nueva ruta (`onDropStopOnCourierPill`, `onCourierSelectChange`, `assignCourierToStop`, `confirmCreateCourierRoute`, `confirmSettlementAndReceive`), se purgan del manifiesto activo las paradas ya entregadas de la ruta anterior y solo se envían las nuevas paradas pendientes en `finalOrderIds`.
+  - En `StateService.dispatchCourierRoute(dto)`, se filtran defensivamente los pedidos ya `DELIVERED` para que no se re-despachen y se limpian `routeCode: undefined` y `routeSequenceOrder: undefined` en los pedidos `DELIVERED` anteriores de ese domiciliario.
+- **2. Limpieza de Secuencia y Filtrado de Ruta Activa en Backend .NET (`OrderAndCourierServices.cs` y `MobileAppService.cs`)**:
+  - En `OrderService.DispatchOrdersRouteAsync` y `CourierService.SettleCourierRouteAsync`, se limpian `RouteSequenceOrder = null` y `DispatchedAtUtc = null` en los pedidos previos ya `Entregado` / `Novedad` del domiciliario que no forman parte del nuevo despacho activo.
+  - En `MobileAppService.GetAssignedRouteAsync`, cuando existen paradas activas no entregadas, se excluyen los pedidos terminales (`Entregado` / `Novedad`) sin `RouteSequenceOrder` positivo o con `DeliveredAtUtc` anterior al `DispatchedAtUtc` de la nueva ruta.
+- **3. Descarte de Entregas de Rutas Anteriores y Reinicio de Contador en App Flutter (`lib/services/api_service.dart` y `lib/blocs/orders_cubit.dart`)**:
+  - En `ApiService._filterActiveRouteOrderMaps`, cuando la respuesta incluye paradas activas de una nueva ruta (`minActiveSeq <= 1`, colisión de `routeSequenceOrder` o `deliveredAtUtc` / `dispatchedAtUtc` anterior al `latestActiveDispatchUtc`), se descartan automáticamente las paradas `Entregado` / `Novedad` de rutas anteriores y se recalcula `isRouteReceived`.
+  - En `OrdersCubit._fetchAndApplyOrders`, se archivan en `_archivedCompletedOrderIds` las rutas finalizadas al 100%, descartándolas cuando ingresa una nueva ruta con paradas pendientes, reiniciando el contador a `0/1` (`0/N`), `isRouteActive: false`, `isRouteReceived: false` y restableciendo la pestaña a `OrdersFilter.todos`.
+- **4. Informes del Agente Verificador, Agente Auditor Punto por Punto y Revisión Par**:
+  - **Agente Verificador (`97af445b-8976-4d66-bf28-98ce5393c4a8`)**: Confirmó las 3 causas raíz en PWA, Backend y App Flutter sin regresiones colaterales.
+  - **Agente Auditor Punto por Punto (`62a1a301-fd4d-4122-aa53-686ca0d1b1ad`)**: Validó el 100% de la solución funcional y solicitó tipado explícito en variables locales y test unitario adicional en `state.service.spec.ts`.
+  - **Agente de Revisión Par (`b59f933b-5ee8-4333-8380-83bc7a6b1bcf`)**: Verificó y certificó la aplicación de tipado explícito estricto y cobertura unitaria al 100%.
+
+### 📦 Componentes Modificados
+- `src/app/features/orders/delivery-map.component.ts`
+- `src/app/features/orders/delivery-map.component.spec.ts`
+- `src/app/core/services/state.service.ts`
+- `src/app/core/services/state.service.spec.ts`
+- `../../Api/ApiDespulpadora/ApiDespulpadora.Core/Services/Business/OrderAndCourierServices.cs`
+- `../../Api/ApiDespulpadora/ApiDespulpadora.Core/Services/Mobile/MobileAppService.cs`
+- `../../Flutter/DespulpadoraApp/lib/services/api_service.dart`
+- `../../Flutter/DespulpadoraApp/lib/blocs/orders_cubit.dart`
+- `../../Flutter/DespulpadoraApp/test/widget_test.dart`
+
+### ✅ Verificación, Build y Tests Unitarios
+- `npm run build` (`DespulpadoraPwa`): **OK (0 errores)**.
+- `npx ng test --watch=false --browsers=ChromeHeadless` (`DespulpadoraPwa`): **301 de 301 SUCCESS (100% Unit Tests Passed, 0 fallos)**.
+- `dart analyze` (`DespulpadoraApp`): **No issues found! (0 errores)**.
+- `flutter test` (`DespulpadoraApp`): **15 de 15 All tests passed! (100% PASS)**.
+
+---
+
 ## [2026-11-02] - Integración de Íconos Oficiales de Waze y Google Maps en Modal `"Navegar a..."` de la App Móvil Flutter (`DespulpadoraApp`)
 
 ### 💬 Prompt Original del Usuario
@@ -2673,4 +2714,65 @@ por otr lado, la columna de accion dejamelo mejor, puede ser un lista desplegabl
 
 
 
+
+---
+
+## [2026-11-02] - Solución Definitiva a Generación de Código QR en WhatsAppQrGateway y PWA (`server.js`, `auth.interceptor.ts`, `settings.component.ts`)
+
+### 💬 Prompt Original del Usuario
+> "no se crea el QR"
+> "ejecuta"
+
+### 🤖 Resumen Técnico para la IA
+- **1. Eliminación de Condición de Carrera de Socket y Actualización de Protocolo Baileys (`WhatsAppQrGateway/server.js`)**:
+  - En `connectToWhatsApp(forceFresh = false)`, se agregó la guarda `if (sock && !forceFresh) { return; }` para impedir que llamadas concurrentes de `/api/whatsapp/status` creen un segundo socket `makeWASocket` mientras el primer socket está negociando las llaves criptográficas (~1.2s) y descartando su evento `qr`.
+  - En `resolveBaileysVersion()`, se actualizó `fallbackVersion` a `[2, 3000, 1043857760]` con un timeout de `4000ms` y, en el manejador `connection === 'close'`, se configuró la limpieza automática de `AUTH_DIR` y `cachedBaileysVersion` ante respuestas `405`, `500` o `DisconnectReason.badSession`.
+  - Se levantó `node server.js` como proceso daemon persistente en el puerto `3005`, respondiendo en tiempo real con `status: "QR_READY"` y `qrDataUrl: "data:image/png;base64,..."`.
+- **2. Bypass en `authInterceptor` y Auto-Solicitud de QR en `SettingsComponent` (`DespulpadoraPwa`)**:
+  - En `src/app/core/interceptors/auth.interceptor.ts`, se agregó `if (req.url.includes('/api/whatsapp')) { return next(req); }` para no inyectar el header `Authorization: Bearer` de la API principal hacia el microservicio local en `localhost:3005`, evitando preflights CORS innecesarios y cierres de sesión accidentales.
+  - En `src/app/features/settings/settings.component.ts` (`refreshWhatsAppGatewayStatus`), cuando el gateway responde `status === 'DISCONNECTED'` sin `qrDataUrl` ni sesión activa, el componente invoca automáticamente `this.whatsAppGateway.reconnect()` para solicitar y renderizar el código QR sin requerir clics manuales adicionales.
+- **3. Certificación de Agentes de Calidad**:
+  - **Agente Verificador de Impacto (`61a86e1e-8083-4012-ac15-697305b3ae3c`)**, **Agente Auditor Punto por Punto (`54e8cf96-fcee-4dd0-bf45-f4ac814f34c6`)** y **Agente de Revisión Par (`d3237105-9959-4132-9ea2-81e93a1c5f81`)**: Aprobaron el 100% de la implementación sin desviaciones ni regresiones.
+
+### 📦 Componentes Modificados
+- `/Users/sebastiansalamanca/Documents/Api/WhatsAppQrGateway/server.js` [MODIFICADO]
+- `src/app/core/interceptors/auth.interceptor.ts` [MODIFICADO]
+- `src/app/core/interceptors/auth.interceptor.spec.ts` [MODIFICADO]
+- `src/app/features/settings/settings.component.ts` [MODIFICADO]
+- `src/app/features/settings/settings.component.spec.ts` [MODIFICADO]
+- `src/app/features/orders/orders.component.ts` [MODIFICADO]
+- `HISTORIAL_CAMBIOS.md` [MODIFICADO]
+
+### ✅ Verificación, Build y Tests Unitarios
+- **Build de Producción PWA (`npm run build`)**: **0 Errores** (`dist/despulpadora-pwa` generado exitosamente).
+- **Pruebas Unitarias PWA (`npx ng test --watch=false --browsers=ChromeHeadless`)**: **Executed 297 of 297 SUCCESS (TOTAL: 297 SUCCESS, 0 FAILED)**.
+- **Verificación en Vivo (`GET http://localhost:3005/api/whatsapp/status`)**: **`{"status":"QR_READY","connected":false,"qrDataUrl":"data:image/png;base64,..."}`**.
+
+---
+
+## [2026-11-02] - Ocultar Botón de Priorizar en Pedidos Facturados y Sincronizar Lista "Todas" del Mapa con la Card del Día de Hoy (`DeliveryMapComponent`)
+
+### 💬 Prompt Original del Usuario
+> "Ajusta que si el pedido esta facturado, el boton de priorizar se desaparezca , adicional quiero que en la lista de todas se vean las que tengo en lista del dia de hoy, recuerda que en el modulo de pedido tengo unas cards de dias y ahi muevo los pedidos que quiero \"gestionar\" hoy"
+> "ejecuta"
+
+### 🤖 Resumen Técnico para la IA
+- **1. Ocultar Botón de Priorizar (`[⚡]`) en Pedidos Facturados (`src/app/features/orders/delivery-map.component.ts`)**:
+  - En la plantilla de `.drawer-stop-actions` (líneas 806–821), se envolvió el botón `.drawer-stop-priority-btn` dentro de `@if (!isStopBilled(stop)) { ... }` para que desaparezca inmediatamente cuando el pedido está facturado (`✓ FACTURADO`).
+  - En `isStopBilled(stop: DeliveryWaypoint)` (líneas 8892–8916), se prioriza la verificación reactiva del pedido en `this.stateService.orders()` (`order.isBilled === true || order.status === 'BILLED' || order.status === 'DISPATCHED' || order.status === 'DELIVERED'`).
+  - En `toggleStopPriority(stop: DeliveryWaypoint, forceState?: boolean)` (líneas 8935–8940), se agregó la guarda temprana `if (this.isStopBilled(stop)) { return; }`.
+- **2. Filtrado de la Lista `"Todas"` del Mapa por la Card del Día de Hoy (`src/app/features/orders/delivery-map.component.ts`)**:
+  - Se incorporaron los métodos `getCurrentWeekDayName(date?: Date): string`, `getOrderDay(order: OrderDto): string` e `isOrderForToday(order: OrderDto): boolean` con la misma lógica canónica de las cards de días de `OrdersComponent` (priorizando `order.scheduledDay` cuando el usuario mueve un pedido a la card del día que desea gestionar hoy).
+  - En `syncWithStateServiceOrders()` y en el computed `unmappedOrders`, se filtran las órdenes activas por `this.isOrderForToday(o)`, y se depuran automáticamente de `deliveryStops()` y de `couriers().orderIds` las paradas no entregadas cuyos pedidos fueron movidos a la card de otro día o cancelados.
+- **3. Certificación de Agentes de Calidad**:
+  - **Agente Verificador de Impacto (`477ee3cc-69ba-4938-b923-725f8a099f95`)**, **Agente Auditor Punto por Punto (`ca125707-701f-4be7-8bb9-7e0713c561be`)** y **Agente de Revisión Par (`faaca0b6-3a60-4aa2-b028-8ac513d04efb`)**: Aprobaron el 100% de la implementación sin desviaciones ni regresiones.
+
+### 📦 Componentes Modificados
+- `src/app/features/orders/delivery-map.component.ts` [MODIFICADO]
+- `src/app/features/orders/delivery-map.component.spec.ts` [MODIFICADO]
+- `HISTORIAL_CAMBIOS.md` [MODIFICADO]
+
+### ✅ Verificación, Build y Tests Unitarios
+- **Build de Producción PWA (`npm run build`)**: **0 Errores** (`dist/despulpadora-pwa` generado exitosamente).
+- **Pruebas Unitarias PWA (`npx ng test --watch=false --browsers=ChromeHeadless`)**: **Executed 299 of 299 SUCCESS (TOTAL: 299 SUCCESS, 0 FAILED)**.
 

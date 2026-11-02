@@ -13,6 +13,10 @@ export const authInterceptor: HttpInterceptorFn = (
   next: HttpHandlerFn
 ): Observable<HttpEvent<unknown>> => {
   try {
+    if (req.url.includes('/api/whatsapp')) {
+      return next(req);
+    }
+
     const authService = inject(AuthService);
     const token = authService.accessToken();
 

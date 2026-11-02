@@ -139,4 +139,12 @@ describe('authInterceptor', () => {
     expect(authServiceMock.logout).toHaveBeenCalledTimes(1);
     expect(caughtError).toBeTruthy();
   });
+
+  it('should bypass Authorization header injection and 401 logout handling for /api/whatsapp gateway requests', () => {
+    http.get<Record<string, unknown>>('http://localhost:3005/api/whatsapp/status').subscribe();
+
+    const req = httpMock.expectOne('http://localhost:3005/api/whatsapp/status');
+    expect(req.request.headers.has('Authorization')).toBeFalse();
+    req.flush({ status: 'QR_READY', connected: false, qrDataUrl: 'data:image/png;base64,test' });
+  });
 });

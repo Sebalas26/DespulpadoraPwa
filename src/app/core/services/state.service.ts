@@ -2115,19 +2115,32 @@ private loadEmployeesFromStorage(): EmployeeDto[] {
    */
   dispatchCourierRoute(dto: DispatchCourierRouteDto): void {
     try {
-      const orderIdSet = new Set(dto.orderIds);
-      const normalizedCourierName = (dto.courierName || '').trim().toLowerCase();
+      const currentOrdersMap: Map<number, OrderDto> = new Map<number, OrderDto>(
+        this.orders().map((o: OrderDto) => [o.orderId, o])
+      );
+      const nonDeliveredOrderIds: number[] = dto.orderIds.filter((id: number) => {
+        const existing: OrderDto | undefined = currentOrdersMap.get(id);
+        return !existing || existing.status !== 'DELIVERED';
+      });
+      const activeOrderIds: number[] =
+        nonDeliveredOrderIds.length > 0 ? nonDeliveredOrderIds : dto.orderIds;
+      const orderIdSet: Set<number> = new Set<number>(activeOrderIds);
+      const normalizedCourierName: string = (dto.courierName || '').trim().toLowerCase();
 
-      this.orders.update(list =>
-        list.map(o => {
+      this.orders.update((list: OrderDto[]) =>
+        list.map((o: OrderDto) => {
           if (orderIdSet.has(o.orderId)) {
             if (o.status !== 'DISPATCHED' && o.status !== 'DELIVERED') {
               o.items.forEach(item => {
-                const gramKey = `g${item.grammage}` as 'g140' | 'g250' | 'g500' | 'g1000';
+                const gramKey: 'g140' | 'g250' | 'g500' | 'g1000' = `g${item.grammage}` as
+                  | 'g140'
+                  | 'g250'
+                  | 'g500'
+                  | 'g1000';
                 this.adjustStock(item.fruitName || '', gramKey, -item.quantity);
               });
             }
-            const seqIndex = dto.orderIds.indexOf(o.orderId) + 1;
+            const seqIndex: number = activeOrderIds.indexOf(o.orderId) + 1;
             return {
               ...o,
               courierId: dto.courierId,
@@ -2139,9 +2152,16 @@ private loadEmployeesFromStorage(): EmployeeDto[] {
             };
           }
 
-          const belongedToCourier =
+          const belongedToCourier: boolean =
             (dto.courierId > 0 && o.courierId === dto.courierId) ||
             (normalizedCourierName.length > 0 && (o.courierName || '').trim().toLowerCase() === normalizedCourierName);
+          if (belongedToCourier && o.status === 'DELIVERED') {
+            return {
+              ...o,
+              routeCode: undefined,
+              routeSequenceOrder: undefined
+            };
+          }
           if (belongedToCourier && o.status !== 'DELIVERED' && o.status !== 'CANCELLED') {
             return {
               ...o,
@@ -2165,17 +2185,19 @@ private loadEmployeesFromStorage(): EmployeeDto[] {
             courierId: dto.courierId,
             courierName: dto.courierName,
             routeCode: dto.routeCode,
-            orderIds: dto.orderIds
+            orderIds: activeOrderIds
           },
           {
             event: 'route_dispatched',
             courierId: String(dto.courierId),
-            orderIds: dto.orderIds.map(id => String(id))
+            orderIds: activeOrderIds.map((id: number) => String(id))
           }
         );
       }
-      const validInt32OrderIds = dto.orderIds.filter(id => id > 0 && id <= 2147483647);
-      const timestampOrderIds = dto.orderIds.filter(id => id > 2147483647);
+      const validInt32OrderIds: number[] = activeOrderIds.filter(
+        (id: number) => id > 0 && id <= 2147483647
+      );
+      const timestampOrderIds: number[] = activeOrderIds.filter((id: number) => id > 2147483647);
 
       if (validInt32OrderIds.length > 0 || timestampOrderIds.length === 0) {
         this.api
@@ -2183,7 +2205,7 @@ private loadEmployeesFromStorage(): EmployeeDto[] {
             courierId: dto.courierId,
             courierName: dto.courierName,
             ...(dto.routeCode !== undefined ? { routeCode: dto.routeCode } : {}),
-            orderIds: validInt32OrderIds.length > 0 ? validInt32OrderIds : dto.orderIds
+            orderIds: validInt32OrderIds.length > 0 ? validInt32OrderIds : activeOrderIds
           })
           ?.subscribe({
             error: () => {}
@@ -2191,7 +2213,10 @@ private loadEmployeesFromStorage(): EmployeeDto[] {
       }
 
       if (timestampOrderIds.length > 0) {
-        this.syncTimestampOrdersAndDispatchRoute(dto, timestampOrderIds);
+        this.syncTimestampOrdersAndDispatchRoute(
+          { ...dto, orderIds: activeOrderIds },
+          timestampOrderIds
+        );
       }
     } catch {
       return;
