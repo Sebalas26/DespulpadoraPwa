@@ -4,6 +4,83 @@ Este documento registra de manera cronológica y estructurada todas las interven
 
 ---
 
+## [2026-11-02] - Cierre Limpio de Ruta Completada/Liquidada en App Flutter (`Sin Ruta Asignada`) y Ocultamiento del Botón de Teléfono en Pedidos Entregados (`DespulpadoraApp` + `DespulpadoraPwa` + `ApiDespulpadora`)
+
+### 💬 Prompt Original del Usuario
+> "Estoy viendo que mi domiciliario ya no tiene ruta activa o pendiente por recibir , pero en la app flutter sale aun ruta activa, Adicional quiero que en la app flutter cuando un pedido ya este entregado, el boton de icono telefono no se muestre"
+> "ejecuta"
+
+### 🤖 Resumen Técnico para la IA
+- **1. Ocultamiento del Botón de Icono de Teléfono en Pedidos Entregados (`DespulpadoraApp`)**:
+  - En `lib/views/widgets/order_card_widget.dart` (línea 148), se condicionó el `IconButton` de `Icons.phone_rounded` a `if (order.clienteTelefono.isNotEmpty && !isDelivered)` para que no se muestre cuando el pedido ya está en estado `OrderStatus.entregado`.
+  - En `lib/views/courier_route_map_screen.dart` (`_buildActiveStopFocusedCard`), se condicionó el chip `'Llamar'` (`Icons.phone_rounded`) a `order.estado != OrderStatus.entregado && order.clienteTelefono.isNotEmpty`.
+- **2. Limpieza de Ruta Activa Fantasma cuando No Hay Paradas Pendientes (`DespulpadoraApp` + `ApiDespulpadora`)**:
+  - En `lib/services/api_service.dart` (`_filterActiveRouteOrderMaps` y `fetchAssignedRoute`), cuando `activeMaps.isEmpty` (`0` paradas pendientes y todas las paradas están en estado terminal `entregado` / `delivered` / `novedad` / `cancelado`), se retorna `<Map<String, dynamic>>[]` y `AssignedRouteResponse(orders: [], hasAssignedRoute: false, isRouteReceived: false)`.
+  - En `lib/blocs/orders_cubit.dart` (`_fetchAndApplyOrders`, `_updateStatusTransition`, `reportNovelty`), cuando no quedan paradas pendientes (`!hasPendingOrders` o `!hasRemainingPending`), se archivan las órdenes completadas y se emite `OrdersState` limpio con `hasAssignedRoute: false`, `isRouteReceived: false`, `isRouteActive: false`, `orders: []`, `assignedRouteCode: ''` y `assignedRouteZone: ''`.
+  - En `ApiDespulpadora.Core/Services/Mobile/MobileAppService.cs` (`GetAssignedRouteAsync`), cuando `activeUndeliveredOrders.Count == 0`, se retorna `assignedOrders` vacío (`HasAssignedRoute = false, Orders = []`).
+- **3. Sincronización de Liquidación de Ruta desde PWA hacia Backend (`DespulpadoraPwa` + `ApiDespulpadora`)**:
+  - Se agregó `settleCourierRoute` en `src/app/core/services/api.service.ts` (`POST /api/couriers/{id}/settle-route`) y en `src/app/core/services/state.service.ts` (limpiando `routeCode` y `routeSequenceOrder` de las órdenes del domiciliario), invocándolo desde `DeliveryMapComponent.confirmSettlementAndReceive()`.
+  - En `ApiDespulpadora.Core/Services/Business/OrderAndCourierServices.cs` (`SettleCourierRouteAsync`), se soporta resolución por `Courier.Id` o `ResponsibleUserId` y se limpia `RouteSequenceOrder = null` y `DispatchedAtUtc = null`.
+- **4. Informes del Agente Verificador, Agente Auditor Punto por Punto y Revisión Par**:
+  - **Agente Verificador (`0bc45c8b-5b27-4569-be47-237d0c0bfa89`)**: Confirmó aislamiento quirúrgico sin afectar otros flujos.
+  - **Agente Auditor Punto por Punto (`5dff97f0-d9d7-4d91-93f8-c302c21c6d76`)**: Dictamen **APROBADO AL 100% (0 Desviaciones)**.
+  - **Agente de Revisión Par (`a438e5fd-2817-44c9-9a2e-44372f1efee8`)**: Dictamen **APROBADO AL 100% (0 Anomalías, 0 Regresiones)**.
+
+### 📦 Componentes Modificados
+- `src/app/core/services/api.service.ts`
+- `src/app/core/services/api.service.spec.ts`
+- `src/app/core/services/state.service.ts`
+- `src/app/core/services/state.service.spec.ts`
+- `src/app/features/orders/delivery-map.component.ts`
+- `src/app/features/orders/delivery-map.component.spec.ts`
+- `../Flutter/DespulpadoraApp/lib/views/widgets/order_card_widget.dart`
+- `../Flutter/DespulpadoraApp/lib/views/courier_route_map_screen.dart`
+- `../Flutter/DespulpadoraApp/lib/services/api_service.dart`
+- `../Flutter/DespulpadoraApp/lib/blocs/orders_cubit.dart`
+- `../Flutter/DespulpadoraApp/test/widget_test.dart`
+- `../Api/ApiDespulpadora/ApiDespulpadora.Core/Services/Mobile/MobileAppService.cs`
+- `../Api/ApiDespulpadora/ApiDespulpadora.Core/Services/Business/OrderAndCourierServices.cs`
+
+### ✅ Verificación, Build y Tests Unitarios
+- `npm run build` (`DespulpadoraPwa`): **OK (0 errores)**.
+- `npx ng test --watch=false --browsers=ChromeHeadless` (`DespulpadoraPwa`): **303 de 303 SUCCESS (100% Unit Tests Passed, 0 fallos)**.
+- `dart analyze && flutter test` (`DespulpadoraApp`): **No issues found! + 16/16 All tests passed! (100% PASS)**.
+- `dotnet build` (`ApiDespulpadora`): **Compilación correcta (0 Errores)**.
+
+---
+
+## [2026-11-02] - Eliminación Quirúrgica de la Pestaña / Submódulo `"Auditoría de Mermas (Ideal vs Real)"` en Centro de Reportes & Analítica (`ReportsComponent`)
+
+### 💬 Prompt Original del Usuario
+> "borra este modulo"
+> "Eliminar únicamente la pestaña / submódulo 'Auditoría de Mermas (Ideal vs Real)' dentro de Reportes y Analítica"
+> "ejecuta"
+
+### 🤖 Resumen Técnico para la IA
+- **1. Eliminación de Pestaña y Vista en Plantilla (`src/app/features/reports/reports.component.html`)**:
+  - Se retiró el botón `"Auditoría de Mermas (Ideal vs Real)"` de `.reports-nav-tabs` y se actualizó el subtítulo `.reports-header-subtitle` a `"Consolidado analítico de ventas, inventario, gastos operativos y nómina quincenal."`.
+  - Se eliminó íntegramente el bloque condicional `@if (activeTab() === 'loss')` (tarjetas KPI de merma, banner explicativo de algoritmo y tabla detallada por fruta), preservando intactas las 4 pestañas restantes (`Ventas & Facturación`, `Inventario & Valoración`, `Gastos & Logística` y `Nómina Quincenal & RRHH`).
+- **2. Limpieza de Tipos, Señales Computadas y Exportación CSV (`src/app/features/reports/reports.component.ts`)**:
+  - Se actualizó `ReportTab` a `'sales' | 'stock' | 'expenses' | 'payroll'`.
+  - Se eliminaron las señales computadas exclusivas de la pestaña eliminada (`idealVsRealAudit`, `lossTotalPulpKg`, `lossTotalIdealRevenue`, `lossTotalRealRevenue`, `lossTotalGapRevenue`, `lossGlobalPercentage`), su rama en `queryParams` del constructor y su rama en `exportCurrentReportCsv()`.
+- **3. Actualización de Pruebas Unitarias (`src/app/features/reports/reports.component.spec.ts`)**:
+  - Se actualizó la prueba de pestañas de `ReportsComponent` para validar las 4 pestañas vigentes y verificar explícitamente que `.reports-nav-tabs` renderiza exactamente 4 botones sin `"Auditoría de Mermas"`.
+- **4. Informes del Agente Verificador, Agente Auditor Punto por Punto y Revisión Par**:
+  - **Agente Verificador (`f7ab0878-9b5c-4438-8697-6d90ced022c1`)**: Confirmó aislamiento quirúrgico 100% dentro de `ReportsComponent` sin afectar estilos globales ni otros módulos.
+  - **Agente Auditor Punto por Punto (`46540afd-fcf5-4361-8c26-d302e6df153b`)**: Dictamen **APROBADO AL 100% (0 Desviaciones)**.
+  - **Agente de Revisión Par (`e5edc93b-509d-4a59-906e-b2ca03ea0e53`)**: Dictamen **CERTIFICADO Y APROBADO AL 100% (0 Anomalías, 0 Regresiones)**.
+
+### 📦 Componentes Modificados
+- `src/app/features/reports/reports.component.html`
+- `src/app/features/reports/reports.component.ts`
+- `src/app/features/reports/reports.component.spec.ts`
+
+### ✅ Verificación, Build y Tests Unitarios
+- `npm run build` (`DespulpadoraPwa`): **OK (0 errores)**.
+- `npx ng test --watch=false --browsers=ChromeHeadless` (`DespulpadoraPwa`): **301 de 301 SUCCESS (100% Unit Tests Passed, 0 fallos)**.
+
+---
+
 ## [2026-11-02] - Reinicio Limpio de Ruta del Domiciliario al Crear una Nueva Ruta tras Finalizar Entregas Anteriores (`DespulpadoraPwa` + `ApiDespulpadora` + `DespulpadoraApp`)
 
 ### 💬 Prompt Original del Usuario
@@ -2775,4 +2852,33 @@ por otr lado, la columna de accion dejamelo mejor, puede ser un lista desplegabl
 ### ✅ Verificación, Build y Tests Unitarios
 - **Build de Producción PWA (`npm run build`)**: **0 Errores** (`dist/despulpadora-pwa` generado exitosamente).
 - **Pruebas Unitarias PWA (`npx ng test --watch=false --browsers=ChromeHeadless`)**: **Executed 299 of 299 SUCCESS (TOTAL: 299 SUCCESS, 0 FAILED)**.
+
+---
+
+## [2026-11-02] - Estilo Ejecutivo de Inventario & Stock (4 KPIs con Sparkline + Tabla "Existencias por Presentación y Valorización" con "Ajuste rápido:") para Frutas y Pulpas (`SettingsComponent`)
+
+### 💬 Prompt Original del Usuario
+> "quier que la pwa / inventario & stock tenga este estilo para frutas y pulpas, pero agregale \"Ajuste rápido:\""
+> "ejecuta"
+
+### 🤖 Resumen Técnico para la IA
+- **1. Tarjetas Superiores de KPIs con Sparkline SVG (`.quick-kpis-grid` / `.quick-kpi-card`) en `SettingsComponent` (`src/app/features/settings/settings.component.html` y `settings.component.scss`)**:
+  - Se reemplazó el banner anterior en `activeTab() === 'inventory'` por las 4 tarjetas ejecutivas con sparklines SVG: `Pulpa Congelada en Inventario` (`inventoryTotalPulpKg()`), `Fruta Fresca en Bodega` (`stateService.totalFreshStockKg()`), `Valorización Comercial de Inventario` (`inventoryCommercialValue()`) y `Costo Estimado & Alertas` (`inventoryEstimatedCost()` + `inventoryLowStockCount()`).
+- **2. Tablas Ejecutivas `"Existencias por Presentación y Valorización"` con Columna y Controles de `"Ajuste rápido:"` para Pulpas (`variants`) y Frutas (`fruits`)**:
+  - En `inventorySubTab() === 'variants'` (Pulpas), se estructuró la tarjeta `.card.inv-summary-banner` con cabecera `Existencias por Presentación y Valorización`, badge `{{ filteredVariants().length }} pulpas en catálogo`, botón de Histórico (`#btn-pulp-history-dropdown`) y tabla con columnas `Pulpa / Presentación`, `Precio Venta`, `Costo Prod.`, `Margen Unit.`, `Stock Disponible`, `Valor Comercial`, `Estado de Inventario` (`BAJO STOCK` / `ÓPTIMO`), **`Ajuste rápido:`** (`.inv-quick-label` `"Ajuste rápido:"` + botones `-10`, `+10`, `+50`) y `Acciones` CRUD.
+  - En `inventorySubTab() === 'fruits'` (Frutas), se estructuró la tarjeta `.card.inv-summary-banner` con cabecera `Existencias por Presentación y Valorización`, badge `{{ filteredFruits().length }} frutas en catálogo`, botón de Histórico (`#btn-fruit-history-dropdown`) y tabla con columnas `Fruta`, `140g (Vasos)`, `250g (Medias)`, `500g (Libras)`, `1000g (1 Kg)`, `Total Pulpa`, `Fruta Fresca`, `Valor Comercial`, `Estado de Inventario` (`BAJO STOCK` / `ÓPTIMO`), **`Ajuste rápido:`** (`.inv-quick-label` `"Ajuste rápido:"` + botones `-10 Kg`, `+10 Kg`, `+50 Kg`, `+100 Kg`) y `Acciones` CRUD.
+- **3. Certificación de Agentes de Calidad**:
+  - **Agente Verificador de Impacto (`477ee3cc-69ba-4938-b923-725f8a099f95`)**, **Agente Auditor Punto por Punto (`ca125707-701f-4be7-8bb9-7e0713c561be`)** y **Agente de Revisión Par (`faaca0b6-3a60-4aa2-b028-8ac513d04efb`)**: Aprobaron el 100% de la implementación sin desviaciones ni regresiones.
+
+### 📦 Componentes Modificados
+- `src/app/features/settings/settings.component.ts` [MODIFICADO]
+- `src/app/features/settings/settings.component.html` [MODIFICADO]
+- `src/app/features/settings/settings.component.scss` [MODIFICADO]
+- `src/app/features/settings/settings.component.spec.ts` [MODIFICADO]
+- `HISTORIAL_CAMBIOS.md` [MODIFICADO]
+
+### ✅ Verificación, Build y Tests Unitarios
+- **Build de Producción PWA (`npm run build`)**: **0 Errores** (`dist/despulpadora-pwa` generado exitosamente).
+- **Pruebas Unitarias PWA (`npx ng test --watch=false --browsers=ChromeHeadless`)**: **Executed 301 of 301 SUCCESS (TOTAL: 301 SUCCESS, 0 FAILED)**.
+
 

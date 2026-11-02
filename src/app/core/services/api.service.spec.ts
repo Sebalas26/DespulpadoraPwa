@@ -271,4 +271,18 @@ describe('ApiService', () => {
     expect(req.request.body.password).toBe('NuevaPassword123');
     req.flush({ id: 6, username: 'domSebalas', fullName: 'sebas domiciliario', email: 'dom@p.c', roleId: 4, isActive: true });
   });
+
+  it('should settle a courier route via POST /api/couriers/{id}/settle-route', () => {
+    service
+      .settleCourierRoute(9, { cashDelivered: 85000, transfersConfirmed: 0, notes: 'Cuadre OK' })
+      .subscribe(response => {
+        expect(response).toEqual({ id: 9, status: 'Disponible' });
+      });
+
+    const req = httpMock.expectOne(`${baseUrl}/couriers/9/settle-route`);
+    expect(req.request.method).toBe('POST');
+    expect(req.request.body.cashDelivered).toBe(85000);
+    expect(req.request.body.notes).toBe('Cuadre OK');
+    req.flush({ id: 9, status: 'Disponible' });
+  });
 });

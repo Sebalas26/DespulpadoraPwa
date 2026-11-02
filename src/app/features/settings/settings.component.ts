@@ -344,6 +344,89 @@ export class SettingsComponent {
     }
   });
 
+  readonly inventoryTotalPulpKg = computed<number>(() => {
+    try {
+      if (typeof this.stateService.totalStockKg === 'function') {
+        const stateKg = this.stateService.totalStockKg();
+        if (stateKg > 0) {
+          return stateKg;
+        }
+      }
+      const variantsKg = this.stateService
+        .productVariants()
+        .reduce((sum, v) => sum + ((v.currentStock || 0) * (v.grammage || 0)) / 1000, 0);
+      if (variantsKg > 0) {
+        return Number(variantsKg.toFixed(2));
+      }
+      const fruitsKg = this.stateService
+        .fruits()
+        .reduce((sum, f) => sum + this.getFruitTotalPulpKg(f), 0);
+      return Number(fruitsKg.toFixed(2));
+    } catch {
+      return 0;
+    }
+  });
+
+  readonly inventoryCommercialValue = computed<number>(() => {
+    try {
+      if (this.inventorySubTab() === 'variants') {
+        const variantsVal = this.stateService
+          .productVariants()
+          .reduce((sum, v) => sum + (v.currentStock || 0) * (v.basePrice || 0), 0);
+        if (variantsVal > 0) {
+          return variantsVal;
+        }
+      }
+      const fruitsVal = this.stateService
+        .fruits()
+        .reduce((sum, f) => sum + this.getFruitCommercialValue(f), 0);
+      if (fruitsVal > 0) {
+        return fruitsVal;
+      }
+      return this.stateService
+        .productVariants()
+        .reduce((sum, v) => sum + (v.currentStock || 0) * (v.basePrice || 0), 0);
+    } catch {
+      return 0;
+    }
+  });
+
+  readonly inventoryEstimatedCost = computed<number>(() => {
+    try {
+      if (this.inventorySubTab() === 'variants') {
+        const variantsCost = this.stateService
+          .productVariants()
+          .reduce((sum, v) => sum + (v.currentStock || 0) * (v.unitCost || 0), 0);
+        if (variantsCost > 0) {
+          return Math.round(variantsCost);
+        }
+      }
+      return this.stateService.fruits().reduce((acc, f) => {
+        const totalKg = this.getFruitTotalPulpKg(f);
+        const unitCost = f.costPerKg || 0;
+        return acc + Math.round(totalKg * unitCost + (f.freshStockKg || 0) * (unitCost * 0.6));
+      }, 0);
+    } catch {
+      return 0;
+    }
+  });
+
+  readonly inventoryLowStockCount = computed<number>(() => {
+    try {
+      if (this.inventorySubTab() === 'variants') {
+        return this.stateService
+          .productVariants()
+          .filter(v => (v.currentStock || 0) <= (v.minStockAlert || 0)).length;
+      }
+      if (typeof this.stateService.lowStockFruitsCount === 'function') {
+        return this.stateService.lowStockFruitsCount();
+      }
+      return this.stateService.fruits().filter(f => this.isFruitLowStock(f)).length;
+    } catch {
+      return 0;
+    }
+  });
+
   readonly activeCategories = this.stateService.activeCategories;
   readonly activeGrammages = this.stateService.activeGrammages;
   readonly isLoading = computed<boolean>(() => {
@@ -1887,6 +1970,95 @@ export class SettingsComponent {
       }).format(num || 0);
     } catch {
       return '$0';
+    }
+  }
+
+  /**
+   * Formats a number with Colombian locale thousands/decimal separators.
+   */
+  formatNum(num: number): string {
+    try {
+      return new Intl.NumberFormat('es-CO', {
+        maximumFractionDigits: 2
+      }).format(num || 0);
+    } catch {
+      return '0';
+    }
+  }
+
+  /**
+   * Calculates the commercial inventory value in COP for a specific fruit across all its grammages.
+   */
+  getFruitCommercialValue(fruit: FruitConfig): number {
+    try {
+      const s = fruit.stock || { g140: 0, g250: 0, g500: 0, g1000: 0 };
+      const p = fruit.prices || { g140: 0, g250: 0, g500: 0, g1000: 0 };
+      const byFruitGrammages =
+        (s.g140 || 0) * (p.g140 || 0) +
+        (s.g250 || 0) * (p.g250 || 0) +
+        (s.g500 || 0) * (p.g500 || 0) +
+        (s.g1000 || 0) * (p.g1000 || 0);
+      if (byFruitGrammages > 0) {
+        return byFruitGrammages;
+      }
+      const matchingVariants = this.stateService
+        .productVariants()
+        .filter(
+          v =>
+            (fruit.fruitId !== undefined && v.fruitId === fruit.fruitId) ||
+            (v.fruitName && v.fruitName.toLowerCase() === fruit.name.toLowerCase())
+        );
+      return matchingVariants.reduce((sum, v) => sum + (v.currentStock || 0) * (v.basePrice || 0), 0);
+    } catch {
+      return 0;
+    }
+  }
+
+  /**
+   * Calculates the total finished pulp stock in kilograms for a specific fruit.
+   */
+  getFruitTotalPulpKg(fruit: FruitConfig): number {
+    try {
+      const s = fruit.stock || { g140: 0, g250: 0, g500: 0, g1000: 0 };
+      const totalGrams =
+        (s.g140 || 0) * 140 +
+        (s.g250 || 0) * 250 +
+        (s.g500 || 0) * 500 +
+        (s.g1000 || 0) * 1000;
+      if (totalGrams > 0) {
+        return Number((totalGrams / 1000).toFixed(2));
+      }
+      const matchingVariants = this.stateService
+        .productVariants()
+        .filter(
+          v =>
+            (fruit.fruitId !== undefined && v.fruitId === fruit.fruitId) ||
+            (v.fruitName && v.fruitName.toLowerCase() === fruit.name.toLowerCase())
+        );
+      const variantsGrams = matchingVariants.reduce(
+        (sum, v) => sum + (v.currentStock || 0) * (v.grammage || 0),
+        0
+      );
+      return Number((variantsGrams / 1000).toFixed(2));
+    } catch {
+      return 0;
+    }
+  }
+
+  /**
+   * Evaluates whether a fruit is currently in a low-stock alert state.
+   */
+  isFruitLowStock(fruit: FruitConfig): boolean {
+    try {
+      const s = fruit.stock || { g140: 0, g250: 0, g500: 0, g1000: 0 };
+      const min = fruit.minStock || { g140: 10, g250: 10, g500: 5, g1000: 3 };
+      return (
+        (fruit.freshStockKg || 0) <= 50 ||
+        (s.g140 || 0) <= (min.g140 || 0) ||
+        (s.g250 || 0) <= (min.g250 || 0)
+      );
+    } catch {
+      return false;
     }
   }
 

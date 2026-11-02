@@ -507,6 +507,22 @@ export class ApiService {
   }
 
   /**
+   * Settles a courier's completed delivery route via `POST /api/couriers/{id}/settle-route`.
+   */
+  settleCourierRoute(
+    courierId: number,
+    payload: { cashDelivered: number; transfersConfirmed: number; notes?: string }
+  ): Observable<unknown> {
+    try {
+      return this.http
+        .post<unknown>(`${this.baseUrl}/couriers/${courierId}/settle-route`, payload)
+        .pipe(catchError((error: unknown) => throwError(() => error)));
+    } catch (error: unknown) {
+      return throwError(() => error);
+    }
+  }
+
+  /**
    * Updates the picked quantity of an order item via `PATCH /api/orders/{orderId}/items/{itemId}/picked`.
    */
   updateOrderItemPicking(orderId: number, itemId: number, pickedQuantity: number): Observable<OrderDto> {

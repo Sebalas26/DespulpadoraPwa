@@ -274,24 +274,29 @@ describe('ReportsComponent', () => {
     expect(component.editItems()[0].unitPrice).toBe(12000);
   });
 
-  it('should render dashboard-style static KPI cards without expand chevrons across all 5 report tabs and keep date filters inside reports-toolbar-actions', () => {
-    const tabs: Array<'sales' | 'loss' | 'stock' | 'expenses' | 'payroll'> = [
+  it('should render dashboard-style static KPI cards without expand chevrons across all 4 report tabs and keep date filters inside reports-toolbar-actions without Auditoría de Mermas tab', () => {
+    const tabs: Array<'sales' | 'stock' | 'expenses' | 'payroll'> = [
       'sales',
-      'loss',
       'stock',
       'expenses',
       'payroll'
     ];
 
-    const hostEl = fixture.nativeElement as HTMLElement;
-    const topShell = hostEl.querySelector('.reports-top-shell');
+    const hostEl: HTMLElement = fixture.nativeElement as HTMLElement;
+    const topShell: Element | null = hostEl.querySelector('.reports-top-shell');
     expect(topShell).toBeTruthy();
-    const topShellChildren = Array.from(topShell?.children ?? []);
+    const topShellChildren: Element[] = Array.from(topShell?.children ?? []);
     expect(topShellChildren.length).toBe(3);
     expect(topShellChildren[0].classList.contains('reports-header-title-block')).toBeTrue();
     expect(topShellChildren[1].classList.contains('reports-nav-tabs')).toBeTrue();
     expect(topShellChildren[2].classList.contains('reports-toolbar-actions')).toBeTrue();
     expect(hostEl.querySelector('.reports-header-subtitle')?.textContent).toContain('Consolidado analítico de ventas');
+    expect(hostEl.querySelector('.reports-header-subtitle')?.textContent).not.toContain('auditoría de mermas');
+
+    const navTabButtons: NodeListOf<Element> = hostEl.querySelectorAll('.reports-nav-tabs .report-tab-btn');
+    expect(navTabButtons.length).toBe(4);
+    expect(hostEl.querySelector('.reports-nav-tabs')?.textContent).not.toContain('Auditoría de Mermas');
+
     expect(hostEl.querySelector('.reports-toolbar-actions .period-filter-container')).toBeTruthy();
     expect(hostEl.querySelector('.reports-print-btn.no-mobile')).toBeTruthy();
     expect(hostEl.querySelector('.sales-report-card .sales-table-container .sales-report-table')).toBeTruthy();
@@ -299,7 +304,7 @@ describe('ReportsComponent', () => {
     for (const tab of tabs) {
       component.setTab(tab);
       fixture.detectChanges();
-      const kpiCards = hostEl.querySelectorAll('.quick-kpis-grid .quick-kpi-card.report-kpi-card');
+      const kpiCards: NodeListOf<Element> = hostEl.querySelectorAll('.quick-kpis-grid .quick-kpi-card.report-kpi-card');
       expect(kpiCards.length).toBe(4);
       expect(hostEl.querySelectorAll('.quick-kpis-grid .kpi-icon-box').length).toBe(0);
       expect(hostEl.querySelectorAll('.quick-kpis-grid .kpi-card-top-row .kpi-label').length).toBe(4);

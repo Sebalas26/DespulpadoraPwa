@@ -8,7 +8,6 @@ import {
   EmployeeDto,
   ExpenseDto,
   FruitConfig,
-  IdealVsRealAuditDto,
   OrderDto,
   OrderItemDto,
   OrderStatus,
@@ -19,7 +18,7 @@ import { CopCurrencyInputDirective } from '../../shared/directives/cop-currency-
 /**
  * Available report tab identifiers.
  */
-export type ReportTab = 'sales' | 'loss' | 'stock' | 'expenses' | 'payroll';
+export type ReportTab = 'sales' | 'stock' | 'expenses' | 'payroll';
 
 /**
  * Available date filter modes for reports.
@@ -46,7 +45,7 @@ export interface ReportEditOrderItem {
 }
 
 /**
- * Executive reports component for sales, ideal vs. real yield loss audit, inventory valuation, expenses, and payroll.
+ * Executive reports component for sales, inventory valuation, expenses, and payroll.
  */
 @Component({
   selector: 'app-reports',
@@ -373,62 +372,6 @@ export class ReportsComponent {
     }
   });
 
-  readonly idealVsRealAudit = computed<IdealVsRealAuditDto[]>(() => {
-    try {
-      return this.stateService.idealVsRealLossAudit();
-    } catch (error: unknown) {
-      console.error('Error computing ideal vs real audit:', error);
-      return [];
-    }
-  });
-
-  readonly lossTotalPulpKg = computed<number>(() => {
-    try {
-      return this.idealVsRealAudit().reduce((sum: number, r: IdealVsRealAuditDto) => sum + (r.totalPulpKgProduced || 0), 0);
-    } catch (error: unknown) {
-      console.error('Error computing loss total pulp kg:', error);
-      return 0;
-    }
-  });
-
-  readonly lossTotalIdealRevenue = computed<number>(() => {
-    try {
-      return this.idealVsRealAudit().reduce((sum: number, r: IdealVsRealAuditDto) => sum + (r.idealRevenue || 0), 0);
-    } catch (error: unknown) {
-      console.error('Error computing loss total ideal revenue:', error);
-      return 0;
-    }
-  });
-
-  readonly lossTotalRealRevenue = computed<number>(() => {
-    try {
-      return this.idealVsRealAudit().reduce((sum: number, r: IdealVsRealAuditDto) => sum + (r.realRevenue || 0), 0);
-    } catch (error: unknown) {
-      console.error('Error computing loss total real revenue:', error);
-      return 0;
-    }
-  });
-
-  readonly lossTotalGapRevenue = computed<number>(() => {
-    try {
-      return this.lossTotalIdealRevenue() - this.lossTotalRealRevenue();
-    } catch (error: unknown) {
-      console.error('Error computing loss total gap revenue:', error);
-      return 0;
-    }
-  });
-
-  readonly lossGlobalPercentage = computed<number>(() => {
-    try {
-      const ideal = this.lossTotalIdealRevenue();
-      if (ideal <= 0) return 0;
-      return Number(((this.lossTotalGapRevenue() / ideal) * 100).toFixed(1));
-    } catch (error: unknown) {
-      console.error('Error computing loss global percentage:', error);
-      return 0;
-    }
-  });
-
   readonly cavaTotalStockKg = computed<number>(() => {
     try {
       return this.stateService.totalStockKg();
@@ -590,12 +533,10 @@ export class ReportsComponent {
   constructor() {
     try {
       this.stateService.refreshAll?.();
-      this.route.queryParams.subscribe(params => {
-        const tab = params['tab'];
+      this.route.queryParams.subscribe((params: Record<string, string | undefined>) => {
+        const tab: string | undefined = params['tab'];
         if (tab === 'sales' || tab === 'ventas') {
           this.activeTab.set('sales');
-        } else if (tab === 'loss' || tab === 'mermas' || tab === 'ideal-vs-real') {
-          this.activeTab.set('loss');
         } else if (tab === 'stock' || tab === 'cava' || tab === 'inventario') {
           this.activeTab.set('stock');
         } else if (tab === 'expenses' || tab === 'gastos' || tab === 'logistica') {
@@ -1348,20 +1289,6 @@ export class ReportsComponent {
           o.totalAmount
         ]);
         this.downloadCsv(`reporte_ventas_${now}.csv`, headers, rows);
-      } else if (tab === 'loss') {
-        const headers = ['Fruta', 'Pulpa Producida Kg', 'Unidades Estimadas', 'Unidades Facturadas', 'Venta Ideal COP', 'Venta Real COP', 'Diferencia Unidades', 'Diferencia COP', 'Nivel Merma'];
-        const rows = this.idealVsRealAudit().map((r: IdealVsRealAuditDto) => [
-          `"${r.fruitName}"`,
-          r.totalPulpKgProduced,
-          r.unitsProduced,
-          r.unitsBilled,
-          r.idealRevenue,
-          r.realRevenue,
-          r.differenceUnits,
-          r.differenceRevenue,
-          r.alertLevel
-        ]);
-        this.downloadCsv(`reporte_auditoria_mermas_${now}.csv`, headers, rows);
       } else if (tab === 'stock') {
         const headers = ['Fruta', 'Stock 140g', 'Stock 250g', 'Stock 500g', 'Stock 1000g', 'Total Pulpa Kg', 'Fruta Fresca Kg', 'Valorización COP'];
         const rows = this.stateService.fruits().map((f: FruitConfig) => {

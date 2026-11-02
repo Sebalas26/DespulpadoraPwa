@@ -53,6 +53,7 @@ describe('StateService', () => {
       'updateOrder',
       'updateOrderStatus',
       'dispatchOrdersRoute',
+      'settleCourierRoute',
       'updateOrderItemPicking',
       'deleteOrder',
       'createExpense',
@@ -917,5 +918,44 @@ describe('StateService', () => {
         orderIds: [703]
       })
     );
+  });
+
+  it('should clear routeCode and routeSequenceOrder and call api.settleCourierRoute when settling a courier route', () => {
+    apiSpy.settleCourierRoute.and.returnValue(of({ id: 9, status: 'Disponible' }));
+    service.orders.set([
+      {
+        orderId: 801,
+        orderNumber: 'PED-801',
+        branchId: 1,
+        clientId: 1,
+        clientName: 'Cliente Ruta Liquidada',
+        clientPhone: '3001112233',
+        clientAddress: 'Calle 80 # 10-20',
+        status: 'DELIVERED',
+        orderDate: '2026-11-02',
+        scheduledDay: 'Lunes',
+        isPriority: false,
+        courierId: 9,
+        courierName: 'Laura Domiciliaria',
+        routeCode: 'RUT-09',
+        routeSequenceOrder: 1,
+        totalAmount: 40000,
+        isPaid: true,
+        paymentMethodName: 'Efectivo',
+        createdAt: '2026-11-02T16:00:00Z',
+        items: []
+      }
+    ]);
+
+    service.settleCourierRoute(9, 'Laura Domiciliaria', 40000, 0, 'Recibido conforme');
+
+    const settledOrder: OrderDto | undefined = service.orders().find((o: OrderDto) => o.orderId === 801);
+    expect(settledOrder?.routeCode).toBeUndefined();
+    expect(settledOrder?.routeSequenceOrder).toBeUndefined();
+    expect(apiSpy.settleCourierRoute).toHaveBeenCalledWith(9, {
+      cashDelivered: 40000,
+      transfersConfirmed: 0,
+      notes: 'Recibido conforme'
+    });
   });
 });

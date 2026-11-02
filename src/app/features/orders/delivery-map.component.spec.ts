@@ -17,6 +17,7 @@ describe('DeliveryMapComponent', () => {
   let createOrderSpy: jasmine.Spy;
   let updateOrderStatusSpy: jasmine.Spy;
   let dispatchCourierRouteSpy: jasmine.Spy;
+  let settleCourierRouteSpy: jasmine.Spy;
   let fetchLiveCouriersSpy: jasmine.Spy;
   let geocodeBestMatchSpy: jasmine.Spy;
 
@@ -77,6 +78,7 @@ describe('DeliveryMapComponent', () => {
     }));
     updateOrderStatusSpy = jasmine.createSpy('updateOrderStatus');
     dispatchCourierRouteSpy = jasmine.createSpy('dispatchCourierRoute');
+    settleCourierRouteSpy = jasmine.createSpy('settleCourierRoute');
     fetchLiveCouriersSpy = jasmine.createSpy('fetchLiveCouriers').and.returnValue(of([]));
 
     const stateServiceMock: Partial<StateService> = {
@@ -89,6 +91,7 @@ describe('DeliveryMapComponent', () => {
       createOrder: createOrderSpy,
       updateOrderStatus: updateOrderStatusSpy,
       dispatchCourierRoute: dispatchCourierRouteSpy,
+      settleCourierRoute: settleCourierRouteSpy,
       fetchLiveCouriers: fetchLiveCouriersSpy,
       setOrderPriority: jasmine.createSpy('setOrderPriority')
     };
@@ -990,5 +993,16 @@ describe('DeliveryMapComponent', () => {
       routeCode: 'RUT-88',
       orderIds: [953]
     });
+
+    component.markOrderDeliveredByOrderNumber('ORD-953');
+    const courierToSettle: Courier = component.couriers().find(
+      (c: Courier) => c.id === 'u88'
+    )!;
+    component.openReceiveCourierModal(courierToSettle);
+    component.physicalCashReceived.set(25000);
+    component.receiveNotes.set('Liquidado');
+    component.confirmSettlementAndReceive();
+
+    expect(settleCourierRouteSpy).toHaveBeenCalledWith(88, 'Sebas Domiciliario', 25000, 0, 'Liquidado');
   });
 });

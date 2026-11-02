@@ -1262,6 +1262,46 @@ private loadEmployeesFromStorage(): EmployeeDto[] {
   }
 
   /**
+   * Settles a courier's route in local state, clears active route metadata on the courier's orders, and syncs with the backend API.
+   */
+  settleCourierRoute(
+    courierId: number,
+    courierName: string,
+    cashDelivered: number,
+    transfersConfirmed = 0,
+    notes?: string
+  ): void {
+    try {
+      const normalizedName: string = courierName.trim().toLowerCase();
+      this.orders.update((list: OrderDto[]) =>
+        list.map((order: OrderDto) => {
+          const matchesCourier: boolean =
+            (courierId > 0 && order.courierId === courierId) ||
+            (normalizedName.length > 0 &&
+              (order.courierName || '').trim().toLowerCase() === normalizedName);
+          if (!matchesCourier) {
+            return order;
+          }
+          return {
+            ...order,
+            routeCode: undefined,
+            routeSequenceOrder: undefined
+          };
+        })
+      );
+      this.saveAllToStorage();
+      if (courierId > 0) {
+        this.api
+          .settleCourierRoute(courierId, { cashDelivered, transfersConfirmed, notes })
+          .pipe(catchError(() => of(null)))
+          .subscribe();
+      }
+    } catch (error: unknown) {
+      console.error('Error settling courier route:', error);
+    }
+  }
+
+  /**
    * Registers a new production batch and syncs to the backend API.
    */
   createBatch(batchData: {

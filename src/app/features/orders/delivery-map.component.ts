@@ -5924,6 +5924,15 @@ export class DeliveryMapComponent implements OnInit, AfterViewInit, OnDestroy {
         }
       });
 
+      const numericCourierId: number = Number(String(courier.id).replace(/\D/g, '')) || 0;
+      this.stateService.settleCourierRoute?.(
+        numericCourierId,
+        courier.name,
+        physicalCash,
+        0,
+        this.receiveNotes()
+      );
+
       const stopIds = new Set(courier.orderIds);
       this.deliveryStops.update((all: DeliveryWaypoint[]) =>
         all.filter(
