@@ -718,6 +718,187 @@
               </div>
             </div>
           </div>
+
+          <div style="margin-top: 22px; padding-top: 20px; border-top: 1px solid #e2e8f0; display: flex; flex-direction: column; gap: 18px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; gap: 14px; flex-wrap: wrap; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 14px; padding: 16px;">
+              <div style="display: flex; flex-direction: column; gap: 4px; max-width: 640px;">
+                <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+                  <span style="font-weight: 800; font-size: 0.96rem; color: #0f172a;">
+                    Bot Receptor y Creador Automático de Pedidos (Texto, Audios e Historial)
+                  </span>
+                  @if (whatsAppBotConfig().botEnabled) {
+                    <span class="badge badge-success" style="font-weight: 800; padding: 4px 10px;">
+                      🟢 RECEPCIÓN AUTOMÁTICA ACTIVA
+                    </span>
+                  } @else {
+                    <span class="badge badge-neutral" style="font-weight: 800; padding: 4px 10px;">
+                      ⚪ RECEPCIÓN AUTOMÁTICA APAGADA
+                    </span>
+                  }
+                </div>
+                <span style="font-size: 0.82rem; color: #475569;">
+                  Lee mensajes de texto, notas de voz (audios) y repeticiones como "deme el pedido de qué días", arma el resumen con precios reales y crea el pedido en la PWA cuando el cliente confirma con "SÍ".
+                </span>
+                <span style="font-size: 0.76rem; color: #64748b; font-weight: 600;">
+                  Contexto sincronizado: {{ whatsAppBotConfig().fruitsCount }} frutas • {{ whatsAppBotConfig().clientsCount }} clientes • {{ whatsAppBotConfig().ordersHistoryCount }} pedidos históricos
+                </span>
+              </div>
+
+              <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+                <button
+                  type="button"
+                  class="btn btn-toggle-whatsapp-auto-orders"
+                  [ngClass]="whatsAppBotConfig().botEnabled ? 'btn-secondary' : 'btn-primary'"
+                  [style.border-color]="whatsAppBotConfig().botEnabled ? '#dc2626' : ''"
+                  [style.color]="whatsAppBotConfig().botEnabled ? '#dc2626' : ''"
+                  (click)="toggleWhatsAppAutoOrdersBot()"
+                  [disabled]="isUpdatingWhatsAppBotConfig()"
+                >
+                  <span>
+                    {{
+                      whatsAppBotConfig().botEnabled
+                        ? 'Apagar Recepción Automática de Pedidos'
+                        : 'Encender Recepción Automática de Pedidos'
+                    }}
+                  </span>
+                </button>
+
+                <button
+                  type="button"
+                  class="btn btn-secondary btn-sync-whatsapp-context"
+                  style="font-size: 0.78rem; padding: 8px 12px;"
+                  (click)="syncCatalogAndHistoryWithWhatsAppGateway(false)"
+                  [disabled]="isSyncingWhatsAppContext()"
+                >
+                  <span>{{ isSyncingWhatsAppContext() ? 'Sincronizando...' : 'Sincronizar Catálogo e Historial' }}</span>
+                </button>
+              </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; align-items: start;">
+              <div style="display: flex; flex-direction: column; gap: 10px; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 14px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; gap: 8px;">
+                  <div>
+                    <div style="font-weight: 800; font-size: 0.86rem; color: #0f172a;">
+                      Respuesta Automática en el Chat del Cliente
+                    </div>
+                    <div style="font-size: 0.76rem; color: #64748b;">
+                      Envía automáticamente el resumen del pedido y el número de orden confirmada por WhatsApp.
+                    </div>
+                  </div>
+                  <label class="custom-switch">
+                    <input
+                      type="checkbox"
+                      class="whatsapp-auto-reply-checkbox"
+                      [checked]="whatsAppBotConfig().autoReplyEnabled"
+                      (change)="toggleWhatsAppAutoReply()"
+                      [disabled]="isUpdatingWhatsAppBotConfig()"
+                    />
+                    <span class="switch-slider"></span>
+                  </label>
+                </div>
+
+                <div class="form-field-group" style="margin-top: 6px;">
+                  <label class="field-label-text">
+                    Clave Google Gemini AI Studio (Gratis — Para Notas de Voz / Audios)
+                    @if (whatsAppBotConfig().hasGeminiApiKey) {
+                      <span class="badge badge-success" style="margin-left: 6px; font-size: 0.68rem;">
+                        Activa ({{ whatsAppBotConfig().geminiApiKeyMasked }})
+                      </span>
+                    }
+                  </label>
+                  <div style="display: flex; gap: 8px;">
+                    <input
+                      type="password"
+                      class="settings-input whatsapp-gemini-key-input"
+                      [ngModel]="whatsAppGeminiApiKeyInput()"
+                      (ngModelChange)="whatsAppGeminiApiKeyInput.set($event)"
+                      placeholder="Pega tu API Key gratuita de Google AI Studio (AIza...)"
+                    />
+                    <button
+                      type="button"
+                      class="btn btn-secondary btn-save-gemini-key"
+                      style="white-space: nowrap; font-size: 0.78rem; padding: 8px 12px;"
+                      (click)="saveWhatsAppGeminiApiKey()"
+                      [disabled]="isUpdatingWhatsAppBotConfig()"
+                    >
+                      Guardar Clave
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <div style="display: flex; flex-direction: column; gap: 10px; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 14px;">
+                <div style="font-weight: 800; font-size: 0.86rem; color: #0f172a;">
+                  Probador en Vivo (Simular Mensaje o "Deme el pedido de qué días")
+                </div>
+                <div style="display: grid; grid-template-columns: 140px 1fr; gap: 8px;">
+                  <input
+                    type="text"
+                    class="settings-input whatsapp-sim-phone-input"
+                    [ngModel]="whatsAppSimulatorPhone()"
+                    (ngModelChange)="whatsAppSimulatorPhone.set($event)"
+                    placeholder="Celular cliente"
+                  />
+                  <input
+                    type="text"
+                    class="settings-input whatsapp-sim-message-input"
+                    [ngModel]="whatsAppSimulatorMessage()"
+                    (ngModelChange)="whatsAppSimulatorMessage.set($event)"
+                    placeholder='Ej: "deme el pedido de qué días" o "5 mora de 500g"'
+                  />
+                </div>
+                <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                  <button
+                    type="button"
+                    class="btn btn-secondary btn-simulate-whatsapp-draft"
+                    style="font-size: 0.76rem; padding: 6px 12px;"
+                    (click)="simulateWhatsAppCustomerOrder(false)"
+                    [disabled]="isSimulatingWhatsAppOrder()"
+                  >
+                    Probar Respuesta del Bot
+                  </button>
+                  <button
+                    type="button"
+                    class="btn btn-primary btn-simulate-whatsapp-confirm"
+                    style="font-size: 0.76rem; padding: 6px 12px;"
+                    (click)="simulateWhatsAppCustomerOrder(true)"
+                    [disabled]="isSimulatingWhatsAppOrder()"
+                  >
+                    Simular y Crear Pedido Directo
+                  </button>
+                </div>
+                @if (whatsAppSimulatorLastReply()) {
+                  <pre style="margin: 4px 0 0 0; padding: 10px; background: #f1f5f9; border-radius: 8px; font-size: 0.76rem; color: #0f172a; white-space: pre-wrap; font-family: inherit;">{{ whatsAppSimulatorLastReply() }}</pre>
+                }
+              </div>
+            </div>
+
+            @if (whatsAppIncomingOrders().length > 0) {
+              <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 14px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                  <span style="font-weight: 800; font-size: 0.86rem; color: #0f172a;">
+                    Últimos Pedidos Creados Automáticamente por WhatsApp ({{ whatsAppIncomingOrders().length }})
+                  </span>
+                </div>
+                <div style="display: flex; flex-direction: column; gap: 8px;">
+                  @for (ord of whatsAppIncomingOrders().slice(0, 5); track ord.orderNumber) {
+                    <div style="display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; padding: 8px 12px; background: #f8fafc; border-radius: 8px; border: 1px solid #e2e8f0; font-size: 0.8rem;">
+                      <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                        <span class="badge badge-info" style="font-weight: 800;">#{{ ord.orderNumber }}</span>
+                        <span class="badge badge-neutral" style="font-weight: 700;">{{ ord.sourceType || 'TEXTO' }}</span>
+                        <strong style="color: #0f172a;">{{ ord.clientName }}</strong>
+                        <span style="color: #64748b;">({{ ord.clientPhone }})</span>
+                      </div>
+                      <div style="font-weight: 800; color: #16a34a;">
+                        ${{ ord.totalAmount.toLocaleString('es-CO') }}
+                      </div>
+                    </div>
+                  }
+                </div>
+              </div>
+            }
+          </div>
         </div>
 
         

@@ -8,7 +8,7 @@ import { NotificationService } from '../../core/services/notification.service';
 import { AuthService } from '../../core/services/auth.service';
 import { VoiceOrdersService } from '../../core/services/voice-orders.service';
 import { GeocodingService } from '../../core/services/geocoding.service';
-import { ClientDto, CompanyConfig, EmployeeDto, FruitConfig, OrderDto, PaymentMethodDto, UserAdminDto, UserRoleDto } from '../../core/models/business.models';
+import { ClientDto, CompanyConfig, EmployeeDto, FruitConfig, OrderDto, PaymentMethodDto, ProductVariantDto, UserAdminDto, UserRoleDto } from '../../core/models/business.models';
 import { VoiceOrderMessageDto } from '../../core/models/voice-order.models';
 
 /**
@@ -40,6 +40,8 @@ describe('OrdersComponent', () => {
       minStock: { g140: 5, g250: 5, g500: 5, g1000: 5 }
     }
   ]);
+
+  const mockProductVariants = signal<ProductVariantDto[]>([]);
 
   const mockEmployees = signal<EmployeeDto[]>([
     {
@@ -196,9 +198,11 @@ describe('OrdersComponent', () => {
     updateOrderSpy = jasmine.createSpy('updateOrder');
     updateOrderStatusSpy = jasmine.createSpy('updateOrderStatus');
     createClientSpy = jasmine.createSpy('createClient');
+    mockProductVariants.set([]);
 
     const stateServiceMock: Partial<StateService> = {
       fruits: mockFruits,
+      productVariants: mockProductVariants,
       employees: mockEmployees,
       users: mockUsers,
       roles: mockRoles,
@@ -670,5 +674,108 @@ describe('OrdersComponent', () => {
     component.submitManualOrder();
     expect(createClientSpy).not.toHaveBeenCalled();
     expect(createOrderSpy).toHaveBeenCalled();
+  });
+
+  it('should list processed pulps from stock (productVariants) with their stocked grammages and sale prices in order creation modal', () => {
+    mockProductVariants.set([
+      {
+        variantId: 101,
+        fruitId: 10,
+        fruitName: 'Mora',
+        category: 'PULPAS',
+        name: 'Pulpa Mora 140g',
+        sku: 'PUL-MOR-140',
+        grammage: 140,
+        basePrice: 5000,
+        unitCost: 3000,
+        currentStock: 25,
+        minStockAlert: 5,
+        isActive: true
+      },
+      {
+        variantId: 102,
+        fruitId: 10,
+        fruitName: 'Mora',
+        category: 'PULPAS',
+        name: 'Pulpa Mora 250g',
+        sku: 'PUL-MOR-250',
+        grammage: 250,
+        basePrice: 8000,
+        unitCost: 4800,
+        currentStock: 18,
+        minStockAlert: 5,
+        isActive: true
+      },
+      {
+        variantId: 103,
+        fruitId: 11,
+        fruitName: 'Lulo',
+        category: 'PULPAS',
+        name: 'Pulpa Lulo 500g',
+        sku: 'PUL-LUL-500',
+        grammage: 500,
+        basePrice: 9500,
+        unitCost: 5500,
+        currentStock: 12,
+        minStockAlert: 5,
+        isActive: true
+      }
+    ]);
+
+    const stockPulps = component.availableStockPulps();
+    expect(stockPulps.length).toBe(2);
+    expect(stockPulps[0].name).toBe('Pulpa Mora');
+    expect(stockPulps[0].presentations.map(p => p.grammage)).toEqual([140, 250]);
+    expect(stockPulps[1].name).toBe('Pulpa Lulo');
+    expect(stockPulps[1].presentations.map(p => p.grammage)).toEqual([500]);
+
+    component.openCreateOrderModal();
+    expect(component.manualItems().length).toBe(1);
+    expect(component.manualItems()[0].fruitName).toBe('Pulpa Mora');
+    expect(component.manualItems()[0].grammage).toBe(140);
+    expect(component.manualItems()[0].unitPrice).toBe(5000);
+
+    component.updateManualItemGrammage(0, 250);
+    expect(component.manualItems()[0].grammage).toBe(250);
+    expect(component.manualItems()[0].unitPrice).toBe(8000);
+
+    component.updateManualItemFruit(0, 'Pulpa Lulo');
+    expect(component.manualItems()[0].fruitName).toBe('Pulpa Lulo');
+    expect(component.manualItems()[0].grammage).toBe(500);
+    expect(component.manualItems()[0].unitPrice).toBe(9500);
+
+    component.addManualItem();
+    expect(component.manualItems().length).toBe(2);
+    expect(component.manualItems()[1].fruitName).toBe('Pulpa Mora');
+    expect(component.manualItems()[1].grammage).toBe(140);
+    expect(component.manualItems()[1].unitPrice).toBe(5000);
+  });
+
+  it('should invoke stateService.dispatchCourierRoute when assignCourierToOrder is called', () => {
+    const dispatchSpy = jasmine.createSpy('dispatchCourierRoute');
+    (component.stateService as unknown as { dispatchCourierRoute: jasmine.Spy }).dispatchCourierRoute = dispatchSpy;
+    spyOnProperty(component, 'COURIER_CATALOG', 'get').and.returnValue([
+      {
+        id: 'u15',
+        name: 'Carlos Mensajero',
+        vehicleType: 'moto',
+        vehiclePlate: 'ABC-12D',
+        vehicleModel: 'Domiciliario',
+        phone: '3101112233',
+        color: '#16a34a',
+        colorLight: '#dcfce7',
+        routeCode: 'RUT-15'
+      }
+    ]);
+
+    const sampleOrder = mockOrders()[0];
+    component.assignCourierToOrder(sampleOrder, 'u15');
+
+    expect(dispatchSpy).toHaveBeenCalledWith(
+      jasmine.objectContaining({
+        courierId: 15,
+        courierName: 'Carlos Mensajero'
+      })
+    );
   });
 });

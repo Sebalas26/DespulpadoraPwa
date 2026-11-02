@@ -679,4 +679,56 @@ describe('DeliveryMapComponent', () => {
     const courierMarkersMap = (component as unknown as { courierMarkers: Map<string, unknown> }).courierMarkers;
     expect(courierMarkersMap.has('u6')).toBeFalse();
   });
+
+  it('should dispatch planned route to backend API when applyPlannedRoute is called', () => {
+    mockRoles.set([
+      { roleId: 9, name: 'Repartidor VIP', isCourier: true, isSystemRole: false, isActive: true }
+    ]);
+    mockUsers.set([
+      {
+        userId: 77,
+        username: 'repartidor.vip',
+        fullName: 'Andres Repartidor',
+        roleId: 9,
+        roleName: 'Repartidor VIP',
+        isActive: true,
+        companyId: 1,
+        branches: [],
+        email: 'andres@example.com'
+      }
+    ]);
+    mockOrders.set([
+      {
+        orderId: 701,
+        orderNumber: 'ORD-701',
+        clientId: 1,
+        clientName: 'Cliente Ruta 1',
+        clientAddress: 'Calle 85 # 15-10',
+        branchId: 1,
+        status: 'BILLED',
+        isBilled: true,
+        isPaid: false,
+        totalAmount: 42000,
+        createdAt: new Date().toISOString(),
+        orderDate: new Date().toISOString().substring(0, 10),
+        items: []
+      }
+    ]);
+
+    component.enterAllDeliveriesMode();
+    fixture.detectChanges();
+
+    component.assignCourierToStop(701, 'u77');
+    component.activePlannerCourierId.set('u77');
+    dispatchCourierRouteSpy.calls.reset();
+
+    component.applyPlannedRoute();
+
+    expect(dispatchCourierRouteSpy).toHaveBeenCalledWith({
+      courierId: 77,
+      courierName: 'Andres Repartidor',
+      routeCode: 'RUT-77',
+      orderIds: [701]
+    });
+  });
 });

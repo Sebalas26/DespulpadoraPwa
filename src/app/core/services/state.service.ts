@@ -791,6 +791,7 @@ private loadEmployeesFromStorage(): EmployeeDto[] {
             variant.name.toLowerCase().includes(f.name.toLowerCase())
         );
         if (!matchedFruit) {
+          syncedVariants.push(variant);
           continue;
         }
         const gramKey = `g${variant.grammage}` as 'g140' | 'g250' | 'g500' | 'g1000';
@@ -799,10 +800,13 @@ private loadEmployeesFromStorage(): EmployeeDto[] {
         if (dbStock === 0 && resolvedStock > 0) {
           matchedFruit.stock[gramKey] = resolvedStock;
         }
+        if ((matchedFruit.prices[gramKey] || 0) === 0 && (variant.basePrice || 0) > 0) {
+          matchedFruit.prices[gramKey] = variant.basePrice;
+        }
         syncedVariants.push({
           ...variant,
           fruitId: matchedFruit.fruitId || variant.fruitId,
-          fruitName: matchedFruit.name,
+          fruitName: variant.fruitName || matchedFruit.name,
           currentStock: resolvedStock
         });
       }
@@ -1737,9 +1741,25 @@ private loadEmployeesFromStorage(): EmployeeDto[] {
         notes: orderData.notes,
         createdAt: new Date().toISOString(),
         items: orderData.items.map(i => {
-          const fruit = this.fruits().find(f => f.name.toLowerCase() === i.fruitName.toLowerCase());
+          const itemLower = i.fruitName.trim().toLowerCase();
+          const matchedVariant = this.productVariants().find((v: ProductVariantDto) => {
+            const cleanVarName = v.name
+              .replace(new RegExp(`\\s+${v.grammage}\\s*g$`, 'i'), '')
+              .trim()
+              .toLowerCase();
+            return (
+              v.name.trim().toLowerCase() === itemLower ||
+              cleanVarName === itemLower ||
+              (v.fruitName && v.fruitName.trim().toLowerCase() === itemLower)
+            );
+          });
+          const fruit = this.fruits().find(
+            f =>
+              f.name.toLowerCase() === i.fruitName.toLowerCase() ||
+              (matchedVariant?.fruitId && f.fruitId === matchedVariant.fruitId)
+          );
           return {
-            fruitId: fruit?.fruitId || 0,
+            fruitId: matchedVariant?.fruitId || fruit?.fruitId || 0,
             fruitName: i.fruitName,
             grammage: i.grammage,
             quantity: i.quantity,
@@ -1769,7 +1789,34 @@ private loadEmployeesFromStorage(): EmployeeDto[] {
             unitPrice: i.unitPrice
           }))
         })
-        .subscribe({ error: () => {} });
+        .subscribe({
+          next: (createdDto: OrderDto) => {
+            const realOrderId = Number(createdDto?.orderId || createdDto?.id || 0);
+            const realOrderNumber = (createdDto?.orderNumber || '').trim();
+            if (realOrderId > 0 && realOrderId <= 2147483647) {
+              this.orders.update(list =>
+                list.map(o =>
+                  o.orderId === newOrder.orderId
+                    ? {
+                        ...o,
+                        orderId: realOrderId,
+                        id: realOrderId,
+                        orderNumber: realOrderNumber || o.orderNumber,
+                        items: o.items.map((item, idx) => {
+                          const dtoItem = createdDto.items?.[idx];
+                          return dtoItem && (dtoItem.orderItemId || dtoItem.id)
+                            ? { ...item, orderItemId: dtoItem.orderItemId || dtoItem.id }
+                            : item;
+                        })
+                      }
+                    : o
+                )
+              );
+              this.saveAllToStorage();
+            }
+          },
+          error: () => {}
+        });
       this.notification.success(
         'Pedido Creado',
         `Orden #${newOrder.orderNumber} por $${totalAmount.toLocaleString('es-CO')}`
@@ -1778,6 +1825,96 @@ private loadEmployeesFromStorage(): EmployeeDto[] {
       return newOrder;
     } catch (error: unknown) {
       throw error;
+    }
+  }
+
+  /**
+   * Ingests incoming orders automatically created by the WhatsApp Gateway into the local orders state without duplicates.
+   */
+  ingestWhatsAppIncomingOrders(
+    incomingRecords: {
+      orderId: number;
+      orderNumber: string;
+      clientName: string;
+      clientPhone: string;
+      clientAddress: string;
+      status: OrderStatus;
+      orderDate: string;
+      scheduledDay: string;
+      isPriority: boolean;
+      totalAmount: number;
+      isPaid: boolean;
+      paymentMethodName: string;
+      notes?: string;
+      createdAt: string;
+      items: {
+        fruitId: number;
+        fruitName: string;
+        grammage: number;
+        quantity: number;
+        unitPrice: number;
+        subtotal: number;
+        pickedQuantity?: number;
+      }[];
+    }[]
+  ): number {
+    try {
+      if (!Array.isArray(incomingRecords) || incomingRecords.length === 0) {
+        return 0;
+      }
+
+      const currentOrders = this.orders();
+      const existingOrderNumbers = new Set(
+        currentOrders.map(o => (o.orderNumber || '').trim().toUpperCase())
+      );
+      const existingOrderIds = new Set(currentOrders.map(o => Number(o.orderId)));
+
+      const newOrdersToAdd: OrderDto[] = [];
+      for (const rec of incomingRecords) {
+        const cleanNum = (rec.orderNumber || '').trim().toUpperCase();
+        if (!cleanNum || existingOrderNumbers.has(cleanNum) || existingOrderIds.has(Number(rec.orderId))) {
+          continue;
+        }
+        existingOrderNumbers.add(cleanNum);
+        existingOrderIds.add(Number(rec.orderId));
+
+        newOrdersToAdd.push({
+          orderId: Number(rec.orderId || Date.now()),
+          orderNumber: rec.orderNumber,
+          branchId: this.auth.selectedBranch()?.branchId || 0,
+          branchName: this.auth.selectedBranch()?.name || '',
+          clientId: Number(rec.orderId || Date.now()),
+          clientName: rec.clientName,
+          clientPhone: rec.clientPhone || '',
+          clientAddress: rec.clientAddress || '',
+          status: rec.status || 'PENDING',
+          orderDate: rec.orderDate || new Date().toISOString().substring(0, 10),
+          scheduledDay: rec.scheduledDay || this.getSpanishWeekday(),
+          isPriority: Boolean(rec.isPriority),
+          totalAmount: Number(rec.totalAmount || 0),
+          isPaid: Boolean(rec.isPaid),
+          paymentMethodName: rec.paymentMethodName || '',
+          notes: rec.notes,
+          createdAt: rec.createdAt || new Date().toISOString(),
+          items: (rec.items || []).map(item => ({
+            fruitId: Number(item.fruitId || 0),
+            fruitName: item.fruitName,
+            grammage: Number(item.grammage || 500),
+            quantity: Number(item.quantity || 1),
+            unitPrice: Number(item.unitPrice || 0),
+            subtotal: Number(item.subtotal || item.quantity * item.unitPrice),
+            pickedQuantity: Number(item.pickedQuantity || 0)
+          }))
+        });
+      }
+
+      if (newOrdersToAdd.length > 0) {
+        this.orders.update(list => [...newOrdersToAdd, ...list]);
+        this.saveAllToStorage();
+      }
+      return newOrdersToAdd.length;
+    } catch {
+      return 0;
     }
   }
 
@@ -2037,16 +2174,158 @@ private loadEmployeesFromStorage(): EmployeeDto[] {
           }
         );
       }
-      this.api
-        .dispatchOrdersRoute?.({
-          courierId: dto.courierId,
-          courierName: dto.courierName,
-          ...(dto.routeCode !== undefined ? { routeCode: dto.routeCode } : {}),
-          orderIds: dto.orderIds
-        })
-        ?.subscribe({
-          error: () => {}
-        });
+      const validInt32OrderIds = dto.orderIds.filter(id => id > 0 && id <= 2147483647);
+      const timestampOrderIds = dto.orderIds.filter(id => id > 2147483647);
+
+      if (validInt32OrderIds.length > 0 || timestampOrderIds.length === 0) {
+        this.api
+          .dispatchOrdersRoute?.({
+            courierId: dto.courierId,
+            courierName: dto.courierName,
+            ...(dto.routeCode !== undefined ? { routeCode: dto.routeCode } : {}),
+            orderIds: validInt32OrderIds.length > 0 ? validInt32OrderIds : dto.orderIds
+          })
+          ?.subscribe({
+            error: () => {}
+          });
+      }
+
+      if (timestampOrderIds.length > 0) {
+        this.syncTimestampOrdersAndDispatchRoute(dto, timestampOrderIds);
+      }
+    } catch {
+      return;
+    }
+  }
+
+  /**
+   * Resolves local timestamp orderIds (> Int32.MaxValue) against the backend database (creating any missing orders) and dispatches the route.
+   */
+  private syncTimestampOrdersAndDispatchRoute(dto: DispatchCourierRouteDto, timestampIds: number[]): void {
+    try {
+      if (!this.api || typeof this.api.getOrders !== 'function') {
+        return;
+      }
+      this.api.getOrders().subscribe({
+        next: (remoteOrders: OrderDto[]) => {
+          try {
+            const resolvedIds: number[] = dto.orderIds.filter(id => id > 0 && id <= 2147483647);
+            const pendingToCreate: OrderDto[] = [];
+
+            for (const tsId of timestampIds) {
+              const localOrd = this.orders().find(o => o.orderId === tsId);
+              if (!localOrd) {
+                continue;
+              }
+              const matchedRemote = (remoteOrders || []).find(
+                r =>
+                  (r.orderNumber &&
+                    localOrd.orderNumber &&
+                    r.orderNumber.trim().toUpperCase() === localOrd.orderNumber.trim().toUpperCase()) ||
+                  (r.clientName?.trim().toLowerCase() === localOrd.clientName?.trim().toLowerCase() &&
+                    Math.abs(Number(r.totalAmount || 0) - Number(localOrd.totalAmount || 0)) < 1)
+              );
+              const remoteId = Number(matchedRemote?.orderId || matchedRemote?.id || 0);
+              if (remoteId > 0 && remoteId <= 2147483647) {
+                resolvedIds.push(remoteId);
+                this.orders.update(list =>
+                  list.map(o =>
+                    o.orderId === tsId
+                      ? { ...o, orderId: remoteId, id: remoteId, orderNumber: matchedRemote?.orderNumber || o.orderNumber }
+                      : o
+                  )
+                );
+              } else {
+                pendingToCreate.push(localOrd);
+              }
+            }
+
+            if (pendingToCreate.length === 0) {
+              if (resolvedIds.length > 0) {
+                this.saveAllToStorage();
+                this.api
+                  .dispatchOrdersRoute?.({
+                    courierId: dto.courierId,
+                    courierName: dto.courierName,
+                    ...(dto.routeCode !== undefined ? { routeCode: dto.routeCode } : {}),
+                    orderIds: resolvedIds
+                  })
+                  ?.subscribe({ error: () => {} });
+              }
+              return;
+            }
+
+            let completedCreations = 0;
+            for (const missingOrd of pendingToCreate) {
+              this.api
+                .createOrder({
+                  clientName: missingOrd.clientName,
+                  clientPhone: missingOrd.clientPhone,
+                  clientAddress: missingOrd.clientAddress,
+                  paymentMethod: missingOrd.paymentMethodName,
+                  scheduledDay: missingOrd.scheduledDay,
+                  isPriority: missingOrd.isPriority,
+                  notes: missingOrd.notes,
+                  items: (missingOrd.items || []).map(i => ({
+                    fruitId: i.fruitId || 0,
+                    grammage: i.grammage,
+                    presentationGrams: i.grammage,
+                    quantity: i.quantity,
+                    unitPrice: i.unitPrice
+                  }))
+                })
+                .subscribe({
+                  next: (createdDto: OrderDto) => {
+                    const createdId = Number(createdDto?.orderId || createdDto?.id || 0);
+                    if (createdId > 0 && createdId <= 2147483647) {
+                      resolvedIds.push(createdId);
+                      this.orders.update(list =>
+                        list.map(o =>
+                          o.orderId === missingOrd.orderId
+                            ? {
+                                ...o,
+                                orderId: createdId,
+                                id: createdId,
+                                orderNumber: createdDto?.orderNumber || o.orderNumber
+                              }
+                            : o
+                        )
+                      );
+                    }
+                    completedCreations++;
+                    if (completedCreations === pendingToCreate.length && resolvedIds.length > 0) {
+                      this.saveAllToStorage();
+                      this.api
+                        .dispatchOrdersRoute?.({
+                          courierId: dto.courierId,
+                          courierName: dto.courierName,
+                          ...(dto.routeCode !== undefined ? { routeCode: dto.routeCode } : {}),
+                          orderIds: resolvedIds
+                        })
+                        ?.subscribe({ error: () => {} });
+                    }
+                  },
+                  error: () => {
+                    completedCreations++;
+                    if (completedCreations === pendingToCreate.length && resolvedIds.length > 0) {
+                      this.api
+                        .dispatchOrdersRoute?.({
+                          courierId: dto.courierId,
+                          courierName: dto.courierName,
+                          ...(dto.routeCode !== undefined ? { routeCode: dto.routeCode } : {}),
+                          orderIds: resolvedIds
+                        })
+                        ?.subscribe({ error: () => {} });
+                    }
+                  }
+                });
+            }
+          } catch {
+            return;
+          }
+        },
+        error: () => {}
+      });
     } catch {
       return;
     }

@@ -6,9 +6,13 @@ import { StateService } from '../../core/services/state.service';
 import { NotificationService } from '../../core/services/notification.service';
 import { RealtimeSyncService } from '../../core/services/realtime-sync.service';
 import {
+  WhatsAppBotConfigDto,
   WhatsAppGatewayService,
   WhatsAppGatewayStatusDto,
-  WhatsAppSendResponseDto
+  WhatsAppIncomingOrderRecord,
+  WhatsAppSendResponseDto,
+  WhatsAppSimulateResponseDto,
+  WhatsAppSyncContextResponseDto
 } from '../../core/services/whatsapp-gateway.service';
 import {
   DEFAULT_CATEGORIES,
@@ -95,6 +99,28 @@ export class SettingsComponent {
   readonly isSendingWhatsAppTest = signal<boolean>(false);
   readonly whatsAppTestPhone = signal<string>('');
   readonly whatsAppTestMessage = signal<string>('');
+
+  readonly whatsAppBotConfig = signal<WhatsAppBotConfigDto>({
+    ok: false,
+    botEnabled: true,
+    autoReplyEnabled: true,
+    hasGeminiApiKey: false,
+    geminiApiKeyMasked: '',
+    backendApiUrl: '',
+    fruitsCount: 0,
+    clientsCount: 0,
+    ordersHistoryCount: 0,
+    incomingOrdersCount: 0,
+    lastSyncedAt: null
+  });
+  readonly whatsAppGeminiApiKeyInput = signal<string>('');
+  readonly whatsAppIncomingOrders = signal<WhatsAppIncomingOrderRecord[]>([]);
+  readonly isUpdatingWhatsAppBotConfig = signal<boolean>(false);
+  readonly isSyncingWhatsAppContext = signal<boolean>(false);
+  readonly isSimulatingWhatsAppOrder = signal<boolean>(false);
+  readonly whatsAppSimulatorPhone = signal<string>('');
+  readonly whatsAppSimulatorMessage = signal<string>('');
+  readonly whatsAppSimulatorLastReply = signal<string>('');
 
   readonly activeTab = signal<'general' | 'inventory' | 'users' | 'roles' | 'catalog' | 'parameters'>('general');
   readonly inventorySubTab = signal<'variants' | 'fruits'>('variants');
@@ -1955,11 +1981,12 @@ export class SettingsComponent {
   }
 
   /**
-   * Queries the self-hosted WhatsApp Gateway for the current connection status and QR code.
+   * Queries the self-hosted WhatsApp Gateway for the current connection status, QR code, and auto-order bot state.
    */
   refreshWhatsAppGatewayStatus(): void {
     try {
       this.isLoadingWhatsAppStatus.set(true);
+      this.loadWhatsAppBotConfigAndOrders();
       this.whatsAppGateway.getStatus().subscribe({
         next: (status: WhatsAppGatewayStatusDto) => {
           this.whatsAppGatewayStatus.set(status);
@@ -2076,6 +2103,291 @@ export class SettingsComponent {
       });
     } catch {
       this.isSendingWhatsAppTest.set(false);
+    }
+  }
+
+  /**
+   * Loads the current configuration of the WhatsApp auto-orders bot and ingests any newly received orders into StateService.
+   */
+  loadWhatsAppBotConfigAndOrders(): void {
+    try {
+      this.whatsAppGateway.getBotConfig?.()?.subscribe({
+        next: (config: WhatsAppBotConfigDto) => {
+          if (config && config.ok) {
+            this.whatsAppBotConfig.set(config);
+            if (config.fruitsCount === 0 || config.ordersHistoryCount === 0) {
+              this.syncCatalogAndHistoryWithWhatsAppGateway(true);
+            }
+          }
+        },
+        error: () => {}
+      });
+
+      this.whatsAppGateway.getIncomingOrders?.()?.subscribe({
+        next: (res: { ok: boolean; orders: WhatsAppIncomingOrderRecord[] }) => {
+          if (res && Array.isArray(res.orders)) {
+            this.whatsAppIncomingOrders.set(res.orders);
+            const addedCount = this.stateService.ingestWhatsAppIncomingOrders?.(res.orders) || 0;
+            if (addedCount > 0) {
+              this.notification.success(
+                'Pedidos de WhatsApp Recibidos',
+                `Se sincronizaron ${addedCount} pedido(s) nuevo(s) desde WhatsApp en la vista de Pedidos.`
+              );
+            }
+          }
+        },
+        error: () => {}
+      });
+    } catch {
+      return;
+    }
+  }
+
+  /**
+   * Toggles the automatic WhatsApp order reception and creation bot ON or OFF with a single click.
+   */
+  toggleWhatsAppAutoOrdersBot(): void {
+    try {
+      const nextEnabled = !this.whatsAppBotConfig().botEnabled;
+      this.isUpdatingWhatsAppBotConfig.set(true);
+      this.whatsAppGateway
+        .updateBotConfig({
+          botEnabled: nextEnabled
+        })
+        .subscribe({
+          next: (updated: WhatsAppBotConfigDto) => {
+            this.isUpdatingWhatsAppBotConfig.set(false);
+            this.whatsAppBotConfig.update(prev => ({
+              ...prev,
+              ...updated,
+              botEnabled: nextEnabled
+            }));
+            if (nextEnabled) {
+              this.syncCatalogAndHistoryWithWhatsAppGateway(true);
+              this.notification.success(
+                'Recepción Automática Encendida',
+                'El Gateway ahora lee pedidos por texto, audios e historial ("el pedido de qué días") y los crea automáticamente.'
+              );
+            } else {
+              this.notification.info(
+                'Recepción Automática Apagada',
+                'El Gateway dejó de procesar y crear pedidos entrantes de WhatsApp.'
+              );
+            }
+          },
+          error: () => {
+            this.isUpdatingWhatsAppBotConfig.set(false);
+          }
+        });
+    } catch {
+      this.isUpdatingWhatsAppBotConfig.set(false);
+    }
+  }
+
+  /**
+   * Toggles whether the WhatsApp Gateway sends automatic confirmation replies back to customers in chat.
+   */
+  toggleWhatsAppAutoReply(): void {
+    try {
+      const nextAutoReply = !this.whatsAppBotConfig().autoReplyEnabled;
+      this.isUpdatingWhatsAppBotConfig.set(true);
+      this.whatsAppGateway
+        .updateBotConfig({
+          autoReplyEnabled: nextAutoReply
+        })
+        .subscribe({
+          next: (updated: WhatsAppBotConfigDto) => {
+            this.isUpdatingWhatsAppBotConfig.set(false);
+            this.whatsAppBotConfig.update(prev => ({
+              ...prev,
+              ...updated,
+              autoReplyEnabled: nextAutoReply
+            }));
+            this.notification.info(
+              'Respuestas Automáticas',
+              nextAutoReply
+                ? 'El bot responderá automáticamente al cliente en WhatsApp.'
+                : 'Se silenció la respuesta automática en el chat del cliente.'
+            );
+          },
+          error: () => {
+            this.isUpdatingWhatsAppBotConfig.set(false);
+          }
+        });
+    } catch {
+      this.isUpdatingWhatsAppBotConfig.set(false);
+    }
+  }
+
+  /**
+   * Saves the optional Google Gemini API Key on the WhatsApp Gateway to enable voice note (audio) transcription and AI parsing.
+   */
+  saveWhatsAppGeminiApiKey(): void {
+    try {
+      const key = this.whatsAppGeminiApiKeyInput().trim();
+      this.isUpdatingWhatsAppBotConfig.set(true);
+      this.whatsAppGateway
+        .updateBotConfig({
+          geminiApiKey: key
+        })
+        .subscribe({
+          next: (updated: WhatsAppBotConfigDto) => {
+            this.isUpdatingWhatsAppBotConfig.set(false);
+            this.whatsAppBotConfig.set(updated);
+            this.whatsAppGeminiApiKeyInput.set('');
+            this.notification.success(
+              'Clave IA Configurada',
+              key
+                ? 'Gemini Multimodal habilitado para notas de voz (audios) y lenguaje natural.'
+                : 'Se limpió la clave de Gemini; el analizador local seguirá activo sin costo.'
+            );
+          },
+          error: () => {
+            this.isUpdatingWhatsAppBotConfig.set(false);
+          }
+        });
+    } catch {
+      this.isUpdatingWhatsAppBotConfig.set(false);
+    }
+  }
+
+  /**
+   * Synchronizes the live fruit catalog, clients, and order history from StateService into the WhatsApp Gateway.
+   */
+  syncCatalogAndHistoryWithWhatsAppGateway(silent = false): void {
+    try {
+      this.isSyncingWhatsAppContext.set(true);
+      const fruits = this.stateService.fruits().map(f => ({
+        fruitId: f.fruitId,
+        name: f.name,
+        prices: {
+          g140: Number(f.prices?.g140 || 0),
+          g250: Number(f.prices?.g250 || 0),
+          g500: Number(f.prices?.g500 || 0),
+          g1000: Number(f.prices?.g1000 || 0)
+        }
+      }));
+      const clients = this.stateService.clients().map(c => ({
+        clientId: c.clientId,
+        fullName: c.fullName,
+        phone: c.phone || '',
+        address: c.address || ''
+      }));
+      const orders = this.stateService.orders().map(o => ({
+        orderId: o.orderId,
+        orderNumber: o.orderNumber,
+        clientName: o.clientName,
+        clientPhone: o.clientPhone || '',
+        clientAddress: o.clientAddress || '',
+        status: o.status,
+        orderDate: o.orderDate,
+        createdAt: o.createdAt,
+        items: (o.items || []).map(i => ({
+          fruitId: i.fruitId,
+          fruitName: i.fruitName || '',
+          grammage: i.grammage,
+          quantity: i.quantity,
+          unitPrice: i.unitPrice
+        }))
+      }));
+
+      this.whatsAppGateway
+        .syncContext({
+          fruits,
+          clients,
+          orders
+        })
+        .subscribe({
+          next: (res: WhatsAppSyncContextResponseDto) => {
+            this.isSyncingWhatsAppContext.set(false);
+            if (res && res.ok) {
+              this.whatsAppBotConfig.update(prev => ({
+                ...prev,
+                fruitsCount: res.fruitsCount,
+                clientsCount: res.clientsCount,
+                ordersHistoryCount: res.ordersCount,
+                lastSyncedAt: res.lastSyncedAt
+              }));
+              if (!silent) {
+                this.notification.success(
+                  'Contexto Sincronizado',
+                  `${res.fruitsCount} frutas, ${res.clientsCount} clientes y ${res.ordersCount} pedidos históricos sincronizados con el bot.`
+                );
+              }
+            }
+          },
+          error: () => {
+            this.isSyncingWhatsAppContext.set(false);
+          }
+        });
+    } catch {
+      this.isSyncingWhatsAppContext.set(false);
+    }
+  }
+
+  /**
+   * Simulates an incoming customer message (e.g., "deme el pedido de qué días" or "10 mora de 500g") to test the bot and create the order.
+   */
+  simulateWhatsAppCustomerOrder(autoConfirm = false): void {
+    try {
+      const phone = this.whatsAppSimulatorPhone().trim();
+      const message = this.whatsAppSimulatorMessage().trim();
+      if (!phone || !message) {
+        this.notification.warning(
+          'Datos Requeridos',
+          'Ingresa el teléfono del cliente y el mensaje entrante a probar (ej. "deme el pedido de qué días" o "5 mora de 500g").'
+        );
+        return;
+      }
+
+      if (!this.whatsAppBotConfig().botEnabled) {
+        this.notification.warning(
+          'Recepción Automática Apagada',
+          'Enciende primero el botón de Recepción Automática de Pedidos para procesar mensajes entrantes.'
+        );
+        return;
+      }
+
+      this.isSimulatingWhatsAppOrder.set(true);
+      this.whatsAppGateway
+        .simulateIncomingMessage({
+          phone,
+          message,
+          autoConfirm
+        })
+        .subscribe({
+          next: (res: WhatsAppSimulateResponseDto) => {
+            this.isSimulatingWhatsAppOrder.set(false);
+            if (res.replyText) {
+              this.whatsAppSimulatorLastReply.set(res.replyText);
+            } else if (res.reason === 'BOT_DISABLED') {
+              this.whatsAppSimulatorLastReply.set('⚪ El bot está apagado y no procesó el mensaje.');
+            } else {
+              this.whatsAppSimulatorLastReply.set(
+                'El mensaje fue ignorado porque no contiene intención de pedido (filtro de conversaciones personales).'
+              );
+            }
+
+            if (res.createdOrder) {
+              this.stateService.ingestWhatsAppIncomingOrders([res.createdOrder]);
+              this.loadWhatsAppBotConfigAndOrders();
+              this.notification.success(
+                'Pedido Creado en PWA',
+                `Orden #${res.createdOrder.orderNumber} (${res.createdOrder.clientName}) registrada en Pedidos.`
+              );
+            } else if (res.handled) {
+              this.notification.info(
+                'Respuesta del Bot Generada',
+                'Revisa la respuesta automática generada por el bot. Puedes responder "SÍ" o pulsar "Crear Directo".'
+              );
+            }
+          },
+          error: () => {
+            this.isSimulatingWhatsAppOrder.set(false);
+          }
+        });
+    } catch {
+      this.isSimulatingWhatsAppOrder.set(false);
     }
   }
 }

@@ -6,7 +6,7 @@ import { StateService } from '../../core/services/state.service';
 import { NotificationService } from '../../core/services/notification.service';
 import { VoiceOrdersService } from '../../core/services/voice-orders.service';
 import { GeocodingService, GeocodedLocation } from '../../core/services/geocoding.service';
-import { ClientDto, FruitConfig, OrderDto, OrderItemDto, OrderStatus } from '../../core/models/business.models';
+import { ClientDto, FruitConfig, OrderDto, OrderItemDto, OrderStatus, ProductVariantDto } from '../../core/models/business.models';
 import { DeliveryMapComponent } from './delivery-map.component';
 import { CopCurrencyInputDirective } from '../../shared/directives/cop-currency-input.directive';
 import confetti from 'canvas-confetti';
@@ -35,6 +35,26 @@ export interface ManualOrderFormItem {
   grammage: 140 | 250 | 500 | 1000;
   quantity: number;
   unitPrice: number;
+}
+
+/**
+ * Represents a single presentation (grammage and sale price) of a pulp in stock.
+ */
+export interface StockPulpPresentationOption {
+  variantId?: number;
+  grammage: 140 | 250 | 500 | 1000;
+  label: string;
+  unitPrice: number;
+  currentStock: number;
+}
+
+/**
+ * Represents a pulp entry from stock available for selection in order items.
+ */
+export interface StockPulpCatalogEntry {
+  name: string;
+  fruitId?: number;
+  presentations: StockPulpPresentationOption[];
 }
 
 /**
@@ -414,6 +434,138 @@ export class OrdersComponent {
     } catch (error: unknown) {
       console.error('Error computing manual order validity:', error);
       return false;
+    }
+  });
+
+  /**
+   * Computes the catalog of processed pulps from stock (productVariants) with fallback to configured fruits.
+   */
+  readonly availableStockPulps = computed<StockPulpCatalogEntry[]>(() => {
+    try {
+      const rawVariants: ProductVariantDto[] = typeof this.stateService.productVariants === 'function'
+        ? this.stateService.productVariants().filter((v: ProductVariantDto) => v.isActive !== false)
+        : [];
+      const fruits: FruitConfig[] = this.stateService.fruits();
+      const catalogMap = new Map<string, StockPulpCatalogEntry>();
+
+      if (rawVariants.length > 0) {
+        rawVariants.forEach((v: ProductVariantDto) => {
+          const cleanName = v.name
+            .replace(new RegExp(`\\s+${v.grammage}\\s*g$`, 'i'), '')
+            .trim() || v.name.trim() || v.fruitName.trim();
+          if (!cleanName) {
+            return;
+          }
+          const key = cleanName.toLowerCase();
+          const gram = (v.grammage === 140 || v.grammage === 250 || v.grammage === 500 || v.grammage === 1000)
+            ? v.grammage
+            : 1000;
+          const matchedFruit = fruits.find(
+            (f: FruitConfig) =>
+              f.fruitId === v.fruitId ||
+              f.name.trim().toLowerCase() === v.fruitName.trim().toLowerCase() ||
+              f.name.trim().toLowerCase() === key
+          );
+          const gramKey = (`g${gram}`) as keyof FruitConfig['prices'];
+          const fallbackFruitPrice = matchedFruit
+            ? (matchedFruit.prices[gramKey] ?? (gram === 140 ? matchedFruit.prices.g100 : 0) ?? 0)
+            : 0;
+          const unitPrice = v.basePrice > 0 ? v.basePrice : fallbackFruitPrice;
+          const presentation: StockPulpPresentationOption = {
+            variantId: v.variantId,
+            grammage: gram,
+            label: gram === 1000 ? '1000g (1Kg)' : `${gram}g`,
+            unitPrice,
+            currentStock: v.currentStock ?? 0
+          };
+
+          const existing = catalogMap.get(key);
+          if (existing) {
+            const existingPresIdx = existing.presentations.findIndex(
+              (p: StockPulpPresentationOption) => p.grammage === gram
+            );
+            if (existingPresIdx === -1) {
+              existing.presentations.push(presentation);
+              existing.presentations.sort(
+                (a: StockPulpPresentationOption, b: StockPulpPresentationOption) => a.grammage - b.grammage
+              );
+            } else if (presentation.unitPrice > 0) {
+              existing.presentations[existingPresIdx] = presentation;
+            }
+          } else {
+            catalogMap.set(key, {
+              name: cleanName,
+              fruitId: v.fruitId,
+              presentations: [presentation]
+            });
+          }
+        });
+      } else {
+        fruits.forEach((f: FruitConfig) => {
+          const key = f.name.trim().toLowerCase();
+          if (!key) {
+            return;
+          }
+          const presentations: StockPulpPresentationOption[] = [
+            {
+              grammage: 140,
+              label: '140g',
+              unitPrice: f.prices.g140 ?? f.prices.g100 ?? 0,
+              currentStock: f.stock?.g140 ?? f.stock?.g100 ?? 0
+            },
+            {
+              grammage: 250,
+              label: '250g',
+              unitPrice: f.prices.g250 ?? 0,
+              currentStock: f.stock?.g250 ?? 0
+            },
+            {
+              grammage: 500,
+              label: '500g',
+              unitPrice: f.prices.g500 ?? 0,
+              currentStock: f.stock?.g500 ?? 0
+            },
+            {
+              grammage: 1000,
+              label: '1000g (1Kg)',
+              unitPrice: f.prices.g1000 ?? 0,
+              currentStock: f.stock?.g1000 ?? 0
+            }
+          ];
+          catalogMap.set(key, {
+            name: f.name,
+            fruitId: f.fruitId,
+            presentations
+          });
+        });
+      }
+
+      this.manualItems().forEach((item: ManualOrderFormItem) => {
+        const cleanItemName = (item.fruitName || '').trim();
+        if (!cleanItemName) {
+          return;
+        }
+        const key = cleanItemName.toLowerCase();
+        if (!catalogMap.has(key)) {
+          const gram = item.grammage || 1000;
+          catalogMap.set(key, {
+            name: cleanItemName,
+            presentations: [
+              {
+                grammage: gram,
+                label: gram === 1000 ? '1000g (1Kg)' : `${gram}g`,
+                unitPrice: item.unitPrice || 0,
+                currentStock: 0
+              }
+            ]
+          });
+        }
+      });
+
+      return Array.from(catalogMap.values());
+    } catch (error: unknown) {
+      console.error('Error computing available stock pulps:', error);
+      return [];
     }
   });
 
@@ -1597,6 +1749,25 @@ export class OrdersComponent {
         } : o))
       );
 
+      const numericId = Number(String(courierId).replace(/\D/g, '')) || 0;
+      const courierOrderIds = this.stateService
+        .orders()
+        .filter(
+          (o: OrderDto) =>
+            o.status !== 'DELIVERED' &&
+            o.status !== 'CANCELLED' &&
+            (o.orderId === order.orderId ||
+              o.courierId === numericId ||
+              (o.courierName || '').trim().toLowerCase() === courier.name.trim().toLowerCase())
+        )
+        .map((o: OrderDto) => o.orderId);
+
+      this.stateService.dispatchCourierRoute?.({
+        courierId: numericId,
+        courierName: courier.name,
+        orderIds: courierOrderIds.length > 0 ? courierOrderIds : [order.orderId]
+      });
+
       if (this.deliveryMapRef) {
         this.deliveryMapRef.assignOrderToCourierByOrderNumber(order.orderNumber, courierId);
       }
@@ -1978,6 +2149,30 @@ export class OrdersComponent {
   }
 
   /**
+   * Returns the available grammage presentations for a given pulp name from stock.
+   */
+  getAvailableGrammagesForPulp(pulpName: string): StockPulpPresentationOption[] {
+    try {
+      const normalized = (pulpName || '').trim().toLowerCase();
+      const matched = this.availableStockPulps().find(
+        (p: StockPulpCatalogEntry) => p.name.trim().toLowerCase() === normalized
+      );
+      if (matched && matched.presentations.length > 0) {
+        return matched.presentations;
+      }
+      return [
+        { grammage: 140, label: '140g', unitPrice: 0, currentStock: 0 },
+        { grammage: 250, label: '250g', unitPrice: 0, currentStock: 0 },
+        { grammage: 500, label: '500g', unitPrice: 0, currentStock: 0 },
+        { grammage: 1000, label: '1000g (1Kg)', unitPrice: 0, currentStock: 0 }
+      ];
+    } catch (error: unknown) {
+      console.error('Error getting available grammages for pulp:', error);
+      return [];
+    }
+  }
+
+  /**
    * Opens the modal for creating a new manual order with clean initial state.
    */
   openCreateOrderModal(): void {
@@ -1995,15 +2190,23 @@ export class OrdersComponent {
       this.manualPaymentMethod.set(firstMethod ? firstMethod.name : '');
       this.manualNotes.set('');
       this.showClientSuggestions.set(false);
-      const firstFruit = this.stateService.fruits()[0];
+      this.manualItems.set([]);
+      const hasActiveVariants = typeof this.stateService.productVariants === 'function' &&
+        this.stateService.productVariants().some((v: ProductVariantDto) => v.isActive !== false);
+      const firstPulp = this.availableStockPulps()[0];
+      const defaultPres = firstPulp
+        ? (hasActiveVariants
+            ? firstPulp.presentations[0]
+            : (firstPulp.presentations.find((p: StockPulpPresentationOption) => p.grammage === 1000) ?? firstPulp.presentations[0]))
+        : undefined;
       this.manualItems.set(
-        firstFruit
+        firstPulp && defaultPres
           ? [
               {
-                fruitName: firstFruit.name,
-                grammage: 1000,
+                fruitName: firstPulp.name,
+                grammage: defaultPres.grammage,
                 quantity: 1,
-                unitPrice: firstFruit.prices.g1000 ?? 0
+                unitPrice: defaultPres.unitPrice
               }
             ]
           : []
@@ -2046,16 +2249,24 @@ export class OrdersComponent {
   }
 
   /**
-   * Appends a new item row to the manual order form using the first configured fruit if available.
+   * Appends a new item row to the manual order form using the first available stock pulp.
    */
   addManualItem(): void {
     try {
-      const firstFruit = this.stateService.fruits()[0];
-      const fruitName = firstFruit ? firstFruit.name : '';
-      const unitPrice = firstFruit ? (firstFruit.prices.g1000 ?? 0) : 0;
+      const hasActiveVariants = typeof this.stateService.productVariants === 'function' &&
+        this.stateService.productVariants().some((v: ProductVariantDto) => v.isActive !== false);
+      const firstPulp = this.availableStockPulps()[0];
+      const defaultPres = firstPulp
+        ? (hasActiveVariants
+            ? firstPulp.presentations[0]
+            : (firstPulp.presentations.find((p: StockPulpPresentationOption) => p.grammage === 1000) ?? firstPulp.presentations[0]))
+        : undefined;
+      const fruitName = firstPulp ? firstPulp.name : '';
+      const grammage: 140 | 250 | 500 | 1000 = defaultPres ? defaultPres.grammage : 1000;
+      const unitPrice = defaultPres ? defaultPres.unitPrice : 0;
       this.manualItems.update(list => [
         ...list,
-        { fruitName, grammage: 1000, quantity: 1, unitPrice }
+        { fruitName, grammage, quantity: 1, unitPrice }
       ]);
     } catch (error: unknown) {
       console.error('Error adding manual item:', error);
@@ -2074,15 +2285,25 @@ export class OrdersComponent {
   }
 
   /**
-   * Updates the selected fruit and unit price for a manual order item row.
+   * Updates the selected stock pulp, grammage, and unit price for a manual order item row.
    */
   updateManualItemFruit(index: number, fruitName: string): void {
     try {
-      const fruit = this.stateService.fruits().find((f: FruitConfig) => f.name === fruitName);
+      const normalized = (fruitName || '').trim().toLowerCase();
+      const pulp = this.availableStockPulps().find(
+        (p: StockPulpCatalogEntry) => p.name.trim().toLowerCase() === normalized
+      );
       this.manualItems.update(list => list.map((item: ManualOrderFormItem, i: number) => {
-        if (i === index && fruit) {
-          const pKey = (`g${item.grammage === 140 ? 100 : item.grammage}`) as keyof typeof fruit.prices;
-          return { ...item, fruitName: fruit.name, unitPrice: fruit.prices[pKey] ?? 0 };
+        if (i === index && pulp) {
+          const matchingPres = pulp.presentations.find(
+            (p: StockPulpPresentationOption) => p.grammage === item.grammage
+          ) ?? pulp.presentations[0];
+          return {
+            ...item,
+            fruitName: pulp.name,
+            grammage: matchingPres ? matchingPres.grammage : item.grammage,
+            unitPrice: matchingPres ? matchingPres.unitPrice : 0
+          };
         }
         return item;
       }));
@@ -2099,9 +2320,14 @@ export class OrdersComponent {
       const numGram = Number(grammage) as 140 | 250 | 500 | 1000;
       this.manualItems.update(list => list.map((item: ManualOrderFormItem, i: number) => {
         if (i === index) {
-          const fruit = this.stateService.fruits().find((f: FruitConfig) => f.name === item.fruitName);
-          const pKey = (`g${numGram === 140 ? 100 : numGram}`) as keyof NonNullable<FruitConfig['prices']>;
-          const price = fruit ? (fruit.prices[pKey] ?? 0) : item.unitPrice;
+          const normalized = (item.fruitName || '').trim().toLowerCase();
+          const pulp = this.availableStockPulps().find(
+            (p: StockPulpCatalogEntry) => p.name.trim().toLowerCase() === normalized
+          );
+          const matchingPres = pulp?.presentations.find(
+            (p: StockPulpPresentationOption) => p.grammage === numGram
+          );
+          const price = matchingPres ? matchingPres.unitPrice : item.unitPrice;
           return { ...item, grammage: numGram, unitPrice: price };
         }
         return item;

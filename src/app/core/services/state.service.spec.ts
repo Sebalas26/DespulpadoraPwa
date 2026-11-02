@@ -608,4 +608,225 @@ describe('StateService', () => {
       })
     );
   });
+
+  it('should ingest incoming WhatsApp orders into orders signal without duplicates', () => {
+    const initialCount = service.orders().length;
+    const incomingOrder = {
+      orderId: 9901,
+      orderNumber: 'PED-20261102-901',
+      clientName: 'Luz Arango',
+      clientPhone: '3101234567',
+      clientAddress: 'Calle 10 #20-30',
+      status: 'PENDING' as const,
+      orderDate: '2026-11-02',
+      scheduledDay: 'Lunes',
+      isPriority: false,
+      totalAmount: 60000,
+      isPaid: false,
+      paymentMethodName: 'Efectivo',
+      notes: 'Pedido automático WhatsApp (HISTORIAL)',
+      createdAt: '2026-11-02T15:00:00Z',
+      items: [
+        {
+          fruitId: 1,
+          fruitName: 'Mora',
+          grammage: 500,
+          quantity: 10,
+          unitPrice: 6000,
+          subtotal: 60000,
+          pickedQuantity: 0
+        }
+      ]
+    };
+
+    const firstAdded = service.ingestWhatsAppIncomingOrders([incomingOrder]);
+    expect(firstAdded).toBe(1);
+    expect(service.orders().length).toBe(initialCount + 1);
+    expect(service.orders()[0].orderNumber).toBe('PED-20261102-901');
+
+    const duplicateAttempt = service.ingestWhatsAppIncomingOrders([incomingOrder]);
+    expect(duplicateAttempt).toBe(0);
+    expect(service.orders().length).toBe(initialCount + 1);
+  });
+
+  it('should preserve user-created product variants across refreshAll and resolve fruitId in createOrder from productVariants', () => {
+    localStorage.setItem(
+      'despulpadora_variants',
+      JSON.stringify([
+        {
+          variantId: 1,
+          fruitId: 55,
+          fruitName: 'Mora',
+          category: 'PULPAS',
+          name: 'Pulpa Mora 140g',
+          sku: 'PUL-MOR-140',
+          grammage: 140,
+          basePrice: 5000,
+          unitCost: 3000,
+          currentStock: 30,
+          minStockAlert: 5,
+          isActive: true
+        }
+      ])
+    );
+    service.reloadDomainFromStorage('inventory');
+
+    expect(service.productVariants().length).toBe(1);
+
+    apiSpy.getFruits.and.returnValue(
+      of([
+        {
+          fruitId: 99,
+          name: 'Maracuya',
+          code: 'MAR',
+          category: 'Acida',
+          yieldPercentage: 50,
+          rawStockKg: 5,
+          unitPrice: 0,
+          isActive: true
+        }
+      ])
+    );
+
+    service.refreshAll();
+
+    expect(service.productVariants().length).toBe(1);
+    expect(service.productVariants()[0].name).toBe('Pulpa Mora 140g');
+    expect(service.productVariants()[0].basePrice).toBe(5000);
+
+    service.createOrder({
+      clientName: 'Restaurante El Prado',
+      clientPhone: '3101234567',
+      clientAddress: 'Cra 15 # 93-40',
+      items: [
+        {
+          fruitName: 'Pulpa Mora',
+          grammage: 140,
+          quantity: 2,
+          unitPrice: 5000
+        }
+      ]
+    });
+
+    expect(apiSpy.createOrder).toHaveBeenCalledWith(
+      jasmine.objectContaining({
+        items: [
+          jasmine.objectContaining({
+            fruitId: 55,
+            grammage: 140,
+            quantity: 2,
+            unitPrice: 5000
+          })
+        ]
+      })
+    );
+  });
+
+  it('should update local orderId with real database orderId on createOrder and resolve timestamp IDs when dispatching route', () => {
+    apiSpy.createOrder.and.returnValue(
+      of({
+        orderId: 405,
+        id: 405,
+        orderNumber: 'PED-20261102-405',
+        branchId: 1,
+        clientId: 10,
+        clientName: 'Cafetería Central',
+        status: 'PENDING',
+        orderDate: '2026-11-02',
+        totalAmount: 30000,
+        isPaid: false,
+        paymentMethodName: '',
+        createdAt: '2026-11-02T15:00:00Z',
+        items: [
+          {
+            orderItemId: 801,
+            fruitId: 1,
+            fruitName: 'Mora',
+            grammage: 500,
+            quantity: 5,
+            unitPrice: 6000,
+            subtotal: 30000
+          }
+        ]
+      })
+    );
+
+    service.createOrder({
+      clientName: 'Cafetería Central',
+      items: [{ fruitName: 'Mora', grammage: 500, quantity: 5, unitPrice: 6000 }]
+    });
+
+    const syncedOrder = service.orders().find(o => o.clientName === 'Cafetería Central');
+    expect(syncedOrder?.orderId).toBe(405);
+    expect(syncedOrder?.orderNumber).toBe('PED-20261102-405');
+
+    service.dispatchCourierRoute({
+      courierId: 3,
+      courierName: 'Carlos Ruta',
+      routeCode: 'RUT-03',
+      orderIds: [405]
+    });
+
+    expect(apiSpy.dispatchOrdersRoute).toHaveBeenCalledWith(
+      jasmine.objectContaining({
+        courierId: 3,
+        courierName: 'Carlos Ruta',
+        orderIds: [405]
+      })
+    );
+
+    const timestampId = 1762116000999;
+    service.orders.update(list => [
+      {
+        orderId: timestampId,
+        orderNumber: 'PED-20261102-999',
+        branchId: 1,
+        clientId: 20,
+        clientName: 'Panadería Sur',
+        status: 'BILLED',
+        orderDate: '2026-11-02',
+        totalAmount: 18000,
+        isPaid: false,
+        paymentMethodName: '',
+        createdAt: '2026-11-02T15:10:00Z',
+        items: []
+      },
+      ...list
+    ]);
+
+    apiSpy.getOrders.and.returnValue(
+      of([
+        {
+          orderId: 512,
+          id: 512,
+          orderNumber: 'PED-20261102-999',
+          branchId: 1,
+          clientId: 20,
+          clientName: 'Panadería Sur',
+          status: 'BILLED',
+          orderDate: '2026-11-02',
+          totalAmount: 18000,
+          isPaid: false,
+          paymentMethodName: '',
+          createdAt: '2026-11-02T15:10:00Z',
+          items: []
+        }
+      ])
+    );
+
+    service.dispatchCourierRoute({
+      courierId: 3,
+      courierName: 'Carlos Ruta',
+      routeCode: 'RUT-03',
+      orderIds: [timestampId]
+    });
+
+    expect(apiSpy.dispatchOrdersRoute).toHaveBeenCalledWith(
+      jasmine.objectContaining({
+        courierId: 3,
+        courierName: 'Carlos Ruta',
+        orderIds: [512]
+      })
+    );
+  });
 });

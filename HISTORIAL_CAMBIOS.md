@@ -2559,6 +2559,117 @@ por otr lado, la columna de accion dejamelo mejor, puede ser un lista desplegabl
 - **Build de Producción PWA (`npm run build`)**: **0 Errores**.
 - **Pruebas Unitarias PWA (`npx ng test --watch=false --browsers=ChromeHeadless`)**: **Executed 286 of 286 SUCCESS (TOTAL: 286 SUCCESS, 0 FAILED)**.
 
+---
+
+## [2026-11-02] - Recepción y Creación Automática de Pedidos por WhatsApp (Texto, Audios e Historial *"El Pedido de Qué Días"*) + Botón Encender/Apagar (`WhatsAppQrGateway` & `SettingsComponent`)
+
+### 💬 Prompt Original del Usuario
+> "Que me sugieres para que mi cliente pueda recibir pedidos por whathapp y que se creen solos los pedidos en pwa?"
+> "y los audios?"
+> "y que pasaria si un cliente dicce \"deme el pedido de que dias\""
+> "si incluyelo y armame el plan"
+> "Podrias agregar un boton que me ayude a encender o apagar la recepcion y creacion de pedidos automaticos"
+
+### 🤖 Resumen Técnico para la IA
+- **1. Motor Receptor de Pedidos en el Gateway Auto-Alojado (`/Users/sebastiansalamanca/Documents/Api/WhatsAppQrGateway/server.js`)**:
+  - Se suscribió `activeSock.ev.on('messages.upsert')` filtrando mensajes entrantes reales (`type === 'notify'`, `!msg.key.fromMe`, ignorando grupos `@g.us` y estados `status@broadcast`).
+  - **Control de Encendido/Apagado (`botEnabled`)**: Cuando `botEnabled === false`, el Gateway detiene de inmediato el procesamiento de mensajes entrantes sin responder ni crear pedidos.
+  - **Soporte de Notas de Voz (`audioMessage`)**: Descarga la nota de voz `.ogg` en memoria mediante `downloadMediaMessage(msg, 'buffer', {})` de `@whiskeysockets/baileys` y la procesa con Gemini 2.0 Flash Multimodal (`analyzeWithGemini`) junto con el catálogo real de frutas y los últimos 3 pedidos del cliente.
+  - **Soporte de Historial por Cliente (*"deme el pedido de qué días" / "el de siempre"*)**: Cruza los últimos 10 dígitos del número de WhatsApp del cliente contra `contextStore.clients` y `contextStore.orders`, recalcula los precios vigentes del catálogo real (`buildItemsFromHistoricalOrder`), permite elegir entre pedidos recientes (`1️⃣`, `2️⃣`, `3️⃣`) o aplicar modificaciones y solicita confirmación con **SÍ**.
+  - **Analizador Local en Español Colombiano (`parseOrderItemsLocally`)**: Procesa textos de pedidos sin costo ni límite diario/mensual reconociendo frutas reales del catálogo, gramajes (`140g`, `250g`/`media libra`, `500g`/`libra`, `1000g`/`kilo`) y cantidades en números o letras.
+  - **Confirmación y Creación Real (`finalizeAndCreateOrder`)**: Al recibir `"SÍ"` / `"CONFIRMO"`, crea el pedido en `POST /api/orders` y lo encola en `/api/whatsapp/incoming-orders` para su ingesta inmediata en la PWA.
+- **2. Botón de Encender/Apagar, Configuración y Sincronización en la PWA (`whatsapp-gateway.service.ts`, `state.service.ts`, `settings.component.*`)**:
+  - En `SettingsComponent` (pestaña `General`, dentro de `.whatsapp-gateway-card`), se agregó el botón directo `.btn-toggle-whatsapp-auto-orders` (`toggleWhatsAppAutoOrdersBot()`) con estado en vivo (`🟢 RECEPCIÓN AUTOMÁTICA ACTIVA` / `⚪ RECEPCIÓN AUTOMÁTICA APAGADA`), switch de respuesta automática (`toggleWhatsAppAutoReply()`), configuración de API Key gratuita de Google Gemini (`saveWhatsAppGeminiApiKey()`), botón de sincronización de catálogo/historial (`syncCatalogAndHistoryWithWhatsAppGateway()`) y probador interactivo (`simulateWhatsAppCustomerOrder()`).
+  - En `StateService`, se agregó `ingestWhatsAppIncomingOrders()` para insertar en `this.orders` cualquier pedido creado por WhatsApp sin duplicados.
+- **3. Certificación de Agentes de Calidad**:
+  - **Agente Verificador de Impacto (`e21c68af-936a-45ee-9476-61ba92aa22b7`)**, **Agente Auditor Punto por Punto (`392251ba-94fe-4f3f-a2ec-532b2549629c`)** y **Agente de Revisión Par (`5eba0a02-d571-49dc-8705-61c5d2983ae2`)**: Aprobaron el 100% de la implementación sin desviaciones ni regresiones.
+
+### 📦 Componentes Modificados
+- `/Users/sebastiansalamanca/Documents/Api/WhatsAppQrGateway/server.js` [MODIFICADO]
+- `src/app/core/services/whatsapp-gateway.service.ts` [MODIFICADO]
+- `src/app/core/services/whatsapp-gateway.service.spec.ts` [MODIFICADO]
+- `src/app/core/services/state.service.ts` [MODIFICADO]
+- `src/app/core/services/state.service.spec.ts` [MODIFICADO]
+- `src/app/features/settings/settings.component.ts` [MODIFICADO]
+- `src/app/features/settings/settings.component.html` [MODIFICADO]
+- `src/app/features/settings/settings.component.spec.ts` [MODIFICADO]
+- `HISTORIAL_CAMBIOS.md` [MODIFICADO]
+
+### ✅ Verificación, Build y Tests Unitarios
+- **Build de Producción PWA (`npm run build`)**: **0 Errores** (`dist/despulpadora-pwa` generado exitosamente).
+- **Pruebas Unitarias PWA (`npx ng test --watch=false --browsers=ChromeHeadless`)**: **Executed 290 of 290 SUCCESS (TOTAL: 290 SUCCESS, 0 FAILED)**.
+
+---
+
+## [2026-11-02] - Corrección de Sincronización de Rutas Asignadas entre PWA, Backend y App Flutter (`StateService`, `DeliveryMapComponent`, `OrdersComponent`, `ApiService` Flutter, `OrderAndCourierServices.cs`)
+
+### 💬 Prompt Original del Usuario
+> "Le asigne una ruta al domiciliario y no le llega a su app flutter"
+> "ejecutalo"
+
+### 🤖 Resumen Técnico para la IA
+- **1. Sincronización de `orderId` Real de Base de Datos (`<= Int32.MaxValue`) en `StateService` (`src/app/core/services/state.service.ts`)**:
+  - En `createOrder()`, la suscripción a `this.api.createOrder(...)` captura `createdDto` y actualiza inmediatamente en `this.orders` el `orderId` temporal (`Date.now()`) y `orderNumber` con el `id` autoincremental real retornado por PostgreSQL (`<= 2147483647`).
+  - En `dispatchCourierRoute()` y `syncTimestampOrdersAndDispatchRoute()`, se filtran los IDs válidos (`<= 2147483647`) evitando el error `400 Bad Request` por desbordamiento de `Int32` en `.NET` (`List<int> OrderIds`), y cualquier pedido que aún tenga un timestamp local se resuelve contra `GET /api/orders` o se crea en `POST /api/orders` antes de invocar `POST /api/orders/dispatch-route`.
+- **2. Despacho Completo en Todos los Flujos de Asignación de Ruta en Mapa y Pedidos (`delivery-map.component.ts` y `orders.component.ts`)**:
+  - Se creó `resolveStateOrderIdsForStopIds()` en `DeliveryMapComponent` para emparejar cada parada con su `orderId` actualizado en `StateService.orders` por `orderId` o `orderNumber`.
+  - Se conectaron `confirmCreateCourierRoute()`, `confirmAssignToActiveRoute()`, `applyPlannedRoute()`, `savePointAsOrder()`, `submitDrawerQuickAdd()`, `addExistingOrderToMap()` y `assignCourierToOrder()` (en `OrdersComponent`) con `this.stateService.dispatchCourierRoute(...)`.
+- **3. Resolución Cruzada de Domiciliario en Backend `.NET` y App Flutter (`OrderAndCourierServices.cs` y `api_service.dart`)**:
+  - En `ApiDespulpadora` (`OrderAndCourierServices.DispatchOrdersRouteAsync`), se prioriza la búsqueda del registro `Courier` por `FullName` y `ResponsibleUserId == dto.CourierId` antes de `Courier.Id`, evitando colisiones entre `Users.Id` y `Couriers.Id`.
+  - En `DespulpadoraApp` (`lib/services/api_service.dart`), `fetchAssignedRoute()` complementa `/api/mobile/orders/assigned` con `_fetchFallbackAssignedOrdersFromOrdersEndpoint()` (`/api/orders`), cruzando por `courierId`, `_lastAuthenticatedUserId` y `_lastAuthenticatedCourierName`.
+- **4. Certificación de Agentes de Calidad**:
+  - **Agente Verificador de Impacto (`c194ec63-0de5-488e-8833-f930bd790235`)**, **Agente Auditor Punto por Punto (`18f63bce-6b8c-416a-a2fb-f64013634d6c`)** y **Agente de Revisión Par (`36e97f4b-c659-4117-aa46-462a1489c8c0`)**: Aprobaron el 100% de la implementación sin desviaciones ni regresiones.
+
+### 📦 Componentes Modificados
+- `src/app/core/services/state.service.ts` [MODIFICADO]
+- `src/app/core/services/state.service.spec.ts` [MODIFICADO]
+- `src/app/features/orders/delivery-map.component.ts` [MODIFICADO]
+- `src/app/features/orders/delivery-map.component.spec.ts` [MODIFICADO]
+- `src/app/features/orders/orders.component.ts` [MODIFICADO]
+- `src/app/features/orders/orders.component.spec.ts` [MODIFICADO]
+- `/Users/sebastiansalamanca/Documents/Flutter/DespulpadoraApp/lib/services/api_service.dart` [MODIFICADO]
+- `/Users/sebastiansalamanca/Documents/Api/ApiDespulpadora/ApiDespulpadora.Core/Services/Business/OrderAndCourierServices.cs` [MODIFICADO]
+- `HISTORIAL_CAMBIOS.md` [MODIFICADO]
+
+### ✅ Verificación, Build y Tests Unitarios
+- **Build de Producción PWA (`npm run build`)**: **0 Errores** (`dist/despulpadora-pwa` generado exitosamente).
+- **Pruebas Unitarias PWA (`npx ng test --watch=false --browsers=ChromeHeadless`)**: **Executed 295 of 295 SUCCESS (TOTAL: 295 SUCCESS, 0 FAILED)**.
+- **Análisis y Pruebas Flutter (`dart analyze && flutter test`)**: **No issues found! + 14/14 tests passed**.
+
+
+---
+
+## [2026-11-02] - Listado de Pulpas Procesadas en Stock (`productVariants`) en "Productos del Pedido" de la Modal de Creación de Pedido (`OrdersComponent` & `StateService`)
+
+### 💬 Prompt Original del Usuario
+> "En la creacion del pedido , listame en \"productos de pedidos\" las pulpas de mi stock"
+> "ejecuta"
+
+### 🤖 Resumen Técnico para la IA
+- **1. Preservación de Pulpas en Stock (`productVariants`) y Resolución de `fruitId` en `StateService` (`src/app/core/services/state.service.ts`)**:
+  - En `syncVariantsWithFruits(fruits: FruitConfig[])` (líneas 785–814), se corrigió la sincronización para que las variantes creadas por el usuario en **Inventario & Stock -> Pulpas Procesadas (Stock)** (`productVariants`) se preserven en `syncedVariants` incluso cuando no exista una fruta materia prima con el mismo nombre en `fruits()`, y sincronice `matchedFruit.prices[gramKey]` desde `variant.basePrice` cuando esté en `0`.
+  - En `createOrder()` (líneas 1743–1770), la resolución de `fruitId` para cada ítem del pedido busca tanto en `this.productVariants()` (por nombre completo, nombre limpio sin sufijo de gramaje o `fruitName`) como en `this.fruits()`.
+- **2. Catálogo Reactivo de Pulpas en Stock (`availableStockPulps`) en `OrdersComponent` (`src/app/features/orders/orders.component.ts` y `orders.component.html`)**:
+  - Se definieron las interfaces `StockPulpPresentationOption` y `StockPulpCatalogEntry` y la señal computada `availableStockPulps` que agrupa las pulpas activas de `stateService.productVariants()` con sus presentaciones en stock (`grammage`, `label`, `unitPrice` real desde `basePrice` y `currentStock`), con respaldo hacia `stateService.fruits()` cuando no existen variantes configuradas.
+  - Se implementó `getAvailableGrammagesForPulp(pulpName: string)` y se actualizaron `openCreateOrderModal()`, `addManualItem()`, `updateManualItemFruit()` y `updateManualItemGrammage()` para preseleccionar y actualizar la pulpa de stock, los gramajes realmente disponibles en stock para esa pulpa y su precio de venta (`basePrice`).
+  - En `src/app/features/orders/orders.component.html` (líneas 1070–1097), la sección `"Productos del Pedido"` ahora muestra la columna `Pulpa` iterando sobre `availableStockPulps()` y el selector de `Gramaje` iterando sobre `getAvailableGrammagesForPulp(item.fruitName)`.
+- **3. Certificación de Agentes de Calidad**:
+  - **Agente Verificador de Impacto (`477ee3cc-69ba-4938-b923-725f8a099f95`)**, **Agente Auditor Punto por Punto (`ca125707-701f-4be7-8bb9-7e0713c561be`)** y **Agente de Revisión Par (`faaca0b6-3a60-4aa2-b028-8ac513d04efb`)**: Aprobaron el 100% de la implementación sin desviaciones ni regresiones.
+
+### 📦 Componentes Modificados
+- `src/app/core/services/state.service.ts` [MODIFICADO]
+- `src/app/core/services/state.service.spec.ts` [MODIFICADO]
+- `src/app/features/orders/orders.component.ts` [MODIFICADO]
+- `src/app/features/orders/orders.component.html` [MODIFICADO]
+- `src/app/features/orders/orders.component.spec.ts` [MODIFICADO]
+- `HISTORIAL_CAMBIOS.md` [MODIFICADO]
+
+### ✅ Verificación, Build y Tests Unitarios
+- **Build de Producción PWA (`npm run build`)**: **0 Errores** (`dist/despulpadora-pwa` generado exitosamente).
+- **Pruebas Unitarias PWA (`npx ng test --watch=false --browsers=ChromeHeadless`)**: **Executed 292 of 292 SUCCESS (TOTAL: 292 SUCCESS, 0 FAILED)**.
+
+
+
 
 
 

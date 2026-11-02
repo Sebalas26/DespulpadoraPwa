@@ -1,10 +1,18 @@
 import { TestBed } from '@angular/core/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
-import { WhatsAppGatewayService, WhatsAppGatewayStatusDto, WhatsAppSendResponseDto } from './whatsapp-gateway.service';
+import {
+  WhatsAppBotConfigDto,
+  WhatsAppGatewayService,
+  WhatsAppGatewayStatusDto,
+  WhatsAppIncomingOrderRecord,
+  WhatsAppSendResponseDto,
+  WhatsAppSimulateResponseDto,
+  WhatsAppSyncContextResponseDto
+} from './whatsapp-gateway.service';
 
 /**
- * Unit tests for WhatsAppGatewayService verifying status polling, message dispatch, and error handling.
+ * Unit tests for WhatsAppGatewayService verifying status polling, message dispatch, auto-order bot configuration, and error handling.
  */
 describe('WhatsAppGatewayService', () => {
   let service: WhatsAppGatewayService;
@@ -98,5 +106,104 @@ describe('WhatsAppGatewayService', () => {
     req2.flush({ success: true });
     expect(loggedOut).toBeTrue();
   });
-});
 
+  it('should get and update bot config via /bot-config', () => {
+    let botConfig: WhatsAppBotConfigDto | undefined;
+    service.getBotConfig().subscribe((res: WhatsAppBotConfigDto) => {
+      botConfig = res;
+    });
+    const getReq = httpMock.expectOne('http://localhost:3005/api/whatsapp/bot-config');
+    expect(getReq.request.method).toBe('GET');
+    getReq.flush({
+      ok: true,
+      botEnabled: true,
+      autoReplyEnabled: true,
+      hasGeminiApiKey: false,
+      geminiApiKeyMasked: '',
+      backendApiUrl: 'https://apidevdespulpadora.parking-flow.com/api',
+      fruitsCount: 4,
+      clientsCount: 2,
+      ordersHistoryCount: 5,
+      incomingOrdersCount: 1,
+      lastSyncedAt: '2026-11-02T15:00:00Z'
+    });
+    expect(botConfig?.botEnabled).toBeTrue();
+    expect(botConfig?.fruitsCount).toBe(4);
+
+    let updatedConfig: WhatsAppBotConfigDto | undefined;
+    service.updateBotConfig({ botEnabled: false }).subscribe((res: WhatsAppBotConfigDto) => {
+      updatedConfig = res;
+    });
+    const postReq = httpMock.expectOne('http://localhost:3005/api/whatsapp/bot-config');
+    expect(postReq.request.method).toBe('POST');
+    expect(postReq.request.body).toEqual({ botEnabled: false });
+    postReq.flush({
+      ok: true,
+      botEnabled: false,
+      autoReplyEnabled: true,
+      hasGeminiApiKey: false,
+      geminiApiKeyMasked: '',
+      backendApiUrl: 'https://apidevdespulpadora.parking-flow.com/api',
+      fruitsCount: 4,
+      clientsCount: 2,
+      ordersHistoryCount: 5,
+      incomingOrdersCount: 1,
+      lastSyncedAt: '2026-11-02T15:00:00Z'
+    });
+    expect(updatedConfig?.botEnabled).toBeFalse();
+  });
+
+  it('should synchronize context, fetch incoming orders, and simulate incoming customer messages', () => {
+    let syncRes: WhatsAppSyncContextResponseDto | undefined;
+    service
+      .syncContext({
+        fruits: [{ fruitId: 1, name: 'Mora', prices: { g140: 1800, g250: 3200, g500: 6000, g1000: 11500 } }],
+        clients: [{ clientId: 10, fullName: 'Luz Arango', phone: '3101234567', address: 'Cra 10 #20-30' }],
+        orders: []
+      })
+      .subscribe((res: WhatsAppSyncContextResponseDto) => {
+        syncRes = res;
+      });
+    const syncReq = httpMock.expectOne('http://localhost:3005/api/whatsapp/sync-context');
+    expect(syncReq.request.method).toBe('POST');
+    syncReq.flush({
+      ok: true,
+      fruitsCount: 1,
+      clientsCount: 1,
+      ordersCount: 0,
+      lastSyncedAt: '2026-11-02T15:10:00Z'
+    });
+    expect(syncRes?.ok).toBeTrue();
+    expect(syncRes?.fruitsCount).toBe(1);
+
+    let incomingRes: { ok: boolean; orders: WhatsAppIncomingOrderRecord[] } | undefined;
+    service.getIncomingOrders().subscribe((res: { ok: boolean; orders: WhatsAppIncomingOrderRecord[] }) => {
+      incomingRes = res;
+    });
+    const incReq = httpMock.expectOne('http://localhost:3005/api/whatsapp/incoming-orders');
+    expect(incReq.request.method).toBe('GET');
+    incReq.flush({ ok: true, orders: [] });
+    expect(incomingRes?.ok).toBeTrue();
+
+    let simRes: WhatsAppSimulateResponseDto | undefined;
+    service
+      .simulateIncomingMessage({
+        phone: '3101234567',
+        message: 'deme el pedido de qué días',
+        autoConfirm: false
+      })
+      .subscribe((res: WhatsAppSimulateResponseDto) => {
+        simRes = res;
+      });
+    const simReq = httpMock.expectOne('http://localhost:3005/api/whatsapp/simulate-incoming');
+    expect(simReq.request.method).toBe('POST');
+    simReq.flush({
+      ok: true,
+      handled: true,
+      action: 'DRAFT_REPEAT_SINGLE',
+      replyText: 'Resumen de tu último pedido'
+    });
+    expect(simRes?.handled).toBeTrue();
+    expect(simRes?.action).toBe('DRAFT_REPEAT_SINGLE');
+  });
+});

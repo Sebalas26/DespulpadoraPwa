@@ -12,6 +12,8 @@ export interface WhatsAppGatewayStatusDto {
   phoneNumber: string | null;
   name: string | null;
   lastUpdatedAt?: string;
+  botEnabled?: boolean;
+  autoReplyEnabled?: boolean;
 }
 
 /**
@@ -22,6 +24,142 @@ export interface WhatsAppSendResponseDto {
   to?: string;
   messageId?: string | null;
   timestamp?: string;
+  error?: string;
+}
+
+/**
+ * Represents the configuration state of the automatic WhatsApp order reception bot.
+ */
+export interface WhatsAppBotConfigDto {
+  ok: boolean;
+  botEnabled: boolean;
+  autoReplyEnabled: boolean;
+  hasGeminiApiKey: boolean;
+  geminiApiKeyMasked: string;
+  backendApiUrl: string;
+  fruitsCount: number;
+  clientsCount: number;
+  ordersHistoryCount: number;
+  incomingOrdersCount: number;
+  lastSyncedAt: string | null;
+}
+
+/**
+ * Payload used to update the automatic WhatsApp order reception bot settings.
+ */
+export interface WhatsAppBotConfigPayload {
+  botEnabled?: boolean;
+  autoReplyEnabled?: boolean;
+  geminiApiKey?: string;
+  backendApiUrl?: string;
+}
+
+/**
+ * Represents an order item inside an incoming WhatsApp order record.
+ */
+export interface WhatsAppIncomingOrderItemDto {
+  fruitId: number;
+  fruitName: string;
+  grammage: number;
+  quantity: number;
+  unitPrice: number;
+  subtotal: number;
+  pickedQuantity?: number;
+}
+
+/**
+ * Represents an order automatically created by the WhatsApp Gateway bot.
+ */
+export interface WhatsAppIncomingOrderRecord {
+  orderId: number;
+  orderNumber: string;
+  clientName: string;
+  clientPhone: string;
+  clientAddress: string;
+  status: 'PENDING' | 'PICKING' | 'BILLED' | 'DISPATCHED' | 'DELIVERED' | 'CANCELLED';
+  orderDate: string;
+  scheduledDay: string;
+  isPriority: boolean;
+  totalAmount: number;
+  isPaid: boolean;
+  paymentMethodName: string;
+  notes?: string;
+  sourceType?: 'TEXTO' | 'AUDIO' | 'HISTORIAL';
+  rawMessage?: string;
+  createdAt: string;
+  items: WhatsAppIncomingOrderItemDto[];
+}
+
+/**
+ * Payload used to synchronize the live fruit catalog, clients, and historical orders with the Gateway.
+ */
+export interface WhatsAppSyncContextPayload {
+  fruits: {
+    fruitId?: number;
+    name: string;
+    prices: {
+      g140: number;
+      g250: number;
+      g500: number;
+      g1000: number;
+    };
+  }[];
+  clients: {
+    clientId?: number;
+    fullName: string;
+    phone: string;
+    address: string;
+  }[];
+  orders: {
+    orderId: number;
+    orderNumber: string;
+    clientName: string;
+    clientPhone?: string;
+    clientAddress?: string;
+    status: string;
+    orderDate: string;
+    createdAt: string;
+    items: {
+      fruitId: number;
+      fruitName: string;
+      grammage: number;
+      quantity: number;
+      unitPrice: number;
+    }[];
+  }[];
+}
+
+/**
+ * Response returned after synchronizing catalog and order history context with the Gateway.
+ */
+export interface WhatsAppSyncContextResponseDto {
+  ok: boolean;
+  fruitsCount: number;
+  clientsCount: number;
+  ordersCount: number;
+  lastSyncedAt: string | null;
+}
+
+/**
+ * Payload used to simulate an incoming WhatsApp message from a customer.
+ */
+export interface WhatsAppSimulatePayload {
+  phone: string;
+  pushName?: string;
+  message: string;
+  autoConfirm?: boolean;
+}
+
+/**
+ * Response returned when simulating an incoming customer order message on the Gateway.
+ */
+export interface WhatsAppSimulateResponseDto {
+  ok: boolean;
+  handled: boolean;
+  action?: string;
+  reason?: string;
+  replyText?: string | null;
+  createdOrder?: WhatsAppIncomingOrderRecord | null;
   error?: string;
 }
 
@@ -155,5 +293,119 @@ export class WhatsAppGatewayService {
       return of({ success: false });
     }
   }
-}
 
+  /**
+   * Retrieves the current configuration of the automatic WhatsApp order reception bot.
+   */
+  getBotConfig(): Observable<WhatsAppBotConfigDto> {
+    const fallback: WhatsAppBotConfigDto = {
+      ok: false,
+      botEnabled: false,
+      autoReplyEnabled: true,
+      hasGeminiApiKey: false,
+      geminiApiKeyMasked: '',
+      backendApiUrl: '',
+      fruitsCount: 0,
+      clientsCount: 0,
+      ordersHistoryCount: 0,
+      incomingOrdersCount: 0,
+      lastSyncedAt: null
+    };
+    try {
+      const baseUrl = this.getGatewayBaseUrl();
+      return this.http
+        .get<WhatsAppBotConfigDto>(`${baseUrl}/bot-config`)
+        .pipe(catchError(() => of(fallback)));
+    } catch {
+      return of(fallback);
+    }
+  }
+
+  /**
+   * Updates the automatic WhatsApp order reception bot configuration (e.g., turning it ON/OFF or saving the Gemini key).
+   */
+  updateBotConfig(payload: WhatsAppBotConfigPayload): Observable<WhatsAppBotConfigDto> {
+    const fallback: WhatsAppBotConfigDto = {
+      ok: false,
+      botEnabled: Boolean(payload.botEnabled),
+      autoReplyEnabled: payload.autoReplyEnabled ?? true,
+      hasGeminiApiKey: false,
+      geminiApiKeyMasked: '',
+      backendApiUrl: payload.backendApiUrl || '',
+      fruitsCount: 0,
+      clientsCount: 0,
+      ordersHistoryCount: 0,
+      incomingOrdersCount: 0,
+      lastSyncedAt: null
+    };
+    try {
+      const baseUrl = this.getGatewayBaseUrl();
+      return this.http
+        .post<WhatsAppBotConfigDto>(`${baseUrl}/bot-config`, payload)
+        .pipe(catchError(() => of(fallback)));
+    } catch {
+      return of(fallback);
+    }
+  }
+
+  /**
+   * Synchronizes the live fruit catalog, clients, and historical orders with the WhatsApp Gateway.
+   */
+  syncContext(payload: WhatsAppSyncContextPayload): Observable<WhatsAppSyncContextResponseDto> {
+    const fallback: WhatsAppSyncContextResponseDto = {
+      ok: false,
+      fruitsCount: 0,
+      clientsCount: 0,
+      ordersCount: 0,
+      lastSyncedAt: null
+    };
+    try {
+      const baseUrl = this.getGatewayBaseUrl();
+      return this.http
+        .post<WhatsAppSyncContextResponseDto>(`${baseUrl}/sync-context`, payload)
+        .pipe(catchError(() => of(fallback)));
+    } catch {
+      return of(fallback);
+    }
+  }
+
+  /**
+   * Fetches the list of orders automatically created by the WhatsApp Gateway.
+   */
+  getIncomingOrders(): Observable<{ ok: boolean; orders: WhatsAppIncomingOrderRecord[] }> {
+    try {
+      const baseUrl = this.getGatewayBaseUrl();
+      return this.http
+        .get<{ ok: boolean; orders: WhatsAppIncomingOrderRecord[] }>(`${baseUrl}/incoming-orders`)
+        .pipe(catchError(() => of({ ok: false, orders: [] })));
+    } catch {
+      return of({ ok: false, orders: [] });
+    }
+  }
+
+  /**
+   * Simulates an incoming customer message on the WhatsApp Gateway to test order parsing or history repeat.
+   */
+  simulateIncomingMessage(payload: WhatsAppSimulatePayload): Observable<WhatsAppSimulateResponseDto> {
+    try {
+      const baseUrl = this.getGatewayBaseUrl();
+      return this.http
+        .post<WhatsAppSimulateResponseDto>(`${baseUrl}/simulate-incoming`, payload)
+        .pipe(
+          catchError(() =>
+            of({
+              ok: false,
+              handled: false,
+              error: 'No se pudo conectar con el Gateway de WhatsApp para simular el pedido.'
+            })
+          )
+        );
+    } catch {
+      return of({
+        ok: false,
+        handled: false,
+        error: 'Error inesperado al simular pedido de WhatsApp.'
+      });
+    }
+  }
+}

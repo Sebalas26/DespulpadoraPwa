@@ -1069,7 +1069,7 @@
 
         <div
           style="display: grid; grid-template-columns: 2fr 1.1fr 0.8fr 1.1fr 1.2fr auto; gap: 8px; font-size: 0.7rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase; padding: 0 4px 6px;">
-          <span>Fruta</span>
+          <span>Pulpa</span>
           <span>Gramaje</span>
           <span>Cant.</span>
           <span>Precio Unit.</span>
@@ -1082,17 +1082,16 @@
           style="display: grid; grid-template-columns: 2fr 1.1fr 0.8fr 1.1fr 1.2fr auto; gap: 8px; align-items: center; margin-bottom: 8px;">
           <select class="form-control" [ngModel]="item.fruitName"
             (ngModelChange)="updateManualItemFruit($index, $event)">
-            @for (fruit of stateService.fruits(); track fruit.id) {
-            <option [value]="fruit.name">{{ fruit.name }}</option>
+            @for (pulp of availableStockPulps(); track pulp.name) {
+            <option [value]="pulp.name">{{ pulp.name }}</option>
             }
           </select>
 
           <select class="form-control" [ngModel]="item.grammage"
             (ngModelChange)="updateManualItemGrammage($index, $event)">
-            <option [ngValue]="140">140g</option>
-            <option [ngValue]="250">250g</option>
-            <option [ngValue]="500">500g</option>
-            <option [ngValue]="1000">1000g (1Kg)</option>
+            @for (pres of getAvailableGrammagesForPulp(item.fruitName); track pres.grammage) {
+            <option [ngValue]="pres.grammage">{{ pres.label }}</option>
+            }
           </select>
 
           <input type="number" min="1" class="form-control" [ngModel]="item.quantity"

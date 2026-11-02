@@ -7965,6 +7965,19 @@ export class DeliveryMapComponent implements OnInit, AfterViewInit, OnDestroy {
           }
           return c;
         }));
+        if (courierObj) {
+          const numericId = Number(String(courierId).replace(/\D/g, '')) || 0;
+          const resolvedOrderIds = this.resolveStateOrderIdsForStopIds(
+            [...(courierObj.orderIds || []), newStop.id],
+            courierId
+          );
+          this.stateService.dispatchCourierRoute?.({
+            courierId: numericId,
+            courierName: courierObj.name,
+            routeCode: this.getCourierRouteCode(courierObj),
+            orderIds: resolvedOrderIds
+          });
+        }
       }
 
       if (this.tempPointMarker) {
@@ -8251,11 +8264,12 @@ export class DeliveryMapComponent implements OnInit, AfterViewInit, OnDestroy {
       );
 
       const numericId = Number(String(courierId).replace(/\D/g, '')) || 0;
+      const resolvedOrderIds = this.resolveStateOrderIdsForStopIds(finalOrderIds, courierId);
       this.stateService.dispatchCourierRoute?.({
         courierId: numericId,
         courierName: courier.name,
         routeCode: resolvedRouteCode,
-        orderIds: finalOrderIds
+        orderIds: resolvedOrderIds
       });
 
       this.showConfirmCreateRouteModal.set(false);
@@ -8779,11 +8793,12 @@ export class DeliveryMapComponent implements OnInit, AfterViewInit, OnDestroy {
         );
 
         const numericId = Number(String(courier.id).replace(/\D/g, '')) || 0;
+        const resolvedOrderIds = this.resolveStateOrderIdsForStopIds(finalOrderIds, courier.id);
         this.stateService.dispatchCourierRoute?.({
           courierId: numericId,
           courierName: updatedCourier.name,
           routeCode: resolvedRouteCode,
-          orderIds: finalOrderIds
+          orderIds: resolvedOrderIds
         });
 
         this.notification.success(
@@ -9145,6 +9160,19 @@ export class DeliveryMapComponent implements OnInit, AfterViewInit, OnDestroy {
         this.couriers.update((list: Courier[]) =>
           list.map((c: Courier) => (c.id === courierId ? { ...c, orderIds: [...c.orderIds, newStop.id] } : c))
         );
+        if (courierObj) {
+          const numericId = Number(String(courierId).replace(/\D/g, '')) || 0;
+          const resolvedOrderIds = this.resolveStateOrderIdsForStopIds(
+            [...(courierObj.orderIds || []), newStop.id],
+            courierId
+          );
+          this.stateService.dispatchCourierRoute?.({
+            courierId: numericId,
+            courierName: courierObj.name,
+            routeCode: this.getCourierRouteCode(courierObj),
+            orderIds: resolvedOrderIds
+          });
+        }
       }
 
       this.drawerNewClient.set('');
@@ -9174,6 +9202,7 @@ export class DeliveryMapComponent implements OnInit, AfterViewInit, OnDestroy {
   async addExistingOrderToMap(order: OrderDto): Promise<void> {
     try {
       const courierId = this.drawerNewCourierId() || '';
+      const courierObj = courierId ? this.couriers().find((c: Courier) => c.id === courierId) : undefined;
       let lat = 4.665 + (Math.random() - 0.5) * 0.04;
       let lng = -74.065 + (Math.random() - 0.5) * 0.04;
       let zone = this.detectBogotaZone(lat, lng);
@@ -9213,6 +9242,19 @@ export class DeliveryMapComponent implements OnInit, AfterViewInit, OnDestroy {
         this.couriers.update((list: Courier[]) =>
           list.map((c: Courier) => (c.id === courierId ? { ...c, orderIds: [...c.orderIds, newStop.id] } : c))
         );
+        if (courierObj) {
+          const numericId = Number(String(courierId).replace(/\D/g, '')) || 0;
+          const resolvedOrderIds = this.resolveStateOrderIdsForStopIds(
+            [...(courierObj.orderIds || []), newStop.id],
+            courierId
+          );
+          this.stateService.dispatchCourierRoute?.({
+            courierId: numericId,
+            courierName: courierObj.name,
+            routeCode: this.getCourierRouteCode(courierObj),
+            orderIds: resolvedOrderIds
+          });
+        }
       }
 
       this.renderStopMarkers();
@@ -9292,10 +9334,73 @@ export class DeliveryMapComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   /**
-   * Applies the planned route sequence and closes the route planner modal.
+   * Resolves waypoint stop IDs against StateService.orders by ID or orderNumber to guarantee valid order IDs on route dispatch.
+   */
+  private resolveStateOrderIdsForStopIds(stopIds: number[], courierId?: string): number[] {
+    try {
+      const stateOrders = this.stateService.orders();
+      const stopsMap = new Map(this.deliveryStops().map((s: DeliveryWaypoint) => [s.id, s]));
+      const candidateStops: DeliveryWaypoint[] = [];
+
+      for (const id of stopIds) {
+        const stop = stopsMap.get(id);
+        if (stop) {
+          candidateStops.push(stop);
+        }
+      }
+
+      if (courierId) {
+        for (const s of this.deliveryStops()) {
+          if (s.assignedCourierId === courierId && !candidateStops.some(cs => cs.id === s.id)) {
+            candidateStops.push(s);
+          }
+        }
+      }
+
+      const resolvedIds: number[] = [];
+      for (const stop of candidateStops) {
+        const matched = stateOrders.find(
+          (o: OrderDto) =>
+            o.orderId === stop.id ||
+            (Boolean(stop.orderNumber) &&
+              Boolean(o.orderNumber) &&
+              o.orderNumber.trim().toUpperCase() === stop.orderNumber.trim().toUpperCase()) ||
+            (Boolean(stop.orderRef?.orderNumber) &&
+              Boolean(o.orderNumber) &&
+              o.orderNumber.trim().toUpperCase() === stop.orderRef?.orderNumber.trim().toUpperCase())
+        );
+        const targetId = matched ? matched.orderId : stop.id;
+        if (targetId > 0 && !resolvedIds.includes(targetId)) {
+          resolvedIds.push(targetId);
+        }
+      }
+
+      return resolvedIds.length > 0 ? resolvedIds : stopIds;
+    } catch {
+      return stopIds;
+    }
+  }
+
+  /**
+   * Applies the planned route sequence, dispatches the route to the backend API, and closes the route planner modal.
    */
   applyPlannedRoute(): void {
     try {
+      const courier = this.getActiveCourier();
+      if (courier) {
+        const resolvedRouteCode = this.getCourierRouteCode(courier);
+        const numericId = Number(String(courier.id).replace(/\D/g, '')) || 0;
+        const resolvedOrderIds = this.resolveStateOrderIdsForStopIds(courier.orderIds || [], courier.id);
+        if (resolvedOrderIds.length > 0) {
+          this.stateService.dispatchCourierRoute?.({
+            courierId: numericId,
+            courierName: courier.name,
+            routeCode: resolvedRouteCode,
+            orderIds: resolvedOrderIds
+          });
+        }
+      }
+
       this.buildAndRenderRealRoadRoutes();
       this.renderStopMarkers();
       this.showPlannerModal.set(false);
@@ -9306,7 +9411,6 @@ export class DeliveryMapComponent implements OnInit, AfterViewInit, OnDestroy {
         origin: { y: 0.5 }
       });
 
-      const courier = this.getActiveCourier();
       this.notification.success(
         'Ruta Aplicada con Éxito',
         `El mensajero ${courier?.name || ''} ha recibido su nuevo orden de entrega en tiempo real.`

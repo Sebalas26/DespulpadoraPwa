@@ -149,7 +149,10 @@ describe('SettingsComponent', () => {
       deletePaymentMethod: deletePaymentMethodSpy,
       togglePaymentMethodStatus: jasmine.createSpy('togglePaymentMethodStatus'),
       syncCompanyInfoSilent: jasmine.createSpy('syncCompanyInfoSilent'),
-      updateCompanyInfo: updateCompanyInfoSpy
+      updateCompanyInfo: updateCompanyInfoSpy,
+      clients: signal([]),
+      orders: signal([]),
+      ingestWhatsAppIncomingOrders: jasmine.createSpy('ingestWhatsAppIncomingOrders').and.returnValue(0)
     };
 
     const authServiceMock: Partial<AuthService> = {
@@ -190,7 +193,57 @@ describe('SettingsComponent', () => {
             )),
             logout: (whatsAppLogoutSpy = jasmine.createSpy('logout').and.returnValue(
               of({ success: true })
-            ))
+            )),
+            getBotConfig: jasmine.createSpy('getBotConfig').and.returnValue(
+              of({
+                ok: true,
+                botEnabled: true,
+                autoReplyEnabled: true,
+                hasGeminiApiKey: false,
+                geminiApiKeyMasked: '',
+                backendApiUrl: 'https://apidevdespulpadora.parking-flow.com/api',
+                fruitsCount: 2,
+                clientsCount: 1,
+                ordersHistoryCount: 3,
+                incomingOrdersCount: 0,
+                lastSyncedAt: '2026-11-02T15:00:00Z'
+              })
+            ),
+            updateBotConfig: jasmine.createSpy('updateBotConfig').and.callFake((payload: { botEnabled?: boolean; autoReplyEnabled?: boolean; geminiApiKey?: string }) =>
+              of({
+                ok: true,
+                botEnabled: payload.botEnabled ?? true,
+                autoReplyEnabled: payload.autoReplyEnabled ?? true,
+                hasGeminiApiKey: Boolean(payload.geminiApiKey),
+                geminiApiKeyMasked: payload.geminiApiKey ? 'AIza••••1234' : '',
+                backendApiUrl: 'https://apidevdespulpadora.parking-flow.com/api',
+                fruitsCount: 2,
+                clientsCount: 1,
+                ordersHistoryCount: 3,
+                incomingOrdersCount: 0,
+                lastSyncedAt: '2026-11-02T15:00:00Z'
+              })
+            ),
+            syncContext: jasmine.createSpy('syncContext').and.returnValue(
+              of({
+                ok: true,
+                fruitsCount: 2,
+                clientsCount: 0,
+                ordersCount: 0,
+                lastSyncedAt: '2026-11-02T15:05:00Z'
+              })
+            ),
+            getIncomingOrders: jasmine.createSpy('getIncomingOrders').and.returnValue(
+              of({ ok: true, orders: [] })
+            ),
+            simulateIncomingMessage: jasmine.createSpy('simulateIncomingMessage').and.returnValue(
+              of({
+                ok: true,
+                handled: true,
+                action: 'DRAFT_REPEAT_SINGLE',
+                replyText: '¡Claro Luz! Tu último pedido registrado es: 10x Mora (500g)'
+              })
+            )
           }
         },
         { provide: Router, useValue: routerSpy },
@@ -694,5 +747,41 @@ describe('SettingsComponent', () => {
 
     component.logoutWhatsAppGateway();
     expect(whatsAppLogoutSpy).toHaveBeenCalled();
+  });
+
+  it('should toggle WhatsApp auto-orders bot ON/OFF, save Gemini key, sync context, and simulate customer order', () => {
+    component.activeTab.set('general');
+    fixture.detectChanges();
+
+    expect(component.whatsAppBotConfig().botEnabled).toBeTrue();
+
+    const compiled: HTMLElement = fixture.nativeElement as HTMLElement;
+    const toggleBtn = compiled.querySelector('.btn-toggle-whatsapp-auto-orders') as HTMLButtonElement | null;
+    expect(toggleBtn).not.toBeNull();
+    expect(toggleBtn?.textContent).toContain('Apagar Recepción Automática de Pedidos');
+
+    component.toggleWhatsAppAutoOrdersBot();
+    fixture.detectChanges();
+    expect(component.whatsAppBotConfig().botEnabled).toBeFalse();
+    expect(toggleBtn?.textContent).toContain('Encender Recepción Automática de Pedidos');
+
+    component.toggleWhatsAppAutoOrdersBot();
+    fixture.detectChanges();
+    expect(component.whatsAppBotConfig().botEnabled).toBeTrue();
+
+    component.toggleWhatsAppAutoReply();
+    expect(component.whatsAppBotConfig().autoReplyEnabled).toBeFalse();
+
+    component.whatsAppGeminiApiKeyInput.set('AIzaSyTestKey123456');
+    component.saveWhatsAppGeminiApiKey();
+    expect(component.whatsAppBotConfig().hasGeminiApiKey).toBeTrue();
+
+    component.syncCatalogAndHistoryWithWhatsAppGateway(false);
+    expect(notificationSpy.success).toHaveBeenCalled();
+
+    component.whatsAppSimulatorPhone.set('3101234567');
+    component.whatsAppSimulatorMessage.set('deme el pedido de qué días');
+    component.simulateWhatsAppCustomerOrder(false);
+    expect(component.whatsAppSimulatorLastReply()).toContain('10x Mora (500g)');
   });
 });
