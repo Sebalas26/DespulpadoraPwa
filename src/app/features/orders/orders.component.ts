@@ -161,8 +161,8 @@ export class OrdersComponent {
   readonly pickerSearchText = signal<string>('');
   readonly pickerCurrentAddress = signal<string>('');
   readonly pickerCurrentZone = signal<string>('');
-  readonly pickerCurrentLat = signal<number>(4.6750);
-  readonly pickerCurrentLng = signal<number>(-74.0550);
+  readonly pickerCurrentLat = signal<number>(4.7125);
+  readonly pickerCurrentLng = signal<number>(-74.1420);
   private pickerMap?: L.Map;
   private pickerMarker?: L.Marker;
   readonly isReverseGeocoding = signal<boolean>(false);
@@ -922,6 +922,8 @@ export class OrdersComponent {
 
       const list: CourierCatalogEntry[] = [];
       const seenNames = new Set<string>();
+      const allOrders: OrderDto[] = this.stateService.orders ? this.stateService.orders() : [];
+      const mapCouriers = this.deliveryMapRef ? this.deliveryMapRef.couriers() : [];
 
       courierUsers.forEach((usr, idx) => {
         const name = usr.fullName || usr.username;
@@ -929,6 +931,27 @@ export class OrdersComponent {
         if (seenNames.has(lowerName)) return;
         seenNames.add(lowerName);
         const colors = palette[idx % palette.length];
+
+        const activeOrderWithRoute: OrderDto | undefined = allOrders.find(
+          (o: OrderDto) =>
+            o.status === 'DISPATCHED' &&
+            Boolean(o.routeCode && o.routeCode.trim().length > 0) &&
+            (o.courierId === usr.userId ||
+              (o.courierName && o.courierName.trim().toLowerCase() === lowerName))
+        );
+        const activeMapCourier = mapCouriers.find(
+          c =>
+            (c.id === 'u' + usr.userId || c.name.trim().toLowerCase() === lowerName) &&
+            c.isRouteCreated &&
+            c.orderIds.length > 0 &&
+            Boolean(c.routeCode && c.routeCode.trim().length > 0)
+        );
+        const resolvedRouteCode: string = (
+          activeOrderWithRoute?.routeCode ||
+          activeMapCourier?.routeCode ||
+          ''
+        ).trim();
+
         list.push({
           id: 'u' + usr.userId,
           name,
@@ -938,7 +961,7 @@ export class OrdersComponent {
           phone: usr.phone || '',
           color: colors.color,
           colorLight: colors.colorLight,
-          routeCode: 'RUTA-U' + usr.userId
+          routeCode: resolvedRouteCode
         });
       });
 
@@ -1381,7 +1404,90 @@ export class OrdersComponent {
   }
 
   /**
-   * Opens the interactive map address picker modal.
+   * Resolves the configured warehouse address, city, zone, and coordinates from StateService.companyInfo().
+   */
+  private resolveWarehousePickerDefault(): {
+    rawAddress: string;
+    displayAddress: string;
+    searchQuery: string;
+    queryKey: string;
+    lat: number;
+    lng: number;
+    zone: string;
+    needsLiveGeocode: boolean;
+  } {
+    try {
+      const info = this.stateService.companyInfo();
+      const rawAddress: string = (info.address || '').trim();
+      const rawCity: string = (info.city || '').trim();
+      const displayAddress: string = [rawAddress, rawCity].filter((p: string) => p.length > 0).join(', ');
+      const searchQuery: string = rawCity && rawAddress ? `${rawAddress}, ${rawCity}` : rawAddress;
+      const queryKey: string = `${rawAddress.toLowerCase()}|${rawCity.toLowerCase()}`;
+
+      let lat = 4.7125;
+      let lng = -74.1420;
+      let resolvedFromCache = false;
+
+      if (typeof localStorage !== 'undefined' && rawAddress.length > 0) {
+        try {
+          const cachedRaw: string | null = localStorage.getItem('despulpadora_plant_coords_v1');
+          if (cachedRaw) {
+            const parsed: { key?: string; lat?: number; lng?: number } = JSON.parse(cachedRaw);
+            if (
+              parsed &&
+              parsed.key === queryKey &&
+              typeof parsed.lat === 'number' &&
+              typeof parsed.lng === 'number' &&
+              Number.isFinite(parsed.lat) &&
+              Number.isFinite(parsed.lng)
+            ) {
+              lat = parsed.lat;
+              lng = parsed.lng;
+              resolvedFromCache = true;
+            }
+          }
+        } catch {
+          resolvedFromCache = false;
+        }
+      }
+
+      if (!resolvedFromCache && this.deliveryMapRef) {
+        const mapPlantLat: number = this.deliveryMapRef.plantLat();
+        const mapPlantLng: number = this.deliveryMapRef.plantLng();
+        if (Number.isFinite(mapPlantLat) && Number.isFinite(mapPlantLng)) {
+          lat = mapPlantLat;
+          lng = mapPlantLng;
+        }
+      }
+
+      const zone: string = this.geocodingService.detectBogotaZone(lat, lng);
+      return {
+        rawAddress,
+        displayAddress,
+        searchQuery,
+        queryKey,
+        lat,
+        lng,
+        zone,
+        needsLiveGeocode: rawAddress.length >= 4 && !resolvedFromCache
+      };
+    } catch (error: unknown) {
+      console.error('Error resolving warehouse picker default:', error);
+      return {
+        rawAddress: '',
+        displayAddress: '',
+        searchQuery: '',
+        queryKey: '',
+        lat: 4.7125,
+        lng: -74.1420,
+        zone: '',
+        needsLiveGeocode: false
+      };
+    }
+  }
+
+  /**
+   * Opens the interactive map address picker modal preloaded with the configured warehouse location when no address is selected yet.
    */
   openMapAddressPicker(): void {
     try {
@@ -1393,11 +1499,49 @@ export class OrdersComponent {
         this.pickerCurrentZone.set(currentGeo.zone);
         this.pickerSearchText.set(currentGeo.label || currentGeo.name);
       } else {
-        this.pickerCurrentLat.set(4.6750);
-        this.pickerCurrentLng.set(-74.0550);
-        this.pickerCurrentAddress.set(this.manualAddress());
-        this.pickerCurrentZone.set('');
-        this.pickerSearchText.set(this.manualAddress());
+        const warehouse = this.resolveWarehousePickerDefault();
+        const typedManualAddress: string = this.manualAddress().trim();
+        const initialAddress: string = typedManualAddress || warehouse.displayAddress || warehouse.rawAddress;
+        const initialSearchText: string = typedManualAddress || warehouse.rawAddress || warehouse.displayAddress;
+
+        this.pickerCurrentLat.set(warehouse.lat);
+        this.pickerCurrentLng.set(warehouse.lng);
+        this.pickerCurrentAddress.set(initialAddress);
+        this.pickerCurrentZone.set(warehouse.zone);
+        this.pickerSearchText.set(initialSearchText);
+
+        const targetGeocodeQuery: string = typedManualAddress || warehouse.searchQuery;
+        if (targetGeocodeQuery.length >= 4 && (typedManualAddress.length > 0 || warehouse.needsLiveGeocode)) {
+          void this.geocodingService
+            .geocodeBestMatch(targetGeocodeQuery)
+            .then(match => {
+              if (!match || !Number.isFinite(match.lat) || !Number.isFinite(match.lng)) {
+                return;
+              }
+              if (typedManualAddress.length === 0 && warehouse.queryKey && typeof localStorage !== 'undefined') {
+                try {
+                  localStorage.setItem(
+                    'despulpadora_plant_coords_v1',
+                    JSON.stringify({ key: warehouse.queryKey, lat: match.lat, lng: match.lng })
+                  );
+                } catch {
+                }
+              }
+              this.pickerCurrentLat.set(match.lat);
+              this.pickerCurrentLng.set(match.lng);
+              this.pickerCurrentZone.set(match.zone || this.geocodingService.detectBogotaZone(match.lat, match.lng));
+              if (!this.pickerCurrentAddress()) {
+                this.pickerCurrentAddress.set(warehouse.displayAddress || match.label);
+              }
+              if (this.pickerMap) {
+                this.pickerMap.setView([match.lat, match.lng], 16);
+                this.pickerMarker?.setLatLng([match.lat, match.lng]);
+              }
+            })
+            .catch(() => {
+              return;
+            });
+        }
       }
 
       this.showAddressMapPickerModal.set(true);
@@ -1721,7 +1865,12 @@ export class OrdersComponent {
           c.name.toLowerCase().includes(assigned.toLowerCase()) ||
           assigned.toLowerCase().includes(c.name.toLowerCase())
         );
-        if (match) return match;
+        if (match) {
+          return {
+            ...match,
+            routeCode: (order.routeCode || match.routeCode || '').trim()
+          };
+        }
         return {
           id: 'assigned',
           name: assigned,
@@ -1731,7 +1880,7 @@ export class OrdersComponent {
           phone: '',
           color: '#10b981',
           colorLight: '#ecfdf5',
-          routeCode: ''
+          routeCode: (order.routeCode || '').trim()
         };
       }
 
@@ -1748,7 +1897,7 @@ export class OrdersComponent {
             phone: c.phone || '',
             color: c.color,
             colorLight: c.colorLight,
-            routeCode: c.routeCode || ''
+            routeCode: (order.routeCode || (c.isRouteCreated ? c.routeCode : '') || '').trim()
           };
         }
       }

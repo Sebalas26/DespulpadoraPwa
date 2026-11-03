@@ -681,9 +681,11 @@
               <div class="courier-mini-info">
                 <div class="courier-name-line">
                   <span class="courier-name-val">{{ courier.name }}</span>
+                  @if (courier.routeCode) {
                   <span class="courier-route-badge" [style.borderColor]="courier.color" [style.color]="courier.color">
                     {{ courier.routeCode }}
                   </span>
+                  }
                 </div>
                 <div class="courier-vehicle-line">
                   {{ courier.vehiclePlate }} · {{ courier.vehicleModel }}
@@ -697,7 +699,7 @@
                 <option value="" disabled selected>+ Asignar a ruta...</option>
                 @for (c of COURIER_CATALOG; track c.id) {
                 <option [value]="c.id">
-                  {{ c.name }} ({{ c.routeCode }} · {{ c.vehicleType === 'moto' ? 'Moto' : 'Furgón' }})
+                  {{ c.name }} ({{ c.routeCode ? c.routeCode + ' · ' : '' }}{{ c.vehicleType === 'moto' ? 'Moto' : 'Furgón' }})
                 </option>
                 }
               </select>
@@ -1518,7 +1520,7 @@
             </div>
             <div>
               <div style="font-size: 0.92rem; font-weight: 700; color: #1e293b;">{{ courier.name }}</div>
-              <div style="font-size: 0.75rem; color: #64748b;">{{ courier.routeCode }} · {{ courier.vehiclePlate }}
+              <div style="font-size: 0.75rem; color: #64748b;">{{ courier.routeCode ? courier.routeCode + (courier.vehiclePlate ? ' · ' : '') : '' }}{{ courier.vehiclePlate || courier.vehicleModel }}
               </div>
             </div>
           </div>

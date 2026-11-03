@@ -945,4 +945,67 @@ describe('OrdersComponent', () => {
     );
     expect(editBtnInDispatchedRow).toBeTruthy();
   });
+
+  it('should not invent synthetic RUTA-U route codes in COURIER_CATALOG when courier has no active route', () => {
+    const todayStr: string = new Date().toISOString().substring(0, 10);
+    mockOrders.set([
+      {
+        orderId: 401,
+        orderNumber: 'ORD-0401',
+        invoiceNumber: 'FAC-401',
+        clientId: 12,
+        clientName: 'Cliente Sin Mensajero',
+        clientPhone: '3101234567',
+        clientAddress: 'Calle 100 # 15-20',
+        branchId: 1,
+        status: 'BILLED',
+        isBilled: true,
+        isPaid: false,
+        totalAmount: 10000,
+        createdAt: `${todayStr}T10:00:00.000Z`,
+        orderDate: todayStr,
+        scheduledDay: 'Lunes',
+        items: []
+      }
+    ]);
+
+    const catalogWithoutRoute = component.COURIER_CATALOG;
+    expect(catalogWithoutRoute.length).toBe(1);
+    expect(catalogWithoutRoute[0].routeCode).toBe('');
+
+    component.activeSubTab.set('despachos');
+    component.setHistoryDateFilter('today');
+    component.setHistoryFilter('ALL');
+    fixture.detectChanges();
+
+    const compiled: HTMLElement = fixture.nativeElement as HTMLElement;
+    const selectOption: HTMLOptionElement | null = compiled.querySelector(
+      '.quick-assign-select option[value="u6"]'
+    );
+    expect(selectOption?.textContent?.trim()).toBe('Juan Domiciliario (Moto)');
+    expect(selectOption?.textContent).not.toContain('RUTA-U6');
+  });
+
+  it('should preload configured warehouse address and coordinates from companyInfo when opening the map address picker with empty manualAddress', () => {
+    mockCompanyInfo.set({
+      ...DEFAULT_COMPANY_CONFIG,
+      companyName: 'Despulpadora Test',
+      nit: '900000000-1',
+      address: 'Calle 17 # 68D-30',
+      city: 'Bogotá'
+    });
+
+    component.manualAddress.set('');
+    component.selectedManualGeo.set(null);
+
+    component.openMapAddressPicker();
+
+    expect(component.showAddressMapPickerModal()).toBeTrue();
+    expect(component.pickerSearchText()).toBe('Calle 17 # 68D-30');
+    expect(component.pickerCurrentAddress()).toBe('Calle 17 # 68D-30, Bogotá');
+    expect(component.pickerCurrentLat()).toBeCloseTo(4.7125, 4);
+    expect(component.pickerCurrentLng()).toBeCloseTo(-74.1420, 4);
+
+    component.closeMapAddressPicker();
+  });
 });

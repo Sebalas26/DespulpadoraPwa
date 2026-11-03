@@ -3107,6 +3107,33 @@ por otr lado, la columna de accion dejamelo mejor, puede ser un lista desplegabl
 - **Build de Producción PWA (`npm run build`)**: **0 Errores** (`dist/despulpadora-pwa` generado exitosamente).
 - **Pruebas Unitarias PWA (`npx ng test --watch=false --browsers=ChromeHeadless`)**: **Executed 307 of 307 SUCCESS (TOTAL: 307 SUCCESS, 0 FAILED)**.
 
+---
 
+## [2026-11-02] - Eliminación del Código de Ruta Sintético (`RUTA-U6`) en `COURIER_CATALOG` y Selector de Domiciliarios (`OrdersComponent`)
 
+### 💬 Prompt Original del Usuario
+> "Porque me muestra una ruta en la eleccion del domiciliario?"
+> "ejecutalo"
+
+### 🤖 Resumen Técnico para la IA
+- **1. Eliminación del Código de Ruta Sintético `'RUTA-U' + usr.userId` en `COURIER_CATALOG` (`src/app/features/orders/orders.component.ts`)**:
+  - Se eliminó la expresión quemada `routeCode: 'RUTA-U' + usr.userId` en `get COURIER_CATALOG(): CourierCatalogEntry[]` (líneas 923–973).
+  - Ahora `resolvedRouteCode` se obtiene estrictamente de fuentes reales: un pedido activo en estado `'DISPATCHED'` asignado al domiciliario que posea `routeCode` válido (`activeOrderWithRoute`), o una ruta activa creada en el mapa (`activeMapCourier` con `isRouteCreated && c.orderIds.length > 0`). Si el domiciliario no tiene ruta activa, `routeCode` es `''`.
+  - En `getCourierForOrder(order: OrderDto)` (líneas 1735–1790), se prioriza el `order.routeCode` real del pedido sin propagar códigos sintéticos cuando el domiciliario no posee ruta activa.
+- **2. Renderizado Condicional del Código de Ruta en Tabla, Selector `<select>` y Modal de Detalle (`src/app/features/orders/orders.component.html`)**:
+  - En la celda de domiciliario de la tabla (líneas 684–688), el badge `.courier-route-badge` solo se renderiza con `@if (courier.routeCode)`.
+  - En el selector rápido `.quick-assign-select` (líneas 701–703), la etiqueta de cada opción muestra `{{ c.name }} ({{ c.routeCode ? c.routeCode + ' · ' : '' }}{{ c.vehicleType === 'moto' ? 'Moto' : 'Furgón' }})` (ej. `sebas domiciliario (Moto)` cuando no tiene ruta activa).
+  - En el modal de detalle del pedido (líneas 1521–1525), solo se concatena `courier.routeCode` cuando no está vacío.
+- **3. Certificación de Agentes de Calidad**:
+  - **Agente Verificador de Impacto (`7d25f2af-8585-49b6-b85c-d9d98a34ae8d`)**, **Agente Auditor Punto por Punto (`9e695fa8-4864-4a74-9673-37c3ebae6461`)** y **Agente de Revisión Par (`e01707fb-ed7c-45bc-b9e1-1afc4dba7f8a`)**: Aprobaron el 100% de la implementación sin desviaciones ni regresiones.
+
+### 📦 Componentes Modificados
+- `src/app/features/orders/orders.component.ts` [MODIFICADO]
+- `src/app/features/orders/orders.component.html` [MODIFICADO]
+- `src/app/features/orders/orders.component.spec.ts` [MODIFICADO]
+- `HISTORIAL_CAMBIOS.md` [MODIFICADO]
+
+### ✅ Verificación, Build y Tests Unitarios
+- **Build de Producción PWA (`npm run build`)**: **0 Errores** (`dist/despulpadora-pwa` generado exitosamente).
+- **Pruebas Unitarias PWA (`npx ng test --watch=false --browsers=ChromeHeadless`)**: **Executed 309 of 309 SUCCESS (TOTAL: 309 SUCCESS, 0 FAILED)**.
 

@@ -6139,9 +6139,9 @@ export class DeliveryMapComponent implements OnInit, AfterViewInit, OnDestroy {
 
   readonly isMarkingPointMode = signal<boolean>(false);
   readonly showPointOrderModal = signal<boolean>(false);
-  readonly newOrderLat = signal<number>(4.670);
-  readonly newOrderLng = signal<number>(-74.085);
-  readonly newOrderZone = signal<string>('Bogotá Norte / Chicó');
+  readonly newOrderLat = signal<number>(PLANTA_MATRIZ_LAT);
+  readonly newOrderLng = signal<number>(PLANTA_MATRIZ_LNG);
+  readonly newOrderZone = signal<string>('');
   newOrderClient = '';
   newOrderAddress = '';
   newOrderPhone = '';
@@ -6692,6 +6692,10 @@ export class DeliveryMapComponent implements OnInit, AfterViewInit, OnDestroy {
       if (resolvedCoords) {
         this.plantLat.set(resolvedCoords.lat);
         this.plantLng.set(resolvedCoords.lng);
+        if (!this.showPointOrderModal()) {
+          this.newOrderLat.set(resolvedCoords.lat);
+          this.newOrderLng.set(resolvedCoords.lng);
+        }
 
         this.couriers.update((list: Courier[]) =>
           list.map((c: Courier) =>
