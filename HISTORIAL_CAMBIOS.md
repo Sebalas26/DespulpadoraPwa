@@ -4,6 +4,30 @@ Este documento registra de manera cronológica y estructurada todas las interven
 
 ---
 
+## [2026-11-03] - Corrección de Despliegue Docker en Coolify: Inclusión de `git` en Etapa de Producción Alpine para `whatsapp-gateway` (`Dockerfile`)
+
+### 💬 Prompt Original del Usuario
+> "fallo el despliegue del pwa" *(adjuntando logs de Coolify donde `RUN cd /app/whatsapp-gateway && npm install --omit=dev` falló con `npm error code ENOENT / npm error syscall spawn git / exit code: 254`)*
+
+### 🤖 Resumen Técnico para la IA
+- **1. Adición de `git` en la Etapa 2 (`FROM nginx:alpine AS production`) del `Dockerfile` (`Dockerfile`)**:
+  - En la línea 28 de `Dockerfile`, se actualizó `RUN apk add --no-cache nodejs npm` a `RUN apk add --no-cache nodejs npm git`.
+  - Con `git` instalado en `nginx:alpine`, el paso `RUN cd /app/whatsapp-gateway && npm install --omit=dev` puede clonar y resolver las dependencias Git requeridas por `@whiskeysockets/baileys` (`libsignal-node` en GitHub) sin arrojar `ENOENT spawn git`.
+- **2. Informes de Agentes de Calidad (`AGENTS.md` §1)**:
+  - **Agente de Verificación de Impacto (`a8601e2d-8294-4bcf-bd48-f32cd48b92a0`)**: Diagnosticó la dependencia Git transitiva `libsignal-node` de `@whiskeysockets/baileys` y certificó cero impacto colateral en el frontend Angular.
+  - **Agente Auditor Punto por Punto (`b72c5293-1be8-4fc0-8d88-c9c2d335f970`)**: Emitió veredicto **APROBADO (100% Conforme, 0 desviaciones)**.
+  - **Agente de Revisión Par (`aef928af-5eb7-4dfc-96bd-17cc53a68355`)**: Emitió veredicto **100% APROBADO PARA PRODUCCIÓN (0 observaciones)**.
+
+### 📦 Componentes Modificados
+- `Dockerfile`
+- `HISTORIAL_CAMBIOS.md`
+
+### ✅ Verificación, Build y Tests Unitarios
+- **Compilación de Producción (`npm run build`)**: Exitosa (`0 errores`).
+- **Suite Completa de Pruebas Unitarias (`ng test --watch=false`)**: **328 de 328 pruebas exitosas (`100% PASS`)**.
+
+---
+
 ## [2026-11-03] - Sincronización 100% con Base de Datos PostgreSQL de la Tarjeta "Flujo de pedidos — Del pedido a la entrega." en el Dashboard Operativo
 
 ### 💬 Prompt Original del Usuario
