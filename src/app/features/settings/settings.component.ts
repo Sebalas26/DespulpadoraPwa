@@ -2199,16 +2199,54 @@ export class SettingsComponent {
   }
 
   /**
+   * Polls the WhatsApp Gateway status until a QR code or active connection is available.
+   */
+  pollWhatsAppQrUntilReady(remainingAttempts: number): void {
+    try {
+      if (remainingAttempts <= 0) {
+        this.isLoadingWhatsAppStatus.set(false);
+        return;
+      }
+      setTimeout(() => {
+        this.whatsAppGateway.getStatus().subscribe({
+          next: (status: WhatsAppGatewayStatusDto) => {
+            this.whatsAppGatewayStatus.set(status);
+            if (status.qrDataUrl || status.connected || status.error === 'GATEWAY_UNREACHABLE') {
+              this.isLoadingWhatsAppStatus.set(false);
+              if (status.qrDataUrl) {
+                this.notification.info('Gateway WhatsApp', 'Código QR actualizado y listo para escanear.');
+              }
+            } else {
+              this.pollWhatsAppQrUntilReady(remainingAttempts - 1);
+            }
+          },
+          error: () => {
+            this.isLoadingWhatsAppStatus.set(false);
+          }
+        });
+      }, 1500);
+    } catch {
+      this.isLoadingWhatsAppStatus.set(false);
+    }
+  }
+
+  /**
    * Requests the WhatsApp Gateway to regenerate the QR code or reconnect the session.
    */
   reconnectWhatsAppGateway(): void {
     try {
       this.isLoadingWhatsAppStatus.set(true);
+      this.whatsAppGatewayStatus.update((prev: WhatsAppGatewayStatusDto) => ({
+        ...prev,
+        status: 'CONNECTING',
+        qrDataUrl: null,
+        error: null
+      }));
       this.whatsAppGateway.reconnect().subscribe({
         next: (res: { success: boolean } & Partial<WhatsAppGatewayStatusDto>) => {
-          if (res.status && (res.qrDataUrl || res.connected)) {
+          if (res.qrDataUrl || res.connected) {
             this.whatsAppGatewayStatus.set({
-              status: res.status,
+              status: res.status || (res.connected ? 'CONNECTED' : 'QR_READY'),
               connected: Boolean(res.connected),
               qrDataUrl: res.qrDataUrl ?? null,
               phoneNumber: res.phoneNumber ?? null,
@@ -2217,9 +2255,31 @@ export class SettingsComponent {
             });
             this.isLoadingWhatsAppStatus.set(false);
             this.notification.info('Gateway WhatsApp', 'Código QR actualizado y listo para escanear.');
+          } else if (res.success) {
+            this.whatsAppGatewayStatus.set({
+              status: res.status || 'CONNECTING',
+              connected: false,
+              qrDataUrl: null,
+              phoneNumber: null,
+              name: null,
+              lastUpdatedAt: res.lastUpdatedAt
+            });
+            this.notification.info('Gateway WhatsApp', 'Generando nuevo código QR en el servidor...');
+            this.pollWhatsAppQrUntilReady(4);
           } else {
-            this.refreshWhatsAppGatewayStatus();
-            this.notification.info('Gateway WhatsApp', 'Solicitando nuevo código QR al servidor...');
+            this.whatsAppGatewayStatus.set({
+              status: 'DISCONNECTED',
+              connected: false,
+              qrDataUrl: null,
+              phoneNumber: null,
+              name: null,
+              error: res.error ?? 'GATEWAY_UNREACHABLE'
+            });
+            this.isLoadingWhatsAppStatus.set(false);
+            this.notification.warning(
+              'Gateway WhatsApp No Disponible',
+              'No se pudo contactar con el servicio WhatsAppQrGateway en el puerto 3005.'
+            );
           }
         },
         error: () => {

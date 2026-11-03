@@ -14,6 +14,7 @@ export interface WhatsAppGatewayStatusDto {
   lastUpdatedAt?: string;
   botEnabled?: boolean;
   autoReplyEnabled?: boolean;
+  error?: string | null;
 }
 
 /**
@@ -219,7 +220,8 @@ export class WhatsAppGatewayService {
             connected: false,
             qrDataUrl: null,
             phoneNumber: null,
-            name: null
+            name: null,
+            error: 'GATEWAY_UNREACHABLE'
           })
         )
       );
@@ -229,7 +231,8 @@ export class WhatsAppGatewayService {
         connected: false,
         qrDataUrl: null,
         phoneNumber: null,
-        name: null
+        name: null,
+        error: 'GATEWAY_UNREACHABLE'
       });
     }
   }
@@ -274,9 +277,25 @@ export class WhatsAppGatewayService {
       const baseUrl = this.getGatewayBaseUrl();
       return this.http
         .post<{ success: boolean } & Partial<WhatsAppGatewayStatusDto>>(`${baseUrl}/reconnect`, {})
-        .pipe(catchError(() => of({ success: false })));
+        .pipe(
+          catchError(() =>
+            of({
+              success: false,
+              status: 'DISCONNECTED' as const,
+              connected: false,
+              qrDataUrl: null,
+              error: 'GATEWAY_UNREACHABLE'
+            })
+          )
+        );
     } catch {
-      return of({ success: false });
+      return of({
+        success: false,
+        status: 'DISCONNECTED' as const,
+        connected: false,
+        qrDataUrl: null,
+        error: 'GATEWAY_UNREACHABLE'
+      });
     }
   }
 

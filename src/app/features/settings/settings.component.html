@@ -644,9 +644,10 @@
                   type="button"
                   class="btn btn-secondary"
                   style="font-size: 0.78rem; padding: 6px 12px;"
+                  [disabled]="isLoadingWhatsAppStatus()"
                   (click)="reconnectWhatsAppGateway()"
                 >
-                  Generar Nuevo QR
+                  {{ isLoadingWhatsAppStatus() ? 'Generando QR...' : 'Generar Nuevo QR' }}
                 </button>
               }
             </div>
@@ -664,6 +665,10 @@
                 <div style="font-size: 0.84rem; color: #475569; margin-top: 4px;">
                   Número: +{{ whatsAppGatewayStatus().phoneNumber }} ({{ whatsAppGatewayStatus().name }})
                 </div>
+              } @else if (isLoadingWhatsAppStatus()) {
+                <span style="font-size: 0.86rem; color: #0f172a; font-weight: 700;">
+                  Generando código QR de vinculación...
+                </span>
               } @else if (whatsAppGatewayStatus().qrDataUrl) {
                 <img
                   [src]="whatsAppGatewayStatus().qrDataUrl"
@@ -673,10 +678,6 @@
                 />
                 <span style="font-size: 0.76rem; color: #64748b; margin-top: 8px; font-weight: 600;">
                   Abre WhatsApp en tu teléfono → Dispositivos vinculados → Vincular un dispositivo
-                </span>
-              } @else if (isLoadingWhatsAppStatus()) {
-                <span style="font-size: 0.86rem; color: #0f172a; font-weight: 700;">
-                  Generando código QR de vinculación...
                 </span>
               } @else {
                 <span style="font-size: 0.84rem; color: #64748b; font-weight: 600;">
@@ -2079,10 +2080,11 @@
                   class="inv-stock-card inv-stock-row"
                   [class.is-low-stock]="v.currentStock <= v.minStockAlert"
                   [class.mobile-row-open]="isMobileRowExpanded('variant-' + v.variantId)"
+                  [class.mobile-row-expanded]="isMobileRowExpanded('variant-' + v.variantId)"
                 >
                   <td class="mobile-tr-summary-cell" (click)="toggleMobileRow('variant-' + v.variantId, $event)">
                     <div class="mobile-summary-header">
-                      <div class="ms-identity">
+                      <div class="ms-identity ms-left">
                         <span class="ms-code-badge">{{ v.name }}</span>
                         <span class="ms-subtitle">{{ v.category }} · {{ v.grammage }}g</span>
                       </div>
@@ -2101,14 +2103,12 @@
                   </td>
 
                   <td data-label="Pulpa / Presentación">
-                    <div style="display: flex; flex-direction: column; gap: 4px;">
+                    <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
                       <span style="font-weight: 700; color: #1e5e3a;">{{ v.name }}</span>
-                      <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
-                        <span class="badge" [ngClass]="v.category === 'PULPAS' ? 'badge-warning' : (v.category === 'LIMONADAS' ? 'badge-info' : (v.category === 'BATIDOS' ? 'badge-emerald' : 'badge-purple'))">
-                          {{ v.category }}
-                        </span>
-                        <span class="badge badge-purple">{{ v.grammage }}g</span>
-                      </div>
+                      <span class="badge" [ngClass]="v.category === 'PULPAS' ? 'badge-warning' : (v.category === 'LIMONADAS' ? 'badge-info' : (v.category === 'BATIDOS' ? 'badge-emerald' : 'badge-purple'))">
+                        {{ v.category }}
+                      </span>
+                      <span class="badge badge-purple">{{ v.grammage }}g</span>
                     </div>
                   </td>
 
@@ -2352,10 +2352,11 @@
                   class="inv-fruit-card inv-fruit-row"
                   [class.is-low-stock]="isFruitLowStock(fruit)"
                   [class.mobile-row-open]="isMobileRowExpanded('fruit-' + fruit.id)"
+                  [class.mobile-row-expanded]="isMobileRowExpanded('fruit-' + fruit.id)"
                 >
                   <td class="mobile-tr-summary-cell" (click)="toggleMobileRow('fruit-' + fruit.id, $event)">
                     <div class="mobile-summary-header">
-                      <div class="ms-identity">
+                      <div class="ms-identity ms-left">
                         <span class="ms-code-badge">{{ fruit.name }}</span>
                         <span class="ms-subtitle">Pulpa: {{ getFruitTotalPulpKg(fruit) }} Kg · Fresca: {{ fruit.freshStockKg || 0 }} Kg</span>
                       </div>

@@ -778,4 +778,96 @@ describe('OrdersComponent', () => {
       })
     );
   });
+
+  it('should display all active Orders module orders in SIN GESTIONAR card and table regardless of scheduledDay or creation date', () => {
+    const todayStr = new Date().toISOString().substring(0, 10);
+
+    mockOrders.set([
+      {
+        orderId: 201,
+        orderNumber: 'ORD-201',
+        invoiceNumber: '',
+        clientId: 1,
+        clientName: 'Cliente Lunes',
+        clientPhone: '3101112233',
+        clientAddress: 'Calle 10 # 20-30',
+        branchId: 1,
+        status: 'PENDING',
+        isPaid: false,
+        totalAmount: 15000,
+        createdAt: '2026-10-15T10:00:00.000Z',
+        orderDate: '2026-10-15',
+        scheduledDay: 'Lunes',
+        items: []
+      },
+      {
+        orderId: 202,
+        orderNumber: 'ORD-202',
+        invoiceNumber: '',
+        clientId: 2,
+        clientName: 'Cliente Miércoles',
+        clientPhone: '3102223344',
+        clientAddress: 'Calle 30 # 40-50',
+        branchId: 1,
+        status: 'PICKING',
+        isPaid: false,
+        totalAmount: 22000,
+        createdAt: '2026-10-18T10:00:00.000Z',
+        orderDate: '2026-10-18',
+        scheduledDay: 'Miércoles',
+        items: []
+      },
+      {
+        orderId: 203,
+        orderNumber: 'ORD-203',
+        invoiceNumber: 'FAC-203',
+        clientId: 3,
+        clientName: 'Cliente Viernes',
+        clientPhone: '3103334455',
+        clientAddress: 'Calle 60 # 70-80',
+        branchId: 1,
+        status: 'BILLED',
+        isBilled: true,
+        isPaid: true,
+        totalAmount: 30000,
+        createdAt: '2026-10-20T10:00:00.000Z',
+        orderDate: '2026-10-20',
+        scheduledDay: 'Viernes',
+        items: []
+      },
+      {
+        orderId: 204,
+        orderNumber: 'ORD-204',
+        invoiceNumber: 'FAC-204',
+        clientId: 4,
+        clientName: 'Cliente Entregado Hoy',
+        clientPhone: '3104445566',
+        clientAddress: 'Calle 80 # 90-10',
+        branchId: 1,
+        status: 'DELIVERED',
+        isBilled: true,
+        isPaid: true,
+        totalAmount: 45000,
+        createdAt: `${todayStr}T12:00:00.000Z`,
+        orderDate: todayStr,
+        scheduledDay: 'Lunes',
+        items: []
+      }
+    ]);
+
+    component.setHistoryDateFilter('today');
+    expect(component.unassignedHistoryOrdersCount()).toBe(3);
+    expect(component.deliveredHistoryOrdersCount()).toBe(1);
+    expect(component.totalHistoryOrdersCount()).toBe(4);
+
+    component.setHistoryFilter('UNASSIGNED');
+    expect(component.filteredHistoryOrders().map(o => o.orderNumber)).toEqual([
+      'ORD-201',
+      'ORD-202',
+      'ORD-203'
+    ]);
+
+    component.setHistoryFilter('ALL');
+    expect(component.filteredHistoryOrders().length).toBe(4);
+  });
 });

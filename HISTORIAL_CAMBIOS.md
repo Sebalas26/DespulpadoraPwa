@@ -4,6 +4,94 @@ Este documento registra de manera cronológica y estructurada todas las interven
 
 ---
 
+## [2026-11-02] - Generación Inmediata de Código QR al Pulsar `"Generar Nuevo QR"` (`WhatsAppQrGateway` + `DespulpadoraPwa`)
+
+### 💬 Prompt Original del Usuario
+> "le doy en generar nuevo QR y no me salenada"
+> "ejecutalo"
+
+### 🤖 Resumen Técnico para la IA
+- **1. Servicio `WhatsAppQrGateway` Activo en Puerto `3005`, CORS Private Network y Control de Concurrencia (`WhatsAppQrGateway/server.js`)**:
+  - Se inició el daemon `WhatsAppQrGateway` en el puerto `3005` y se agregaron cabeceras `Access-Control-Allow-Private-Network: true` para orígenes locales o HTTPS.
+  - Se agregó control incremental `connectionAttemptId` en `connectToWhatsApp(forceFresh)` para abortar sockets obsoletos cuando `/api/whatsapp/status` y `/api/whatsapp/reconnect` se ejecutan de manera concurrente, esperando hasta `8000ms` por la emisión del QR.
+- **2. Manejo de Errores Explícito y Polling de QR en `SettingsComponent` (`whatsapp-gateway.service.ts` + `settings.component.ts` + `settings.component.html`)**:
+  - En `whatsapp-gateway.service.ts`, `getStatus()` y `reconnect()` etiquetan cualquier fallo de red con `error: 'GATEWAY_UNREACHABLE'`.
+  - En `settings.component.ts`, `reconnectWhatsAppGateway()` limpia el QR anterior, cambia inmediatamente a `status: 'CONNECTING'`, renderiza el nuevo `qrDataUrl` al recibirlo, ejecuta `pollWhatsAppQrUntilReady(4)` si el servidor continúa en `CONNECTING` y muestra una advertencia clara si el puerto `3005` no responde.
+  - En `settings.component.html`, el botón `"Generar Nuevo QR"` muestra `'Generando QR...'` mientras carga y prioriza el mensaje `'Generando código QR de vinculación...'` sobre el recuadro punteado.
+- **3. Informes del Agente Verificador, Agente Auditor Punto por Punto y Revisión Par**:
+  - **Agente Verificador (`73b150a2-24fa-4ccc-ad4c-4bdf6010c022`)**: Confirmó aislamiento quirúrgico sin impacto en otros componentes.
+  - **Agente Auditor Punto por Punto (`2c1b30d2-15b7-4a68-9c87-cba9b0ffaa41`)**: Dictamen **100% APROBADO SIN DESVIACIONES**.
+  - **Agente de Revisión Par (`35ac0492-cf31-46e5-9a64-242cfde68e8f`)**: Dictamen **APROBADO AL 100% (0 Regresiones)**.
+
+### 📦 Componentes Modificados
+- `src/app/core/services/whatsapp-gateway.service.ts`
+- `src/app/core/services/whatsapp-gateway.service.spec.ts`
+- `src/app/features/settings/settings.component.ts`
+- `src/app/features/settings/settings.component.html`
+- `src/app/features/settings/settings.component.spec.ts`
+- `../Api/WhatsAppQrGateway/server.js`
+
+### ✅ Verificación, Build y Tests Unitarios
+- `curl -s -X POST http://localhost:3005/api/whatsapp/reconnect`: **OK (`"status":"QR_READY"`, `"qrDataUrl":"data:image/png;base64,..."`)**.
+- `npm run build` (`DespulpadoraPwa`): **OK (0 errores)**.
+- `npx ng test --watch=false --browsers=ChromeHeadless` (`DespulpadoraPwa`): **306 de 306 SUCCESS (100% Unit Tests Passed, 0 fallos)**.
+
+---
+
+## [2026-11-02] - Eliminación del Espacio en Blanco Debajo del Botón `"Llegué al punto"` en App Flutter (`CourierRouteMapScreen`)
+
+### 💬 Prompt Original del Usuario
+> "Ayduame ajustar esto de la app flutter, que no se vea ese espacio en blanco abajo"
+> "No es el enrutado en vivo, es debajo del boton 'llegue al punto'"
+> "ejecutalo"
+
+### 🤖 Resumen Técnico para la IA
+- **1. Eliminación del `Expanded(flex: 4)` y Estiramiento Forzado Debajo del Botón `"Llegué al punto"` (`DespulpadoraApp/lib/views/courier_route_map_screen.dart`)**:
+  - En `build()` (líneas 704–727), cuando `_showAllStopsList` es `false` (vista de parada enfocada con el botón `"Llegué al punto"`), se retiró la envoltura `Expanded(flex: 4)` sobre `_buildBottomRoutePanel(...)`.
+  - En `_buildBottomRoutePanel()` (líneas 865–884) y `_buildActiveStopFocusedCard()` (líneas 903–908), se reemplazó el `Column -> Expanded` por `SafeArea(top: false)` y `Padding(padding: EdgeInsets.fromLTRB(14, 12, 14, 10))` con `Column(mainAxisSize: MainAxisSize.min, ...)`, logrando que la tarjeta blanca termine inmediatamente debajo del botón `"Llegué al punto"`.
+- **2. Informes del Agente Verificador, Agente Auditor Punto por Punto y Revisión Par**:
+  - **Agente Verificador (`50a304b3-3385-4225-8eeb-92920c50e7ee`)**: Confirmó aislamiento quirúrgico sin impacto en otros componentes.
+  - **Agente Auditor Punto por Punto (`61e1a32f-3213-4008-a3d6-02d64efaf36d`)**: Dictamen **APROBADO SIN DESVIACIONES**.
+  - **Agente de Revisión Par (`d22f6daa-c287-4a57-8167-124284724ddd`)**: Dictamen **100% APROBADO (0 Regresiones)**.
+
+### 📦 Componentes Modificados
+- `../Flutter/DespulpadoraApp/lib/views/courier_route_map_screen.dart`
+
+### ✅ Verificación, Build y Tests Unitarios
+- `dart analyze && flutter test` (`DespulpadoraApp`): **No issues found! + 16/16 All tests passed! (100% PASS)**.
+
+---
+
+## [2026-11-02] - Alineación de Tabla Horizontal en `Inventario & Stock` (`Stock · Pulpas Hechas` e `Inventario · Fruta Disponible`)
+
+### 💬 Prompt Original del Usuario
+> "Estoy viendo que no quedo la lista de los inventarios a como lo quiero , en la 2da foto es como quiero que quede en pulpas y fruta"
+> "ejecuta"
+
+### 🤖 Resumen Técnico para la IA
+- **1. Eliminación del Apilamiento Vertical en Filas de Tabla (`src/app/features/settings/settings.component.scss`)**:
+  - Se retiraron las propiedades `display: flex; flex-direction: column; gap: 14px; border: 1.5px solid #e2e8f0; border-left: 4px solid #1e5e3a; border-radius: 16px; padding: 16px;` de `.inv-stock-card, .inv-fruit-card` que forzaban a cada `<tr>` a renderizarse como una tarjeta vertical dentro de la primera columna.
+  - En `@media (min-width: 769px)`, se configuró `.inv-summary-banner .table-container > table` con `tbody tr.inv-stock-card, tbody tr.inv-fruit-card { display: table-row !important; }` y `td:not(.mobile-tr-summary-cell) { display: table-cell !important; vertical-align: middle; padding: 12px 14px; white-space: nowrap; }`, replicando el formato horizontal limpio de `Reportes -> Inventario & Valoración`.
+- **2. Alineación Compacta en Plantilla y Compatibilidad Móvil (`src/app/features/settings/settings.component.html`)**:
+  - Se alinearon en línea el nombre de la presentación y sus badges de categoría/gramaje en la columna `Pulpa / Presentación`, y se enlazó `[class.mobile-row-expanded]` y `.ms-left` para preservar intactas las tarjetas colapsables en resoluciones móviles (`<= 768px`).
+- **3. Cobertura de Pruebas Unitarias (`src/app/features/settings/settings.component.spec.ts`)**:
+  - Se agregó la prueba `'should render horizontal table rows for both Stock Pulpas Hechas and Inventario Fruta Disponible'` validando las 9 celdas de `tr.inv-stock-row` y las 11 celdas de `tr.inv-fruit-row`.
+- **4. Informes del Agente Verificador, Agente Auditor Punto por Punto y Revisión Par**:
+  - **Agente Verificador (`65b5f6dc-f3e6-4fc2-b380-4c06bf79321c`)**: Confirmó aislamiento quirúrgico 100% dentro de `SettingsComponent`.
+  - **Agente Auditor Punto por Punto (`77a9d766-37b0-44d5-9846-05e8b77ac81c`)**: Dictamen **APROBADO SIN OBSERVACIONES (100% CONFORME)**.
+  - **Agente de Revisión Par (`a4e27ba9-394a-4c5a-a620-8c2c383407f4`)**: Dictamen **APROBADO AL 100% (0 Anomalías, 0 Regresiones)**.
+
+### 📦 Componentes Modificados
+- `src/app/features/settings/settings.component.scss`
+- `src/app/features/settings/settings.component.html`
+- `src/app/features/settings/settings.component.spec.ts`
+
+### ✅ Verificación, Build y Tests Unitarios
+- `npm run build` (`DespulpadoraPwa`): **OK (0 errores)**.
+- `npx ng test --watch=false --browsers=ChromeHeadless` (`DespulpadoraPwa`): **304 de 304 SUCCESS (100% Unit Tests Passed, 0 fallos)**.
+
+---
+
 ## [2026-11-02] - Cierre Limpio de Ruta Completada/Liquidada en App Flutter (`Sin Ruta Asignada`) y Ocultamiento del Botón de Teléfono en Pedidos Entregados (`DespulpadoraApp` + `DespulpadoraPwa` + `ApiDespulpadora`)
 
 ### 💬 Prompt Original del Usuario
@@ -2880,5 +2968,32 @@ por otr lado, la columna de accion dejamelo mejor, puede ser un lista desplegabl
 ### ✅ Verificación, Build y Tests Unitarios
 - **Build de Producción PWA (`npm run build`)**: **0 Errores** (`dist/despulpadora-pwa` generado exitosamente).
 - **Pruebas Unitarias PWA (`npx ng test --watch=false --browsers=ChromeHeadless`)**: **Executed 301 of 301 SUCCESS (TOTAL: 301 SUCCESS, 0 FAILED)**.
+
+---
+
+## [2026-11-02] - Mostrar Todos los Pedidos Activos del Módulo de Pedidos en la Card "SIN GESTIONAR" de Histórico de Entregas & Despachos Independientemente del Día (`OrdersComponent`)
+
+### 💬 Prompt Original del Usuario
+> "ayudame a que esta card se muestren los pedidos que estan en el modul de pedidos, ahi si quero que se vean todos independiente del dia e el que esten"
+> "ejecuta"
+
+### 🤖 Resumen Técnico para la IA
+- **1. Señal Computada `unassignedOrdersAllDays` en `OrdersComponent` (`src/app/features/orders/orders.component.ts`)**:
+  - Se creó `unassignedOrdersAllDays = computed<OrderDto[]>(...)` (líneas 649–666) que obtiene todos los pedidos activos del módulo de Pedidos que aún se encuentran sin gestionar/despachar (`o.status !== 'CANCELLED' && o.status !== 'DELIVERED' && o.status !== 'DISPATCHED'`), sin restringirlos por día de la semana (`scheduledDay`) ni por el filtro de fecha (`historyDateFilter`).
+- **2. Sincronización de `unassignedHistoryOrdersCount`, `totalHistoryOrdersCount` y `filteredHistoryOrders`**:
+  - `unassignedHistoryOrdersCount` retorna `this.unassignedOrdersAllDays().length`, mostrando en la card **`SIN GESTIONAR`** el total real de pedidos activos en el módulo de Pedidos (de `Lunes` a `Domingo`).
+  - Cuando `historyFilter() === 'UNASSIGNED'`, `filteredHistoryOrders` lista directamente `[...this.unassignedOrdersAllDays()]`; y cuando `historyFilter() === 'ALL'`, tanto `filteredHistoryOrders` como `totalHistoryOrdersCount` consolidan sin duplicados (`Map<number, OrderDto>`) los pedidos del período con `unassignedOrdersAllDays()`, manteniendo intacto el filtro del día de hoy (`isOrderForToday`) en la card flotante del mapa (`DeliveryMapComponent`).
+- **3. Certificación de Agentes de Calidad**:
+  - **Agente Verificador de Impacto (`477ee3cc-69ba-4938-b923-725f8a099f95`)**, **Agente Auditor Punto por Punto (`ca125707-701f-4be7-8bb9-7e0713c561be`)** y **Agente de Revisión Par (`faaca0b6-3a60-4aa2-b028-8ac513d04efb`)**: Aprobaron el 100% de la implementación sin desviaciones ni regresiones.
+
+### 📦 Componentes Modificados
+- `src/app/features/orders/orders.component.ts` [MODIFICADO]
+- `src/app/features/orders/orders.component.spec.ts` [MODIFICADO]
+- `HISTORIAL_CAMBIOS.md` [MODIFICADO]
+
+### ✅ Verificación, Build y Tests Unitarios
+- **Build de Producción PWA (`npm run build`)**: **0 Errores** (`dist/despulpadora-pwa` generado exitosamente).
+- **Pruebas Unitarias PWA (`npx ng test --watch=false --browsers=ChromeHeadless`)**: **Executed 305 of 305 SUCCESS (TOTAL: 305 SUCCESS, 0 FAILED)**.
+
 
 

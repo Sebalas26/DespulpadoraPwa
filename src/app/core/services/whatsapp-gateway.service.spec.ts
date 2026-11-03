@@ -205,5 +205,14 @@ describe('WhatsAppGatewayService', () => {
     });
     expect(simRes?.handled).toBeTrue();
     expect(simRes?.action).toBe('DRAFT_REPEAT_SINGLE');
+
+    let failReconnect: ({ success: boolean } & Partial<WhatsAppGatewayStatusDto>) | undefined;
+    service.reconnect().subscribe((res: { success: boolean } & Partial<WhatsAppGatewayStatusDto>) => {
+      failReconnect = res;
+    });
+    const failReq = httpMock.expectOne('http://localhost:3005/api/whatsapp/reconnect');
+    failReq.error(new ProgressEvent('error'));
+    expect(failReconnect?.success).toBeFalse();
+    expect(failReconnect?.error).toBe('GATEWAY_UNREACHABLE');
   });
 });

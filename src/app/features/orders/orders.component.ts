@@ -646,9 +646,31 @@ export class OrdersComponent {
     }
   });
 
+  /**
+   * Computes all active unmanaged orders from the Orders module regardless of scheduled weekday or creation date.
+   */
+  readonly unassignedOrdersAllDays = computed<OrderDto[]>(() => {
+    try {
+      return this.stateService
+        .orders()
+        .filter(
+          (o: OrderDto) =>
+            o.status !== 'CANCELLED' &&
+            o.status !== 'DELIVERED' &&
+            o.status !== 'DISPATCHED'
+        );
+    } catch (error: unknown) {
+      console.error('Error computing unassigned orders across all days:', error);
+      return [];
+    }
+  });
+
   readonly totalHistoryOrdersCount = computed<number>(() => {
     try {
-      return this.allHistoryOrders().length;
+      const mergedMap = new Map<number, OrderDto>();
+      this.allHistoryOrders().forEach((o: OrderDto) => mergedMap.set(o.orderId, o));
+      this.unassignedOrdersAllDays().forEach((o: OrderDto) => mergedMap.set(o.orderId, o));
+      return mergedMap.size;
     } catch (error: unknown) {
       console.error('Error computing total history orders count:', error);
       return 0;
@@ -675,7 +697,7 @@ export class OrdersComponent {
 
   readonly unassignedHistoryOrdersCount = computed<number>(() => {
     try {
-      return this.allHistoryOrders().filter((o: OrderDto) => o.status !== 'DELIVERED' && o.status !== 'DISPATCHED').length;
+      return this.unassignedOrdersAllDays().length;
     } catch (error: unknown) {
       console.error('Error computing unassigned history orders count:', error);
       return 0;
@@ -706,14 +728,19 @@ export class OrdersComponent {
     try {
       const filter = this.historyFilter();
       const query = this.historySearchQuery().trim().toLowerCase();
-      let list = this.allHistoryOrders();
+      let list: OrderDto[];
 
       if (filter === 'DELIVERED') {
-        list = list.filter((o: OrderDto) => o.status === 'DELIVERED');
+        list = this.allHistoryOrders().filter((o: OrderDto) => o.status === 'DELIVERED');
       } else if (filter === 'DISPATCHED') {
-        list = list.filter((o: OrderDto) => o.status === 'DISPATCHED');
+        list = this.allHistoryOrders().filter((o: OrderDto) => o.status === 'DISPATCHED');
       } else if (filter === 'UNASSIGNED') {
-        list = list.filter((o: OrderDto) => o.status !== 'DELIVERED' && o.status !== 'DISPATCHED');
+        list = [...this.unassignedOrdersAllDays()];
+      } else {
+        const mergedMap = new Map<number, OrderDto>();
+        this.allHistoryOrders().forEach((o: OrderDto) => mergedMap.set(o.orderId, o));
+        this.unassignedOrdersAllDays().forEach((o: OrderDto) => mergedMap.set(o.orderId, o));
+        list = Array.from(mergedMap.values());
       }
 
       if (query) {
