@@ -3,7 +3,7 @@
   "version": "0.0.0",
   "scripts": {
     "ng": "ng",
-    "start": "ng serve",
+    "start": "(lsof -ti:3005 >/dev/null 2>&1 || nohup node ../Api/WhatsAppQrGateway/server.js >/tmp/whatsapp-gateway.log 2>&1 &) && ng serve",
     "gateway": "node ../Api/WhatsAppQrGateway/server.js",
     "build": "ng build",
     "watch": "ng build --watch --configuration development",

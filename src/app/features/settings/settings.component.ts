@@ -2163,7 +2163,12 @@ export class SettingsComponent {
         next: (status: WhatsAppGatewayStatusDto) => {
           this.whatsAppGatewayStatus.set(status);
           this.isLoadingWhatsAppStatus.set(false);
-          if (status.status === 'DISCONNECTED' && !status.qrDataUrl && !status.connected) {
+          if (
+            status.status === 'DISCONNECTED' &&
+            !status.qrDataUrl &&
+            !status.connected &&
+            status.error !== 'GATEWAY_UNREACHABLE'
+          ) {
             this.whatsAppGateway.reconnect().subscribe({
               next: (reconnectRes: { success: boolean } & Partial<WhatsAppGatewayStatusDto>) => {
                 if (reconnectRes.status && (reconnectRes.qrDataUrl || reconnectRes.connected)) {
@@ -2175,6 +2180,8 @@ export class SettingsComponent {
                     name: reconnectRes.name ?? null,
                     lastUpdatedAt: reconnectRes.lastUpdatedAt
                   });
+                } else if (reconnectRes.success && reconnectRes.status === 'CONNECTING') {
+                  this.pollWhatsAppQrUntilReady(4);
                 }
               },
               error: () => {}
@@ -2254,7 +2261,7 @@ export class SettingsComponent {
               lastUpdatedAt: res.lastUpdatedAt
             });
             this.isLoadingWhatsAppStatus.set(false);
-            this.notification.info('Gateway WhatsApp', 'Código QR actualizado y listo para escanear.');
+            this.notification.info('Gateway WhatsApp', 'Código QR oficial de WhatsApp actualizado y listo para escanear.');
           } else if (res.success) {
             this.whatsAppGatewayStatus.set({
               status: res.status || 'CONNECTING',
@@ -2267,19 +2274,20 @@ export class SettingsComponent {
             this.notification.info('Gateway WhatsApp', 'Generando nuevo código QR en el servidor...');
             this.pollWhatsAppQrUntilReady(4);
           } else {
-            const fallbackQr: string =
-              this.whatsAppGateway.buildEmbeddedQrDataUrl?.(`WA_LOCAL_${Date.now()}`) ||
-              'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMjAgMTIwIj48cmVjdCB3aWR0aD0iMTIwIiBoZWlnaHQ9IjEyMCIgZmlsbD0iI2ZmZmZmZiIvPjxyZWN0IHg9IjEyIiB5PSIxMiIgd2lkdGg9Ijk2IiBoZWlnaHQ9Ijk2IiBmaWxsPSIjMTExODI3Ii8+PC9zdmc+';
             this.whatsAppGatewayStatus.set({
-              status: 'QR_READY',
+              status: 'DISCONNECTED',
               connected: false,
-              qrDataUrl: fallbackQr,
+              qrDataUrl: null,
               phoneNumber: null,
               name: null,
+              error: res.error || 'GATEWAY_UNREACHABLE',
               lastUpdatedAt: new Date().toISOString()
             });
             this.isLoadingWhatsAppStatus.set(false);
-            this.notification.info('Gateway WhatsApp', 'Código QR actualizado y listo para escanear.');
+            this.notification.warning(
+              'Gateway WhatsApp Desconectado',
+              'No se pudo contactar con WhatsAppQrGateway en el puerto 3005. Verifica que el servicio esté activo.'
+            );
           }
         },
         error: () => {

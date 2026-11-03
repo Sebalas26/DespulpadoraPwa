@@ -1774,6 +1774,49 @@ export class OrdersComponent {
   }
 
   /**
+   * Marks a pending order as pending billing (PICKING) for today and adds it to the All Deliveries map list for courier assignment.
+   */
+  dispatchOrderToBillingAndDeliveries(order: OrderDto): void {
+    try {
+      const todayDay: string = this.getCurrentWeekDayName();
+
+      if (typeof this.stateService.sendOrderToBillingAndDeliveries === 'function') {
+        this.stateService.sendOrderToBillingAndDeliveries(order.orderId, todayDay);
+      } else {
+        this.stateService.updateOrderStatus(order.orderId, 'PICKING');
+        this.stateService.updateOrderScheduledDay?.(order.orderId, todayDay);
+      }
+
+      this.stateService.orders.update((list: OrderDto[]) =>
+        list.map((o: OrderDto) =>
+          o.orderId === order.orderId
+            ? {
+                ...o,
+                status: 'PICKING',
+                isBilled: false,
+                scheduledDay: todayDay
+              }
+            : o
+        )
+      );
+
+      const updatedOrder: OrderDto =
+        this.stateService.orders().find((o: OrderDto) => o.orderId === order.orderId) || {
+          ...order,
+          status: 'PICKING',
+          isBilled: false,
+          scheduledDay: todayDay
+        };
+
+      if (this.deliveryMapRef) {
+        this.deliveryMapRef.enqueueOrderForDeliveryAssignment(updatedOrder);
+      }
+    } catch (error: unknown) {
+      console.error('Error dispatching order to billing and deliveries:', error);
+    }
+  }
+
+  /**
    * Sets the current page of the delivery history table.
    */
   setHistoryPage(page: number): void {
@@ -1833,6 +1876,116 @@ export class OrdersComponent {
       this.historyCurrentPage.set(1);
     } catch (error: unknown) {
       console.error('Error resetting history filters:', error);
+    }
+  }
+
+  /**
+   * Returns the Spanish display label for an order status in the delivery history export.
+   */
+  getHistoryOrderStatusLabelES(status: OrderStatus): string {
+    try {
+      const labels: Record<OrderStatus, string> = {
+        DELIVERED: 'Entregada',
+        DISPATCHED: 'En Camino',
+        PICKING: 'Pendiente Facturar',
+        BILLED: 'Facturado',
+        PENDING: 'Pendiente',
+        CANCELLED: 'Cancelado'
+      };
+      return labels[status] || status;
+    } catch (error: unknown) {
+      console.error('Error getting history order status label:', error);
+      return status;
+    }
+  }
+
+  /**
+   * Exports all filtered delivery history orders to an Excel-compatible UTF-8 CSV file.
+   */
+  exportHistoryOrdersCsv(): void {
+    try {
+      const list: OrderDto[] = this.filteredHistoryOrders();
+      if (list.length === 0) {
+        this.notification.warning('Sin Registros', 'No hay entregas en el filtro actual para exportar a Excel.');
+        return;
+      }
+
+      const headers: string[] = [
+        'Guía',
+        'Factura',
+        'Fecha Creación',
+        'Cliente',
+        'Teléfono',
+        'Dirección',
+        'Productos',
+        'Domiciliario',
+        'Ruta',
+        'Método de Pago',
+        'Recaudo Total COP',
+        'Estado',
+        'Fecha Entrega',
+        'Hora Entrega',
+        'Notas'
+      ];
+
+      const rows: Array<Array<string | number>> = list.map((order: OrderDto): Array<string | number> => {
+        const courier: CourierCatalogEntry | null = this.getCourierForOrder(order);
+        const courierName: string = courier?.name || '';
+        const routeCode: string = courier?.routeCode || order.routeCode || '';
+        const deliveryDate: string = order.status === 'DELIVERED' ? this.getDeliveryDateDisplay(order) : '';
+        const deliveryTime: string = order.status === 'DELIVERED' ? this.getDeliveryTimeDisplay(order) : '';
+
+        return [
+          order.orderNumber || '',
+          this.getInvoiceCode(order),
+          this.formatInvoiceDate(order.createdAt || order.orderDate),
+          `"${(order.clientName || '').replace(/"/g, '""')}"`,
+          `"${(order.clientPhone || '').replace(/"/g, '""')}"`,
+          `"${(order.clientAddress || '').replace(/"/g, '""')}"`,
+          `"${this.getOrderItemsSummary(order).replace(/"/g, '""')}"`,
+          `"${courierName.replace(/"/g, '""')}"`,
+          `"${routeCode.replace(/"/g, '""')}"`,
+          `"${(order.paymentMethodName || '').replace(/"/g, '""')}"`,
+          order.totalAmount ?? 0,
+          this.getHistoryOrderStatusLabelES(order.status),
+          deliveryDate,
+          deliveryTime,
+          `"${(order.notes || '').replace(/"/g, '""')}"`
+        ];
+      });
+
+      const dateStamp: string = new Date().toISOString().substring(0, 10);
+      const filename: string = `historico_entregas_${this.historyDateFilter()}_${dateStamp}.csv`;
+      this.downloadHistoryCsv(filename, headers, rows);
+      this.notification.success('Excel Exportado', 'El histórico de entregas se descargó correctamente.');
+    } catch (error: unknown) {
+      console.error('Error exporting history orders CSV:', error);
+    }
+  }
+
+  /**
+   * Triggers a browser download of a UTF-8 BOM semicolon-delimited CSV file for Excel.
+   */
+  private downloadHistoryCsv(filename: string, headers: string[], rows: Array<Array<string | number>>): void {
+    try {
+      const bom: string = '\uFEFF';
+      const csvContent: string =
+        bom +
+        headers.join(';') +
+        '\r\n' +
+        rows.map((r: Array<string | number>): string => r.join(';')).join('\r\n');
+
+      const blob: Blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url: string = URL.createObjectURL(blob);
+      const link: HTMLAnchorElement = document.createElement('a');
+      link.setAttribute('href', url);
+      link.setAttribute('download', filename);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    } catch (error: unknown) {
+      console.error('Error downloading history CSV:', error);
     }
   }
 

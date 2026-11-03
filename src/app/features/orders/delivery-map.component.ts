@@ -6332,6 +6332,9 @@ export class DeliveryMapComponent implements OnInit, AfterViewInit, OnDestroy {
 
       this.courierLocSub = this.realtimeSync.courierLocations$.subscribe(loc => {
         try {
+          if (!this.isRealCourierGpsCoordinate(loc.latitude, loc.longitude)) {
+            return;
+          }
           this.couriers.update((list: Courier[]) => {
             const normalizedLocName: string = (loc.courierName || '').trim().toLowerCase();
             const numericLocId: string = String(loc.courierId || '').replace(/\D/g, '');
@@ -9740,6 +9743,26 @@ export class DeliveryMapComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   /**
+   * Validates whether a latitude/longitude pair represents a real hardware GPS reading and is not the legacy hardcoded test fallback.
+   */
+  isRealCourierGpsCoordinate(lat: number | undefined, lng: number | undefined): boolean {
+    try {
+      if (lat === undefined || lng === undefined || !Number.isFinite(lat) || !Number.isFinite(lng)) {
+        return false;
+      }
+      if (Math.abs(lat) <= 0.0001 || Math.abs(lng) <= 0.0001) {
+        return false;
+      }
+      const isLegacyHardcodedFallback: boolean =
+        Math.abs(lat - 4.6968) < 0.00025 && Math.abs(lng - -74.0925) < 0.00025;
+      return !isLegacyHardcodedFallback;
+    } catch (error: unknown) {
+      console.error('Error validating courier GPS coordinate:', error);
+      return false;
+    }
+  }
+
+  /**
    * Queries StateService.fetchLiveCouriers() and updates courier GPS coordinates from the physical phone.
    */
   pollRealCourierLocations(): void {
@@ -9765,14 +9788,9 @@ export class DeliveryMapComponent implements OnInit, AfterViewInit, OnDestroy {
             }
 
             let hadLocationChange = false;
-            const liveWithValidGps = liveList.filter(
-              (dto: CourierDto) =>
-                dto.currentLatitude !== undefined &&
-                dto.currentLongitude !== undefined &&
-                Number.isFinite(dto.currentLatitude) &&
-                Number.isFinite(dto.currentLongitude) &&
-                Math.abs(dto.currentLatitude) > 0.0001 &&
-                Math.abs(dto.currentLongitude) > 0.0001
+            let hadInitialRealGpsAcquisition = false;
+            const liveWithValidGps = liveList.filter((dto: CourierDto) =>
+              this.isRealCourierGpsCoordinate(dto.currentLatitude, dto.currentLongitude)
             );
 
             this.couriers.update((list: Courier[]) =>
@@ -9806,24 +9824,32 @@ export class DeliveryMapComponent implements OnInit, AfterViewInit, OnDestroy {
                   return c;
                 }
 
-                const hasValidGps =
-                  matchedDto.currentLatitude !== undefined &&
-                  matchedDto.currentLongitude !== undefined &&
-                  Number.isFinite(matchedDto.currentLatitude) &&
-                  Number.isFinite(matchedDto.currentLongitude) &&
-                  Math.abs(matchedDto.currentLatitude) > 0.0001 &&
-                  Math.abs(matchedDto.currentLongitude) > 0.0001;
+                const hasValidGps: boolean = this.isRealCourierGpsCoordinate(
+                  matchedDto.currentLatitude,
+                  matchedDto.currentLongitude
+                );
 
-                const nextLat = hasValidGps ? matchedDto.currentLatitude! : c.lat;
-                const nextLng = hasValidGps ? matchedDto.currentLongitude! : c.lng;
+                const prevTelemetry = this.realCourierTelemetry.get(c.id);
+                const nowMs = Date.now();
+                const hasRecentWsTelemetry: boolean =
+                  prevTelemetry !== undefined && nowMs - prevTelemetry.updatedAtMs < 4000;
+
+                const nextLat: number = hasValidGps
+                  ? matchedDto.currentLatitude!
+                  : hasRecentWsTelemetry
+                    ? prevTelemetry!.lat
+                    : c.lat;
+                const nextLng: number = hasValidGps
+                  ? matchedDto.currentLongitude!
+                  : hasRecentWsTelemetry
+                    ? prevTelemetry!.lng
+                    : c.lng;
                 const nextPlate =
                   matchedDto.vehiclePlate && matchedDto.vehiclePlate.trim().length > 0
                     ? matchedDto.vehiclePlate.trim()
                     : c.vehiclePlate;
 
                 let nextSpeedKmH = c.currentSpeedKmH;
-                const prevTelemetry = this.realCourierTelemetry.get(c.id);
-                const nowMs = Date.now();
                 if (hasValidGps && prevTelemetry) {
                   const distKm = this.calculateHaversineKm(
                     prevTelemetry.lat,
@@ -9843,6 +9869,9 @@ export class DeliveryMapComponent implements OnInit, AfterViewInit, OnDestroy {
                 }
 
                 if (hasValidGps) {
+                  if (!prevTelemetry) {
+                    hadInitialRealGpsAcquisition = true;
+                  }
                   if (Math.abs(c.lat - nextLat) > 0.00001 || Math.abs(c.lng - nextLng) > 0.00001) {
                     hadLocationChange = true;
                   }
@@ -9884,6 +9913,9 @@ export class DeliveryMapComponent implements OnInit, AfterViewInit, OnDestroy {
             );
 
             this.renderCourierMarkers();
+            if (hadInitialRealGpsAcquisition && this.mapViewMode() === 'live') {
+              this.fitMapToAllStops();
+            }
             if (hadLocationChange) {
               void this.buildAndRenderRealRoadRoutes();
             }
@@ -10529,6 +10561,66 @@ export class DeliveryMapComponent implements OnInit, AfterViewInit, OnDestroy {
       });
     } catch (error: unknown) {
       console.error('Error syncing with StateService orders:', error);
+    }
+  }
+
+  /**
+   * Synchronizes an order scheduled for dispatch into the map stops list and opens the All Deliveries drawer.
+   */
+  enqueueOrderForDeliveryAssignment(order: OrderDto): void {
+    try {
+      this.syncWithStateServiceOrders();
+      const exists: boolean = this.deliveryStops().some((s: DeliveryWaypoint) => s.id === order.orderId);
+      if (!exists) {
+        const hasOrderCoords: boolean =
+          order.latitude !== undefined &&
+          order.longitude !== undefined &&
+          Number.isFinite(order.latitude) &&
+          Number.isFinite(order.longitude) &&
+          Math.abs(order.latitude) > 0.0001 &&
+          Math.abs(order.longitude) > 0.0001;
+        const lat: number = hasOrderCoords ? order.latitude! : this.plantLat();
+        const lng: number = hasOrderCoords ? order.longitude! : this.plantLng();
+        const isOrderBilled: boolean =
+          order.isBilled === true ||
+          order.status === 'BILLED' ||
+          order.status === 'DISPATCHED' ||
+          order.status === 'DELIVERED';
+        const computedWeightKg: number = (order.items || []).reduce(
+          (acc: number, it: OrderDto['items'][number]) => acc + ((it.grammage || 0) * it.quantity) / 1000,
+          0
+        );
+        const computedSummary: string = (order.items || [])
+          .map((it: OrderDto['items'][number]) => `${it.quantity}x ${it.fruitName}`)
+          .join(', ');
+        const stop: DeliveryWaypoint = {
+          id: order.orderId,
+          orderNumber: order.orderNumber,
+          clientName: order.clientName,
+          clientPhone: order.clientPhone || '',
+          address: order.clientAddress || '',
+          zone: this.detectBogotaZone(lat, lng),
+          lat,
+          lng,
+          totalAmount: order.totalAmount,
+          weightKg: computedWeightKg,
+          itemsSummary: computedSummary,
+          isDelivered: order.status === 'DELIVERED',
+          isBilled: isOrderBilled,
+          isPriority: isOrderBilled ? false : (order.isPriority === true),
+          assignedCourierId: '',
+          orderRef: order
+        };
+        this.deliveryStops.update((stops: DeliveryWaypoint[]) => [stop, ...stops]);
+      }
+
+      this.drawerCourierFilter.set('all');
+      this.enterAllDeliveriesMode();
+      this.showDeliveriesDrawer.set(true);
+      this.renderStopMarkers();
+      this.renderCourierMarkers();
+    } catch (error: unknown) {
+      console.error('Error enqueuing order for delivery assignment:', error);
     }
   }
 

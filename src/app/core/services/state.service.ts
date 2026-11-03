@@ -2153,6 +2153,59 @@ private loadEmployeesFromStorage(): EmployeeDto[] {
   }
 
   /**
+   * Moves an order to PICKING (pending billing) and schedules it for the specified delivery day.
+   */
+  sendOrderToBillingAndDeliveries(orderId: number, scheduledDay: string): void {
+    try {
+      this.orders.update((list: OrderDto[]) =>
+        list.map((o: OrderDto) =>
+          o.orderId === orderId
+            ? {
+                ...o,
+                status: 'PICKING',
+                isBilled: false,
+                scheduledDay
+              }
+            : o
+        )
+      );
+
+      this.saveAllToStorage('orders', 'status');
+      const changedOrder: OrderDto | undefined = this.orders().find((o: OrderDto) => o.orderId === orderId);
+      if (!this.isApplyingExternalRealtimeEvent) {
+        this.realtimeSync.publishDomainChange(
+          'orders',
+          'status',
+          {
+            orderId,
+            orderNumber: changedOrder?.orderNumber,
+            status: 'PICKING',
+            isBilled: false,
+            scheduledDay,
+            courierId: changedOrder?.courierId
+          },
+          {
+            event: 'order_status_changed',
+            courierId: changedOrder?.courierId ? String(changedOrder.courierId) : undefined,
+            orderIds: [String(orderId)]
+          }
+        );
+      }
+
+      this.notification.info(
+        'Pendiente para Facturar',
+        `Pedido ${changedOrder?.orderNumber || ''} enviado a Facturación y agregado a Todas las Entregas.`
+      );
+
+      this.api.updateOrderStatus({ orderId, status: 'PICKING', scheduledDay }).subscribe({
+        error: () => {}
+      });
+    } catch {
+      return;
+    }
+  }
+
+  /**
    * Dispatches and persists an ordered courier delivery route to the database via `POST /api/orders/dispatch-route`.
    */
   dispatchCourierRoute(dto: DispatchCourierRouteDto): void {

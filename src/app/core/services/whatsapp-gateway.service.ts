@@ -208,107 +208,7 @@ export class WhatsAppGatewayService {
   }
 
   /**
-   * Builds a deterministic 25x25 SVG QR code data URL as an embedded fallback when the local Gateway port is offline.
-   */
-  buildEmbeddedQrDataUrl(seed?: string): string {
-    try {
-      const payload: string =
-        seed && seed.trim().length > 0
-          ? seed.trim()
-          : `2@${Date.now().toString(36)},DESPULPADORA_WA_LINK`;
-      const size = 25;
-      const matrix: boolean[][] = Array.from({ length: size }, (): boolean[] =>
-        Array.from({ length: size }, (): boolean => false)
-      );
-      const reserved: boolean[][] = Array.from({ length: size }, (): boolean[] =>
-        Array.from({ length: size }, (): boolean => false)
-      );
-
-      const placeFinder = (startRow: number, startCol: number): void => {
-        for (let r = -1; r <= 7; r++) {
-          for (let c = -1; c <= 7; c++) {
-            const rr: number = startRow + r;
-            const cc: number = startCol + c;
-            if (rr >= 0 && rr < size && cc >= 0 && cc < size) {
-              reserved[rr][cc] = true;
-              const inOuter: boolean =
-                r >= 0 && r <= 6 && c >= 0 && c <= 6 && (r === 0 || r === 6 || c === 0 || c === 6);
-              const inInner: boolean = r >= 2 && r <= 4 && c >= 2 && c <= 4;
-              matrix[rr][cc] = inOuter || inInner;
-            }
-          }
-        }
-      };
-
-      placeFinder(0, 0);
-      placeFinder(0, size - 7);
-      placeFinder(size - 7, 0);
-
-      for (let i = 8; i < size - 8; i++) {
-        reserved[6][i] = true;
-        reserved[i][6] = true;
-        matrix[6][i] = i % 2 === 0;
-        matrix[i][6] = i % 2 === 0;
-      }
-
-      const alignCenter = 18;
-      for (let r = -2; r <= 2; r++) {
-        for (let c = -2; c <= 2; c++) {
-          const rr: number = alignCenter + r;
-          const cc: number = alignCenter + c;
-          reserved[rr][cc] = true;
-          const isBorder: boolean = Math.abs(r) === 2 || Math.abs(c) === 2;
-          const isCenter: boolean = r === 0 && c === 0;
-          matrix[rr][cc] = isBorder || isCenter;
-        }
-      }
-
-      let hash = 2166136261;
-      for (let i = 0; i < payload.length; i++) {
-        hash ^= payload.charCodeAt(i);
-        hash = Math.imul(hash, 16777619);
-      }
-
-      let state: number = hash >>> 0 || 0x9e3779b9;
-      for (let r = 0; r < size; r++) {
-        for (let c = 0; c < size; c++) {
-          if (!reserved[r][c]) {
-            state ^= state << 13;
-            state ^= state >>> 17;
-            state ^= state << 5;
-            const charBit: number =
-              payload.charCodeAt((r * size + c) % payload.length) & (1 << ((r + c) % 7));
-            matrix[r][c] = (((state >>> 0) ^ charBit) & 1) === 1;
-          }
-        }
-      }
-
-      const modulePx = 8;
-      const marginModules = 2;
-      const totalPx: number = (size + marginModules * 2) * modulePx;
-      const rects: string[] = [];
-
-      for (let r = 0; r < size; r++) {
-        for (let c = 0; c < size; c++) {
-          if (matrix[r][c]) {
-            const x: number = (c + marginModules) * modulePx;
-            const y: number = (r + marginModules) * modulePx;
-            rects.push(`<rect x="${x}" y="${y}" width="${modulePx}" height="${modulePx}"/>`);
-          }
-        }
-      }
-
-      const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${totalPx} ${totalPx}" width="${totalPx}" height="${totalPx}" shape-rendering="crispEdges"><rect width="100%" height="100%" fill="#ffffff"/><g fill="#111827">${rects.join('')}</g></svg>`;
-      return `data:image/svg+xml;base64,${btoa(svg)}`;
-    } catch {
-      const minimalSvg =
-        '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120"><rect width="120" height="120" fill="#ffffff"/><rect x="12" y="12" width="96" height="96" fill="#111827"/></svg>';
-      return `data:image/svg+xml;base64,${btoa(minimalSvg)}`;
-    }
-  }
-
-  /**
-   * Fetches the current connection state and QR code from the WhatsApp Gateway.
+   * Fetches the current connection state and cryptographic Multi-Device QR code from the WhatsApp Gateway.
    */
   getStatus(): Observable<WhatsAppGatewayStatusDto> {
     try {
@@ -316,22 +216,24 @@ export class WhatsAppGatewayService {
       return this.http.get<WhatsAppGatewayStatusDto>(`${baseUrl}/status`).pipe(
         catchError(() =>
           of({
-            status: 'QR_READY' as const,
+            status: 'DISCONNECTED' as const,
             connected: false,
-            qrDataUrl: this.buildEmbeddedQrDataUrl('WA_STATUS_QR'),
+            qrDataUrl: null,
             phoneNumber: null,
             name: null,
+            error: 'GATEWAY_UNREACHABLE',
             lastUpdatedAt: new Date().toISOString()
           })
         )
       );
     } catch {
       return of({
-        status: 'QR_READY' as const,
+        status: 'DISCONNECTED' as const,
         connected: false,
-        qrDataUrl: this.buildEmbeddedQrDataUrl('WA_STATUS_QR'),
+        qrDataUrl: null,
         phoneNumber: null,
         name: null,
+        error: 'GATEWAY_UNREACHABLE',
         lastUpdatedAt: new Date().toISOString()
       });
     }
@@ -370,7 +272,7 @@ export class WhatsAppGatewayService {
   }
 
   /**
-   * Forces a reconnection or new QR code generation on the WhatsApp Gateway.
+   * Forces a reconnection or new cryptographic Multi-Device QR code generation on the WhatsApp Gateway.
    */
   reconnect(): Observable<{ success: boolean } & Partial<WhatsAppGatewayStatusDto>> {
     try {
@@ -380,24 +282,26 @@ export class WhatsAppGatewayService {
         .pipe(
           catchError(() =>
             of({
-              success: true,
-              status: 'QR_READY' as const,
+              success: false,
+              status: 'DISCONNECTED' as const,
               connected: false,
-              qrDataUrl: this.buildEmbeddedQrDataUrl(`WA_RECONNECT_${Date.now()}`),
+              qrDataUrl: null,
               phoneNumber: null,
               name: null,
+              error: 'GATEWAY_UNREACHABLE',
               lastUpdatedAt: new Date().toISOString()
             })
           )
         );
     } catch {
       return of({
-        success: true,
-        status: 'QR_READY' as const,
+        success: false,
+        status: 'DISCONNECTED' as const,
         connected: false,
-        qrDataUrl: this.buildEmbeddedQrDataUrl(`WA_RECONNECT_${Date.now()}`),
+        qrDataUrl: null,
         phoneNumber: null,
         name: null,
+        error: 'GATEWAY_UNREACHABLE',
         lastUpdatedAt: new Date().toISOString()
       });
     }

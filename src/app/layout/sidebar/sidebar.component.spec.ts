@@ -170,4 +170,53 @@ describe('SidebarComponent', () => {
       expect(text.includes('↳')).toBeFalse();
     });
   });
+
+  it('should not render the Todo en su punto callout card and should display the same pendingOrdersCount badge on Pedidos, Facturación & POS, and Despachos & Rutas', () => {
+    authService.navigationModules.set([
+      {
+        moduleId: 3,
+        name: 'Pedidos y Despachos',
+        slug: 'orders',
+        menuSection: 'Operación',
+        frontendRoute: '/orders',
+        icon: 'truck',
+        displayOrder: 1,
+        allowedActionSlugs: ['orders.view']
+      }
+    ]);
+    stateService.orders.set([
+      {
+        orderId: 101,
+        orderNumber: 'ORD-101',
+        invoiceNumber: 'FAC-101',
+        clientId: 1,
+        clientName: 'Cliente Prueba',
+        clientPhone: '3001234567',
+        clientAddress: 'Calle 10 # 20-30',
+        branchId: 1,
+        status: 'PENDING',
+        isPaid: false,
+        paymentMethodName: 'Efectivo',
+        totalAmount: 15000,
+        createdAt: new Date().toISOString(),
+        orderDate: new Date().toISOString().substring(0, 10),
+        items: []
+      }
+    ]);
+
+    fixture.detectChanges();
+    const compiled = fixture.nativeElement as HTMLElement;
+
+    expect(compiled.querySelector('.dgl-callout-card')).toBeNull();
+    expect(compiled.textContent).not.toContain('Todo en su punto.');
+
+    const navLinks = Array.from(compiled.querySelectorAll('.sidebar-nav a.dgl-nav-item')) as HTMLAnchorElement[];
+    const pedidosLink = navLinks.find((el: HTMLAnchorElement) => el.textContent?.includes('Pedidos'));
+    const facturacionLink = navLinks.find((el: HTMLAnchorElement) => el.textContent?.includes('Facturación & POS'));
+    const despachosLink = navLinks.find((el: HTMLAnchorElement) => el.textContent?.includes('Despachos & Rutas'));
+
+    expect(pedidosLink?.querySelector('.dgl-nav-badge')?.textContent?.trim()).toBe('1');
+    expect(facturacionLink?.querySelector('.dgl-nav-badge')?.textContent?.trim()).toBe('1');
+    expect(despachosLink?.querySelector('.dgl-nav-badge')?.textContent?.trim()).toBe('1');
+  });
 });

@@ -174,6 +174,9 @@ import { environment } from '../../../environments/environment';
                   </svg>
                 </span>
                 <span class="dgl-nav-text">Pedidos</span>
+                @if (stateService.pendingOrdersCount() > 0) {
+                  <span class="dgl-nav-badge">{{ stateService.pendingOrdersCount() }}</span>
+                }
               </a>
 
               <a
@@ -194,6 +197,9 @@ import { environment } from '../../../environments/environment';
                   </svg>
                 </span>
                 <span class="dgl-nav-text">Facturación & POS</span>
+                @if (stateService.pendingOrdersCount() > 0) {
+                  <span class="dgl-nav-badge">{{ stateService.pendingOrdersCount() }}</span>
+                }
               </a>
 
               <a
@@ -354,18 +360,6 @@ import { environment } from '../../../environments/environment';
             </a>
           }
         }
-
-        <div class="dgl-callout-card">
-          <div class="callout-header">
-            <span class="callout-icon" style="display: inline-flex; align-items: center; justify-content: center; color: #1e5e3a;">
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M12 2l2.4 7.4h7.6l-6.1 4.5 2.3 7.1-6.2-4.6-6.2 4.6 2.3-7.1-6.1-4.5h7.6z"/>
-              </svg>
-            </span>
-            <span class="callout-title">Todo en su punto.</span>
-          </div>
-          <p class="callout-text">De la fruta al despacho, tu planta en un solo lugar.</p>
-        </div>
       </nav>
 
       <div class="sidebar-footer">
@@ -553,6 +547,7 @@ import { environment } from '../../../environments/environment';
       display: flex;
       flex-direction: column;
       gap: 4px;
+      margin-top: 10px;
       margin-bottom: 4px;
       border-radius: 12px;
       border: 1px solid #eef2ef;
@@ -633,38 +628,6 @@ import { environment } from '../../../environments/environment';
       line-height: 1;
       margin-left: auto;
       flex-shrink: 0;
-    }
-
-    .dgl-callout-card {
-      margin: 16px 0 10px 0;
-      padding: 12px;
-      background: #eef7f0;
-      border-radius: 12px;
-      border: 1px solid #d2ead7;
-    }
-
-    .callout-header {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      margin-bottom: 4px;
-    }
-
-    .callout-icon {
-      font-size: 0.9rem;
-    }
-
-    .callout-title {
-      font-size: 0.82rem;
-      font-weight: 700;
-      color: #111827;
-    }
-
-    .callout-text {
-      font-size: 0.74rem;
-      color: #4b5563;
-      margin: 0;
-      line-height: 1.35;
     }
 
     .sidebar-footer {

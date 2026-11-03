@@ -1008,4 +1008,122 @@ describe('OrdersComponent', () => {
 
     component.closeMapAddressPicker();
   });
+
+  it('should mark order as PICKING (pending billing) for today and enqueue it into All Deliveries when Despachar button is clicked', () => {
+    const todayDay: string = component.getCurrentWeekDayName();
+    const otherDay: string = todayDay === 'Lunes' ? 'Viernes' : 'Lunes';
+    const pendingOrder: OrderDto = {
+      orderId: 508,
+      orderNumber: 'ORD-0008',
+      invoiceNumber: '',
+      clientId: 20,
+      clientName: 'sebastian salamanca redondo',
+      clientPhone: '3102207910',
+      clientAddress: 'cra 69L 64d - 50',
+      branchId: 1,
+      status: 'PENDING',
+      isBilled: false,
+      isPaid: false,
+      totalAmount: 40000,
+      createdAt: '2026-10-15T10:00:00.000Z',
+      orderDate: '2026-10-15',
+      scheduledDay: otherDay,
+      items: []
+    };
+
+    mockOrders.set([pendingOrder]);
+    component.activeSubTab.set('despachos');
+    component.setHistoryDateFilter('today');
+    component.setHistoryFilter('ALL');
+    fixture.detectChanges();
+
+    const enqueueSpy: jasmine.Spy = jasmine.createSpy('enqueueOrderForDeliveryAssignment');
+    component.deliveryMapRef = {
+      enqueueOrderForDeliveryAssignment: enqueueSpy
+    } as unknown as typeof component.deliveryMapRef;
+
+    const compiled: HTMLElement = fixture.nativeElement as HTMLElement;
+    const dispatchBtn: HTMLButtonElement | null = compiled.querySelector('.btn-dispatch-action');
+    expect(dispatchBtn).toBeTruthy();
+
+    dispatchBtn?.click();
+    fixture.detectChanges();
+
+    const updatedOrder: OrderDto | undefined = mockOrders().find((o: OrderDto) => o.orderId === 508);
+    expect(updatedOrder?.status).toBe('PICKING');
+    expect(updatedOrder?.isBilled).toBeFalse();
+    expect(updatedOrder?.scheduledDay).toBe(todayDay);
+    expect(enqueueSpy).toHaveBeenCalledWith(
+      jasmine.objectContaining({
+        orderId: 508,
+        orderNumber: 'ORD-0008',
+        status: 'PICKING',
+        isBilled: false,
+        scheduledDay: todayDay
+      })
+    );
+
+    const pendingBillingBadge: HTMLElement | null = compiled.querySelector('.badge-billing-pending');
+    expect(pendingBillingBadge?.textContent?.trim()).toBe('PENDIENTE FACTURAR');
+
+    const pendingBillingIndicator: HTMLElement | null = compiled.querySelector('.pending-billing-indicator');
+    expect(pendingBillingIndicator?.textContent?.trim()).toBe('Pendiente Facturar');
+
+    component.activeSubTab.set('facturacion');
+    expect(component.tabOrders().map((o: OrderDto) => o.orderNumber)).toContain('ORD-0008');
+  });
+
+  it('should render Exportar a Excel button in delivery history and export filteredHistoryOrders to CSV on click', () => {
+    const todayStr: string = new Date().toISOString().substring(0, 10);
+    const deliveredOrder: OrderDto = {
+      orderId: 601,
+      orderNumber: 'ORD-0014',
+      invoiceNumber: 'FAC-0014',
+      clientId: 25,
+      clientName: 'caldo parado',
+      clientPhone: '3164953397',
+      clientAddress: 'Avenida Calle 64C 69J 32, Bogotá, D.C.',
+      branchId: 1,
+      status: 'DELIVERED',
+      isBilled: true,
+      isPaid: true,
+      paymentMethodName: 'Efectivo',
+      courierName: 'Juan Domiciliario',
+      totalAmount: 450000,
+      createdAt: `${todayStr}T10:00:00.000Z`,
+      deliveredAtUtc: `${todayStr}T21:18:00.000Z`,
+      orderDate: todayStr,
+      scheduledDay: 'Lunes',
+      notes: 'Recibe: caldo parado',
+      items: [{ fruitId: 1, fruitName: 'Mora', grammage: 1000, quantity: 10, unitPrice: 45000, subtotal: 450000 }]
+    };
+
+    mockOrders.set([deliveredOrder]);
+    component.activeSubTab.set('despachos');
+    component.setHistoryDateFilter('today');
+    component.setHistoryFilter('ALL');
+    fixture.detectChanges();
+
+    const compiled: HTMLElement = fixture.nativeElement as HTMLElement;
+    const exportBtn: HTMLButtonElement | null = compiled.querySelector('.history-export-excel-btn');
+    expect(exportBtn).toBeTruthy();
+    expect(exportBtn?.textContent).toContain('Exportar a Excel');
+
+    const createObjectUrlSpy: jasmine.Spy = spyOn(URL, 'createObjectURL').and.returnValue('blob:test-history-csv');
+    const revokeObjectUrlSpy: jasmine.Spy = spyOn(URL, 'revokeObjectURL');
+    const anchorClickSpy: jasmine.Spy = spyOn(HTMLAnchorElement.prototype, 'click');
+
+    exportBtn?.click();
+
+    expect(createObjectUrlSpy).toHaveBeenCalled();
+    expect(anchorClickSpy).toHaveBeenCalled();
+    expect(revokeObjectUrlSpy).toHaveBeenCalledWith('blob:test-history-csv');
+
+    mockOrders.set([]);
+    fixture.detectChanges();
+    createObjectUrlSpy.calls.reset();
+
+    component.exportHistoryOrdersCsv();
+    expect(createObjectUrlSpy).not.toHaveBeenCalled();
+  });
 });

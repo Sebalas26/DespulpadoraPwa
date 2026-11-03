@@ -1072,4 +1072,125 @@ describe('DeliveryMapComponent', () => {
     expect(fabAfter).toBeTruthy();
     expect(fabAfter.querySelector('.fab-badge')).toBeNull();
   });
+
+  it('should enqueue an order into deliveryStops with isBilled false and open All Deliveries drawer when enqueueOrderForDeliveryAssignment is called', () => {
+    const todayDayName: string = component.getCurrentWeekDayName();
+    const orderPendingBilling: OrderDto = {
+      orderId: 1008,
+      orderNumber: 'ORD-0008',
+      clientId: 20,
+      clientName: 'sebastian salamanca redondo',
+      clientPhone: '3102207910',
+      clientAddress: 'cra 69L 64d - 50',
+      branchId: 1,
+      status: 'PICKING',
+      isBilled: false,
+      isPaid: false,
+      totalAmount: 40000,
+      scheduledDay: todayDayName,
+      createdAt: '2026-10-15T10:00:00.000Z',
+      orderDate: '2026-10-15',
+      items: []
+    };
+
+    mockOrders.set([orderPendingBilling]);
+    component.deliveryStops.set([]);
+
+    component.enqueueOrderForDeliveryAssignment(orderPendingBilling);
+    fixture.detectChanges();
+
+    expect(component.mapViewMode()).toBe('stops');
+    expect(component.showDeliveriesDrawer()).toBeTrue();
+    expect(component.drawerCourierFilter()).toBe('all');
+    expect(component.deliveryStops().length).toBe(1);
+    expect(component.deliveryStops()[0].id).toBe(1008);
+    expect(component.deliveryStops()[0].orderNumber).toBe('ORD-0008');
+    expect(component.deliveryStops()[0].isBilled).toBeFalse();
+    expect(component.filteredDrawerStops().map((s: DeliveryWaypoint) => s.orderNumber)).toContain('ORD-0008');
+  });
+
+  it('should reject the legacy hardcoded 4.69680, -74.09250 fallback coordinate and update live courier position only from real GPS telemetry', () => {
+    const todayIso: string = new Date().toISOString();
+    mockRoles.set([
+      { roleId: 9, name: 'Domiciliario', isCourier: true, isSystemRole: false, isActive: true }
+    ]);
+    mockUsers.set([
+      {
+        userId: 88,
+        username: 'sebas.domi',
+        fullName: 'sebas domiciliario',
+        roleId: 9,
+        roleName: 'Domiciliario',
+        isActive: true,
+        companyId: 1,
+        branches: [],
+        email: 'sebas@example.com'
+      }
+    ]);
+    mockOrders.set([
+      {
+        orderId: 995,
+        orderNumber: 'ORD-995',
+        clientId: 1,
+        clientName: 'Cliente Ruta',
+        clientAddress: 'Carrera 69L # 64D-50',
+        branchId: 1,
+        status: 'DISPATCHED',
+        isBilled: true,
+        isPaid: false,
+        totalAmount: 35000,
+        courierName: 'sebas domiciliario',
+        createdAt: todayIso,
+        orderDate: todayIso.substring(0, 10),
+        items: []
+      }
+    ]);
+    fixture.detectChanges();
+
+    expect(component.isRealCourierGpsCoordinate(4.6968, -74.0925)).toBeFalse();
+    expect(component.isRealCourierGpsCoordinate(0, 0)).toBeFalse();
+    expect(component.isRealCourierGpsCoordinate(4.6584, -74.1292)).toBeTrue();
+
+    fetchLiveCouriersSpy.and.returnValue(
+      of([
+        {
+          id: 1,
+          fullName: 'sebas domiciliario',
+          vehiclePlate: '232323',
+          phone: '3102207910',
+          status: 'EnRuta',
+          currentLatitude: 4.6968,
+          currentLongitude: -74.0925
+        } as CourierDto
+      ])
+    );
+
+    component.enterLiveMapMode();
+
+    const courierAfterLegacyPoll: Courier = component.couriers().find((c: Courier) => c.id === 'u88')!;
+    expect(courierAfterLegacyPoll.lat).toBeCloseTo(component.plantLat(), 4);
+    expect(courierAfterLegacyPoll.lng).toBeCloseTo(component.plantLng(), 4);
+
+    fetchLiveCouriersSpy.and.returnValue(
+      of([
+        {
+          id: 1,
+          fullName: 'sebas domiciliario',
+          vehiclePlate: '232323',
+          phone: '3102207910',
+          status: 'EnRuta',
+          currentLatitude: 4.6612,
+          currentLongitude: -74.1145
+        } as CourierDto
+      ])
+    );
+
+    component.pollRealCourierLocations();
+
+    const courierAfterRealGps: Courier = component.couriers().find((c: Courier) => c.id === 'u88')!;
+    expect(courierAfterRealGps.lat).toBeCloseTo(4.6612, 4);
+    expect(courierAfterRealGps.lng).toBeCloseTo(-74.1145, 4);
+    expect(courierAfterRealGps.vehiclePlate).toBe('232323');
+    expect(courierAfterRealGps.status).toBe('en_ruta');
+  });
 });

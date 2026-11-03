@@ -3137,3 +3137,197 @@ por otr lado, la columna de accion dejamelo mejor, puede ser un lista desplegabl
 - **Build de Producción PWA (`npm run build`)**: **0 Errores** (`dist/despulpadora-pwa` generado exitosamente).
 - **Pruebas Unitarias PWA (`npx ng test --watch=false --browsers=ChromeHeadless`)**: **Executed 309 of 309 SUCCESS (TOTAL: 309 SUCCESS, 0 FAILED)**.
 
+---
+
+## [2026-11-02] - Precarga de la Dirección y Coordenadas del Punto de Bodega Configurado en Configuración al Seleccionar en Mapa en Creación de Pedido (`OrdersComponent` + `DeliveryMapComponent`)
+
+### 💬 Prompt Original del Usuario
+> "cuando elijo un mapa al crear pedido , me precarga una direccion que no quiero, ponme la de la direccion del punto de bodega, el que esta configurado en configuraciones"
+> "ejecutalo"
+
+### 🤖 Resumen Técnico para la IA
+- **1. Eliminación de Coordenadas Quemadas y Precarga de la Bodega Configurada en `OrdersComponent` (`src/app/features/orders/orders.component.ts`)**:
+  - Se eliminaron las coordenadas quemadas de Chapinero/Chicó (`4.6750, -74.0550`) en `pickerCurrentLat` y `pickerCurrentLng` (líneas 164–165), inicializándolas en las coordenadas base del punto de planta (`4.7125, -74.1420`).
+  - Se implementó `resolveWarehousePickerDefault()` (líneas 1409–1487) que obtiene dinámicamente la dirección (`address`) y ciudad (`city`) de la bodega configurada en **Configuración de Empresa** (`this.stateService.companyInfo()`), recupera sus coordenadas desde la caché sincronizada (`despulpadora_plant_coords_v1`) o desde `this.deliveryMapRef.plantLat()` / `plantLng()`, y calcula la zona con `this.geocodingService.detectBogotaZone(lat, lng)`.
+  - En `openMapAddressPicker()` (líneas 1492–1555), cuando aún no se ha fijado una ubicación manual previa (`!currentGeo`), precarga `pickerCurrentLat`, `pickerCurrentLng`, `pickerCurrentAddress`, `pickerCurrentZone` y `pickerSearchText` con la dirección y coordenadas del punto de bodega configurado (y las geocodifica en vivo si aún no están en caché, actualizando la vista del mapa y el marcador).
+- **2. Sincronización de `newOrderLat`, `newOrderLng` y `newOrderZone` en `DeliveryMapComponent` (`src/app/features/orders/delivery-map.component.ts`)**:
+  - Se reemplazaron los valores iniciales quemados de `newOrderLat` (`4.670`), `newOrderLng` (`-74.085`) y `newOrderZone` (`'Bogotá Norte / Chicó'`) por `PLANTA_MATRIZ_LAT`, `PLANTA_MATRIZ_LNG` y `''` (líneas 6142–6144), sincronizándolos en `syncPlantLocationFromCompanyInfo()` (líneas 6695–6698) con las coordenadas resueltas de la bodega configurada.
+- **3. Certificación de Agentes de Calidad**:
+  - **Agente Verificador de Impacto (`477ee3cc-69ba-4938-b923-725f8a099f95`)**, **Agente Auditor Punto por Punto (`ca125707-701f-4be7-8bb9-7e0713c561be`)** y **Agente de Revisión Par (`faaca0b6-3a60-4aa2-b028-8ac513d04efb`)**: Aprobaron el 100% de la implementación sin desviaciones ni regresiones.
+
+### 📦 Componentes Modificados
+- `src/app/features/orders/orders.component.ts` [MODIFICADO]
+- `src/app/features/orders/delivery-map.component.ts` [MODIFICADO]
+- `src/app/features/orders/orders.component.spec.ts` [MODIFICADO]
+- `HISTORIAL_CAMBIOS.md` [MODIFICADO]
+
+### ✅ Verificación, Build y Tests Unitarios
+- **Build de Producción PWA (`npm run build`)**: **0 Errores** (`dist/despulpadora-pwa` generado exitosamente).
+- **Pruebas Unitarias PWA (`npx ng test --watch=false --browsers=ChromeHeadless`)**: **Executed 310 of 310 SUCCESS (TOTAL: 310 SUCCESS, 0 FAILED)**.
+
+---
+
+## [2026-11-02] - Eliminación de la Card "Todo en su punto.", Espaciado Superior en "Accesos Rápidos" y Contador `.dgl-nav-badge` en "Pedidos" y "Facturación & POS" (`SidebarComponent`)
+
+### 💬 Prompt Original del Usuario
+> "Ayudame con estas cosas en mi pwa version web
+> 
+> Eliminame la card de Todo en su punto.
+> 
+> Ponle un poco de espacion al top del cuadro 'Acessos rapidos'
+> 
+> Ponle el mismo contador de despachos $ frutas a los modulso de pedidos y facturacion"
+> "ejecutar"
+
+### 🤖 Resumen Técnico para la IA
+- **1. Eliminación de la Card `"Todo en su punto."` (`src/app/layout/sidebar/sidebar.component.ts`)**:
+  - Se retiró el bloque HTML `<div class="dgl-callout-card">...</div>` y sus reglas CSS (`.dgl-callout-card`, `.callout-header`, `.callout-icon`, `.callout-title`, `.callout-text`).
+- **2. Espaciado Superior en `"Accesos Rápidos"` (`src/app/layout/sidebar/sidebar.component.ts`)**:
+  - Se añadió `margin-top: 10px;` en `.dgl-quick-access-wrapper` (línea 550) para separar el cuadro de `"Accesos Rápidos"` del encabezado de la empresa.
+- **3. Mismo Contador de `"Despachos & Rutas"` (`stateService.pendingOrdersCount()`) en `"Pedidos"` y `"Facturación & POS"` (`src/app/layout/sidebar/sidebar.component.ts`)**:
+  - Se añadió `@if (stateService.pendingOrdersCount() > 0) { <span class="dgl-nav-badge">{{ stateService.pendingOrdersCount() }}</span> }` dentro de los enlaces de **Pedidos** (`/orders?tab=picking`, líneas 177–179) y **Facturación & POS** (`/orders?tab=facturacion`, líneas 200–202).
+- **4. Certificación de Agentes de Calidad**:
+  - **Agente Verificador de Impacto (`477ee3cc-69ba-4938-b923-725f8a099f95`)**, **Agente Auditor Punto por Punto (`ca125707-701f-4be7-8bb9-7e0713c561be`)** y **Agente de Revisión Par (`faaca0b6-3a60-4aa2-b028-8ac513d04efb`)**: Aprobaron el 100% de la implementación sin desviaciones ni regresiones.
+
+### 📦 Componentes Modificados
+- `src/app/layout/sidebar/sidebar.component.ts` [MODIFICADO]
+- `src/app/layout/sidebar/sidebar.component.spec.ts` [MODIFICADO]
+- `HISTORIAL_CAMBIOS.md` [MODIFICADO]
+
+### ✅ Verificación, Build y Tests Unitarios
+- **Build de Producción PWA (`npm run build`)**: **0 Errores** (`dist/despulpadora-pwa` generado exitosamente).
+- **Pruebas Unitarias PWA (`npx ng test --watch=false --browsers=ChromeHeadless`)**: **Executed 311 of 311 SUCCESS (TOTAL: 311 SUCCESS, 0 FAILED)**.
+
+---
+
+## [2026-11-02] - Botón `"Despachar"` en Histórico de Entregas: Paso a Pendiente para Facturar (`PICKING`) e Inclusión Inmediata en la Lista `"Todas las Entregas"` del Mapa (`OrdersComponent` + `DeliveryMapComponent` + `StateService`)
+
+### 💬 Prompt Original del Usuario
+> "Cuando le oprima al boton de despachar, quiero que quede pendeinte para facturar y que ya me salga en la lista de todas las entregas para ya asignar a domiciliario"
+> "ejecutar"
+
+### 🤖 Resumen Técnico para la IA
+- **1. Transición a `PICKING` (*Pendiente para Facturar*) y Programación al Día Actual en `StateService` (`src/app/core/services/state.service.ts`)**:
+  - Se creó `sendOrderToBillingAndDeliveries(orderId: number, scheduledDay: string): void` (líneas 2155–2206) con JSDoc superior y manejo de errores `try-catch`, actualizando el pedido con `status: 'PICKING'`, `isBilled: false` y `scheduledDay` igual al día actual, sincronizando en tiempo real (`realtimeSync`) y en backend (`PATCH /api/orders/{id}/status`).
+- **2. Acción `dispatchOrderToBillingAndDeliveries(order: OrderDto)` y Estados Visuales en `OrdersComponent` (`src/app/features/orders/orders.component.ts`, `.html`, `.scss`)**:
+  - En `orders.component.html` (líneas 719–798), el botón **`Despachar`** (`.btn-dispatch-action`) invoca `dispatchOrderToBillingAndDeliveries(order)` en lugar de saltar a `'DISPATCHED'`.
+  - Al pasar a `status === 'PICKING'`, el pedido entra de inmediato a la cola de **`Facturación & POS`** (`tabOrders`) como **Pendiente para facturar**, muestra el badge `.badge-billing-pending` (**`PENDIENTE FACTURAR`**) en la columna de estado y el indicador `.pending-billing-indicator` (**`Pendiente Facturar`**) en la columna de acciones.
+- **3. Inclusión Inmediata en la Lista `"Todas las Entregas"` del Mapa (`src/app/features/orders/delivery-map.component.ts`)**:
+  - Se implementó `enqueueOrderForDeliveryAssignment(order: OrderDto): void` (líneas 10535–10593) que sincroniza el pedido en `deliveryStops()` con `isBilled: false` (`Sin facturar`), abre el panel lateral **`Todas las Entregas`** (`enterAllDeliveriesMode()`, `showDeliveriesDrawer.set(true)`, `drawerCourierFilter.set('all')`) y actualiza los marcadores del mapa para su asignación a domiciliario.
+- **4. Certificación de Agentes de Calidad**:
+  - **Agente Verificador de Impacto (`e0c5aec5-39b5-4861-8fac-c28ea64e3b4d`)**, **Agente Auditor Punto por Punto (`b3efadea-24ff-4c30-bbf5-1156368ffada`)** y **Agente de Revisión Par (`2efcb55b-bed5-44d6-959e-2fc73a7ca726`)**: Aprobaron el 100% de la implementación sin desviaciones ni regresiones.
+
+### 📦 Componentes Modificados
+- `src/app/core/services/state.service.ts` [MODIFICADO]
+- `src/app/features/orders/orders.component.ts` [MODIFICADO]
+- `src/app/features/orders/orders.component.html` [MODIFICADO]
+- `src/app/features/orders/orders.component.scss` [MODIFICADO]
+- `src/app/features/orders/delivery-map.component.ts` [MODIFICADO]
+- `src/app/features/orders/orders.component.spec.ts` [MODIFICADO]
+- `src/app/features/orders/delivery-map.component.spec.ts` [MODIFICADO]
+- `HISTORIAL_CAMBIOS.md` [MODIFICADO]
+
+### ✅ Verificación, Build y Tests Unitarios
+- **Build de Producción PWA (`npm run build`)**: **0 Errores** (`dist/despulpadora-pwa` generado exitosamente).
+- **Pruebas Unitarias PWA (`npx ng test --watch=false --browsers=ChromeHeadless`)**: **Executed 313 of 313 SUCCESS (TOTAL: 313 SUCCESS, 0 FAILED)**.
+
+---
+
+## [2026-11-02] - Eliminación de Ubicación Quemada (`4.69680, -74.09250` - Humedal Santa María del Lago) y Transmisión/Visualización Exclusiva de GPS Real al Iniciar Ruta y en Modo `"En Vivo"` (`DespulpadoraApp` + `DespulpadoraPwa`)
+
+### 💬 Prompt Original del Usuario
+> "Estoy viendo que cuando le doy en vivo en la pwa, me muestra quemada una ubicacion del domiciliaro, no me muesstra la real cuando el le da iniciar ruta"
+> "ejecuta"
+
+### 🤖 Resumen Técnico para la IA
+- **1. Eliminación del Fallback Quemado en `LocationService` (`DespulpadoraApp/lib/services/location_service.dart`)**:
+  - Se eliminaron `_buildDefaultBogotaPosition()` y `_normalizePositionForBogota()`, los cuales fabricaban una coordenada sintética en `4.69680, -74.09250` (Humedal Santa María del Lago) cuando `Geolocator.getCurrentPosition()` daba timeout de 4 segundos.
+  - Se añadieron `isLegacyHardcodedFallback(double lat, double lng)` e `isValidRealGpsCoordinate(double lat, double lng)`.
+  - `getCurrentPosition()` amplía el `timeLimit` a `8s`, guarda la última posición real verificada en `_lastValidPosition`, recurre a `Geolocator.getLastKnownPosition()` si hay timeout en frío y jamás retorna coordenadas inventadas.
+- **2. Sincronización Inmediata del GPS Real al Pulsar `"Iniciar Ruta"` (`DespulpadoraApp/lib/blocs/tracking_cubit.dart`, `route_preview_map_screen.dart` y `courier_route_map_screen.dart`)**:
+  - Se añadió `forceImmediateLocationSync()` en `TrackingCubit` y protección contra colisiones concurrentes (`_isReadingGps`), además de solicitar permisos GPS antes de suscribirse al stream continuo (`getPositionStream(intervalSeconds: 0)`).
+  - En `_handleIniciarRuta()` (`route_preview_map_screen.dart`) y `_syncTrackingWithRouteState()` (`courier_route_map_screen.dart`), al pulsar **"Iniciar Ruta"** se transmite de inmediato la ubicación GPS real del dispositivo por WebSocket y `PUT /api/mobile/couriers/{id}/location`.
+- **3. Filtrado de Coordenada Quemada y Priorización de Telemetría Real en la PWA (`src/app/features/orders/delivery-map.component.ts`)**:
+  - Se implementó `isRealCourierGpsCoordinate(lat: number | undefined, lng: number | undefined): boolean` que valida que la coordenada sea finita, distinta de `(0, 0)` y rechaza explícitamente el antiguo fallback quemado `(4.69680, -74.09250)`.
+  - Tanto `courierLocSub` (`realtimeSync.courierLocations$`) como `pollRealCourierLocations()` utilizan `isRealCourierGpsCoordinate`, preservan telemetría WebSocket fresca (`< 4000ms`) y encuadran automáticamente el mapa en modo `"En Vivo"` al recibir la primera señal GPS real del domiciliario.
+- **4. Certificación de Agentes de Calidad**:
+  - **Agente Verificador de Impacto (`477ee3cc-69ba-4938-b923-725f8a099f95`)**, **Agente Auditor Punto por Punto (`ca125707-701f-4be7-8bb9-7e0713c561be`)** y **Agente de Revisión Par (`faaca0b6-3a60-4aa2-b028-8ac513d04efb`)**: Aprobaron el 100% de la implementación sin desviaciones ni regresiones.
+
+### 📦 Componentes Modificados
+- `/Users/sebastiansalamanca/Documents/Flutter/DespulpadoraApp/lib/services/location_service.dart` [MODIFICADO]
+- `/Users/sebastiansalamanca/Documents/Flutter/DespulpadoraApp/lib/blocs/tracking_cubit.dart` [MODIFICADO]
+- `/Users/sebastiansalamanca/Documents/Flutter/DespulpadoraApp/lib/views/route_preview_map_screen.dart` [MODIFICADO]
+- `/Users/sebastiansalamanca/Documents/Flutter/DespulpadoraApp/lib/views/courier_route_map_screen.dart` [MODIFICADO]
+- `/Users/sebastiansalamanca/Documents/Flutter/DespulpadoraApp/test/widget_test.dart` [MODIFICADO]
+- `src/app/features/orders/delivery-map.component.ts` [MODIFICADO]
+- `src/app/features/orders/delivery-map.component.spec.ts` [MODIFICADO]
+- `HISTORIAL_CAMBIOS.md` [MODIFICADO]
+
+### ✅ Verificación, Build y Tests Unitarios
+- **Análisis y Tests Flutter (`dart analyze && flutter test`)**: **0 Issues, 17 of 17 All tests passed!**
+- **Build de Producción PWA (`npm run build`)**: **0 Errores** (`dist/despulpadora-pwa` generado exitosamente).
+- **Pruebas Unitarias PWA (`npx ng test --watch=false --browsers=ChromeHeadless`)**: **Executed 314 of 314 SUCCESS (TOTAL: 314 SUCCESS, 0 FAILED)**.
+
+---
+
+## [2026-11-02] - Botón `"Exportar a Excel"` en `Histórico de Entregas & Despachos del Día` (`OrdersComponent`)
+
+### 💬 Prompt Original del Usuario
+> "ayudame para que esto tenga e boton de exportar a excel"
+> "EJECTAR"
+
+### 🤖 Resumen Técnico para la IA
+- **1. Botón `"Exportar a Excel"` en `.history-toolbar-row` (`src/app/features/orders/orders.component.html` y `orders.component.scss`)**:
+  - Se añadió el contenedor `.history-toolbar-actions` agrupando el buscador `.history-search-shell` y el botón `.btn.btn-primary.history-export-excel-btn.no-print` (`Exportar a Excel`), con diseño responsivo en `@media (max-width: 1024px)`.
+- **2. Exportación Completa del Histórico Filtrado en Formato Excel CSV UTF-8 BOM (`src/app/features/orders/orders.component.ts`)**:
+  - Se implementaron `getHistoryOrderStatusLabelES(status: OrderStatus): string`, `exportHistoryOrdersCsv(): void` y `downloadHistoryCsv(filename: string, headers: string[], rows: Array<Array<string | number>>): void` (líneas 1882–1992).
+  - Exporta la totalidad de `this.filteredHistoryOrders()` (respetando el período seleccionado, tarjeta KPI y búsqueda, sin truncar por la paginación visual) con BOM UTF-8 (`\uFEFF`) y delimitador `;`, incluyendo las columnas: `Guía`, `Factura`, `Fecha Creación`, `Cliente`, `Teléfono`, `Dirección`, `Productos`, `Domiciliario`, `Ruta`, `Método de Pago`, `Recaudo Total COP`, `Estado`, `Fecha Entrega`, `Hora Entrega` y `Notas`.
+- **3. Certificación de Agentes de Calidad**:
+  - **Agente Verificador de Impacto (`94d56ad7-0c68-4e0d-ab1b-4d28f2b3f6e6`)**, **Agente Auditor Punto por Punto (`81f8edff-cf30-4825-b047-540e31878d7e`)** y **Agente de Revisión Par (`016ecc19-4fb1-41e3-b512-175bfbf7d490`)**: Aprobaron el 100% de la implementación sin desviaciones ni regresiones.
+
+### 📦 Componentes Modificados
+- `src/app/features/orders/orders.component.html` [MODIFICADO]
+- `src/app/features/orders/orders.component.ts` [MODIFICADO]
+- `src/app/features/orders/orders.component.scss` [MODIFICADO]
+- `src/app/features/orders/orders.component.spec.ts` [MODIFICADO]
+- `HISTORIAL_CAMBIOS.md` [MODIFICADO]
+
+### ✅ Verificación, Build y Tests Unitarios
+- **Build de Producción PWA (`npm run build`)**: **0 Errores** (`dist/despulpadora-pwa` generado exitosamente).
+- **Pruebas Unitarias PWA (`npx ng test --watch=false --browsers=ChromeHeadless`)**: **Executed 315 of 315 SUCCESS (TOTAL: 315 SUCCESS, 0 FAILED)**.
+
+---
+
+## [2026-11-02] - Eliminación del QR SVG Sintético (`buildEmbeddedQrDataUrl`) y Vinculación con Código QR Criptográfico Real de WhatsApp Multi-Device (`WhatsAppGatewayService` + `SettingsComponent` + `WhatsAppQrGateway`)
+
+### 💬 Prompt Original del Usuario
+> "porque este nome lo toma whatsapp para conectarlo?"
+> "ejecutalo"
+
+### 🤖 Resumen Técnico para la IA
+- **1. Eliminación del Generador de QR SVG Sintético (`src/app/core/services/whatsapp-gateway.service.ts`)**:
+  - Se eliminó por completo `buildEmbeddedQrDataUrl()`, que dibujaba un QR SVG básico de `25x25` cuando el puerto `3005` estaba apagado y que el escáner de **"Dispositivos vinculados"** de WhatsApp rechazaba por no contener un handshake criptográfico oficial Multi-Device.
+  - En `getStatus()` y `reconnect()`, ante caída de red hacia `http://localhost:3005/api/whatsapp`, se retorna `status: 'DISCONNECTED'`, `qrDataUrl: null` y `error: 'GATEWAY_UNREACHABLE'` (cumpliendo `AGENTS.md` §3.5: Cero Datos Quemados o Fallbacks Inventados).
+- **2. Manejo de Estado Real en `SettingsComponent` (`src/app/features/settings/settings.component.ts` y `settings.component.html`)**:
+  - Se retiró el fallback de QR SVG en `reconnectWhatsAppGateway()` y se añadió la visualización clara cuando `whatsAppGatewayStatus().error === 'GATEWAY_UNREACHABLE'`.
+  - Cuando el servicio local `WhatsAppQrGateway` está conectado a los servidores de WhatsApp, entrega el QR PNG oficial de `280x280 px` (`data:image/png;base64,...`) generado por `@whiskeysockets/baileys`.
+- **3. Arranque Automático y Daemon Activo en Puerto `3005` (`package.json` y `WhatsAppQrGateway/server.js`)**:
+  - Se dejó corriendo el daemon `node /Users/sebastiansalamanca/Documents/Api/WhatsAppQrGateway/server.js` en el puerto `3005` (verificado con `GET http://localhost:3005/api/whatsapp/status` devolviendo `status: "QR_READY"` con `qrDataUrl: "data:image/png;base64,..."`) y se actualizó el script `"start"` en `package.json` para que inicie automáticamente `WhatsAppQrGateway` si el puerto `3005` no está activo.
+- **4. Certificación de Agentes de Calidad**:
+  - **Agente Verificador de Impacto (`477ee3cc-69ba-4938-b923-725f8a099f95`)**, **Agente Auditor Punto por Punto (`ca125707-701f-4be7-8bb9-7e0713c561be`)** y **Agente de Revisión Par (`faaca0b6-3a60-4aa2-b028-8ac513d04efb`)**: Aprobaron el 100% de la implementación sin desviaciones ni regresiones.
+
+### 📦 Componentes Modificados
+- `src/app/core/services/whatsapp-gateway.service.ts` [MODIFICADO]
+- `src/app/core/services/whatsapp-gateway.service.spec.ts` [MODIFICADO]
+- `src/app/features/settings/settings.component.ts` [MODIFICADO]
+- `src/app/features/settings/settings.component.html` [MODIFICADO]
+- `src/app/features/settings/settings.component.spec.ts` [MODIFICADO]
+- `package.json` [MODIFICADO]
+- `HISTORIAL_CAMBIOS.md` [MODIFICADO]
+
+### ✅ Verificación, Build y Tests Unitarios
+- **Verificación en Vivo (`GET http://localhost:3005/api/whatsapp/status`)**: **`{"status":"QR_READY","connected":false,"qrDataUrl":"data:image/png;base64,..."}`** (QR criptográfico real de `@whiskeysockets/baileys`).
+- **Build de Producción PWA (`npm run build`)**: **0 Errores** (`dist/despulpadora-pwa` generado exitosamente).
+- **Pruebas Unitarias PWA (`npx ng test --watch=false --browsers=ChromeHeadless`)**: **Executed 315 of 315 SUCCESS (TOTAL: 315 SUCCESS, 0 FAILED)**.
+
+

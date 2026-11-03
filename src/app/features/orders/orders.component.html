@@ -580,17 +580,33 @@
           </div>
         </div>
 
-        <div class="history-search-shell">
-          <svg class="search-box-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3">
-            <circle cx="11" cy="11" r="8"></circle>
-            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-          </svg>
-          <input type="text" class="history-search-input"
-            placeholder="Buscar por guía, cliente, dirección o domiciliario..." [ngModel]="historySearchQuery()"
-            (ngModelChange)="setHistorySearchQuery($event)" />
-          @if (historySearchQuery()) {
-          <button type="button" class="clear-search-btn" (click)="setHistorySearchQuery('')">✕</button>
-          }
+        <div class="history-toolbar-actions">
+          <div class="history-search-shell">
+            <svg class="search-box-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3">
+              <circle cx="11" cy="11" r="8"></circle>
+              <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+            </svg>
+            <input type="text" class="history-search-input"
+              placeholder="Buscar por guía, cliente, dirección o domiciliario..." [ngModel]="historySearchQuery()"
+              (ngModelChange)="setHistorySearchQuery($event)" />
+            @if (historySearchQuery()) {
+            <button type="button" class="clear-search-btn" (click)="setHistorySearchQuery('')">✕</button>
+            }
+          </div>
+
+          <button
+            type="button"
+            class="btn btn-primary history-export-excel-btn no-print"
+            (click)="exportHistoryOrdersCsv()"
+            title="Descargar histórico de entregas activo en formato Excel (CSV)"
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+              <polyline points="7 10 12 15 17 10"></polyline>
+              <line x1="12" y1="15" x2="12" y2="3"></line>
+            </svg>
+            <span>Exportar a Excel</span>
+          </button>
         </div>
       </div>
     </div>
@@ -628,7 +644,7 @@
                 </span>
               </div>
               <span class="ms-status-pill">
-                {{ order.status === 'DELIVERED' ? 'Entregada' : (order.status === 'DISPATCHED' ? 'En Camino' : 'Sin Gestionar') }}
+                {{ order.status === 'DELIVERED' ? 'Entregada' : (order.status === 'DISPATCHED' ? 'En Camino' : (order.status === 'PICKING' ? 'Pendiente Facturar' : (order.status === 'BILLED' ? 'Facturado' : 'Sin Gestionar'))) }}
               </span>
             </div>
           </div>
@@ -729,6 +745,22 @@
               <span class="transit-radar-dot"></span>
               <span class="badge-txt">EN CAMINO</span>
             </span>
+            } @else if (order.status === 'PICKING') {
+            <span class="status-badge-chip badge-billing-pending">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <circle cx="12" cy="12" r="10"></circle>
+                <line x1="12" y1="8" x2="12" y2="12"></line>
+                <line x1="12" y1="16" x2="12.01" y2="16"></line>
+              </svg>
+              <span class="badge-txt">PENDIENTE FACTURAR</span>
+            </span>
+            } @else if (order.status === 'BILLED') {
+            <span class="status-badge-chip badge-billed">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <polyline points="20 6 9 17 4 12"></polyline>
+              </svg>
+              <span class="badge-txt">FACTURADO</span>
+            </span>
             } @else {
             <span class="status-badge-chip badge-pending">
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
@@ -756,9 +788,27 @@
               </svg>
               <span>Entregada</span>
             </div>
+            } @else if (order.status === 'PICKING') {
+            <div class="pending-billing-indicator"
+              title="Pedido pendiente por facturar y disponible en Todas las Entregas del mapa">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <circle cx="12" cy="12" r="10"></circle>
+                <polyline points="12 6 12 12 16 14"></polyline>
+              </svg>
+              <span>Pendiente Facturar</span>
+            </div>
+            } @else if (order.status === 'BILLED') {
+            <div class="ready-assign-indicator"
+              title="Pedido facturado y disponible en Todas las Entregas para asignar a domiciliario">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <polyline points="20 6 9 17 4 12"></polyline>
+              </svg>
+              <span>En Lista de Entregas</span>
+            </div>
             } @else {
-            <button type="button" class="btn-ledger-action btn-dispatch-action" title="Enviar a ruta y marcar en camino"
-              (click)="advanceOrderStatus(order, 'DISPATCHED')">
+            <button type="button" class="btn-ledger-action btn-dispatch-action"
+              title="Enviar a pendiente para facturar y mostrar en Todas las Entregas del mapa"
+              (click)="dispatchOrderToBillingAndDeliveries(order)">
               <span>Despachar</span>
             </button>
             }
