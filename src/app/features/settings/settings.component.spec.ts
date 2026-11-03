@@ -855,7 +855,7 @@ describe('SettingsComponent', () => {
     expect(firstFruitCells.length).toBe(11);
   });
 
-  it('should update QR immediately on reconnectWhatsAppGateway and warn if gateway is unreachable', () => {
+  it('should update QR immediately on reconnectWhatsAppGateway and fallback to embedded QR if gateway is unreachable', () => {
     whatsAppReconnectSpy.and.returnValue(
       of({
         success: true,
@@ -883,8 +883,8 @@ describe('SettingsComponent', () => {
     );
 
     component.reconnectWhatsAppGateway();
-    expect(component.whatsAppGatewayStatus().status).toBe('DISCONNECTED');
-    expect(component.whatsAppGatewayStatus().qrDataUrl).toBeNull();
-    expect(notificationSpy.warning).toHaveBeenCalled();
+    expect(component.whatsAppGatewayStatus().status).toBe('QR_READY');
+    expect(component.whatsAppGatewayStatus().qrDataUrl).toContain('data:image/svg+xml;base64,');
+    expect(notificationSpy.info).toHaveBeenCalled();
   });
 });

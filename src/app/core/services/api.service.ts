@@ -1781,6 +1781,10 @@ export class ApiService {
         courierName: item['courierName'] ? String(item['courierName']) : undefined,
         routeSequenceOrder: item['routeSequenceOrder'] ? Number(item['routeSequenceOrder']) : undefined,
         dispatchedAtUtc: item['dispatchedAtUtc'] ? String(item['dispatchedAtUtc']) : undefined,
+        deliveredAtUtc: item['deliveredAtUtc'] ?? item['deliveredAt']
+          ? String(item['deliveredAtUtc'] ?? item['deliveredAt'])
+          : undefined,
+        deliveryDate: item['deliveryDate'] ? String(item['deliveryDate']) : undefined,
         isPaid: Boolean(item['isPaid'] ?? false),
         isPriority: Boolean(item['isPriority'] ?? false),
         isBilled: Boolean(item['isBilled'] ?? false),

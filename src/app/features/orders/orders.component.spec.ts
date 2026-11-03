@@ -870,4 +870,79 @@ describe('OrdersComponent', () => {
     component.setHistoryFilter('ALL');
     expect(component.filteredHistoryOrders().length).toBe(4);
   });
+
+  it('should render FECHA Y HORA DE ENTREGA column, display delivery date/time, and hide edit button for DELIVERED orders', () => {
+    const todayStr: string = new Date().toISOString().substring(0, 10);
+    const deliveredTimestamp = `${todayStr}T15:45:00.000Z`;
+
+    const deliveredOrder: OrderDto = {
+      orderId: 301,
+      orderNumber: 'ORD-0013',
+      invoiceNumber: 'FAC-301',
+      clientId: 10,
+      clientName: 'parque trebol',
+      clientPhone: '3164953397',
+      clientAddress: 'Carrera 69A 63F, Bosque Popular',
+      branchId: 1,
+      status: 'DELIVERED',
+      isBilled: true,
+      isPaid: true,
+      totalAmount: 5000,
+      createdAt: `${todayStr}T12:00:00.000Z`,
+      deliveredAtUtc: deliveredTimestamp,
+      orderDate: todayStr,
+      scheduledDay: 'Lunes',
+      items: []
+    };
+
+    const dispatchedOrder: OrderDto = {
+      orderId: 302,
+      orderNumber: 'ORD-0014',
+      invoiceNumber: 'FAC-302',
+      clientId: 11,
+      clientName: 'Cliente En Camino',
+      clientPhone: '3109998877',
+      clientAddress: 'Calle 72 # 10-20',
+      branchId: 1,
+      status: 'DISPATCHED',
+      isBilled: true,
+      isPaid: false,
+      totalAmount: 12000,
+      createdAt: `${todayStr}T13:00:00.000Z`,
+      orderDate: todayStr,
+      scheduledDay: 'Lunes',
+      items: []
+    };
+
+    mockOrders.set([deliveredOrder, dispatchedOrder]);
+    component.activeSubTab.set('despachos');
+    component.setHistoryDateFilter('today');
+    component.setHistoryFilter('DELIVERED');
+    fixture.detectChanges();
+
+    const compiled: HTMLElement = fixture.nativeElement as HTMLElement;
+    const statusHeader: HTMLElement | null = compiled.querySelector('.ledger-header-row .col-status');
+    expect(statusHeader?.textContent?.trim()).toBe('FECHA Y HORA DE ENTREGA');
+
+    const dateTimeBox: HTMLElement | null = compiled.querySelector('.ledger-row-item.row-delivered .delivery-datetime-box');
+    expect(dateTimeBox).toBeTruthy();
+    expect(component.getDeliveryDateDisplay(deliveredOrder)).toContain('/');
+    expect(component.getDeliveryTimeDisplay(deliveredOrder).length).toBeGreaterThan(0);
+
+    const editBtnInDeliveredRow: HTMLButtonElement | null = compiled.querySelector(
+      '.ledger-row-item.row-delivered button[title="Modificar datos del pedido"]'
+    );
+    expect(editBtnInDeliveredRow).toBeNull();
+
+    component.showNewOrderModal.set(false);
+    component.openEditOrderModal(deliveredOrder);
+    expect(component.showNewOrderModal()).toBeFalse();
+
+    component.setHistoryFilter('DISPATCHED');
+    fixture.detectChanges();
+    const editBtnInDispatchedRow: HTMLButtonElement | null = compiled.querySelector(
+      '.ledger-row-item.row-transit button[title="Modificar datos del pedido"]'
+    );
+    expect(editBtnInDispatchedRow).toBeTruthy();
+  });
 });

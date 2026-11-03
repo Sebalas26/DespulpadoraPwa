@@ -1005,4 +1005,71 @@ describe('DeliveryMapComponent', () => {
 
     expect(settleCourierRouteSpy).toHaveBeenCalledWith(88, 'Sebas Domiciliario', 25000, 0, 'Liquidado');
   });
+
+  it('should hide the counter badge on the left floating courier icon when all stops are delivered and should not paint green route polylines on the PWA map', async () => {
+    const todayIso: string = new Date().toISOString();
+    mockRoles.set([
+      { roleId: 9, name: 'Domiciliario', isCourier: true, isSystemRole: false, isActive: true }
+    ]);
+    mockUsers.set([
+      {
+        userId: 88,
+        username: 'sebas.domi',
+        fullName: 'Sebas Domiciliario',
+        roleId: 9,
+        roleName: 'Domiciliario',
+        isActive: true,
+        companyId: 1,
+        branches: [],
+        email: 'sebas@example.com'
+      }
+    ]);
+    mockOrders.set([
+      {
+        orderId: 991,
+        orderNumber: 'ORD-991',
+        clientId: 1,
+        clientName: 'Cliente Unico',
+        clientAddress: 'Calle 10 # 10-10',
+        branchId: 1,
+        status: 'DISPATCHED',
+        isBilled: true,
+        isPaid: false,
+        totalAmount: 30000,
+        courierName: 'Sebas Domiciliario',
+        createdAt: todayIso,
+        orderDate: todayIso.substring(0, 10),
+        items: []
+      }
+    ]);
+
+    component.deliveryStops.set([]);
+    component.enterLiveMapMode();
+    fixture.detectChanges();
+
+    const activeCourier: Courier = component.couriers().find((c: Courier) => c.id === 'u88')!;
+    expect(activeCourier).toBeTruthy();
+    expect(component.getCourierPendingStopsCount(activeCourier)).toBe(1);
+
+    const fabBefore = fixture.nativeElement.querySelector('.courier-fab-item:not(.fab-planta)') as HTMLElement;
+    expect(fabBefore).toBeTruthy();
+    expect(fabBefore.querySelector('.fab-badge')?.textContent?.trim()).toBe('1');
+
+    await component.buildAndRenderRealRoadRoutes();
+    expect((component as unknown as { routePolylines: Map<string, unknown> }).routePolylines.size).toBe(0);
+    expect((component as unknown as { routeCasingPolylines: Map<string, unknown> }).routeCasingPolylines.size).toBe(0);
+
+    mockOrders.update((list: OrderDto[]) =>
+      list.map((o: OrderDto) => (o.orderId === 991 ? { ...o, status: 'DELIVERED' } : o))
+    );
+    component.markOrderDeliveredByOrderNumber('ORD-991');
+    fixture.detectChanges();
+
+    const completedCourier: Courier = component.couriers().find((c: Courier) => c.id === 'u88')!;
+    expect(component.getCourierPendingStopsCount(completedCourier)).toBe(0);
+
+    const fabAfter = fixture.nativeElement.querySelector('.courier-fab-item:not(.fab-planta)') as HTMLElement;
+    expect(fabAfter).toBeTruthy();
+    expect(fabAfter.querySelector('.fab-badge')).toBeNull();
+  });
 });

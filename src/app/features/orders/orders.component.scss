@@ -1967,7 +1967,7 @@
 
 .ledger-header-row {
   display: grid;
-  grid-template-columns: 175px 65px 1.4fr 1.2fr 135px 140px 140px;
+  grid-template-columns: 118px 58px 1.5fr 1.3fr 130px 155px 135px;
   align-items: center;
   gap: 14px;
   padding: 12px 18px;
@@ -1987,7 +1987,7 @@
 
 .ledger-row-item {
   display: grid;
-  grid-template-columns: 175px 65px 1.4fr 1.2fr 135px 140px 140px;
+  grid-template-columns: 118px 58px 1.5fr 1.3fr 130px 155px 135px;
   align-items: center;
   gap: 14px;
   padding: 14px 18px;
@@ -2256,7 +2256,29 @@
   }
 }
 
-/* 5. Estado */
+/* 5. Estado / Fecha y Hora de Entrega */
+.delivery-datetime-box {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.delivery-date-main {
+  font-size: 0.82rem;
+  font-weight: 800;
+  color: #0f172a;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.delivery-time-sub {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #164a2d;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
 .status-badge-chip {
   display: inline-flex;
   align-items: center;

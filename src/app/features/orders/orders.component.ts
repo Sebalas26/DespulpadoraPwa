@@ -1937,6 +1937,45 @@ export class OrdersComponent {
   }
 
   /**
+   * Returns the formatted delivery date (DD/MM/YYYY) for a delivered order in the history ledger.
+   */
+  getDeliveryDateDisplay(order: OrderDto): string {
+    try {
+      const rawDate: string | undefined =
+        order.deliveredAtUtc || order.deliveryDate || order.dispatchedAtUtc || order.createdAt || order.orderDate;
+      return this.formatInvoiceDate(rawDate);
+    } catch (error: unknown) {
+      console.error('Error getting delivery date display:', error);
+      return '';
+    }
+  }
+
+  /**
+   * Returns the formatted delivery time (hh:mm a. m./p. m.) for a delivered order in the history ledger.
+   */
+  getDeliveryTimeDisplay(order: OrderDto): string {
+    try {
+      const rawDate: string | undefined =
+        order.deliveredAtUtc || order.deliveryDate || order.dispatchedAtUtc || order.createdAt;
+      if (!rawDate) {
+        return '';
+      }
+      const parsed: Date = new Date(rawDate);
+      if (Number.isNaN(parsed.getTime())) {
+        return '';
+      }
+      return parsed.toLocaleTimeString('es-CO', {
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: true
+      });
+    } catch (error: unknown) {
+      console.error('Error getting delivery time display:', error);
+      return '';
+    }
+  }
+
+  /**
    * Opens the modal dialog displaying all products of an order in the billing queue.
    */
   openOrderItemsModal(order: OrderDto): void {
@@ -2237,6 +2276,9 @@ export class OrdersComponent {
    */
   openEditOrderModal(order: OrderDto): void {
     try {
+      if (order.status === 'DELIVERED') {
+        return;
+      }
       this.editingOrderId.set(order.orderId);
       this.editingOrderNumber.set(order.orderNumber);
       this.manualClientName.set(order.clientName || '');

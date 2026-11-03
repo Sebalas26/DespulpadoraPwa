@@ -873,11 +873,11 @@ export const MAP_STYLES: MapStyleOption[] = [
                       [class.is-selected]="selectedCourierId() === c.id"
                       [style.--courier-accent]="c.color"
                       (click)="selectCourier(c.id)"
-                      [title]="c.name + ' (' + c.orderIds.length + ' paradas) · Clic para ubicar en tiempo real'"
+                      [title]="c.name + ' (' + getCourierPendingStopsCount(c) + ' paradas pendientes) · Clic para ubicar en tiempo real'"
                     >
                       <span class="fab-initial">{{ getCourierInitials(c.name) }}</span>
-                      @if (c.orderIds.length > 0) {
-                        <span class="fab-badge">{{ c.orderIds.length }}</span>
+                      @if (getCourierPendingStopsCount(c) > 0) {
+                        <span class="fab-badge">{{ getCourierPendingStopsCount(c) }}</span>
                       }
                     </button>
                   }
@@ -6333,17 +6333,20 @@ export class DeliveryMapComponent implements OnInit, AfterViewInit, OnDestroy {
       this.courierLocSub = this.realtimeSync.courierLocations$.subscribe(loc => {
         try {
           this.couriers.update((list: Courier[]) => {
-            const normalizedLocName = (loc.courierName || '').trim().toLowerCase();
+            const normalizedLocName: string = (loc.courierName || '').trim().toLowerCase();
+            const numericLocId: string = String(loc.courierId || '').replace(/\D/g, '');
             return list.map((c: Courier) => {
-              const lowerName = c.name.trim().toLowerCase();
-              const matchesId =
+              const lowerName: string = c.name.trim().toLowerCase();
+              const numericCourierId: string = String(c.id || '').replace(/\D/g, '');
+              const matchesId: boolean =
                 c.id === loc.courierId ||
                 c.id === `u${loc.courierId}` ||
-                c.id === `c${loc.courierId}`;
-              const matchesName =
+                c.id === `c${loc.courierId}` ||
+                (numericCourierId.length > 0 && numericCourierId === numericLocId);
+              const matchesName: boolean =
                 Boolean(normalizedLocName) &&
                 (lowerName.includes(normalizedLocName) || normalizedLocName.includes(lowerName));
-              const matchesSingleActive = list.length === 1;
+              const matchesSingleActive: boolean = list.length === 1;
 
               if (matchesId || matchesName || matchesSingleActive) {
                 const nextSpeed =
@@ -7076,92 +7079,17 @@ export class DeliveryMapComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   /**
-   * Builds and renders road polylines on the map for all active couriers.
+   * Clears any painted route polylines on the PWA map so only markers are displayed.
    */
   async buildAndRenderRealRoadRoutes(): Promise<void> {
     try {
-      const stopMap = new Map(this.deliveryStops().map((s: DeliveryWaypoint) => [s.id, s]));
-
-      const originLat = this.plantLat();
-      const originLng = this.plantLng();
+      this.routeCasingPolylines.forEach((casing: L.Polyline) => casing.remove());
+      this.routeCasingPolylines.clear();
+      this.routePolylines.forEach((polyline: L.Polyline) => polyline.remove());
+      this.routePolylines.clear();
 
       for (const courier of this.couriers()) {
-        const startLat = Number.isFinite(courier.lat) ? courier.lat : originLat;
-        const startLng = Number.isFinite(courier.lng) ? courier.lng : originLng;
-        const stops: [number, number][] = [[startLat, startLng]];
-
-        courier.orderIds.forEach((id: number) => {
-          const s = stopMap.get(id);
-          if (s && !s.isDelivered) stops.push([s.lat, s.lng]);
-        });
-
-        if (stops.length > 1) {
-          stops.push([originLat, originLng]);
-        } else {
-          this.courierFullRoadPaths.set(courier.id, []);
-          const oldCasing = this.routeCasingPolylines.get(courier.id);
-          if (oldCasing) {
-            oldCasing.remove();
-            this.routeCasingPolylines.delete(courier.id);
-          }
-          const oldPoly = this.routePolylines.get(courier.id);
-          if (oldPoly) {
-            oldPoly.remove();
-            this.routePolylines.delete(courier.id);
-          }
-          continue;
-        }
-
-        const fullRoadPath: [number, number][] = [];
-
-        for (let i = 0; i < stops.length - 1; i++) {
-          const seg = await this.getRoadSegment(stops[i][0], stops[i][1], stops[i + 1][0], stops[i + 1][1]);
-          if (fullRoadPath.length > 0) {
-            fullRoadPath.push(...seg.slice(1));
-          } else {
-            fullRoadPath.push(...seg);
-          }
-        }
-
-        this.courierFullRoadPaths.set(courier.id, fullRoadPath);
-
-        if (this.map && fullRoadPath.length > 1) {
-          const isDark = this.selectedMapStyleId() === 'osm-dark';
-          const casingColor = isDark ? '#020617' : '#ffffff';
-          const casingOpacity = isDark ? 0.9 : 0.85;
-          const showRoutes = this.mapViewMode() !== 'stops';
-
-          let casing = this.routeCasingPolylines.get(courier.id);
-          if (casing) {
-            casing.setLatLngs(fullRoadPath);
-          } else {
-            casing = L.polyline(fullRoadPath, {
-              color: casingColor,
-              weight: 7,
-              opacity: casingOpacity,
-              lineCap: 'round',
-              lineJoin: 'round'
-            });
-            if (showRoutes) casing.addTo(this.map);
-            this.routeCasingPolylines.set(courier.id, casing);
-          }
-
-          let polyline = this.routePolylines.get(courier.id);
-          if (polyline) {
-            polyline.setLatLngs(fullRoadPath);
-          } else {
-            polyline = L.polyline(fullRoadPath, {
-              color: courier.color,
-              weight: 4.5,
-              opacity: 0.95,
-              dashArray: '8, 8',
-              lineCap: 'round',
-              lineJoin: 'round'
-            });
-            if (showRoutes) polyline.addTo(this.map);
-            this.routePolylines.set(courier.id, polyline);
-          }
-        }
+        this.courierFullRoadPaths.set(courier.id, []);
       }
     } catch (error: unknown) {
       console.error('Error building and rendering road routes:', error);
@@ -9733,22 +9661,17 @@ export class DeliveryMapComponent implements OnInit, AfterViewInit, OnDestroy {
 
       this.renderStopMarkers();
 
+      this.routeCasingPolylines.forEach((p: L.Polyline) => p.remove());
+      this.routePolylines.forEach((p: L.Polyline) => p.remove());
+
       const mode = this.mapViewMode();
       if (mode === 'stops') {
-        this.routeCasingPolylines.forEach((p: L.Polyline) => p.remove());
-        this.routePolylines.forEach((p: L.Polyline) => p.remove());
         this.courierMarkers.forEach((m: L.Marker) => {
           if (!this.map!.hasLayer(m)) m.addTo(this.map!);
         });
       } else {
         this.clearZonePolygon();
         if (mode === 'live') {
-          this.routeCasingPolylines.forEach((p: L.Polyline) => {
-            if (!this.map!.hasLayer(p)) p.addTo(this.map!);
-          });
-          this.routePolylines.forEach((p: L.Polyline) => {
-            if (!this.map!.hasLayer(p)) p.addTo(this.map!);
-          });
           this.courierMarkers.forEach((m: L.Marker) => {
             if (!this.map!.hasLayer(m)) m.addTo(this.map!);
           });
@@ -9788,8 +9711,10 @@ export class DeliveryMapComponent implements OnInit, AfterViewInit, OnDestroy {
     }
   }
 
+  private isPollingCourierLocations = false;
+
   /**
-   * Starts a 5-second interval polling the backend for live courier GPS telemetry from the Flutter app.
+   * Starts continuous 1-second interval polling of the backend for live courier GPS telemetry from the Flutter app.
    */
   private startRealCourierPolling(): void {
     try {
@@ -9801,9 +9726,10 @@ export class DeliveryMapComponent implements OnInit, AfterViewInit, OnDestroy {
       if (this.liveCourierPollTimer) {
         clearInterval(this.liveCourierPollTimer);
       }
+      this.pollRealCourierLocations();
       this.liveCourierPollTimer = setInterval(() => {
         this.pollRealCourierLocations();
-      }, 5000);
+      }, 1000);
     } catch (error: unknown) {
       console.error('Error starting real courier polling:', error);
     }
@@ -9814,12 +9740,17 @@ export class DeliveryMapComponent implements OnInit, AfterViewInit, OnDestroy {
    */
   pollRealCourierLocations(): void {
     try {
+      if (this.isPollingCourierLocations) {
+        return;
+      }
       const fetchFn = this.stateService.fetchLiveCouriers;
       if (typeof fetchFn !== 'function') {
         return;
       }
+      this.isPollingCourierLocations = true;
       fetchFn.call(this.stateService).subscribe({
         next: (liveList: CourierDto[]) => {
+          this.isPollingCourierLocations = false;
           try {
             if (!Array.isArray(liveList) || liveList.length === 0) {
               return;
@@ -9957,10 +9888,12 @@ export class DeliveryMapComponent implements OnInit, AfterViewInit, OnDestroy {
           }
         },
         error: () => {
+          this.isPollingCourierLocations = false;
           return;
         }
       });
     } catch (error: unknown) {
+      this.isPollingCourierLocations = false;
       console.error('Error polling real courier locations:', error);
     }
   }
@@ -10120,6 +10053,25 @@ export class DeliveryMapComponent implements OnInit, AfterViewInit, OnDestroy {
       return c.orderIds.filter((id: number) => stopMap.get(id)?.isDelivered).length;
     } catch (error: unknown) {
       console.error('Error getting courier completed stops:', error);
+      return 0;
+    }
+  }
+
+  /**
+   * Returns the number of pending (undelivered) delivery stops for a courier.
+   */
+  getCourierPendingStopsCount(c: Courier): number {
+    try {
+      if (this.isCourierReadyToReceive(c)) {
+        return 0;
+      }
+      const stopMap = new Map(this.deliveryStops().map((s: DeliveryWaypoint) => [s.id, s]));
+      return c.orderIds.filter((id: number) => {
+        const stop = stopMap.get(id);
+        return Boolean(stop) && !stop!.isDelivered;
+      }).length;
+    } catch (error: unknown) {
+      console.error('Error getting courier pending stops count:', error);
       return 0;
     }
   }

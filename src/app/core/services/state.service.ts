@@ -2104,7 +2104,9 @@ private loadEmployeesFromStorage(): EmployeeDto[] {
                 this.adjustStock(item.fruitName || '', gramKey, -item.quantity);
               });
             }
-            return { ...o, status: newStatus };
+            const deliveredAtUtc: string | undefined =
+              newStatus === 'DELIVERED' ? o.deliveredAtUtc || new Date().toISOString() : o.deliveredAtUtc;
+            return { ...o, status: newStatus, deliveredAtUtc };
           }
           return o;
         })

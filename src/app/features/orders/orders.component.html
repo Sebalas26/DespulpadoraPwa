@@ -602,7 +602,7 @@
         <div class="col-head col-client">CLIENTE & DESTINO</div>
         <div class="col-head col-courier">DOMICILIARIO & RUTA</div>
         <div class="col-head col-amount">RECAUDO / PAGO</div>
-        <div class="col-head col-status">ESTADO DE ENTREGA</div>
+        <div class="col-head col-status">FECHA Y HORA DE ENTREGA</div>
         <div class="col-head col-actions">ACCIONES</div>
       </div>
 
@@ -716,10 +716,12 @@
 
                     <div class="ledger-cell cell-status">
             @if (order.status === 'DELIVERED') {
-            <span class="status-badge-chip badge-delivered">
-              <span class="badge-icon">✓</span>
-              <span class="badge-txt">ENTREGADA</span>
-            </span>
+            <div class="delivery-datetime-box">
+              <div class="delivery-date-main">{{ getDeliveryDateDisplay(order) }}</div>
+              @if (getDeliveryTimeDisplay(order); as deliveryTime) {
+              <div class="delivery-time-sub">{{ deliveryTime }}</div>
+              }
+            </div>
             } @else if (order.status === 'DISPATCHED') {
             <span class="status-badge-chip badge-transit">
               <span class="transit-radar-dot"></span>
@@ -731,7 +733,7 @@
                 <circle cx="12" cy="12" r="10"></circle>
                 <polyline points="12 6 12 12 16 14"></polyline>
               </svg>
-              <span class="badge-txt">SIN GESTIONAR</span>
+              <span class="badge-txt">PENDIENTE</span>
             </span>
             }
           </div>
@@ -759,8 +761,8 @@
             </button>
             }
 
+            @if (order.status !== 'DELIVERED') {
             <div class="action-icons-group">
-              @if (order.status !== 'DELIVERED') {
               <button type="button" class="btn-icon-shortcut" title="Ubicar dirección en el mapa"
                 (click)="locateOrderInMap(order)">
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -768,7 +770,6 @@
                   <circle cx="12" cy="10" r="3"></circle>
                 </svg>
               </button>
-              }
               <button type="button" class="btn-icon-shortcut" title="Modificar datos del pedido"
                 (click)="openEditOrderModal(order)">
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -777,6 +778,7 @@
                 </svg>
               </button>
             </div>
+            }
           </div>
         </div>
         }
@@ -1593,6 +1595,7 @@
       </button>
 
       <div style="display: flex; gap: 10px;">
+        @if (viewOrder.status !== 'DELIVERED') {
         <button type="button" class="btn btn-outline" style="gap: 6px; font-size: 0.85rem;"
           (click)="showOrderViewModal.set(false); openEditOrderModal(viewOrder)">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -1601,6 +1604,7 @@
           </svg>
           <span>Editar Pedido</span>
         </button>
+        }
         <button type="button" class="btn btn-primary" style="font-size: 0.85rem;"
           (click)="showOrderViewModal.set(false)">
           Cerrar

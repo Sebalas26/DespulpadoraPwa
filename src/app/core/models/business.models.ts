@@ -325,6 +325,7 @@ export interface OrderDto {
   routeCode?: string;
   routeSequenceOrder?: number;
   dispatchedAtUtc?: string;
+  deliveredAtUtc?: string;
   isPaid: boolean;
   notes?: string;
   createdAt: string;
