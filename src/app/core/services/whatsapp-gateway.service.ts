@@ -177,17 +177,43 @@ export class WhatsAppGatewayService {
   private readonly http = inject(HttpClient);
 
   /**
+   * Determines whether the current runtime environment is a remote production host or HTTPS origin.
+   */
+  private isProductionOrigin(): boolean {
+    try {
+      if (typeof window === 'undefined' || !window.location) {
+        return false;
+      }
+      const isHttps: boolean = window.location.protocol === 'https:';
+      const hostname: string = window.location.hostname || '';
+      const isRemoteHost: boolean =
+        hostname !== '' &&
+        hostname !== 'localhost' &&
+        hostname !== '127.0.0.1' &&
+        hostname !== '::1';
+      return isHttps || isRemoteHost;
+    } catch {
+      return false;
+    }
+  }
+
+  /**
    * Returns the configured base URL for the WhatsApp Gateway.
+   * In production or remote HTTPS environments, defaults to the same-origin relative endpoint '/api/whatsapp'.
+   * In local development or testing environments, defaults to 'http://localhost:3005/api/whatsapp'.
    */
   getGatewayBaseUrl(): string {
     try {
-      const saved = localStorage.getItem(GATEWAY_URL_STORAGE_KEY);
+      const saved: string | null = localStorage.getItem(GATEWAY_URL_STORAGE_KEY);
       if (saved && saved.trim().length > 0) {
         return saved.trim().replace(/\/+$/, '');
       }
+      if (this.isProductionOrigin()) {
+        return '/api/whatsapp';
+      }
       return DEFAULT_GATEWAY_BASE_URL;
     } catch {
-      return DEFAULT_GATEWAY_BASE_URL;
+      return this.isProductionOrigin() ? '/api/whatsapp' : DEFAULT_GATEWAY_BASE_URL;
     }
   }
 
@@ -196,7 +222,7 @@ export class WhatsAppGatewayService {
    */
   setGatewayBaseUrl(url: string): void {
     try {
-      const trimmed = (url || '').trim().replace(/\/+$/, '');
+      const trimmed: string = (url || '').trim().replace(/\/+$/, '');
       if (trimmed) {
         localStorage.setItem(GATEWAY_URL_STORAGE_KEY, trimmed);
       } else {
@@ -211,31 +237,23 @@ export class WhatsAppGatewayService {
    * Fetches the current connection state and cryptographic Multi-Device QR code from the WhatsApp Gateway.
    */
   getStatus(): Observable<WhatsAppGatewayStatusDto> {
+    const fallbackStatus: WhatsAppGatewayStatusDto = {
+      status: 'DISCONNECTED',
+      connected: false,
+      qrDataUrl: null,
+      phoneNumber: null,
+      name: null,
+      error: 'GATEWAY_UNREACHABLE',
+      lastUpdatedAt: new Date().toISOString()
+    };
+
     try {
-      const baseUrl = this.getGatewayBaseUrl();
-      return this.http.get<WhatsAppGatewayStatusDto>(`${baseUrl}/status`).pipe(
-        catchError(() =>
-          of({
-            status: 'DISCONNECTED' as const,
-            connected: false,
-            qrDataUrl: null,
-            phoneNumber: null,
-            name: null,
-            error: 'GATEWAY_UNREACHABLE',
-            lastUpdatedAt: new Date().toISOString()
-          })
-        )
-      );
+      const baseUrl: string = this.getGatewayBaseUrl();
+      return this.http
+        .get<WhatsAppGatewayStatusDto>(`${baseUrl}/status`)
+        .pipe(catchError(() => of(fallbackStatus)));
     } catch {
-      return of({
-        status: 'DISCONNECTED' as const,
-        connected: false,
-        qrDataUrl: null,
-        phoneNumber: null,
-        name: null,
-        error: 'GATEWAY_UNREACHABLE',
-        lastUpdatedAt: new Date().toISOString()
-      });
+      return of(fallbackStatus);
     }
   }
 
@@ -244,7 +262,7 @@ export class WhatsAppGatewayService {
    */
   sendMessage(phone: string, message: string): Observable<WhatsAppSendResponseDto> {
     try {
-      const baseUrl = this.getGatewayBaseUrl();
+      const baseUrl: string = this.getGatewayBaseUrl();
       return this.http
         .post<WhatsAppSendResponseDto>(`${baseUrl}/send`, {
           phone: (phone || '').trim(),
@@ -253,7 +271,7 @@ export class WhatsAppGatewayService {
         .pipe(
           catchError((err: unknown) => {
             const errObj = err as { error?: { error?: string }; message?: string };
-            const msg =
+            const msg: string =
               errObj?.error?.error ||
               errObj?.message ||
               'No se pudo contactar con el Gateway de WhatsApp.';
@@ -275,35 +293,24 @@ export class WhatsAppGatewayService {
    * Forces a reconnection or new cryptographic Multi-Device QR code generation on the WhatsApp Gateway.
    */
   reconnect(): Observable<{ success: boolean } & Partial<WhatsAppGatewayStatusDto>> {
+    const fallbackReconnect: { success: boolean } & Partial<WhatsAppGatewayStatusDto> = {
+      success: false,
+      status: 'DISCONNECTED',
+      connected: false,
+      qrDataUrl: null,
+      phoneNumber: null,
+      name: null,
+      error: 'GATEWAY_UNREACHABLE',
+      lastUpdatedAt: new Date().toISOString()
+    };
+
     try {
-      const baseUrl = this.getGatewayBaseUrl();
+      const baseUrl: string = this.getGatewayBaseUrl();
       return this.http
         .post<{ success: boolean } & Partial<WhatsAppGatewayStatusDto>>(`${baseUrl}/reconnect`, {})
-        .pipe(
-          catchError(() =>
-            of({
-              success: false,
-              status: 'DISCONNECTED' as const,
-              connected: false,
-              qrDataUrl: null,
-              phoneNumber: null,
-              name: null,
-              error: 'GATEWAY_UNREACHABLE',
-              lastUpdatedAt: new Date().toISOString()
-            })
-          )
-        );
+        .pipe(catchError(() => of(fallbackReconnect)));
     } catch {
-      return of({
-        success: false,
-        status: 'DISCONNECTED' as const,
-        connected: false,
-        qrDataUrl: null,
-        phoneNumber: null,
-        name: null,
-        error: 'GATEWAY_UNREACHABLE',
-        lastUpdatedAt: new Date().toISOString()
-      });
+      return of(fallbackReconnect);
     }
   }
 

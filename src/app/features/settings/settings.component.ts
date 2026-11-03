@@ -2286,7 +2286,7 @@ export class SettingsComponent {
             this.isLoadingWhatsAppStatus.set(false);
             this.notification.warning(
               'Gateway WhatsApp Desconectado',
-              'No se pudo contactar con WhatsAppQrGateway en el puerto 3005. Verifica que el servicio esté activo.'
+              'No se pudo contactar con el servicio de WhatsApp. Verifica que el servicio esté activo o pulsa Generar Nuevo QR.'
             );
           }
         },

@@ -772,7 +772,8 @@ private loadEmployeesFromStorage(): EmployeeDto[] {
   }
 
   /**
-   * Synchronizes user-created product variants with the active fruits catalog from the database.
+   * Synchronizes user-created product variants with the active fruits catalog from the database,
+   * hydrating any fruit grammage presentations with stock or price configured in the backend API.
    */
   private syncVariantsWithFruits(fruits: FruitConfig[]): void {
     try {
@@ -797,21 +798,79 @@ private loadEmployeesFromStorage(): EmployeeDto[] {
         const gramKey = `g${variant.grammage}` as 'g140' | 'g250' | 'g500' | 'g1000';
         const dbStock = matchedFruit.stock[gramKey] ?? 0;
         const resolvedStock = dbStock > 0 ? dbStock : (variant.currentStock || 0);
+        const dbPrice = matchedFruit.prices[gramKey] ?? 0;
+        const resolvedPrice = dbPrice > 0 ? dbPrice : (variant.basePrice || 0);
         if (dbStock === 0 && resolvedStock > 0) {
           matchedFruit.stock[gramKey] = resolvedStock;
         }
-        if ((matchedFruit.prices[gramKey] || 0) === 0 && (variant.basePrice || 0) > 0) {
-          matchedFruit.prices[gramKey] = variant.basePrice;
+        if (dbPrice === 0 && resolvedPrice > 0) {
+          matchedFruit.prices[gramKey] = resolvedPrice;
         }
         syncedVariants.push({
           ...variant,
           fruitId: matchedFruit.fruitId || variant.fruitId,
           fruitName: variant.fruitName || matchedFruit.name,
-          currentStock: resolvedStock
+          category: variant.category || (matchedFruit.category || 'PULPAS').toUpperCase(),
+          currentStock: resolvedStock,
+          basePrice: resolvedPrice
         });
       }
 
+      const standardGrammages: Array<140 | 250 | 500 | 1000> = [140, 250, 500, 1000];
+      for (let fruitIndex = 0; fruitIndex < fruits.length; fruitIndex++) {
+        const fruit = fruits[fruitIndex];
+        for (const grammage of standardGrammages) {
+          const gramKey = `g${grammage}` as 'g140' | 'g250' | 'g500' | 'g1000';
+          const stockVal = Number(fruit.stock[gramKey] ?? 0);
+          const priceVal = Number(fruit.prices[gramKey] ?? 0);
+          if (stockVal <= 0 && priceVal <= 0) {
+            continue;
+          }
+
+          const alreadyExists = syncedVariants.some(
+            v =>
+              v.grammage === grammage &&
+              ((fruit.fruitId && v.fruitId === fruit.fruitId) ||
+                (v.fruitName || '').toLowerCase() === fruit.name.toLowerCase() ||
+                v.name.toLowerCase().includes(fruit.name.toLowerCase()))
+          );
+          if (alreadyExists) {
+            continue;
+          }
+
+          let candidateId = (fruit.fruitId || fruitIndex + 1) * 10000 + grammage;
+          while (syncedVariants.some(v => v.variantId === candidateId)) {
+            candidateId += 1;
+          }
+          const cleanCategory = (fruit.category || 'PULPAS').toUpperCase();
+          const catCode = cleanCategory.replace(/[^A-Z0-9]/g, '').slice(0, 3) || 'PUL';
+          const fruitCode =
+            fruit.name
+              .normalize('NFD')
+              .replace(/[\u0300-\u036f]/g, '')
+              .toUpperCase()
+              .replace(/[^A-Z0-9]/g, '')
+              .slice(0, 3) || 'FRU';
+
+          syncedVariants.push({
+            variantId: candidateId,
+            fruitId: fruit.fruitId || 0,
+            fruitName: fruit.name,
+            category: cleanCategory,
+            sku: `${catCode}-${fruitCode}-${grammage}G`,
+            name: `Pulpa de ${fruit.name} ${grammage}g`,
+            grammage,
+            unitCost: 0,
+            basePrice: priceVal,
+            minStockAlert: Number(fruit.minStock?.[gramKey] ?? 0),
+            currentStock: stockVal,
+            isActive: true
+          });
+        }
+      }
+
       this.productVariants.set(syncedVariants);
+      localStorage.setItem('despulpadora_variants', JSON.stringify(syncedVariants));
     } catch {
       return;
     }
@@ -1447,6 +1506,7 @@ private loadEmployeesFromStorage(): EmployeeDto[] {
           reason: delta > 0 ? 'Ingreso operativo de pulpa' : 'Salida / Despacho de pulpa'
         });
       }
+      this.syncVariantsWithFruits(this.fruits());
       this.saveAllToStorage();
       if (targetFruitId > 0) {
         const numericGrammage = Number(grammage.replace('g', '')) as 140 | 250 | 500 | 1000;
@@ -2797,7 +2857,7 @@ private loadEmployeesFromStorage(): EmployeeDto[] {
   }
 
   /**
-   * Adds a new product variant.
+   * Adds a new product variant and synchronizes stock and price with the backend fruit record.
    */
   addProductVariant(variant: Omit<ProductVariantDto, 'variantId'>): ProductVariantDto {
     try {
@@ -2810,6 +2870,7 @@ private loadEmployeesFromStorage(): EmployeeDto[] {
       this.productVariants.update(list => [newVariant, ...list]);
       const gramKey = `g${newVariant.grammage}` as 'g140' | 'g250' | 'g500' | 'g1000';
       let syncedFruitId = newVariant.fruitId || 0;
+      let syncedFruit: FruitConfig | undefined;
       this.fruits.update(list =>
         list.map(f => {
           if (
@@ -2818,18 +2879,34 @@ private loadEmployeesFromStorage(): EmployeeDto[] {
             newVariant.name.toLowerCase().includes(f.name.toLowerCase())
           ) {
             syncedFruitId = f.fruitId || syncedFruitId;
-            return {
+            const updated: FruitConfig = {
               ...f,
+              category: newVariant.category || f.category,
               stock: { ...f.stock, [gramKey]: newVariant.currentStock || 0 },
               prices:
                 newVariant.basePrice > 0
                   ? { ...f.prices, [gramKey]: newVariant.basePrice }
                   : f.prices
             };
+            syncedFruit = updated;
+            return updated;
           }
           return f;
         })
       );
+      if (syncedFruit && syncedFruitId > 0 && (newVariant.basePrice || 0) > 0) {
+        this.api
+          .updateFruit?.(syncedFruitId, {
+            name: syncedFruit.name,
+            category: syncedFruit.category,
+            unitPrice: Number(syncedFruit.prices.g140) || 0,
+            price140g: Number(syncedFruit.prices.g140) || 0,
+            price250g: Number(syncedFruit.prices.g250) || 0,
+            price500g: Number(syncedFruit.prices.g500) || 0,
+            price1000g: Number(syncedFruit.prices.g1000) || 0
+          })
+          ?.subscribe({ error: () => {} });
+      }
       if ((newVariant.currentStock || 0) > 0) {
         if (
           syncedFruitId > 0 &&
@@ -2869,7 +2946,7 @@ private loadEmployeesFromStorage(): EmployeeDto[] {
   }
 
   /**
-   * Updates an existing product variant.
+   * Updates an existing product variant and synchronizes stock and price changes with the backend fruit record.
    */
   updateProductVariant(variantId: number, changes: Partial<ProductVariantDto>): void {
     try {
@@ -2888,11 +2965,11 @@ private loadEmployeesFromStorage(): EmployeeDto[] {
           return v;
         })
       );
-      if (existingVariant && changes.currentStock !== undefined && nextStock !== prevStock) {
-        const diff = nextStock - prevStock;
+      if (existingVariant) {
         const resolvedGrammage = changes.grammage ?? existingVariant.grammage;
         const gramKey = `g${resolvedGrammage}` as 'g140' | 'g250' | 'g500' | 'g1000';
         let syncedFruitId = existingVariant.fruitId || 0;
+        let syncedFruit: FruitConfig | undefined;
         this.fruits.update(list =>
           list.map(f => {
             if (
@@ -2901,42 +2978,80 @@ private loadEmployeesFromStorage(): EmployeeDto[] {
               existingVariant!.name.toLowerCase().includes(f.name.toLowerCase())
             ) {
               syncedFruitId = f.fruitId || syncedFruitId;
-              return {
+              const updated: FruitConfig = {
                 ...f,
-                stock: { ...f.stock, [gramKey]: nextStock }
+                category: changes.category || f.category,
+                stock:
+                  changes.currentStock !== undefined
+                    ? { ...f.stock, [gramKey]: nextStock }
+                    : f.stock,
+                prices:
+                  changes.basePrice !== undefined
+                    ? { ...f.prices, [gramKey]: changes.basePrice }
+                    : f.prices
               };
+              syncedFruit = updated;
+              return updated;
             }
             return f;
           })
         );
         if (
+          syncedFruit &&
           syncedFruitId > 0 &&
-          (resolvedGrammage === 140 ||
-            resolvedGrammage === 250 ||
-            resolvedGrammage === 500 ||
-            resolvedGrammage === 1000)
+          (changes.basePrice !== undefined ||
+            changes.category !== undefined ||
+            changes.grammage !== undefined)
         ) {
           this.api
-            .adjustStock?.({
-              fruitId: syncedFruitId,
-              grammage: resolvedGrammage,
-              quantityDelta: diff,
-              reason: diff > 0 ? 'Edición de existencias de pulpa (+)' : 'Edición de existencias de pulpa (-)'
+            .updateFruit?.(syncedFruitId, {
+              name: syncedFruit.name,
+              category: syncedFruit.category,
+              unitPrice: Number(syncedFruit.prices.g140) || 0,
+              price140g: Number(syncedFruit.prices.g140) || 0,
+              price250g: Number(syncedFruit.prices.g250) || 0,
+              price500g: Number(syncedFruit.prices.g500) || 0,
+              price1000g: Number(syncedFruit.prices.g1000) || 0
             })
             ?.subscribe({ error: () => {} });
         }
-        this.recordInventoryMovement({
-          category: 'PULP',
-          movementType: diff > 0 ? 'IN' : 'OUT',
-          itemId: String(variantId),
-          itemName: changes.name || existingVariant.name,
-          presentation: `${resolvedGrammage}g`,
-          quantity: Math.abs(diff),
-          previousStock: prevStock,
-          newStock: nextStock,
-          unit: 'uds',
-          reason: diff > 0 ? 'Edición de existencias de pulpa (+)' : 'Edición de existencias de pulpa (-)'
-        });
+        if (changes.currentStock !== undefined && nextStock !== prevStock) {
+          const diff = nextStock - prevStock;
+          if (
+            syncedFruitId > 0 &&
+            (resolvedGrammage === 140 ||
+              resolvedGrammage === 250 ||
+              resolvedGrammage === 500 ||
+              resolvedGrammage === 1000)
+          ) {
+            this.api
+              .adjustStock?.({
+                fruitId: syncedFruitId,
+                grammage: resolvedGrammage,
+                quantityDelta: diff,
+                reason:
+                  diff > 0
+                    ? 'Edición de existencias de pulpa (+)'
+                    : 'Edición de existencias de pulpa (-)'
+              })
+              ?.subscribe({ error: () => {} });
+          }
+          this.recordInventoryMovement({
+            category: 'PULP',
+            movementType: diff > 0 ? 'IN' : 'OUT',
+            itemId: String(variantId),
+            itemName: changes.name || existingVariant.name,
+            presentation: `${resolvedGrammage}g`,
+            quantity: Math.abs(diff),
+            previousStock: prevStock,
+            newStock: nextStock,
+            unit: 'uds',
+            reason:
+              diff > 0
+                ? 'Edición de existencias de pulpa (+)'
+                : 'Edición de existencias de pulpa (-)'
+          });
+        }
       }
       this.saveAllToStorage();
       this.notification.success('Presentación Actualizada', 'Los cambios han sido guardados.');
@@ -2946,16 +3061,69 @@ private loadEmployeesFromStorage(): EmployeeDto[] {
   }
 
   /**
-   * Deletes a product variant.
+   * Deletes a product variant and clears its grammage stock and price on the backend fruit record.
    */
   deleteProductVariant(variantId: number): void {
     try {
       const existing = this.productVariants().find(v => v.variantId === variantId);
       this.productVariants.update(list => list.filter(v => v.variantId !== variantId));
-      this.saveAllToStorage();
       if (existing) {
+        const gramKey = `g${existing.grammage}` as 'g140' | 'g250' | 'g500' | 'g1000';
+        let syncedFruitId = existing.fruitId || 0;
+        let syncedFruit: FruitConfig | undefined;
+        this.fruits.update(list =>
+          list.map(f => {
+            if (
+              (existing.fruitId && f.fruitId === existing.fruitId) ||
+              f.name.toLowerCase() === (existing.fruitName || '').toLowerCase() ||
+              existing.name.toLowerCase().includes(f.name.toLowerCase())
+            ) {
+              syncedFruitId = f.fruitId || syncedFruitId;
+              const updated: FruitConfig = {
+                ...f,
+                stock: { ...f.stock, [gramKey]: 0 },
+                prices: { ...f.prices, [gramKey]: 0 }
+              };
+              syncedFruit = updated;
+              return updated;
+            }
+            return f;
+          })
+        );
+        if (syncedFruitId > 0) {
+          if (
+            (existing.currentStock || 0) > 0 &&
+            (existing.grammage === 140 ||
+              existing.grammage === 250 ||
+              existing.grammage === 500 ||
+              existing.grammage === 1000)
+          ) {
+            this.api
+              .adjustStock?.({
+                fruitId: syncedFruitId,
+                grammage: existing.grammage,
+                quantityDelta: -(existing.currentStock || 0),
+                reason: 'Eliminación de presentación de pulpa'
+              })
+              ?.subscribe({ error: () => {} });
+          }
+          if (syncedFruit && (existing.basePrice || 0) > 0) {
+            this.api
+              .updateFruit?.(syncedFruitId, {
+                name: syncedFruit.name,
+                category: syncedFruit.category,
+                unitPrice: Number(syncedFruit.prices.g140) || 0,
+                price140g: Number(syncedFruit.prices.g140) || 0,
+                price250g: Number(syncedFruit.prices.g250) || 0,
+                price500g: Number(syncedFruit.prices.g500) || 0,
+                price1000g: Number(syncedFruit.prices.g1000) || 0
+              })
+              ?.subscribe({ error: () => {} });
+          }
+        }
         this.notification.info('Presentación Eliminada', `${existing.name} retirada del inventario.`);
       }
+      this.saveAllToStorage();
     } catch {
       return;
     }

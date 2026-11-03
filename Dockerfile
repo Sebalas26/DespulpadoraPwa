@@ -20,18 +20,31 @@ COPY . .
 RUN npm run build
 
 # ==========================================
-# Etapa 2: Servidor de producción con Nginx
+# Etapa 2: Servidor de producción con Nginx + WhatsAppQrGateway
 # ==========================================
 FROM nginx:alpine AS production
 
+# Instalar Node.js y npm en Alpine para ejecutar WhatsAppQrGateway en segundo plano
+RUN apk add --no-cache nodejs npm
+
+WORKDIR /app
+
 # Eliminar configuración por defecto e inyectar nuestra configuración optimizada para SPA/PWA
 COPY nginx.conf /etc/nginx/conf.d/default.conf
+
+# Copiar y desplegar microservicio WhatsAppQrGateway
+COPY whatsapp-gateway /app/whatsapp-gateway
+RUN cd /app/whatsapp-gateway && npm install --omit=dev
 
 # Limpiar archivos estáticos por defecto de Nginx y copiar el build de Angular
 RUN rm -rf /usr/share/nginx/html/*
 COPY --from=build /app/dist/despulpadora-pwa/browser /usr/share/nginx/html
 
+# Copiar y configurar entrypoint de producción
+COPY docker-entrypoint.sh /docker-entrypoint.sh
+RUN chmod +x /docker-entrypoint.sh
+
 EXPOSE 80
 
-CMD ["nginx", "-g", "daemon off;"]
+CMD ["/docker-entrypoint.sh"]
 

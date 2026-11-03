@@ -958,4 +958,161 @@ describe('StateService', () => {
       notes: 'Recibido conforme'
     });
   });
+
+  it('should hydrate productVariants from backend fruits on refreshAll when localStorage is empty (mobile device)', () => {
+    localStorage.removeItem('despulpadora_variants');
+    service.productVariants.set([]);
+
+    const apiFruits: FruitDto[] = [
+      {
+        fruitId: 3,
+        name: 'Maracuya',
+        code: 'MAR',
+        category: 'PULPAS',
+        yieldPercentage: 50,
+        rawStockKg: 35,
+        unitPrice: 0,
+        price140g: 0,
+        price250g: 0,
+        price500g: 0,
+        price1000g: 0,
+        stock100g: 39,
+        stock250g: 0,
+        stock500g: 0,
+        stock1000g: 0,
+        isActive: true
+      },
+      {
+        fruitId: 2,
+        name: 'Mora',
+        code: 'MOR',
+        category: 'PULPAS',
+        yieldPercentage: 70,
+        rawStockKg: 25,
+        unitPrice: 5000,
+        price140g: 5000,
+        price250g: 8000,
+        price500g: 0,
+        price1000g: 0,
+        stock100g: 0,
+        stock250g: 0,
+        stock500g: 0,
+        stock1000g: 0,
+        isActive: true
+      }
+    ];
+    apiSpy.getFruits.and.returnValue(of(apiFruits));
+
+    service.refreshAll();
+
+    const variants = service.productVariants();
+    expect(variants.length).toBe(3);
+
+    const maracuya140 = variants.find(v => v.fruitName === 'Maracuya' && v.grammage === 140);
+    expect(maracuya140).toBeDefined();
+    expect(maracuya140?.currentStock).toBe(39);
+
+    const mora140 = variants.find(v => v.fruitName === 'Mora' && v.grammage === 140);
+    expect(mora140).toBeDefined();
+    expect(mora140?.basePrice).toBe(5000);
+
+    const mora250 = variants.find(v => v.fruitName === 'Mora' && v.grammage === 250);
+    expect(mora250).toBeDefined();
+    expect(mora250?.basePrice).toBe(8000);
+  });
+
+  it('should persist basePrice and stock changes to backend API on addProductVariant, updateProductVariant, and deleteProductVariant', () => {
+    service.fruits.set([
+      {
+        id: 'maracuya_3',
+        fruitId: 3,
+        name: 'Maracuya',
+        scientificName: '',
+        color: '#1e5e3a',
+        bgColor: '',
+        borderColor: '#1e5e3a',
+        emoji: '',
+        yieldRate: 0.5,
+        waterAdditionDefault: 0,
+        freshStockKg: 35,
+        stock: { g140: 0, g250: 0, g500: 0, g1000: 0 },
+        minStock: { g140: 0, g250: 0, g500: 0, g1000: 0 },
+        prices: { g140: 0, g250: 0, g500: 0, g1000: 0 },
+        category: 'PULPAS'
+      }
+    ]);
+
+    apiSpy.updateFruit.calls.reset();
+    apiSpy.adjustStock.calls.reset();
+
+    const created = service.addProductVariant({
+      fruitId: 3,
+      fruitName: 'Maracuya',
+      category: 'PULPAS',
+      sku: 'PUL-MAR-250G',
+      name: 'Pulpa de Maracuya 250g',
+      grammage: 250,
+      unitCost: 0,
+      basePrice: 6500,
+      minStockAlert: 5,
+      currentStock: 15,
+      isActive: true
+    });
+
+    expect(apiSpy.updateFruit).toHaveBeenCalledWith(
+      3,
+      jasmine.objectContaining({
+        price250g: 6500
+      })
+    );
+    expect(apiSpy.adjustStock).toHaveBeenCalledWith(
+      jasmine.objectContaining({
+        fruitId: 3,
+        grammage: 250,
+        quantityDelta: 15
+      })
+    );
+
+    apiSpy.updateFruit.calls.reset();
+    apiSpy.adjustStock.calls.reset();
+
+    service.updateProductVariant(created.variantId, {
+      basePrice: 7200,
+      currentStock: 20
+    });
+
+    expect(apiSpy.updateFruit).toHaveBeenCalledWith(
+      3,
+      jasmine.objectContaining({
+        price250g: 7200
+      })
+    );
+    expect(apiSpy.adjustStock).toHaveBeenCalledWith(
+      jasmine.objectContaining({
+        fruitId: 3,
+        grammage: 250,
+        quantityDelta: 5
+      })
+    );
+
+    apiSpy.updateFruit.calls.reset();
+    apiSpy.adjustStock.calls.reset();
+
+    service.deleteProductVariant(created.variantId);
+
+    expect(service.productVariants().find(v => v.variantId === created.variantId)).toBeUndefined();
+    expect(apiSpy.adjustStock).toHaveBeenCalledWith(
+      jasmine.objectContaining({
+        fruitId: 3,
+        grammage: 250,
+        quantityDelta: -20
+      })
+    );
+    expect(apiSpy.updateFruit).toHaveBeenCalledWith(
+      3,
+      jasmine.objectContaining({
+        price250g: 0
+      })
+    );
+  });
 });

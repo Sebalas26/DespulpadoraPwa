@@ -4,6 +4,87 @@ Este documento registra de manera cronológica y estructurada todas las interven
 
 ---
 
+## [2026-11-02] - Hidratación Automática y Sincronización Bidireccional del Inventario de Pulpa (`productVariants`) en Dispositivos Móviles y Web (`StateService`)
+
+### 💬 Prompt Original del Usuario
+> "Valida porque en la version web si veo el inventario de pulpa, pero si entro al desde la version mobile no veo nada"
+> "ejecutalo"
+
+### 🤖 Resumen Técnico para la IA
+- **1. Diagnóstico y Causa Raíz**:
+  - La tabla **Stock · Pulpas Hechas** (`SettingsComponent` `/settings?tab=inventory`) y las tarjetas de **Cava / Inventario** (`KdsInventoryComponent` `/kds-inventory`) leen la señal `StateService.productVariants()`.
+  - En el navegador Web donde se crearon las presentaciones, `localStorage.getItem('despulpadora_variants')` tenía guardadas las variantes, pero al abrir la PWA desde un celular (versión Mobile) o un navegador nuevo, `localStorage` iniciaba vacío (`[]`).
+  - Aunque `refreshAll()` obtenía todas las frutas reales desde `GET /api/fruits` (con `stock.g140`, `stock.g250`, `stock.g500`, `stock.g1000` y `prices`), `syncVariantsWithFruits(fruits)` únicamente iteraba sobre `currentVariants` locales y nunca hidrataba las presentaciones desde los datos del API cuando `currentVariants` estaba vacío.
+- **2. Hidratación Multi-Dispositivo desde `GET /api/fruits` (`src/app/core/services/state.service.ts`)**:
+  - En `syncVariantsWithFruits(fruits: FruitConfig[])`, además de sincronizar las presentaciones locales existentes, ahora se recorren todas las frutas recibidas del backend y los gramajes estándar (`140`, `250`, `500`, `1000`). Cuando una fruta tiene stock (`stockVal > 0`) o precio configurado (`priceVal > 0`) en la base de datos y aún no existe en `syncedVariants`, se construye e inserta automáticamente el `ProductVariantDto` real y se persiste en `this.productVariants` y `localStorage`.
+  - En `adjustStock(...)`, se invoca `this.syncVariantsWithFruits(this.fruits())` tras actualizar el stock de la fruta para que cualquier ingreso de pulpa cree su presentación de inmediato.
+- **3. Persistencia Bidireccional en CRUD de Presentaciones (`addProductVariant`, `updateProductVariant`, `deleteProductVariant`)**:
+  - `addProductVariant` y `updateProductVariant` ahora persisten también los precios por gramaje (`price140g`, `price250g`, `price500g`, `price1000g`) en el backend mediante `this.api.updateFruit(...)`, además del ajuste de existencias con `this.api.adjustStock(...)`.
+  - `deleteProductVariant` limpia el stock y precio del gramaje eliminado en la fruta asociada y sincroniza la baja contra `this.api.adjustStock(...)` y `this.api.updateFruit(...)`.
+- **4. Informes de Agentes de Calidad (`AGENTS.md` §1)**:
+  - **Agente de Verificación de Impacto (`477ee3cc-69ba-4938-b923-725f8a099f95`)**: Confirmó la causa raíz en `StateService` y certificó que los estilos responsivos móviles de `SettingsComponent` y `KdsInventoryComponent` operan sin bloqueos visuales.
+  - **Agente Auditor Punto por Punto (`ca125707-701f-4be7-8bb9-7e0713c561be`)**: Emitió dictamen **APROBADO SIN DESVIACIONES (100% COMPLIANT)**.
+  - **Agente de Revisión Par (`faaca0b6-3a60-4aa2-b028-8ac513d04efb`)**: Emitió dictamen **APROBADO (100% CONFORME — 0 OBSERVACIONES)**.
+
+### 📦 Componentes Modificados
+- `src/app/core/services/state.service.ts`
+- `src/app/core/services/state.service.spec.ts`
+- `HISTORIAL_CAMBIOS.md`
+
+### ✅ Verificación, Build y Tests Unitarios
+- `npm run build`: **OK (0 errores)**.
+- `CHROME_BIN="/Applications/Brave Browser.app/Contents/MacOS/Brave Browser" npx ng test --watch=false --browsers=ChromeHeadless`: **Executed 317 of 317 SUCCESS (100% Unit Tests Passed, 0 fallos)**.
+
+---
+
+## [2026-11-03] - Despliegue y Empaquetado de `WhatsAppQrGateway` en Producción (`https://despulpadoraweb.parking-flow.com`), Enrutamiento Same-Origin (`/api/whatsapp`) y Eliminación de Bloqueo en Safari/HTTPS
+
+### 💬 Prompt Original del Usuario
+> "Porque me falla esto , revisalo porque llevo ya varias horas inententandolo y aun nodoy con el eroror"
+> "Estoy usando safari"
+> "que es localhost:3005? eso es local, no?"
+> "siempre he entrado a https://despulpadoraweb.parking-flow.com"
+> "Osea siempre ingresaba local...?"
+> "ejecuta el plan para dar con la solcion"
+
+### 🤖 Resumen Técnico para la IA
+- **1. Diagnóstico de Causa Raíz (Safari HTTPS -> `localhost:3005`)**:
+  - Al acceder a la PWA publicada en `https://despulpadoraweb.parking-flow.com`, el código de `WhatsAppGatewayService` intentaba consultar la URL quemada `http://localhost:3005/api/whatsapp/status`. Safari bloqueaba de inmediato la petición por políticas estrictas de *Mixed Content* (sitio HTTPS consultando HTTP inseguro) y privacidad de red local (*Local Network Privacy*). Además, el microservicio `WhatsAppQrGateway` no estaba incluido en la imagen Docker de producción de la PWA ni enrutado en Nginx.
+- **2. Empaquetado del Microservicio en `whatsapp-gateway/` y Despliegue en Producción (`Dockerfile` + `docker-entrypoint.sh` + `nginx.conf`)**:
+  - Se copió el microservicio `WhatsAppQrGateway` dentro del proyecto en `./whatsapp-gateway/` con sus dependencias oficiales (`@whiskeysockets/baileys`, `express`, `cors`, `qrcode`, `pino`) y escucha dual-stack en el puerto 3005 (`app.listen(PORT, ...)`).
+  - En `nginx.conf`, se agregó la directiva `location /api/whatsapp/` apuntando a `proxy_pass http://127.0.0.1:3005/api/whatsapp/;` con cabeceras de proxy estándar, ubicada antes de `location /api/` para no desviar el tráfico al backend .NET externo.
+  - En `Dockerfile`, se instaló Node.js y npm en la etapa `production` (`apk add --no-cache nodejs npm`), se ejecutó `npm install --omit=dev` en `/app/whatsapp-gateway` y se configuró `docker-entrypoint.sh` para levantar `node /app/whatsapp-gateway/server.js` en segundo plano mientras Nginx corre en primer plano.
+- **3. Resolución Dinámica Same-Origin en `WhatsAppGatewayService` (`src/app/core/services/whatsapp-gateway.service.ts`)**:
+  - Se implementó `isProductionOrigin()` para detectar si la PWA se ejecuta sobre HTTPS o en un dominio remoto (`despulpadoraweb.parking-flow.com`).
+  - `getGatewayBaseUrl()` resuelve automáticamente la ruta relativa `/api/whatsapp` en producción (same-origin con el candado SSL del dominio), erradicando las peticiones a `localhost` en Safari y celulares.
+  - Se configuró `proxy.conf.json` y `angular.json` (`serve.options.proxyConfig`) para que el comando de desarrollo local `ng serve` enrute `/api/whatsapp` hacia `http://127.0.0.1:3005` de forma transparente.
+- **4. Ajustes en Vista de Configuración (`settings.component.html` + `settings.component.ts`)**:
+  - Se eliminaron las referencias confusas o quemadas a "puerto 3005" y "local", actualizando los mensajes a: *"El servicio WhatsApp Gateway está desconectado."* y *"Pulsa 'Generar Nuevo QR' o verifica que el servicio esté activo para generar el código."*.
+- **5. Certificación de Agentes de Calidad (`AGENTS.md` Sección 1.3)**:
+  - **Agente Verificador de Impacto (`0704f3db-88c9-47ea-9028-f39473c3150f`)**: Confirmó las 3 causas raíz sin daños colaterales.
+  - **Agente Auditor Punto por Punto (`ac2f92e1-6e31-4f9a-8b26-41c0e843cf21`)**: Evaluó ítem por ítem los 8 puntos del plan emitiendo dictamen **APROBADO (100% CUMPLE)**.
+  - **Agente de Revisión Par (`cbd03ca2-6f65-4860-b743-f804c5e58e61`)**: Certificó cero uso de `any`, tipado TypeScript estricto, documentación JSDoc superior, resiliencia de reverse proxy en Safari/iOS y cero commits automáticos (**APROBADO SIN RESERVAS**).
+
+### 📦 Componentes Modificados
+- `whatsapp-gateway/server.js` [NUEVO/EMPAQUETADO]
+- `whatsapp-gateway/package.json` [NUEVO/EMPAQUETADO]
+- `docker-entrypoint.sh` [NUEVO]
+- `Dockerfile` [MODIFICADO]
+- `nginx.conf` [MODIFICADO]
+- `proxy.conf.json` [NUEVO]
+- `angular.json` [MODIFICADO]
+- `package.json` [MODIFICADO]
+- `src/app/core/services/whatsapp-gateway.service.ts` [MODIFICADO]
+- `src/app/features/settings/settings.component.html` [MODIFICADO]
+- `src/app/features/settings/settings.component.ts` [MODIFICADO]
+- `HISTORIAL_CAMBIOS.md` [MODIFICADO]
+
+### ✅ Verificación, Build y Tests Unitarios
+- **Build de Producción PWA (`npm run build`)**: **0 Errores** (`dist/despulpadora-pwa` generado exitosamente).
+- **Pruebas Unitarias PWA (`CHROME_BIN=... npx ng test --watch=false --browsers=ChromeHeadless`)**: **Executed 315 of 315 SUCCESS (TOTAL: 315 SUCCESS, 0 FAILED - 100% PASS)**.
+
+---
+
 ## [2026-11-02] - Columna `"FECHA Y HORA DE ENTREGA"`, Compactación de Columna `"GUÍA"` y Ocultamiento del Botón Modificar en Pedidos Entregados (`OrdersComponent`)
 
 ### 💬 Prompt Original del Usuario
