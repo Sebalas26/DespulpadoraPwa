@@ -4,6 +4,132 @@ Este documento registra de manera cronológica y estructurada todas las interven
 
 ---
 
+## [2026-11-03] - Sincronización 100% con Base de Datos PostgreSQL de la Tarjeta "Flujo de pedidos — Del pedido a la entrega." en el Dashboard Operativo
+
+### 💬 Prompt Original del Usuario
+> "dejame esta informacion conectada con la bd"
+> "ejecuta"
+
+### 🤖 Resumen Técnico para la IA
+- **1. Inferencia Determinística de Estados de Pedidos y Mapeo Completo en `ApiService` (`src/app/core/services/api.service.ts`)**:
+  - En `mapOrderFromApi`, se mapeó `routeCode` y se calculó el estado real `resolvedStatus` desde los campos de PostgreSQL (`deliveredAtUtc`/`deliveredAt` $\rightarrow$ `'DELIVERED'`; `isBilled` o todos los ítems con `pickedQuantity >= quantity` $\rightarrow$ `'BILLED'`; algún ítem con `pickedQuantity > 0` $\rightarrow$ `'PICKING'`).
+  - En `updateOrderStatus`, se resolvió automáticamente `isBilled = true` cuando `status` pasa a `'BILLED'`, `'DISPATCHED'` o `'DELIVERED'`.
+- **2. Persistencia Bidireccional de Estados en PostgreSQL (`src/app/core/services/state.service.ts` y `src/app/features/orders/delivery-map.component.ts`)**:
+  - Se creó la señal computada `dispatchedOrdersCount` en `StateService`.
+  - En `updateItemPickedQuantity`, cuando el progreso de alistamiento cambia el estado de la orden (`'PICKING'` o `'BILLED'`), se persiste inmediatamente el nuevo estado en PostgreSQL mediante `this.api.updateOrderStatus(...)`.
+  - En `settleCourierRoute`, toda orden `'DISPATCHED'` del domiciliario liquidado pasa a `'DELIVERED'` en memoria y en PostgreSQL (`PATCH /api/orders/{id}/status`).
+  - En `refreshAll`, se reconcilian y sincronizan con PostgreSQL los avances de estado y se cierran como `'DELIVERED'` las órdenes `'DISPATCHED'` huérfanas de fechas anteriores.
+  - En `DeliveryMapComponent` (`markAllCourierStopsDelivered`, `markOrderDeliveredByOrderNumber`, `deleteDeliveryStop`), se propaga `updateOrderStatus` (`'DELIVERED'` o `'BILLED'`) hacia `StateService` y PostgreSQL.
+- **3. Conexión Directa de "Flujo de pedidos" en `DashboardComponent` (`src/app/features/dashboard/dashboard.component.ts` y `dashboard.component.html`)**:
+  - `ordersByStatus()` conecta `picking` ("En alistamiento") con `stateService.pendingOrdersCount()` (`PENDING` + `PICKING`), `pending` ("Pendientes de aprobación") con `voiceOrdersService.pendingCount() + billedCount`, y `dispatched` ("En ruta") con `stateService.dispatchedOrdersCount()`.
+  - Las 3 filas de "Flujo de pedidos" enlazan directamente a `/orders` con sus respectivos `queryParams` (`facturacion`, `picking`, `despachos`).
+- **4. Informes de Agentes de Calidad (`AGENTS.md` §1)**:
+  - **Agente de Verificación de Impacto (`477ee3cc-69ba-4938-b923-725f8a099f95`)**: Confirmó alcance quirúrgico sin regresiones.
+  - **Agente Auditor Punto por Punto (`ca125707-701f-4be7-8bb9-7e0713c561be`)**: Emitió veredicto **APROBADO SIN DESVIACIONES (100% COMPLIANT)**.
+  - **Agente de Revisión Par (`faaca0b6-3a60-4aa2-b028-8ac513d04efb`)**: Emitió veredicto **APROBADO (100% CONFORME)**.
+
+### 📦 Componentes Modificados
+- `src/app/core/services/api.service.ts`
+- `src/app/core/services/api.service.spec.ts`
+- `src/app/core/services/state.service.ts`
+- `src/app/core/services/state.service.spec.ts`
+- `src/app/features/orders/delivery-map.component.ts`
+- `src/app/features/dashboard/dashboard.component.ts`
+- `src/app/features/dashboard/dashboard.component.html`
+- `src/app/features/dashboard/dashboard.component.spec.ts`
+- `HISTORIAL_CAMBIOS.md`
+
+### ✅ Verificación, Build y Tests Unitarios
+- `npm run build`: **OK (0 errores)**.
+- `CHROME_BIN="/Applications/Brave Browser.app/Contents/MacOS/Brave Browser" npx ng test --watch=false --browsers=ChromeHeadless`: **Executed 328 of 328 SUCCESS (100% Unit Tests Passed, 0 fallos)**.
+
+---
+
+## [2026-11-02] - Contadores Independientes en `Pedidos` y `Facturación & POS`, Eliminación de Contador en `Despachos & Rutas` y Compactación de Card de Facturación
+
+### 💬 Prompt Original del Usuario
+> "No quiero que el contador este en despachos, pero quiero que los otros contadores sean acrodes a lo que tengo alli, ejemplo en facuracion me muestra 2 , pero solo tengo uno
+> adicional ajustame mejor la card de facturacion , veo que esta muy ancha"
+> "ejecutalo"
+
+### 🤖 Resumen Técnico para la IA
+- **1. Contadores Independientes por Módulo (`StateService` + `SidebarComponent`)**:
+  - Se creó la señal computada `billingOrdersCount` en `src/app/core/services/state.service.ts` para contar exclusivamente las órdenes que aparecen en `Facturación & POS` (`status === 'BILLED' || status === 'PICKING'`), mientras `pendingOrdersCount` mantiene el conteo de órdenes en alistamiento (`status === 'PENDING' || status === 'PICKING'`).
+  - En `src/app/layout/sidebar/sidebar.component.ts`, `Pedidos` lee `pendingOrdersCount()`, `Facturación & POS` lee `billingOrdersCount()` y se eliminó el badge `.dgl-nav-badge` del enlace `Despachos & Rutas`.
+  - En `src/app/features/orders/orders.component.ts` (`tabOrders`), el filtro de `tab === 'facturacion'` se alineó 1:1 con `billingOrdersCount` (`o.status === 'BILLED' || o.status === 'PICKING'`).
+- **2. Compactación de la Card de Facturación (`src/app/features/orders/orders.component.scss`)**:
+  - Se ajustó `.billing-cards-grid` a `grid-template-columns: repeat(auto-fill, minmax(300px, 340px)); gap: 16px; align-items: stretch;` y `.billing-queue-card` a `max-width: 340px; width: 100%; padding: 15px 16px; border-radius: 14px;` con espaciados internos proporcionados en `.queue-card-items-summary`, `.queue-card-meta`, `.queue-card-bottom` y botones de acción.
+- **3. Informes de Agentes de Calidad (`AGENTS.md` §1)**:
+  - **Agente de Verificación de Impacto (`477ee3cc-69ba-4938-b923-725f8a099f95`)**: Confirmó aislamiento quirúrgico sin regresiones en vistas o modales.
+  - **Agente Auditor Punto por Punto (`ca125707-701f-4be7-8bb9-7e0713c561be`)**: Emitió veredicto **APROBADO SIN DESVIACIONES (100% COMPLIANT)**.
+  - **Agente de Revisión Par (`faaca0b6-3a60-4aa2-b028-8ac513d04efb`)**: Emitió veredicto **APROBADO (100% CONFORME — 0 OBSERVACIONES)**.
+
+### 📦 Componentes Modificados
+- `src/app/core/services/state.service.ts`
+- `src/app/core/services/state.service.spec.ts`
+- `src/app/layout/sidebar/sidebar.component.ts`
+- `src/app/layout/sidebar/sidebar.component.spec.ts`
+- `src/app/features/orders/orders.component.ts`
+- `src/app/features/orders/orders.component.scss`
+- `src/app/features/orders/orders.component.spec.ts`
+- `HISTORIAL_CAMBIOS.md`
+
+### ✅ Verificación, Build y Tests Unitarios
+- `npm run build`: **OK (0 errores)**.
+- `CHROME_BIN="/Applications/Brave Browser.app/Contents/MacOS/Brave Browser" npx ng test --watch=false --browsers=ChromeHeadless`: **Executed 323 of 323 SUCCESS (100% Unit Tests Passed, 0 fallos)**.
+
+---
+
+## [2026-11-03] - Persistencia Bidireccional de Coordenadas GPS (`latitude`, `longitude`, `neighborhood`) en Pedidos (`DespulpadoraPwa`) y Geocodificación Precisa de Paradas en Vivo (`DespulpadoraApp` Flutter)
+
+### 💬 Prompt Original del Usuario
+> "valida porque mi app fluter no me mostro corectamente la ubicacion del pedido"
+> "ejecuta"
+
+### 🤖 Resumen Técnico para la IA
+- **1. Diagnóstico de Causa Raíz (Pin `#1 - caldo parado` a 7.7 km de Bosque Popular)**:
+  - **Causa Raíz #1 (`DespulpadoraPwa`)**: Al crear o actualizar pedidos en `OrdersComponent` y `DeliveryMapComponent`, la PWA calculaba `{ lat, lng, zone }` en memoria pero omitía `latitude`, `longitude` y `neighborhood` en `CreateOrderDto`, `ApiService.createOrder`, `ApiService.updateOrder` y `ApiService.mapOrderFromApi`. Como consecuencia, todos los pedidos se almacenaban en PostgreSQL con `Latitude = NULL`, `Longitude = NULL` y `Neighborhood = NULL`.
+  - **Causa Raíz #2 (`DespulpadoraApp` Flutter)**: Al recibir `latitude: null` (`0.0, 0.0`), `OrdersCubit._fetchAndApplyOrders` reemplazaba la coordenada con `LocationService.defaultLocation` (`4.7125, -74.1420` — Planta Matriz en Engativá Occidental). Luego, `CourierRouteMapScreen._resolveStopLocation` verificaba `LocationService.isWithinColombia(4.7125, -74.1420)` (que daba `true` por estar en Colombia) y asumía erróneamente que `4.7125, -74.1420` era la ubicación real del cliente, sin geocodificar `order.direccion` (`Avenida Calle 64C 69J, Bosque Popular, Bogotá`). Además, `LocationService.geocodeColombiaAddress` solo consultaba Nominatim sin normalizar cruces viales colombianos ni usar ArcGIS World Geocoder.
+- **2. Persistencia Extremo a Extremo en `DespulpadoraPwa`**:
+  - `src/app/core/models/business.models.ts`: Se añadieron `neighborhood?: string;`, `latitude?: number;` y `longitude?: number;` a `OrderDto` y `CreateOrderDto`.
+  - `src/app/core/services/api.service.ts`: `createOrder` y `updateOrder` envían `neighborhood`, `latitude` y `longitude`; `createClient` y `updateClient` envían `latitude` y `longitude`; `mapOrderFromApi` y `mapClientFromApi` mapean las coordenadas válidas (`Math.abs > 0.0001`).
+  - `src/app/core/services/state.service.ts`: `createOrder`, `updateOrder` (con soporte `silent?: boolean`) y `syncTimestampOrdersAndDispatchRoute` propagan `neighborhood`, `latitude` y `longitude`.
+  - `src/app/features/orders/orders.component.ts`: `openEditOrderModal` preserva las coordenadas existentes del pedido en `selectedManualGeo`, y `submitManualOrder` envía `latitude`, `longitude` y `neighborhood` (o geocodifica en segundo plano con `geocodingService.geocodeBestMatch` si el usuario escribió la dirección sin elegir sugerencia).
+  - `src/app/features/orders/delivery-map.component.ts`: `savePointAsOrder` y `submitDrawerQuickAdd` envían `latitude`, `longitude` y `neighborhood`; `syncWithStateServiceOrders` y `enqueueOrderForDeliveryAssignment` persisten silenciosamente hacia el backend las coordenadas geocodificadas de pedidos que venían con `Latitude = NULL`.
+- **3. Geocodificación Vial Colombiana y Mapa en Vivo en `DespulpadoraApp` (Flutter)**:
+  - `lib/services/location_service.dart`: Se implementaron `isPlantaMatrizDefault`, `hasSpecificOrderCoordinate`, `normalizeColombianAddress` (`Avenida Calle 64C 69J` -> `Calle 64C # 69J`) y el geocodificador multicapa `geocodeColombiaAddress` con **ArcGIS World Geocoder** acotado a Bogotá/Colombia + **Nominatim OpenStreetMap** + fallback por barrio (`Bosque Popular, Bogotá`).
+  - `lib/blocs/orders_cubit.dart`: `_fetchAndApplyOrders` y `_geocodeMissingOrders` evalúan `LocationService.hasSpecificOrderCoordinate` y pasan `neighborhood: raw.barrio`.
+  - `lib/views/courier_route_map_screen.dart`, `lib/views/route_preview_map_screen.dart` y `lib/views/widgets/osm_map_widget.dart`: `_resolveStopLocation` usa `hasSpecificOrderCoordinate` y geocodificación local reactiva con recálculo automático de ruta OSRM (`_recalculateFullRoute`) y reencuadre de cámara.
+- **4. Informes de Agentes de Calidad (`AGENTS.md` §1)**:
+  - **Agente de Verificación de Impacto (`fb9d14e5-8254-4652-8503-7cce25a65baf`)**: Identificó la cadena completa del fallo entre PWA, API .NET y Flutter sin impacto colateral.
+  - **Agente Auditor Punto por Punto (`ac2f92e1-6e31-4f9a-8b26-41c0e843cf21`)**: Emitió veredicto **APROBADO (100% CUMPLE)**.
+  - **Agente de Revisión Par (`cbd03ca2-6f65-4860-b743-f804c5e58e61`)**: Certificó la calidad técnica en ambos repositorios (**APROBADO**).
+
+### 📦 Componentes Modificados
+- `src/app/core/models/business.models.ts`
+- `src/app/core/services/api.service.ts`
+- `src/app/core/services/api.service.spec.ts`
+- `src/app/core/services/state.service.ts`
+- `src/app/core/services/state.service.spec.ts`
+- `src/app/features/orders/orders.component.ts`
+- `src/app/features/orders/orders.component.spec.ts`
+- `src/app/features/orders/delivery-map.component.ts`
+- `src/app/features/orders/delivery-map.component.spec.ts`
+- `../Flutter/DespulpadoraApp/lib/services/location_service.dart`
+- `../Flutter/DespulpadoraApp/lib/blocs/orders_cubit.dart`
+- `../Flutter/DespulpadoraApp/lib/views/courier_route_map_screen.dart`
+- `../Flutter/DespulpadoraApp/lib/views/route_preview_map_screen.dart`
+- `../Flutter/DespulpadoraApp/lib/views/widgets/osm_map_widget.dart`
+- `../Flutter/DespulpadoraApp/test/widget_test.dart`
+- `HISTORIAL_CAMBIOS.md`
+
+### ✅ Verificación, Build y Tests Unitarios
+- **Build de Producción PWA (`npm run build`)**: **OK (0 errores)**.
+- **Pruebas Unitarias PWA (`CHROME_BIN="/Applications/Brave Browser.app/Contents/MacOS/Brave Browser" npx ng test --watch=false --browsers=ChromeHeadless`)**: **Executed 321 of 321 SUCCESS (100% Unit Tests Passed, 0 fallos)**.
+- **Análisis y Pruebas Unitarias Flutter (`dart analyze && flutter test`)**: **No issues found! / All 18 tests passed! (0 fallos)**.
+
+---
+
 ## [2026-11-02] - Hidratación Automática y Sincronización Bidireccional del Inventario de Pulpa (`productVariants`) en Dispositivos Móviles y Web (`StateService`)
 
 ### 💬 Prompt Original del Usuario
@@ -3410,5 +3536,50 @@ por otr lado, la columna de accion dejamelo mejor, puede ser un lista desplegabl
 - **Verificación en Vivo (`GET http://localhost:3005/api/whatsapp/status`)**: **`{"status":"QR_READY","connected":false,"qrDataUrl":"data:image/png;base64,..."}`** (QR criptográfico real de `@whiskeysockets/baileys`).
 - **Build de Producción PWA (`npm run build`)**: **0 Errores** (`dist/despulpadora-pwa` generado exitosamente).
 - **Pruebas Unitarias PWA (`npx ng test --watch=false --browsers=ChromeHeadless`)**: **Executed 315 of 315 SUCCESS (TOTAL: 315 SUCCESS, 0 FAILED)**.
+
+---
+
+## [2026-11-03] - Persistencia de Ruta Completada en App Flutter (`100% Entregado`) hasta Liquidación y Recepción de Caja desde la PWA (`Finalizar Recepción y Cerrar Ruta`) (`DespulpadoraApp` + `ApiDespulpadora` + `DespulpadoraPwa`)
+
+### 💬 Prompt Original del Usuario
+> "en la app flutter, cuando acaban de entregar todas las entregas de los pedidos, se cierra toda la intefez del home pero eso deberia de pasar es cuando desde la pwa reciban la caja desde el boton de finalizar , ahi si que se cierre la ruta del domiciiliario en la app"
+> "ejecuta"
+
+### 🤖 Resumen Técnico para la IA
+- **1. Preservación de la Ruta Activa en `OrdersCubit` y `ApiService` al Completar la Última Entrega (`DespulpadoraApp`)**:
+  - En `lib/blocs/orders_cubit.dart` (`_updateStatusTransition`, `reportNovelty` y `_fetchAndApplyOrders`), al entregar o reportar novedad en el último pedido (`!hasRemainingPending`), ya **no** se limpia `orders: const []` ni se fuerza `hasAssignedRoute: false` inmediatamente. Se emite `state.copyWith(orders: updatedOrders, activeOrderId: activeId, isRouteActive: false, hasAssignedRoute: true, isRouteReceived: true)`, de modo que el mapa de navegación en vivo regresa al Home pero el Home mantiene abierta toda la interfaz de la ruta (`100% completado`, `Entregados`, `Recaudado`, tarjetas de pedidos entregados, banner informativo *"Ruta completada al 100%. Dirígete a planta para entregar la caja y cerrar la ruta."* y botón inferior *"Pendiente Entregar Caja en Planta"*).
+  - En `lib/services/api_service.dart` (`_filterActiveRouteOrderMaps`), cuando `activeMaps.isEmpty`, se conservan los pedidos cuya ruta sigue sin liquidar en planta (`routeSequenceOrder > 0` y `dispatchedAtUtc` no vacío dentro de la ventana del último despacho).
+  - Únicamente cuando en la PWA reciben la caja y cierran la ruta (`incomingRawOrders.isEmpty || !routeResponse.hasAssignedRoute`), `OrdersCubit` archiva los pedidos en `_archivedCompletedOrderIds` y emite `hasAssignedRoute: false, isRouteReceived: false, orders: []`, volviendo a la vista *"Aún no tienes una ruta asignada"*.
+- **2. Persistencia de Ruta Completada No Liquidada y Cierre en `SettleCourierRouteAsync` (`ApiDespulpadora`)**:
+  - En `ApiDespulpadora.Core/Services/Mobile/MobileAppService.cs` (`GetAssignedRouteAsync`), cuando `activeUndeliveredOrders.Count == 0`, se evalúa `unsettledRouteOrders` (`o.RouteSequenceOrder > 0 && o.DispatchedAtUtc.HasValue` mientras `courier.Status != "Disponible"`), retornando `HasAssignedRoute = true`, `IsRouteReceived = true` y los pedidos de la ruta actual hasta que la PWA ejecute la liquidación.
+  - En `ApiDespulpadora.Core/Services/Business/OrderAndCourierServices.cs` (`CourierService.SettleCourierRouteAsync`), se resuelve al domiciliario por `ResponsibleUserId` e `Id`, se marca `Status = "Disponible"` en los registros asociados y se limpia `RouteSequenceOrder = null` y `DispatchedAtUtc = null` en todas las órdenes del domiciliario.
+- **3. Notificación WebSocket en Tiempo Real al Finalizar Recepción de Caja en la PWA (`DespulpadoraPwa`)**:
+  - En `src/app/core/services/state.service.ts` (`settleCourierRoute`), se limpia `routeCode`, `routeSequenceOrder` y `dispatchedAtUtc` localmente y se publica el evento en tiempo real `realtimeSync.publishDomainChange('routes', 'settle', ..., { event: 'courier_route_settled', courierId: String(courierId) })` tanto de inmediato como al completar `api.settleCourierRoute(...)`.
+  - En `src/app/features/orders/delivery-map.component.ts` (`confirmSettlementAndReceive`), se evita disparar `updateOrderStatus(s.id, 'DELIVERED')` redundante sobre paradas que ya fueron entregadas en la app móvil (`if (isDelivered && !s.isDelivered)`) y se envía `this.receivingExpectedDigital()` como `transfersConfirmed`.
+- **4. Certificación de Agentes de Calidad**:
+  - **Agente Verificador de Impacto (`fb9d14e5-8254-4652-8503-7cce25a65baf`)**: Verificó el impacto de extremo a extremo sin regresiones.
+  - **Agente Auditor Punto por Punto (`ac2f92e1-6e31-4f9a-8b26-41c0e843cf21`)**: Dictamen **APROBADO AL 100% (0 Desviaciones)**.
+  - **Agente de Revisión Par (`cbd03ca2-6f65-4860-b743-f804c5e58e61`)**: Dictamen **APROBADO SIN RESERVAS (Certificación 100% Exitosa)**.
+
+### 📦 Componentes Modificados
+- `/Users/sebastiansalamanca/Documents/Api/ApiDespulpadora/ApiDespulpadora.Core/Services/Mobile/MobileAppService.cs` [MODIFICADO]
+- `/Users/sebastiansalamanca/Documents/Api/ApiDespulpadora/ApiDespulpadora.Core/Services/Business/OrderAndCourierServices.cs` [MODIFICADO]
+- `/Users/sebastiansalamanca/Documents/Api/ApiDespulpadora/ApiDespulpadora.UnitTests/Mobile/MobileAppServiceAndControllersTests.cs` [MODIFICADO]
+- `/Users/sebastiansalamanca/Documents/Flutter/DespulpadoraApp/lib/blocs/orders_cubit.dart` [MODIFICADO]
+- `/Users/sebastiansalamanca/Documents/Flutter/DespulpadoraApp/lib/services/api_service.dart` [MODIFICADO]
+- `/Users/sebastiansalamanca/Documents/Flutter/DespulpadoraApp/lib/views/home_orders_screen.dart` [MODIFICADO]
+- `/Users/sebastiansalamanca/Documents/Flutter/DespulpadoraApp/test/widget_test.dart` [MODIFICADO]
+- `src/app/core/services/state.service.ts` [MODIFICADO]
+- `src/app/core/services/state.service.spec.ts` [MODIFICADO]
+- `src/app/features/orders/delivery-map.component.ts` [MODIFICADO]
+- `src/app/features/orders/delivery-map.component.spec.ts` [MODIFICADO]
+- `HISTORIAL_CAMBIOS.md` [MODIFICADO]
+
+### ✅ Verificación, Build y Tests Unitarios
+- **Pruebas Unitarias Backend .NET (`dotnet test`)**: **39 de 39 Superados (0 Fallos)**.
+- **Análisis y Pruebas Unitarias Flutter (`dart analyze && flutter test`)**: **No issues found! + 18 of 18 All tests passed! (0 Fallos)**.
+- **Build de Producción PWA (`npm run build`)**: **0 Errores** (`dist/despulpadora-pwa` generado exitosamente).
+- **Pruebas Unitarias PWA (`npx ng test --watch=false --browsers=ChromeHeadless`)**: **Executed 325 of 325 SUCCESS (TOTAL: 325 SUCCESS, 0 FAILED)**.
+
 
 

@@ -331,6 +331,7 @@ export interface OrderDto {
   createdAt: string;
   isPriority?: boolean;
   isBilled?: boolean;
+  neighborhood?: string;
   latitude?: number;
   longitude?: number;
 }
@@ -354,6 +355,9 @@ export interface CreateOrderDto {
   clientName?: string;
   clientPhone?: string;
   clientAddress?: string;
+  neighborhood?: string;
+  latitude?: number;
+  longitude?: number;
   paymentMethodId?: number;
   paymentMethod?: string;
   deliveryDate?: string;

@@ -217,11 +217,24 @@ export class DashboardComponent {
   readonly ordersByStatus = computed<OrdersByStatusCounts>(() => {
     try {
       const orders = this.stateService.orders();
+      const pendingVoiceCount =
+        typeof this.voiceOrdersService.pendingCount === 'function'
+          ? this.voiceOrdersService.pendingCount()
+          : 0;
+      const billedCount = orders.filter(o => o.status === 'BILLED').length;
+      const pickingCount =
+        typeof this.stateService.pendingOrdersCount === 'function'
+          ? this.stateService.pendingOrdersCount()
+          : orders.filter(o => o.status === 'PENDING' || o.status === 'PICKING').length;
+      const dispatchedCount =
+        typeof this.stateService.dispatchedOrdersCount === 'function'
+          ? this.stateService.dispatchedOrdersCount()
+          : orders.filter(o => o.status === 'DISPATCHED').length;
       return {
-        pending: orders.filter(o => o.status === 'PENDING').length,
-        picking: orders.filter(o => o.status === 'PICKING').length,
-        billed: orders.filter(o => o.status === 'BILLED').length,
-        dispatched: orders.filter(o => o.status === 'DISPATCHED').length,
+        pending: pendingVoiceCount + billedCount,
+        picking: pickingCount,
+        billed: billedCount,
+        dispatched: dispatchedCount,
         delivered: orders.filter(o => o.status === 'DELIVERED').length
       };
     } catch {

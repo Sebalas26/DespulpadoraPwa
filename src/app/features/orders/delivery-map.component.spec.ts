@@ -1193,4 +1193,114 @@ describe('DeliveryMapComponent', () => {
     expect(courierAfterRealGps.vehiclePlate).toBe('232323');
     expect(courierAfterRealGps.status).toBe('en_ruta');
   });
+
+  it('should forward latitude, longitude, and neighborhood when saving point as order on map', () => {
+    component.newOrderLat.set(4.6782);
+    component.newOrderLng.set(-74.0981);
+    component.newOrderZone.set('Bosque Popular');
+    component.newOrderClient = 'caldo parado';
+    component.newOrderAddress = 'Avenida Calle 64C 69J, Bosque Popular, Bogotá';
+    component.newOrderPhone = '3164953397';
+    component.newOrderAmount = 9000;
+
+    component.savePointAsOrder();
+
+    expect(createOrderSpy).toHaveBeenCalledWith(
+      jasmine.objectContaining({
+        clientName: 'caldo parado',
+        clientAddress: 'Avenida Calle 64C 69J, Bosque Popular, Bogotá',
+        neighborhood: 'Bosque Popular',
+        latitude: 4.6782,
+        longitude: -74.0981
+      })
+    );
+  });
+
+  it('should settle courier route with confirmed digital transfers and avoid redundant updateOrderStatus calls for stops already delivered in the mobile app', () => {
+    const todayIso: string = new Date().toISOString();
+    mockRoles.set([
+      { roleId: 9, name: 'Domiciliario', isCourier: true, isSystemRole: false, isActive: true }
+    ]);
+    mockUsers.set([
+      {
+        userId: 88,
+        username: 'sebas.domi',
+        fullName: 'sebas domiciliario',
+        roleId: 9,
+        roleName: 'Domiciliario',
+        isActive: true,
+        companyId: 1,
+        branches: [],
+        email: 'sebas@example.com'
+      }
+    ]);
+    mockOrders.set([
+      {
+        orderId: 996,
+        orderNumber: 'ORD-996',
+        clientId: 1,
+        clientName: 'Cliente Efectivo',
+        clientAddress: 'Carrera 69L # 64D-50',
+        branchId: 1,
+        status: 'DELIVERED',
+        isBilled: true,
+        isPaid: true,
+        paymentMethodName: 'Efectivo',
+        totalAmount: 40000,
+        courierId: 88,
+        courierName: 'sebas domiciliario',
+        routeCode: 'RUT-88',
+        routeSequenceOrder: 1,
+        dispatchedAtUtc: todayIso,
+        deliveredAtUtc: todayIso,
+        createdAt: todayIso,
+        orderDate: todayIso.substring(0, 10),
+        items: []
+      },
+      {
+        orderId: 997,
+        orderNumber: 'ORD-997',
+        clientId: 2,
+        clientName: 'Cliente Nequi',
+        clientAddress: 'Carrera 70 # 65-10',
+        branchId: 1,
+        status: 'DISPATCHED',
+        isBilled: true,
+        isPaid: false,
+        paymentMethodName: 'Nequi',
+        totalAmount: 25000,
+        courierId: 88,
+        courierName: 'sebas domiciliario',
+        routeCode: 'RUT-88',
+        routeSequenceOrder: 2,
+        dispatchedAtUtc: todayIso,
+        createdAt: todayIso,
+        orderDate: todayIso.substring(0, 10),
+        items: []
+      }
+    ]);
+    fixture.detectChanges();
+
+    const courier: Courier = component.couriers().find((c: Courier) => c.id === 'u88')!;
+    component.openReceiveCourierModal(courier);
+    component.toggleStopDelivered(997);
+    component.setStopPaymentMethod(997, 'NEQUI');
+    component.physicalCashReceived.set(40000);
+    component.receiveNotes.set('Liquidación completa');
+
+    updateOrderStatusSpy.calls.reset();
+    settleCourierRouteSpy.calls.reset();
+
+    component.confirmSettlementAndReceive();
+
+    expect(updateOrderStatusSpy.calls.count()).toBe(1);
+    expect(updateOrderStatusSpy).toHaveBeenCalledWith(997, 'DELIVERED');
+    expect(settleCourierRouteSpy).toHaveBeenCalledWith(
+      88,
+      'sebas domiciliario',
+      40000,
+      25000,
+      'Liquidación completa'
+    );
+  });
 });

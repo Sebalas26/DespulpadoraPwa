@@ -13,7 +13,7 @@ export interface EnvironmentConfig {
  */
 export const environment: EnvironmentConfig = {
   production: false,
-  version: '1.0.0',
+  version: '1.0.1',
   apiUrl: 'https://apidevdespulpadora.parking-flow.com/api',
   storagePrefix: 'despulpadora_'
 };

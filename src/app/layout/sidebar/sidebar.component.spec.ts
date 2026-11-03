@@ -171,7 +171,7 @@ describe('SidebarComponent', () => {
     });
   });
 
-  it('should not render the Todo en su punto callout card and should display the same pendingOrdersCount badge on Pedidos, Facturación & POS, and Despachos & Rutas', () => {
+  it('should display distinct counts on Pedidos and Facturación & POS matching their actual records and no badge on Despachos & Rutas', () => {
     authService.navigationModules.set([
       {
         moduleId: 3,
@@ -190,7 +190,7 @@ describe('SidebarComponent', () => {
         orderNumber: 'ORD-101',
         invoiceNumber: 'FAC-101',
         clientId: 1,
-        clientName: 'Cliente Prueba',
+        clientName: 'Cliente Alistamiento 1',
         clientPhone: '3001234567',
         clientAddress: 'Calle 10 # 20-30',
         branchId: 1,
@@ -198,6 +198,40 @@ describe('SidebarComponent', () => {
         isPaid: false,
         paymentMethodName: 'Efectivo',
         totalAmount: 15000,
+        createdAt: new Date().toISOString(),
+        orderDate: new Date().toISOString().substring(0, 10),
+        items: []
+      },
+      {
+        orderId: 102,
+        orderNumber: 'ORD-102',
+        invoiceNumber: 'FAC-102',
+        clientId: 2,
+        clientName: 'Cliente Alistamiento 2',
+        clientPhone: '3001234568',
+        clientAddress: 'Calle 11 # 20-30',
+        branchId: 1,
+        status: 'PENDING',
+        isPaid: false,
+        paymentMethodName: 'Efectivo',
+        totalAmount: 25000,
+        createdAt: new Date().toISOString(),
+        orderDate: new Date().toISOString().substring(0, 10),
+        items: []
+      },
+      {
+        orderId: 103,
+        orderNumber: 'ORD-103',
+        invoiceNumber: 'FAC-103',
+        clientId: 3,
+        clientName: 'Luz Arango',
+        clientPhone: '3001234569',
+        clientAddress: 'Calle 12 # 20-30',
+        branchId: 1,
+        status: 'BILLED',
+        isPaid: false,
+        paymentMethodName: 'Contra Entrega',
+        totalAmount: 273700,
         createdAt: new Date().toISOString(),
         orderDate: new Date().toISOString().substring(0, 10),
         items: []
@@ -215,8 +249,8 @@ describe('SidebarComponent', () => {
     const facturacionLink = navLinks.find((el: HTMLAnchorElement) => el.textContent?.includes('Facturación & POS'));
     const despachosLink = navLinks.find((el: HTMLAnchorElement) => el.textContent?.includes('Despachos & Rutas'));
 
-    expect(pedidosLink?.querySelector('.dgl-nav-badge')?.textContent?.trim()).toBe('1');
+    expect(pedidosLink?.querySelector('.dgl-nav-badge')?.textContent?.trim()).toBe('2');
     expect(facturacionLink?.querySelector('.dgl-nav-badge')?.textContent?.trim()).toBe('1');
-    expect(despachosLink?.querySelector('.dgl-nav-badge')?.textContent?.trim()).toBe('1');
+    expect(despachosLink?.querySelector('.dgl-nav-badge')).toBeNull();
   });
 });

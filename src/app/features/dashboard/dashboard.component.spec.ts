@@ -100,6 +100,31 @@ describe('DashboardComponent', () => {
     ]);
     mockTotalStockKg.set(17.2);
     mockTotalFreshStockKg.set(250);
+    mockOrders.set([
+      {
+        orderId: 1,
+        orderNumber: 'ORD-001',
+        clientId: 1,
+        clientName: 'Hotel Central',
+        branchId: 1,
+        status: 'PENDING',
+        isPaid: false,
+        paymentMethodName: 'Efectivo',
+        totalAmount: 35000,
+        createdAt: new Date().toISOString(),
+        orderDate: new Date().toISOString().substring(0, 10),
+        items: [
+          {
+            fruitId: 1,
+            fruitName: 'Mora',
+            grammage: 250,
+            quantity: 10,
+            unitPrice: 3500,
+            subtotal: 35000
+          }
+        ]
+      }
+    ]);
 
     const stateServiceMock: Partial<StateService> = {
       isOnline: signal<boolean>(true) as unknown as StateService['isOnline'],
@@ -174,11 +199,65 @@ describe('DashboardComponent', () => {
   });
 
   it('should compute ordersByStatus, todayBillingStats, and soldPulpsSummary accurately', () => {
-    expect(component.ordersByStatus().pending).toBe(1);
+    expect(component.ordersByStatus().picking).toBe(1);
+    expect(component.ordersByStatus().pending).toBe(0);
     expect(component.todayBillingStats().revenue).toBe(35000);
     expect(component.todayBillingStats().unitsSold).toBe(10);
     expect(component.soldPulpsSummary().totalUnits).toBe(10);
     expect(component.soldPulpsSummary().totalKg).toBe(2.5);
+  });
+
+  it('should synchronize Flujo de pedidos (ordersByStatus) with real database states for pending confirmation, picking, and active routes', () => {
+    mockOrders.set([
+      {
+        orderId: 10,
+        orderNumber: 'ORD-010',
+        clientId: 1,
+        clientName: 'Cliente Alistamiento 1',
+        branchId: 1,
+        status: 'PENDING',
+        isPaid: false,
+        paymentMethodName: 'Efectivo',
+        totalAmount: 20000,
+        createdAt: new Date().toISOString(),
+        orderDate: new Date().toISOString().substring(0, 10),
+        items: []
+      },
+      {
+        orderId: 11,
+        orderNumber: 'ORD-011',
+        clientId: 2,
+        clientName: 'Cliente Alistamiento 2',
+        branchId: 1,
+        status: 'PICKING',
+        isPaid: false,
+        paymentMethodName: 'Efectivo',
+        totalAmount: 30000,
+        createdAt: new Date().toISOString(),
+        orderDate: new Date().toISOString().substring(0, 10),
+        items: []
+      },
+      {
+        orderId: 12,
+        orderNumber: 'ORD-012',
+        clientId: 3,
+        clientName: 'Luz Arango',
+        branchId: 1,
+        status: 'BILLED',
+        isBilled: true,
+        isPaid: false,
+        paymentMethodName: 'Contra Entrega',
+        totalAmount: 273700,
+        createdAt: new Date().toISOString(),
+        orderDate: new Date().toISOString().substring(0, 10),
+        items: []
+      }
+    ]);
+    fixture.detectChanges();
+
+    expect(component.ordersByStatus().picking).toBe(2);
+    expect(component.ordersByStatus().pending).toBe(1);
+    expect(component.ordersByStatus().dispatched).toBe(0);
   });
 
   it('should compute topClientOfMonth, totalPreparedPulpUnits, and inventory reports', () => {

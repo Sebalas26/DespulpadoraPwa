@@ -440,7 +440,7 @@
       </div>
 
       <div class="items-list-container">
-        <div class="order-status-item neutral-card">
+        <a routerLink="/orders" [queryParams]="{ tab: 'facturacion' }" class="order-status-item neutral-card" style="text-decoration: none; cursor: pointer;">
           <div class="status-left-group">
             <div class="status-icon-wrapper">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -456,9 +456,9 @@
             </div>
           </div>
           <span class="status-count">{{ ordersByStatus().pending }}</span>
-        </div>
+        </a>
 
-        <div class="order-status-item amber-card">
+        <a routerLink="/orders" [queryParams]="{ tab: 'picking' }" class="order-status-item amber-card" style="text-decoration: none; cursor: pointer;">
           <div class="status-left-group">
             <div class="status-icon-wrapper" style="color: #b45309;">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -472,9 +472,9 @@
             </div>
           </div>
           <span class="status-count">{{ ordersByStatus().picking }}</span>
-        </div>
+        </a>
 
-        <div class="order-status-item purple-card">
+        <a routerLink="/orders" [queryParams]="{ tab: 'despachos' }" class="order-status-item purple-card" style="text-decoration: none; cursor: pointer;">
           <div class="status-left-group">
             <div class="status-icon-wrapper" style="color: #7c3aed;">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -490,7 +490,7 @@
             </div>
           </div>
           <span class="status-count">{{ ordersByStatus().dispatched }}</span>
-        </div>
+        </a>
       </div>
 
       <div class="card-actions-bottom">

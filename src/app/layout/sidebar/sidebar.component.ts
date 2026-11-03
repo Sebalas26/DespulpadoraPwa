@@ -197,8 +197,8 @@ import { environment } from '../../../environments/environment';
                   </svg>
                 </span>
                 <span class="dgl-nav-text">Facturación & POS</span>
-                @if (stateService.pendingOrdersCount() > 0) {
-                  <span class="dgl-nav-badge">{{ stateService.pendingOrdersCount() }}</span>
+                @if (stateService.billingOrdersCount() > 0) {
+                  <span class="dgl-nav-badge">{{ stateService.billingOrdersCount() }}</span>
                 }
               </a>
 
@@ -219,9 +219,6 @@ import { environment } from '../../../environments/environment';
                   </svg>
                 </span>
                 <span class="dgl-nav-text">Despachos & Rutas</span>
-                @if (stateService.pendingOrdersCount() > 0) {
-                  <span class="dgl-nav-badge">{{ stateService.pendingOrdersCount() }}</span>
-                }
               </a>
             } @else {
               <a

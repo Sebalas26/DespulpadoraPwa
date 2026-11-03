@@ -198,6 +198,22 @@ export class StateService {
     }
   });
 
+  readonly billingOrdersCount = computed<number>(() => {
+    try {
+      return this.orders().filter(o => o.status === 'BILLED' || o.status === 'PICKING').length;
+    } catch {
+      return 0;
+    }
+  });
+
+  readonly dispatchedOrdersCount = computed<number>(() => {
+    try {
+      return this.orders().filter(o => o.status === 'DISPATCHED').length;
+    } catch {
+      return 0;
+    }
+  });
+
   readonly todayBatchesCount = computed<number>(() => {
     try {
       const todayStr = new Date().toISOString().substring(0, 10);
@@ -1262,7 +1278,65 @@ private loadEmployeesFromStorage(): EmployeeDto[] {
           this.syncVariantsWithFruits(mappedFruits);
 
           this.batches.set(res.batches || []);
-          this.orders.set(res.orders || []);
+          const existingOrdersMap = new Map<number, OrderDto>(
+            this.orders().map((o: OrderDto) => [o.orderId, o])
+          );
+          const todayIso = new Date().toISOString().substring(0, 10);
+          const reconciledOrders: OrderDto[] = (res.orders || []).map((apiOrder: OrderDto) => {
+            const localOrder = existingOrdersMap.get(apiOrder.orderId);
+            let nextStatus: OrderStatus = apiOrder.status;
+            let shouldSyncStatusToDb = false;
+
+            if (
+              localOrder &&
+              apiOrder.status === 'PENDING' &&
+              (localOrder.status === 'PICKING' || localOrder.status === 'BILLED')
+            ) {
+              nextStatus = localOrder.status;
+              shouldSyncStatusToDb = true;
+            } else if (
+              localOrder &&
+              apiOrder.status === 'DISPATCHED' &&
+              localOrder.status === 'DELIVERED'
+            ) {
+              nextStatus = 'DELIVERED';
+              shouldSyncStatusToDb = true;
+            } else if (
+              apiOrder.status === 'DISPATCHED' &&
+              (apiOrder.createdAt || apiOrder.orderDate || '').substring(0, 10) !== '' &&
+              (apiOrder.createdAt || apiOrder.orderDate || '').substring(0, 10) < todayIso
+            ) {
+              nextStatus = 'DELIVERED';
+              shouldSyncStatusToDb = true;
+            }
+
+            if (shouldSyncStatusToDb && apiOrder.orderId > 0) {
+              this.api
+                .updateOrderStatus({
+                  orderId: apiOrder.orderId,
+                  status: nextStatus,
+                  isBilled:
+                    nextStatus === 'BILLED' ||
+                    nextStatus === 'DISPATCHED' ||
+                    nextStatus === 'DELIVERED'
+                })
+                .pipe(catchError(() => of(null)))
+                .subscribe();
+            }
+
+            return nextStatus !== apiOrder.status
+              ? {
+                  ...apiOrder,
+                  status: nextStatus,
+                  isBilled:
+                    apiOrder.isBilled ||
+                    nextStatus === 'BILLED' ||
+                    nextStatus === 'DISPATCHED' ||
+                    nextStatus === 'DELIVERED'
+                }
+              : apiOrder;
+          });
+          this.orders.set(reconciledOrders);
           this.clients.set(res.clients || []);
           this.employees.set(res.employees || []);
           this.expenses.set(res.expenses || []);
@@ -1332,6 +1406,8 @@ private loadEmployeesFromStorage(): EmployeeDto[] {
   ): void {
     try {
       const normalizedName: string = courierName.trim().toLowerCase();
+      const ordersToMarkDelivered: number[] = [];
+      const nowUtc: string = new Date().toISOString();
       this.orders.update((list: OrderDto[]) =>
         list.map((order: OrderDto) => {
           const matchesCourier: boolean =
@@ -1341,19 +1417,73 @@ private loadEmployeesFromStorage(): EmployeeDto[] {
           if (!matchesCourier) {
             return order;
           }
+          if (order.status === 'DISPATCHED') {
+            ordersToMarkDelivered.push(order.orderId);
+          }
           return {
             ...order,
+            status: order.status === 'DISPATCHED' ? 'DELIVERED' : order.status,
+            deliveredAtUtc:
+              order.status === 'DISPATCHED'
+                ? order.deliveredAtUtc || nowUtc
+                : order.deliveredAtUtc,
             routeCode: undefined,
-            routeSequenceOrder: undefined
+            routeSequenceOrder: undefined,
+            dispatchedAtUtc: undefined
           };
         })
       );
-      this.saveAllToStorage();
+      for (const deliveredOrderId of ordersToMarkDelivered) {
+        if (deliveredOrderId > 0) {
+          this.api
+            .updateOrderStatus({
+              orderId: deliveredOrderId,
+              status: 'DELIVERED',
+              isBilled: true
+            })
+            .pipe(catchError(() => of(null)))
+            .subscribe();
+        }
+      }
+      this.saveAllToStorage('routes', 'settle');
+      if (!this.isApplyingExternalRealtimeEvent) {
+        this.realtimeSync.publishDomainChange(
+          'routes',
+          'settle',
+          {
+            courierId,
+            courierName,
+            cashDelivered,
+            transfersConfirmed
+          },
+          {
+            event: 'courier_route_settled',
+            courierId: String(courierId)
+          }
+        );
+      }
       if (courierId > 0) {
         this.api
           .settleCourierRoute(courierId, { cashDelivered, transfersConfirmed, notes })
           .pipe(catchError(() => of(null)))
-          .subscribe();
+          .subscribe(() => {
+            if (!this.isApplyingExternalRealtimeEvent) {
+              this.realtimeSync.publishDomainChange(
+                'routes',
+                'settle',
+                {
+                  courierId,
+                  courierName,
+                  cashDelivered,
+                  transfersConfirmed
+                },
+                {
+                  event: 'courier_route_settled',
+                  courierId: String(courierId)
+                }
+              );
+            }
+          });
       }
     } catch (error: unknown) {
       console.error('Error settling courier route:', error);
@@ -1806,6 +1936,9 @@ private loadEmployeesFromStorage(): EmployeeDto[] {
     clientName: string;
     clientPhone?: string;
     clientAddress?: string;
+    neighborhood?: string;
+    latitude?: number;
+    longitude?: number;
     items: {
       fruitName: string;
       grammage: number;
@@ -1830,6 +1963,9 @@ private loadEmployeesFromStorage(): EmployeeDto[] {
         clientName: orderData.clientName,
         clientPhone: orderData.clientPhone || '',
         clientAddress: orderData.clientAddress || '',
+        neighborhood: orderData.neighborhood,
+        latitude: orderData.latitude,
+        longitude: orderData.longitude,
         status: 'PENDING',
         orderDate: new Date().toISOString().substring(0, 10),
         scheduledDay: orderData.scheduledDay || this.getSpanishWeekday(),
@@ -1877,6 +2013,9 @@ private loadEmployeesFromStorage(): EmployeeDto[] {
           clientName: newOrder.clientName,
           clientPhone: newOrder.clientPhone,
           clientAddress: newOrder.clientAddress,
+          neighborhood: newOrder.neighborhood,
+          latitude: newOrder.latitude,
+          longitude: newOrder.longitude,
           paymentMethod: newOrder.paymentMethodName,
           scheduledDay: newOrder.scheduledDay,
           isPriority: newOrder.isPriority,
@@ -2027,6 +2166,9 @@ private loadEmployeesFromStorage(): EmployeeDto[] {
       clientName: string;
       clientPhone?: string;
       clientAddress?: string;
+      neighborhood?: string;
+      latitude?: number;
+      longitude?: number;
       items: {
         fruitName: string;
         grammage: number;
@@ -2039,6 +2181,7 @@ private loadEmployeesFromStorage(): EmployeeDto[] {
       courierName?: string;
       status?: OrderStatus;
       isPaid?: boolean;
+      silent?: boolean;
     }
   ): void {
     try {
@@ -2052,6 +2195,9 @@ private loadEmployeesFromStorage(): EmployeeDto[] {
               clientName: orderData.clientName,
               clientPhone: orderData.clientPhone || o.clientPhone,
               clientAddress: orderData.clientAddress || o.clientAddress,
+              neighborhood: orderData.neighborhood !== undefined ? orderData.neighborhood : o.neighborhood,
+              latitude: orderData.latitude !== undefined ? orderData.latitude : o.latitude,
+              longitude: orderData.longitude !== undefined ? orderData.longitude : o.longitude,
               paymentMethodName: orderData.paymentMethodName || o.paymentMethodName,
               courierName: orderData.courierName !== undefined ? orderData.courierName : o.courierName,
               status: orderData.status || o.status,
@@ -2088,6 +2234,9 @@ private loadEmployeesFromStorage(): EmployeeDto[] {
             clientName: updatedOrder.clientName,
             clientPhone: updatedOrder.clientPhone,
             clientAddress: updatedOrder.clientAddress,
+            neighborhood: updatedOrder.neighborhood,
+            latitude: updatedOrder.latitude,
+            longitude: updatedOrder.longitude,
             paymentMethod: updatedOrder.paymentMethodName,
             notes: updatedOrder.notes,
             items: updatedOrder.items.map(i => ({
@@ -2100,10 +2249,12 @@ private loadEmployeesFromStorage(): EmployeeDto[] {
           })
           .subscribe({ error: () => {} });
       }
-      this.notification.success(
-        'Pedido Modificado',
-        `Los cambios del pedido fueron guardados ($${totalAmount.toLocaleString('es-CO')}).`
-      );
+      if (!orderData.silent) {
+        this.notification.success(
+          'Pedido Modificado',
+          `Los cambios del pedido fueron guardados ($${totalAmount.toLocaleString('es-CO')}).`
+        );
+      }
     } catch {
       return;
     }
@@ -2442,6 +2593,9 @@ private loadEmployeesFromStorage(): EmployeeDto[] {
                   clientName: missingOrd.clientName,
                   clientPhone: missingOrd.clientPhone,
                   clientAddress: missingOrd.clientAddress,
+                  neighborhood: missingOrd.neighborhood,
+                  latitude: missingOrd.latitude,
+                  longitude: missingOrd.longitude,
                   paymentMethod: missingOrd.paymentMethodName,
                   scheduledDay: missingOrd.scheduledDay,
                   isPriority: missingOrd.isPriority,
@@ -2517,6 +2671,7 @@ private loadEmployeesFromStorage(): EmployeeDto[] {
   updateItemPickedQuantity(orderId: number, fruitId: number, grammage: number, pickedQty: number): void {
     try {
       let targetItemId = 0;
+      let resolvedNextStatus: OrderStatus | null = null;
       this.orders.update(list =>
         list.map(o => {
           if (o.orderId === orderId) {
@@ -2528,17 +2683,37 @@ private loadEmployeesFromStorage(): EmployeeDto[] {
               return item;
             });
 
-            const allDone = updatedItems.every(i => (i.pickedQuantity || 0) >= i.quantity);
-            const nextStatus: OrderStatus = allDone ? 'BILLED' : 'PICKING';
+            const allDone =
+              updatedItems.length > 0 &&
+              updatedItems.every(i => (i.pickedQuantity || 0) >= i.quantity);
+            const anyPicked = updatedItems.some(i => (i.pickedQuantity || 0) > 0);
+            const nextStatus: OrderStatus = allDone ? 'BILLED' : anyPicked ? 'PICKING' : 'PENDING';
+            if (o.status !== nextStatus) {
+              resolvedNextStatus = nextStatus;
+            }
 
-            return { ...o, items: updatedItems, status: nextStatus };
+            return {
+              ...o,
+              items: updatedItems,
+              status: nextStatus,
+              isBilled: allDone ? true : o.isBilled
+            };
           }
           return o;
         })
       );
-      this.saveAllToStorage();
+      this.saveAllToStorage('orders', 'picking');
       if (targetItemId > 0) {
-        this.api.updateOrderItemPicking(orderId, targetItemId, pickedQty).subscribe({ error: () => {} });
+        this.api.updateOrderItemPicking(orderId, targetItemId, pickedQty)?.subscribe({ error: () => {} });
+      }
+      if (resolvedNextStatus !== null && orderId > 0 && this.api.updateOrderStatus) {
+        this.api
+          .updateOrderStatus({
+            orderId,
+            status: resolvedNextStatus,
+            isBilled: resolvedNextStatus === 'BILLED'
+          })
+          ?.subscribe({ error: () => {} });
       }
     } catch {
       return;

@@ -670,8 +670,9 @@
 
 .billing-cards-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
-  gap: 20px;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 340px));
+  gap: 16px;
+  align-items: stretch;
 }
 
 @media (max-width: 640px) {
@@ -692,31 +693,33 @@
 
 .billing-queue-card {
   background: #ffffff;
-  border: 1.5px solid #e5e7eb;
-  border-radius: 16px;
-  padding: 18px 20px;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  padding: 15px 16px;
+  max-width: 340px;
+  width: 100%;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
   transition: all 0.2s ease;
-  box-shadow: 0 2px 8px rgba(15, 41, 30, 0.03);
+  box-shadow: 0 2px 8px rgba(15, 41, 30, 0.04);
 
   &:hover {
     border-color: #cbd5e1;
-    transform: translateY(-1px);
-    box-shadow: 0 6px 16px rgba(15, 41, 30, 0.06);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(15, 41, 30, 0.08);
   }
 }
 
 .queue-card-items-summary {
   background: #f8fafc;
   border: 1px solid #f1f5f9;
-  border-radius: 10px;
-  padding: 10px 12px;
-  margin-bottom: 14px;
+  border-radius: 9px;
+  padding: 9px 11px;
+  margin-bottom: 12px;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 5px;
 }
 
 .queue-item-row {
@@ -724,7 +727,7 @@
   align-items: center;
   justify-content: space-between;
   gap: 8px;
-  font-size: 0.78rem;
+  font-size: 0.76rem;
   color: #334155;
 
   strong {
@@ -955,56 +958,59 @@
 }
 
 .queue-inv-code {
-  font-size: 0.76rem;
+  font-size: 0.74rem;
   font-weight: 900;
   color: #5c940d;
   letter-spacing: 0.02em;
 }
 
 .queue-client-name {
-  font-size: 0.98rem;
+  font-size: 0.94rem;
   font-weight: 800;
   color: #111827;
   margin: 2px 0 0 0;
+  line-height: 1.25;
 }
 
 .queue-origin-badge {
   background: #f1f5f9;
   color: #334155;
-  font-size: 0.7rem;
+  font-size: 0.68rem;
   font-weight: 800;
-  padding: 3px 9px;
+  padding: 2px 8px;
   border-radius: 6px;
+  flex-shrink: 0;
 }
 
 .queue-card-meta {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 6px;
-  font-size: 0.76rem;
+  gap: 5px;
+  font-size: 0.73rem;
   color: #6b7280;
-  margin: 10px 0 12px;
+  margin: 8px 0 10px;
 }
 
 .queue-card-bottom {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 10px;
+  gap: 8px;
   padding-top: 10px;
   border-top: 1px solid #f1f5f9;
+  flex-wrap: wrap;
 }
 
 .queue-total-label {
-  font-size: 0.68rem;
+  font-size: 0.65rem;
   font-weight: 700;
   color: #6b7280;
   text-transform: uppercase;
 }
 
 .queue-total-val {
-  font-size: 1.02rem;
+  font-size: 0.98rem;
   font-weight: 900;
   color: #1e5e3a;
 }
@@ -1012,17 +1018,18 @@
 .queue-card-actions {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 5px;
+  flex-wrap: wrap;
 }
 
 .btn-queue-action {
   background: #f8fafc;
   border: 1px solid #cbd5e1;
   color: #1e293b;
-  font-size: 0.74rem;
+  font-size: 0.72rem;
   font-weight: 700;
-  padding: 6px 10px;
-  border-radius: 8px;
+  padding: 5px 8px;
+  border-radius: 7px;
   cursor: pointer;
   transition: all 0.15s ease;
 
@@ -1035,10 +1042,10 @@
   background: #1e5e3a;
   border: none;
   color: #ffffff;
-  font-size: 0.74rem;
+  font-size: 0.72rem;
   font-weight: 700;
-  padding: 6px 12px;
-  border-radius: 8px;
+  padding: 5px 10px;
+  border-radius: 7px;
   cursor: pointer;
   transition: all 0.15s ease;
 

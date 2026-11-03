@@ -389,6 +389,9 @@ export class ApiService {
         customerPhone: dto.clientPhone ?? '',
         clientAddress: dto.clientAddress ?? '',
         deliveryAddress: dto.clientAddress ?? '',
+        neighborhood: dto.neighborhood ?? null,
+        latitude: dto.latitude ?? null,
+        longitude: dto.longitude ?? null,
         paymentMethod: dto.paymentMethod ?? '',
         isPriority: dto.isPriority ?? false,
         scheduledDay: dto.scheduledDay ?? null,
@@ -426,6 +429,9 @@ export class ApiService {
         customerPhone: dto.clientPhone ?? '',
         clientAddress: dto.clientAddress ?? '',
         deliveryAddress: dto.clientAddress ?? '',
+        neighborhood: dto.neighborhood ?? null,
+        latitude: dto.latitude ?? null,
+        longitude: dto.longitude ?? null,
         paymentMethod: dto.paymentMethod ?? '',
         isPriority: dto.isPriority ?? false,
         scheduledDay: dto.scheduledDay ?? null,
@@ -455,11 +461,17 @@ export class ApiService {
    */
   updateOrderStatus(dto: UpdateOrderStatusDto): Observable<OrderDto> {
     try {
+      const resolvedIsBilled: boolean | null =
+        dto.isBilled !== undefined && dto.isBilled !== null
+          ? dto.isBilled
+          : dto.status === 'BILLED' || dto.status === 'DISPATCHED' || dto.status === 'DELIVERED'
+            ? true
+            : null;
       const payload = {
         status: dto.status,
         courierId: dto.courierId ?? null,
         isPaid: dto.isPaid ?? null,
-        isBilled: dto.isBilled ?? null,
+        isBilled: resolvedIsBilled,
         isPriority: dto.isPriority ?? null,
         scheduledDay: dto.scheduledDay ?? null
       };
@@ -662,6 +674,8 @@ export class ApiService {
         address: dto.address ?? '',
         city: dto.city ?? '',
         zone: dto.city ?? '',
+        latitude: dto.latitude ?? null,
+        longitude: dto.longitude ?? null,
         notes: dto.notes ?? null
       };
       return this.http.post<Record<string, unknown>>(`${this.baseUrl}/clients`, payload).pipe(
@@ -689,6 +703,8 @@ export class ApiService {
         address: dto.address ?? '',
         city: dto.city ?? '',
         zone: dto.city ?? '',
+        latitude: dto.latitude ?? null,
+        longitude: dto.longitude ?? null,
         notes: dto.notes ?? null,
         isActive: dto.isActive ?? true
       };
@@ -1760,6 +1776,41 @@ export class ApiService {
       });
 
       const createdAt = String(item['createdAtUtc'] ?? item['createdAt'] ?? new Date().toISOString());
+      const rawLat = item['latitude'] ?? item['lat'];
+      const rawLng = item['longitude'] ?? item['lng'];
+      const parsedLat = rawLat !== undefined && rawLat !== null ? Number(rawLat) : undefined;
+      const parsedLng = rawLng !== undefined && rawLng !== null ? Number(rawLng) : undefined;
+      const validLat =
+        parsedLat !== undefined && Number.isFinite(parsedLat) && Math.abs(parsedLat) > 0.0001
+          ? parsedLat
+          : undefined;
+      const validLng =
+        parsedLng !== undefined && Number.isFinite(parsedLng) && Math.abs(parsedLng) > 0.0001
+          ? parsedLng
+          : undefined;
+      let resolvedStatus: OrderStatus = this.normalizeOrderStatus(item['status']);
+      const isBilledFlag: boolean = Boolean(item['isBilled'] ?? false);
+      const deliveredAtStr: string | undefined =
+        item['deliveredAtUtc'] ?? item['deliveredAt']
+          ? String(item['deliveredAtUtc'] ?? item['deliveredAt'])
+          : undefined;
+      if (deliveredAtStr && resolvedStatus !== 'CANCELLED') {
+        resolvedStatus = 'DELIVERED';
+      } else if (
+        (resolvedStatus === 'PENDING' || resolvedStatus === 'PICKING') &&
+        (isBilledFlag ||
+          (mappedItems.length > 0 &&
+            mappedItems.every(
+              (i: OrderItemDto) => (i.pickedQuantity || 0) >= i.quantity && i.quantity > 0
+            )))
+      ) {
+        resolvedStatus = 'BILLED';
+      } else if (
+        resolvedStatus === 'PENDING' &&
+        mappedItems.some((i: OrderItemDto) => (i.pickedQuantity || 0) > 0)
+      ) {
+        resolvedStatus = 'PICKING';
+      }
       return {
         id,
         orderId: id,
@@ -1771,7 +1822,10 @@ export class ApiService {
         clientName: String(item['clientName'] ?? item['customerName'] ?? ''),
         clientPhone: String(item['clientPhone'] ?? item['customerPhone'] ?? ''),
         clientAddress: String(item['clientAddress'] ?? item['deliveryAddress'] ?? ''),
-        status: this.normalizeOrderStatus(item['status']),
+        neighborhood: item['neighborhood'] ? String(item['neighborhood']) : undefined,
+        latitude: validLat,
+        longitude: validLng,
+        status: resolvedStatus,
         orderDate: createdAt.substring(0, 10),
         scheduledDay: item['scheduledDay'] ? String(item['scheduledDay']) : undefined,
         totalAmount: Number(item['totalAmount'] ?? 0),
@@ -1779,15 +1833,18 @@ export class ApiService {
         paymentMethodName: String(item['paymentMethod'] ?? item['paymentMethodName'] ?? ''),
         courierId: item['courierId'] ? Number(item['courierId']) : undefined,
         courierName: item['courierName'] ? String(item['courierName']) : undefined,
+        routeCode: item['routeCode'] ? String(item['routeCode']) : undefined,
         routeSequenceOrder: item['routeSequenceOrder'] ? Number(item['routeSequenceOrder']) : undefined,
         dispatchedAtUtc: item['dispatchedAtUtc'] ? String(item['dispatchedAtUtc']) : undefined,
-        deliveredAtUtc: item['deliveredAtUtc'] ?? item['deliveredAt']
-          ? String(item['deliveredAtUtc'] ?? item['deliveredAt'])
-          : undefined,
+        deliveredAtUtc: deliveredAtStr,
         deliveryDate: item['deliveryDate'] ? String(item['deliveryDate']) : undefined,
         isPaid: Boolean(item['isPaid'] ?? false),
         isPriority: Boolean(item['isPriority'] ?? false),
-        isBilled: Boolean(item['isBilled'] ?? false),
+        isBilled:
+          isBilledFlag ||
+          resolvedStatus === 'BILLED' ||
+          resolvedStatus === 'DISPATCHED' ||
+          resolvedStatus === 'DELIVERED',
         notes: item['notes'] ? String(item['notes']) : undefined,
         createdAt
       };
@@ -1802,6 +1859,18 @@ export class ApiService {
   private mapClientFromApi(item: Record<string, unknown>): ClientDto {
     try {
       const id = Number(item['id'] ?? item['clientId'] ?? 0);
+      const rawLat = item['latitude'] ?? item['lat'];
+      const rawLng = item['longitude'] ?? item['lng'];
+      const parsedLat = rawLat !== undefined && rawLat !== null ? Number(rawLat) : undefined;
+      const parsedLng = rawLng !== undefined && rawLng !== null ? Number(rawLng) : undefined;
+      const validLat =
+        parsedLat !== undefined && Number.isFinite(parsedLat) && Math.abs(parsedLat) > 0.0001
+          ? parsedLat
+          : undefined;
+      const validLng =
+        parsedLng !== undefined && Number.isFinite(parsedLng) && Math.abs(parsedLng) > 0.0001
+          ? parsedLng
+          : undefined;
       return {
         id,
         clientId: id,
@@ -1815,6 +1884,8 @@ export class ApiService {
         notes: String(item['notes'] ?? ''),
         creditLimit: Number(item['creditLimit'] ?? 0),
         currentBalance: Number(item['currentBalance'] ?? 0),
+        latitude: validLat,
+        longitude: validLng,
         isActive: Boolean(item['isActive'] ?? true)
       };
     } catch (error: unknown) {

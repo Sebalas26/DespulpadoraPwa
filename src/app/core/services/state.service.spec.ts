@@ -149,7 +149,9 @@ describe('StateService', () => {
     apiSpy.createOrder.and.returnValue(of({} as OrderDto));
     apiSpy.updateOrder.and.returnValue(of({} as OrderDto));
     apiSpy.updateOrderStatus.and.returnValue(of({} as OrderDto));
+    apiSpy.updateOrderItemPicking.and.returnValue(of({} as OrderDto));
     apiSpy.dispatchOrdersRoute.and.returnValue(of([] as OrderDto[]));
+    apiSpy.settleCourierRoute.and.returnValue(of({} as never));
     apiSpy.deleteOrder.and.returnValue(of({}));
     apiSpy.createExpense.and.returnValue(of({} as ExpenseDto));
     apiSpy.createClient.and.returnValue(of({} as ClientDto));
@@ -1114,5 +1116,205 @@ describe('StateService', () => {
         price250g: 0
       })
     );
+  });
+
+  it('should persist neighborhood, latitude, and longitude in createOrder and updateOrder', () => {
+    const created = service.createOrder({
+      clientName: 'caldo parado',
+      clientPhone: '3164953397',
+      clientAddress: 'Avenida Calle 64C 69J, Bosque Popular, Bogotá',
+      neighborhood: 'Bosque Popular',
+      latitude: 4.6782,
+      longitude: -74.0981,
+      items: [{ fruitName: 'Mora', grammage: 1000, quantity: 1, unitPrice: 9000 }]
+    });
+
+    expect(created.neighborhood).toBe('Bosque Popular');
+    expect(created.latitude).toBeCloseTo(4.6782, 4);
+    expect(created.longitude).toBeCloseTo(-74.0981, 4);
+    expect(apiSpy.createOrder).toHaveBeenCalledWith(
+      jasmine.objectContaining({
+        neighborhood: 'Bosque Popular',
+        latitude: 4.6782,
+        longitude: -74.0981
+      })
+    );
+
+    service.updateOrder(created.orderId, {
+      clientName: 'caldo parado',
+      clientPhone: '3164953397',
+      clientAddress: 'Avenida Calle 64C 69J, Bosque Popular, Bogotá',
+      neighborhood: 'Engativá',
+      latitude: 4.679,
+      longitude: -74.099,
+      items: [{ fruitName: 'Mora', grammage: 1000, quantity: 1, unitPrice: 9000 }],
+      silent: true
+    });
+
+    const updatedInSignal = service.orders().find(o => o.orderId === created.orderId);
+    expect(updatedInSignal?.neighborhood).toBe('Engativá');
+    expect(updatedInSignal?.latitude).toBeCloseTo(4.679, 4);
+    expect(updatedInSignal?.longitude).toBeCloseTo(-74.099, 4);
+    expect(apiSpy.updateOrder).toHaveBeenCalledWith(
+      created.orderId,
+      jasmine.objectContaining({
+        neighborhood: 'Engativá',
+        latitude: 4.679,
+        longitude: -74.099
+      })
+    );
+  });
+
+  it('should compute pendingOrdersCount and billingOrdersCount independently according to order status', () => {
+    service.orders.set([
+      {
+        orderId: 901,
+        orderNumber: 'ORD-901',
+        branchId: 1,
+        clientId: 1,
+        clientName: 'Cliente 1',
+        status: 'PENDING',
+        orderDate: '2026-11-02',
+        totalAmount: 10000,
+        isPaid: false,
+        paymentMethodName: 'Efectivo',
+        createdAt: '2026-11-02T10:00:00Z',
+        items: []
+      },
+      {
+        orderId: 902,
+        orderNumber: 'ORD-902',
+        branchId: 1,
+        clientId: 2,
+        clientName: 'Cliente 2',
+        status: 'PENDING',
+        orderDate: '2026-11-02',
+        totalAmount: 20000,
+        isPaid: false,
+        paymentMethodName: 'Efectivo',
+        createdAt: '2026-11-02T11:00:00Z',
+        items: []
+      },
+      {
+        orderId: 903,
+        orderNumber: 'ORD-903',
+        branchId: 1,
+        clientId: 3,
+        clientName: 'Luz Arango',
+        status: 'BILLED',
+        orderDate: '2026-11-02',
+        totalAmount: 273700,
+        isPaid: false,
+        paymentMethodName: 'Contra Entrega',
+        createdAt: '2026-11-02T12:00:00Z',
+        items: []
+      }
+    ]);
+
+    expect(service.pendingOrdersCount()).toBe(2);
+    expect(service.billingOrdersCount()).toBe(1);
+  });
+
+  it('should clear routeCode, routeSequenceOrder, and dispatchedAtUtc on courier orders and call api.settleCourierRoute when settling a courier route', () => {
+    service.orders.set([
+      {
+        orderId: 910,
+        orderNumber: 'ORD-910',
+        branchId: 1,
+        clientId: 1,
+        clientName: 'Cliente Ruta Liquidada',
+        status: 'DELIVERED',
+        orderDate: '2026-11-02',
+        totalAmount: 45000,
+        isPaid: true,
+        paymentMethodName: 'Efectivo',
+        courierId: 7,
+        courierName: 'Domiciliario Siete',
+        routeCode: 'RUT-07',
+        routeSequenceOrder: 1,
+        dispatchedAtUtc: '2026-11-02T14:00:00Z',
+        createdAt: '2026-11-02T13:00:00Z',
+        items: []
+      }
+    ]);
+
+    service.settleCourierRoute(7, 'Domiciliario Siete', 45000, 15000, 'Cuadre exacto');
+
+    const settledOrder = service.orders().find(o => o.orderId === 910);
+    expect(settledOrder?.routeCode).toBeUndefined();
+    expect(settledOrder?.routeSequenceOrder).toBeUndefined();
+    expect(settledOrder?.dispatchedAtUtc).toBeUndefined();
+    expect(apiSpy.settleCourierRoute).toHaveBeenCalledWith(7, {
+      cashDelivered: 45000,
+      transfersConfirmed: 15000,
+      notes: 'Cuadre exacto'
+    });
+  });
+
+  it('should persist status transitions to DB in updateItemPickedQuantity and transition DISPATCHED orders to DELIVERED in settleCourierRoute', () => {
+    service.orders.set([
+      {
+        orderId: 920,
+        orderNumber: 'ORD-920',
+        branchId: 1,
+        clientId: 1,
+        clientName: 'Cliente Picking DB',
+        status: 'PENDING',
+        orderDate: '2026-11-02',
+        totalAmount: 40000,
+        isPaid: false,
+        paymentMethodName: 'Efectivo',
+        createdAt: '2026-11-02T10:00:00Z',
+        items: [
+          {
+            orderItemId: 55,
+            fruitId: 1,
+            fruitName: 'Mora',
+            grammage: 250,
+            quantity: 10,
+            pickedQuantity: 0,
+            unitPrice: 4000,
+            subtotal: 40000
+          }
+        ]
+      },
+      {
+        orderId: 921,
+        orderNumber: 'ORD-921',
+        branchId: 1,
+        clientId: 2,
+        clientName: 'Cliente En Ruta',
+        status: 'DISPATCHED',
+        orderDate: '2026-11-02',
+        totalAmount: 60000,
+        isPaid: false,
+        paymentMethodName: 'Efectivo',
+        courierId: 8,
+        courierName: 'Domiciliario Ocho',
+        routeCode: 'RUT-08',
+        routeSequenceOrder: 1,
+        createdAt: '2026-11-02T11:00:00Z',
+        items: []
+      }
+    ]);
+
+    expect(service.dispatchedOrdersCount()).toBe(1);
+
+    service.updateItemPickedQuantity(920, 1, 250, 10);
+    expect(service.orders().find(o => o.orderId === 920)?.status).toBe('BILLED');
+    expect(apiSpy.updateOrderStatus).toHaveBeenCalledWith({
+      orderId: 920,
+      status: 'BILLED',
+      isBilled: true
+    });
+
+    service.settleCourierRoute(8, 'Domiciliario Ocho', 60000, 0);
+    expect(service.orders().find(o => o.orderId === 921)?.status).toBe('DELIVERED');
+    expect(service.dispatchedOrdersCount()).toBe(0);
+    expect(apiSpy.updateOrderStatus).toHaveBeenCalledWith({
+      orderId: 921,
+      status: 'DELIVERED',
+      isBilled: true
+    });
   });
 });

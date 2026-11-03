@@ -1126,4 +1126,84 @@ describe('OrdersComponent', () => {
     component.exportHistoryOrdersCsv();
     expect(createObjectUrlSpy).not.toHaveBeenCalled();
   });
+
+  it('should preserve and submit geocoded coordinates and neighborhood in openEditOrderModal and submitManualOrder', () => {
+    const orderWithCoords: OrderDto = {
+      ...mockOrders()[0],
+      orderId: 777,
+      orderNumber: 'ORD-0777',
+      clientName: 'caldo parado',
+      clientPhone: '3164953397',
+      clientAddress: 'Avenida Calle 64C 69J, Bosque Popular, Bogotá',
+      neighborhood: 'Bosque Popular',
+      latitude: 4.6782,
+      longitude: -74.0981
+    };
+
+    component.openEditOrderModal(orderWithCoords);
+    expect(component.selectedManualGeo()?.lat).toBeCloseTo(4.6782, 4);
+    expect(component.selectedManualGeo()?.lng).toBeCloseTo(-74.0981, 4);
+    expect(component.selectedManualGeo()?.zone).toBe('Bosque Popular');
+
+    component.submitManualOrder();
+    expect(updateOrderSpy).toHaveBeenCalledWith(
+      777,
+      jasmine.objectContaining({
+        clientAddress: 'Avenida Calle 64C 69J, Bosque Popular, Bogotá',
+        neighborhood: 'Bosque Popular',
+        latitude: 4.6782,
+        longitude: -74.0981
+      })
+    );
+  });
+
+  it('should filter tabOrders in facturacion strictly to BILLED and PICKING orders without falling back to PENDING or DELIVERED', () => {
+    const todayStr: string = new Date().toISOString().substring(0, 10);
+    mockOrders.set([
+      {
+        ...mockOrders()[0],
+        orderId: 801,
+        orderNumber: 'ORD-0801',
+        status: 'PENDING',
+        createdAt: `${todayStr}T10:00:00.000Z`,
+        orderDate: todayStr
+      },
+      {
+        ...mockOrders()[0],
+        orderId: 802,
+        orderNumber: 'ORD-0802',
+        status: 'BILLED',
+        createdAt: `${todayStr}T11:00:00.000Z`,
+        orderDate: todayStr
+      },
+      {
+        ...mockOrders()[0],
+        orderId: 803,
+        orderNumber: 'ORD-0803',
+        status: 'DELIVERED',
+        createdAt: `${todayStr}T12:00:00.000Z`,
+        orderDate: todayStr
+      }
+    ]);
+
+    component.activeSubTab.set('facturacion');
+    fixture.detectChanges();
+
+    expect(component.tabOrders().length).toBe(1);
+    expect(component.tabOrders()[0].orderNumber).toBe('ORD-0802');
+
+    mockOrders.set([
+      {
+        ...mockOrders()[0],
+        orderId: 801,
+        orderNumber: 'ORD-0801',
+        status: 'PENDING',
+        createdAt: `${todayStr}T10:00:00.000Z`,
+        orderDate: todayStr
+      }
+    ]);
+    fixture.detectChanges();
+
+    expect(component.tabOrders().length).toBe(0);
+  });
 });

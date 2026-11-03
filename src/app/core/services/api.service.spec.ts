@@ -285,4 +285,115 @@ describe('ApiService', () => {
     expect(req.request.body.notes).toBe('Cuadre OK');
     req.flush({ id: 9, status: 'Disponible' });
   });
+
+  it('should send and map neighborhood, latitude, and longitude in createOrder and updateOrder', () => {
+    service
+      .createOrder({
+        clientName: 'caldo parado',
+        clientPhone: '3164953397',
+        clientAddress: 'Avenida Calle 64C 69J, Bosque Popular, Bogotá',
+        neighborhood: 'Bosque Popular',
+        latitude: 4.6782,
+        longitude: -74.0981,
+        paymentMethod: 'Efectivo',
+        items: [{ fruitId: 1, grammage: 1000, quantity: 1, unitPrice: 9000 }]
+      })
+      .subscribe(order => {
+        expect(order.neighborhood).toBe('Bosque Popular');
+        expect(order.latitude).toBeCloseTo(4.6782, 4);
+        expect(order.longitude).toBeCloseTo(-74.0981, 4);
+      });
+
+    const createReq = httpMock.expectOne(`${baseUrl}/orders`);
+    expect(createReq.request.method).toBe('POST');
+    expect(createReq.request.body.neighborhood).toBe('Bosque Popular');
+    expect(createReq.request.body.latitude).toBeCloseTo(4.6782, 4);
+    expect(createReq.request.body.longitude).toBeCloseTo(-74.0981, 4);
+    createReq.flush({
+      id: 701,
+      orderCode: 'ORD-0701',
+      clientName: 'caldo parado',
+      clientAddress: 'Avenida Calle 64C 69J, Bosque Popular, Bogotá',
+      neighborhood: 'Bosque Popular',
+      latitude: 4.6782,
+      longitude: -74.0981,
+      status: 'Pendiente',
+      totalAmount: 9000,
+      items: []
+    });
+
+    service
+      .updateOrder(701, {
+        clientName: 'caldo parado',
+        clientPhone: '3164953397',
+        clientAddress: 'Avenida Calle 64C 69J, Bosque Popular, Bogotá',
+        neighborhood: 'Bosque Popular',
+        latitude: 4.6785,
+        longitude: -74.0984,
+        paymentMethod: 'Efectivo',
+        items: [{ fruitId: 1, grammage: 1000, quantity: 1, unitPrice: 9000 }]
+      })
+      .subscribe(updated => {
+        expect(updated.latitude).toBeCloseTo(4.6785, 4);
+        expect(updated.longitude).toBeCloseTo(-74.0984, 4);
+      });
+
+    const updateReq = httpMock.expectOne(`${baseUrl}/orders/701`);
+    expect(updateReq.request.method).toBe('PUT');
+    expect(updateReq.request.body.neighborhood).toBe('Bosque Popular');
+    expect(updateReq.request.body.latitude).toBeCloseTo(4.6785, 4);
+    expect(updateReq.request.body.longitude).toBeCloseTo(-74.0984, 4);
+    updateReq.flush({
+      id: 701,
+      orderCode: 'ORD-0701',
+      clientName: 'caldo parado',
+      clientAddress: 'Avenida Calle 64C 69J, Bosque Popular, Bogotá',
+      neighborhood: 'Bosque Popular',
+      latitude: 4.6785,
+      longitude: -74.0984,
+      status: 'Pendiente',
+      totalAmount: 9000,
+      items: []
+    });
+  });
+
+  it('should infer PICKING, BILLED, and DELIVERED statuses from DB item picking progress and delivery timestamps in getOrders', () => {
+    service.getOrders().subscribe(orders => {
+      expect(orders.length).toBe(3);
+      expect(orders[0].status).toBe('PICKING');
+      expect(orders[1].status).toBe('BILLED');
+      expect(orders[1].isBilled).toBeTrue();
+      expect(orders[2].status).toBe('DELIVERED');
+      expect(orders[2].routeCode).toBe('RUT-06');
+    });
+
+    const req = httpMock.expectOne(`${baseUrl}/orders`);
+    expect(req.request.method).toBe('GET');
+    req.flush([
+      {
+        id: 801,
+        orderCode: 'ORD-0801',
+        status: 'Recibido',
+        items: [
+          { id: 1, fruitId: 1, fruitName: 'Mora', presentationGrams: 250, quantity: 4, pickedQuantity: 2, unitPrice: 3000 }
+        ]
+      },
+      {
+        id: 802,
+        orderCode: 'ORD-0802',
+        status: 'Recibido',
+        items: [
+          { id: 2, fruitId: 1, fruitName: 'Mora', presentationGrams: 250, quantity: 4, pickedQuantity: 4, unitPrice: 3000 }
+        ]
+      },
+      {
+        id: 803,
+        orderCode: 'ORD-0803',
+        status: 'EnRuta',
+        routeCode: 'RUT-06',
+        deliveredAtUtc: '2026-11-02T18:00:00Z',
+        items: []
+      }
+    ]);
+  });
 });

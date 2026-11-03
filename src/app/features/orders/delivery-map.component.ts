@@ -5918,18 +5918,19 @@ export class DeliveryMapComponent implements OnInit, AfterViewInit, OnDestroy {
       const diff = this.cashDifference();
 
       stops.forEach((s: DeliveryWaypoint) => {
-        const isDelivered = this.getEffectiveStopDelivered(s);
-        if (isDelivered) {
+        const isDelivered: boolean = this.getEffectiveStopDelivered(s);
+        if (isDelivered && !s.isDelivered) {
           this.stateService.updateOrderStatus(s.id, 'DELIVERED');
         }
       });
 
       const numericCourierId: number = Number(String(courier.id).replace(/\D/g, '')) || 0;
+      const confirmedDigitalTransfers: number = this.receivingExpectedDigital();
       this.stateService.settleCourierRoute?.(
         numericCourierId,
         courier.name,
         physicalCash,
-        0,
+        confirmedDigitalTransfers,
         this.receiveNotes()
       );
 
@@ -5991,12 +5992,20 @@ export class DeliveryMapComponent implements OnInit, AfterViewInit, OnDestroy {
       const courier = this.couriers().find((c: Courier) => c.id === courierId);
       if (!courier) return;
 
+      const stopIdsToDeliver: number[] = [];
       this.deliveryStops.update((all: DeliveryWaypoint[]) => all.map((s: DeliveryWaypoint) => {
         if (courier.orderIds.includes(s.id)) {
+          if (!s.isDelivered) {
+            stopIdsToDeliver.push(s.id);
+          }
           return { ...s, isDelivered: true };
         }
         return s;
       }));
+
+      for (const stopId of stopIdsToDeliver) {
+        this.stateService.updateOrderStatus?.(stopId, 'DELIVERED');
+      }
 
       this.couriers.update((list: Courier[]) => list.map((c: Courier) => {
         if (c.id === courierId) {
@@ -6021,12 +6030,22 @@ export class DeliveryMapComponent implements OnInit, AfterViewInit, OnDestroy {
    */
   markOrderDeliveredByOrderNumber(orderNumber: string): void {
     try {
+      let matchedStopId: number | null = null;
       this.deliveryStops.update((stops: DeliveryWaypoint[]) => stops.map((s: DeliveryWaypoint) => {
         if (s.orderNumber === orderNumber) {
+          if (!s.isDelivered) {
+            matchedStopId = s.id;
+          }
           return { ...s, isDelivered: true };
         }
         return s;
       }));
+      if (matchedStopId !== null) {
+        const existingOrder = this.stateService.orders().find((o: OrderDto) => o.orderId === matchedStopId);
+        if (existingOrder && existingOrder.status !== 'DELIVERED') {
+          this.stateService.updateOrderStatus?.(matchedStopId, 'DELIVERED');
+        }
+      }
       this.renderStopMarkers();
       this.renderCourierMarkers();
     } catch (error: unknown) {
@@ -7860,6 +7879,9 @@ export class DeliveryMapComponent implements OnInit, AfterViewInit, OnDestroy {
         clientName,
         clientPhone: this.newOrderPhone,
         clientAddress: address,
+        neighborhood: this.newOrderZone(),
+        latitude: lat,
+        longitude: lng,
         courierName: courierObj?.name,
         notes: `Pedido georreferenciado en ${this.newOrderZone()}`,
         items: fruitName
@@ -9135,6 +9157,11 @@ export class DeliveryMapComponent implements OnInit, AfterViewInit, OnDestroy {
         }))
       );
 
+      const stateOrder = this.stateService.orders().find((o: OrderDto) => o.orderId === stopId);
+      if (stateOrder && stateOrder.status === 'DISPATCHED') {
+        this.stateService.updateOrderStatus?.(stopId, 'BILLED');
+      }
+
       const marker = this.stopMarkers.get(stopId);
       if (marker) {
         marker.remove();
@@ -9209,6 +9236,9 @@ export class DeliveryMapComponent implements OnInit, AfterViewInit, OnDestroy {
         clientName,
         clientPhone: '',
         clientAddress: address,
+        neighborhood: zone,
+        latitude: lat,
+        longitude: lng,
         courierName: courierObj?.name,
         notes: `Agregado desde el mapa (${zone})`,
         items: defaultFruit
@@ -10522,19 +10552,43 @@ export class DeliveryMapComponent implements OnInit, AfterViewInit, OnDestroy {
           }
 
           if (!hasOrderCoords && order.clientAddress && order.clientAddress.trim().length >= 4) {
-            this.geocodingService.geocodeBestMatch(order.clientAddress).then(geo => {
-              if (geo) {
-                this.deliveryStops.update((stops: DeliveryWaypoint[]) =>
-                  stops.map((s: DeliveryWaypoint) =>
-                    s.id === order.orderId
-                      ? { ...s, lat: geo.lat, lng: geo.lng, zone: geo.zone }
-                      : s
-                  )
-                );
-                this.renderStopMarkers();
-                this.buildAndRenderRealRoadRoutes();
-              }
-            });
+            this.geocodingService
+              .geocodeBestMatch(order.clientAddress)
+              .then(geo => {
+                if (geo) {
+                  this.deliveryStops.update((stops: DeliveryWaypoint[]) =>
+                    stops.map((s: DeliveryWaypoint) =>
+                      s.id === order.orderId
+                        ? { ...s, lat: geo.lat, lng: geo.lng, zone: geo.zone }
+                        : s
+                    )
+                  );
+                  this.stateService.updateOrder?.(order.orderId, {
+                    clientName: order.clientName,
+                    clientPhone: order.clientPhone,
+                    clientAddress: order.clientAddress,
+                    neighborhood: geo.locality || geo.zone || order.neighborhood,
+                    latitude: geo.lat,
+                    longitude: geo.lng,
+                    items: (order.items || []).map((it: OrderDto['items'][number]) => ({
+                      fruitName: it.fruitName || '',
+                      grammage: it.grammage,
+                      quantity: it.quantity,
+                      unitPrice: it.unitPrice,
+                      pickedQuantity: it.pickedQuantity
+                    })),
+                    notes: order.notes,
+                    paymentMethodName: order.paymentMethodName,
+                    courierName: order.courierName,
+                    status: order.status,
+                    isPaid: order.isPaid,
+                    silent: true
+                  });
+                  this.renderStopMarkers();
+                  this.buildAndRenderRealRoadRoutes();
+                }
+              })
+              .catch(() => {});
           }
         } else {
           this.deliveryStops.update((stops: DeliveryWaypoint[]) =>
@@ -10612,6 +10666,45 @@ export class DeliveryMapComponent implements OnInit, AfterViewInit, OnDestroy {
           orderRef: order
         };
         this.deliveryStops.update((stops: DeliveryWaypoint[]) => [stop, ...stops]);
+        if (!hasOrderCoords && order.clientAddress && order.clientAddress.trim().length >= 4) {
+          this.geocodingService
+            .geocodeBestMatch(order.clientAddress)
+            .then(geo => {
+              if (geo) {
+                this.deliveryStops.update((stops: DeliveryWaypoint[]) =>
+                  stops.map((s: DeliveryWaypoint) =>
+                    s.id === order.orderId
+                      ? { ...s, lat: geo.lat, lng: geo.lng, zone: geo.zone }
+                      : s
+                  )
+                );
+                this.stateService.updateOrder?.(order.orderId, {
+                  clientName: order.clientName,
+                  clientPhone: order.clientPhone,
+                  clientAddress: order.clientAddress,
+                  neighborhood: geo.locality || geo.zone || order.neighborhood,
+                  latitude: geo.lat,
+                  longitude: geo.lng,
+                  items: (order.items || []).map((it: OrderDto['items'][number]) => ({
+                    fruitName: it.fruitName || '',
+                    grammage: it.grammage,
+                    quantity: it.quantity,
+                    unitPrice: it.unitPrice,
+                    pickedQuantity: it.pickedQuantity
+                  })),
+                  notes: order.notes,
+                  paymentMethodName: order.paymentMethodName,
+                  courierName: order.courierName,
+                  status: order.status,
+                  isPaid: order.isPaid,
+                  silent: true
+                });
+                this.renderStopMarkers();
+                this.buildAndRenderRealRoadRoutes();
+              }
+            })
+            .catch(() => {});
+        }
       }
 
       this.drawerCourierFilter.set('all');

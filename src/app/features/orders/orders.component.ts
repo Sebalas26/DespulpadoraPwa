@@ -583,8 +583,7 @@ export class OrdersComponent {
             this.getOrderDay(o) === activeDay
         );
       } else if (tab === 'facturacion') {
-        const billedOrPicking = list.filter((o: OrderDto) => o.status === 'BILLED' || o.status === 'PICKING');
-        list = billedOrPicking.length > 0 ? billedOrPicking : list.filter((o: OrderDto) => o.status !== 'CANCELLED');
+        list = list.filter((o: OrderDto) => o.status === 'BILLED' || o.status === 'PICKING');
       } else if (tab === 'despachos') {
         list = list.filter((o: OrderDto) => o.status === 'DISPATCHED' || o.status === 'DELIVERED');
       }
@@ -2588,7 +2587,28 @@ export class OrdersComponent {
       this.manualAddress.set(order.clientAddress || '');
       this.shouldCreateClient.set(false);
       this.manualAddressSuggestions.set([]);
-      this.selectedManualGeo.set(null);
+      const hasExistingCoords: boolean =
+        order.latitude !== undefined &&
+        order.longitude !== undefined &&
+        Number.isFinite(order.latitude) &&
+        Number.isFinite(order.longitude) &&
+        Math.abs(order.latitude) > 0.0001 &&
+        Math.abs(order.longitude) > 0.0001;
+      this.selectedManualGeo.set(
+        hasExistingCoords
+          ? {
+              id: `existing_${order.orderId}`,
+              name: order.clientAddress || '',
+              label: order.clientAddress || '',
+              lat: order.latitude!,
+              lng: order.longitude!,
+              zone: order.neighborhood || 'Bogotá',
+              locality: order.neighborhood || 'Bogotá',
+              source: 'coords',
+              confidence: 1.0
+            }
+          : null
+      );
       this.isManualOrderPaid.set(order.isPaid || false);
       this.manualPaymentMethod.set(order.paymentMethodName || '');
       this.manualNotes.set(order.notes || '');
@@ -2781,52 +2801,95 @@ export class OrdersComponent {
 
       const geo = this.selectedManualGeo();
       const finalAddress = geo ? geo.label : this.manualAddress();
+      const resolvedNeighborhood = geo?.locality || geo?.zone || undefined;
+      const resolvedLat = geo?.lat;
+      const resolvedLng = geo?.lng;
       const editId = this.editingOrderId();
       const isPaid = this.isManualOrderPaid();
       const paymentMethodName = isPaid ? this.manualPaymentMethod() : 'Contra Entrega (Por Cobrar)';
+      const submittedClientName = this.manualClientName();
+      const submittedPhone = this.manualPhone();
+      const submittedItems = this.manualItems();
+      const submittedNotes = this.manualNotes();
 
       if (!this.isClientAlreadyRegistered() && this.shouldCreateClient()) {
         try {
           this.stateService.createClient({
-            fullName: this.manualClientName().trim(),
+            fullName: submittedClientName.trim(),
             identificationNumber: '',
-            phone: this.manualPhone().trim(),
+            phone: submittedPhone.trim(),
             address: finalAddress.trim(),
             city: geo?.locality || geo?.zone || '',
-            notes: this.manualNotes().trim()
+            latitude: resolvedLat,
+            longitude: resolvedLng,
+            notes: submittedNotes.trim()
           });
         } catch (clientErr: unknown) {
           console.error('Error creating client from manual order modal:', clientErr);
         }
       }
 
+      let targetOrderId: number | null = editId;
       if (editId !== null) {
         this.stateService.updateOrder(editId, {
-          clientName: this.manualClientName(),
-          clientPhone: this.manualPhone(),
+          clientName: submittedClientName,
+          clientPhone: submittedPhone,
           clientAddress: finalAddress,
-          items: this.manualItems(),
+          neighborhood: resolvedNeighborhood,
+          latitude: resolvedLat,
+          longitude: resolvedLng,
+          items: submittedItems,
           paymentMethodName,
           isPaid,
-          notes: this.manualNotes()
+          notes: submittedNotes
         });
         this.notification.success('Pedido Actualizado', `Guía ${this.editingOrderNumber()} modificada con éxito.`);
       } else {
         const newOrder = this.stateService.createOrder({
-          clientName: this.manualClientName(),
-          clientPhone: this.manualPhone(),
+          clientName: submittedClientName,
+          clientPhone: submittedPhone,
           clientAddress: finalAddress,
-          items: this.manualItems(),
+          neighborhood: resolvedNeighborhood,
+          latitude: resolvedLat,
+          longitude: resolvedLng,
+          items: submittedItems,
           paymentMethodName,
-          notes: this.manualNotes(),
+          notes: submittedNotes,
           scheduledDay: this.selectedDay()
         });
+        targetOrderId = newOrder.orderId;
         if (isPaid) {
           this.stateService.orders.update(all =>
             all.map((o: OrderDto) => (o.orderId === newOrder.orderId ? { ...o, isPaid: true } : o))
           );
         }
         this.notification.success('Pedido Creado', `Nueva orden ${newOrder.orderNumber} registrada.`);
+      }
+
+      if (!geo && targetOrderId !== null && finalAddress.trim().length >= 4 && this.geocodingService?.geocodeBestMatch) {
+        const orderIdToEnrich: number = targetOrderId;
+        this.geocodingService
+          .geocodeBestMatch(finalAddress)
+          .then((fallbackGeo: GeocodedLocation | null) => {
+            if (fallbackGeo && Number.isFinite(fallbackGeo.lat) && Number.isFinite(fallbackGeo.lng)) {
+              const currentOrd = this.stateService.orders().find((o: OrderDto) => o.orderId === orderIdToEnrich);
+              const targetId = currentOrd ? currentOrd.orderId : orderIdToEnrich;
+              this.stateService.updateOrder(targetId, {
+                clientName: submittedClientName,
+                clientPhone: submittedPhone,
+                clientAddress: finalAddress,
+                neighborhood: fallbackGeo.locality || fallbackGeo.zone || undefined,
+                latitude: fallbackGeo.lat,
+                longitude: fallbackGeo.lng,
+                items: submittedItems,
+                paymentMethodName,
+                isPaid,
+                notes: submittedNotes,
+                silent: true
+              });
+            }
+          })
+          .catch(() => {});
       }
 
       this.showNewOrderModal.set(false);
