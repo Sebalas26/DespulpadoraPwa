@@ -1065,19 +1065,50 @@ async function resolveBaileysVersion() {
   if (cachedBaileysVersion) {
     return cachedBaileysVersion;
   }
-  const fallbackVersion = [2, 3000, 1043857760];
+  const fallbackVersion = [2, 3000, 1052897873];
+  try {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 3500);
+    const swRes = await fetch('https://web.whatsapp.com/sw.js', {
+      signal: controller.signal,
+      headers: {
+        'User-Agent':
+          'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36'
+      }
+    });
+    clearTimeout(timer);
+    if (swRes && swRes.ok) {
+      const swText = await swRes.text();
+      const match = swText.match(/"client_revision"\s*:\s*(\d+)/);
+      if (match && match[1]) {
+        const rev = Number(match[1]);
+        if (Number.isFinite(rev) && rev > 1000000000) {
+          cachedBaileysVersion = [2, 3000, rev];
+          return cachedBaileysVersion;
+        }
+      }
+    }
+  } catch (err) {
+    void err;
+  }
   try {
     const latest = await Promise.race([
       fetchLatestBaileysVersion(),
       new Promise((resolve) => setTimeout(() => resolve(null), 4000))
     ]);
-    if (latest && latest.version) {
+    if (
+      latest &&
+      Array.isArray(latest.version) &&
+      latest.version.length === 3 &&
+      Number(latest.version[1]) >= 3000
+    ) {
       cachedBaileysVersion = latest.version;
       return cachedBaileysVersion;
     }
-  } catch (_) {
-    /* fallback version */
+  } catch (err) {
+    void err;
   }
+  cachedBaileysVersion = fallbackVersion;
   return fallbackVersion;
 }
 
@@ -1518,11 +1549,19 @@ app.post('/api/whatsapp/reconnect', async (_req, res) => {
   }
 });
 
+process.on('uncaughtException', (err) => {
+  console.error('[WhatsAppQrGateway] Uncaught exception:', err);
+});
+
+process.on('unhandledRejection', (reason) => {
+  console.error('[WhatsAppQrGateway] Unhandled rejection:', reason);
+});
+
 loadPersistedData();
 refreshCatalogFromBackend();
 resolveBaileysVersion();
 
-app.listen(PORT, () => {
-  console.log(`[WhatsAppQrGateway] Listening on port ${PORT} (/api/whatsapp)`);
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`[WhatsAppQrGateway] Listening on 0.0.0.0:${PORT} (/api/whatsapp)`);
   connectToWhatsApp();
 });

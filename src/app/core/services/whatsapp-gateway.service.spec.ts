@@ -45,6 +45,12 @@ describe('WhatsAppGatewayService', () => {
     expect(service.getGatewayBaseUrl()).toBe('http://localhost:3005/api/whatsapp');
   });
 
+  it('should ignore loopback localStorage URL when running on a production origin', () => {
+    service.setGatewayBaseUrl('http://localhost:3005/api/whatsapp');
+    spyOn(service as unknown as { isProductionOrigin: () => boolean }, 'isProductionOrigin').and.returnValue(true);
+    expect(service.getGatewayBaseUrl()).toBe('/api/whatsapp');
+  });
+
   it('should fetch status from /status endpoint and fallback cleanly on error', () => {
     let result: WhatsAppGatewayStatusDto | undefined;
     service.getStatus().subscribe((res: WhatsAppGatewayStatusDto) => {

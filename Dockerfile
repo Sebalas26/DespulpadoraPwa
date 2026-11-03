@@ -24,7 +24,7 @@ RUN npm run build
 # ==========================================
 FROM nginx:alpine AS production
 
-# Instalar Node.js y npm en Alpine para ejecutar WhatsAppQrGateway en segundo plano
+# Instalar Node.js, npm y git en Alpine para instalar y ejecutar WhatsAppQrGateway en segundo plano
 RUN apk add --no-cache nodejs npm git
 
 WORKDIR /app
@@ -40,11 +40,10 @@ RUN cd /app/whatsapp-gateway && npm install --omit=dev
 RUN rm -rf /usr/share/nginx/html/*
 COPY --from=build /app/dist/despulpadora-pwa/browser /usr/share/nginx/html
 
-# Copiar y configurar entrypoint de producción
+# Copiar y configurar entrypoint de producción (sanitizando posibles saltos de línea CRLF de Windows)
 COPY docker-entrypoint.sh /docker-entrypoint.sh
-RUN chmod +x /docker-entrypoint.sh
+RUN sed -i 's/\r$//' /docker-entrypoint.sh && chmod +x /docker-entrypoint.sh
 
 EXPOSE 80
 
-CMD ["/docker-entrypoint.sh"]
-
+ENTRYPOINT ["/docker-entrypoint.sh"]

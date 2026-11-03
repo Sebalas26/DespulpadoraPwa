@@ -204,11 +204,18 @@ export class WhatsAppGatewayService {
    */
   getGatewayBaseUrl(): string {
     try {
+      const isProdOrigin: boolean = this.isProductionOrigin();
       const saved: string | null = localStorage.getItem(GATEWAY_URL_STORAGE_KEY);
       if (saved && saved.trim().length > 0) {
-        return saved.trim().replace(/\/+$/, '');
+        const normalizedSaved: string = saved.trim().replace(/\/+$/, '');
+        const pointsToLoopback: boolean = /^https?:\/\/(localhost|127\.0\.0\.1|\[::1\])(?::\d+)?(\/|$)/i.test(
+          normalizedSaved
+        );
+        if (!isProdOrigin || !pointsToLoopback) {
+          return normalizedSaved;
+        }
       }
-      if (this.isProductionOrigin()) {
+      if (isProdOrigin) {
         return '/api/whatsapp';
       }
       return DEFAULT_GATEWAY_BASE_URL;

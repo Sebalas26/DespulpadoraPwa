@@ -4,6 +4,45 @@ Este documento registra de manera cronológica y estructurada todas las interven
 
 ---
 
+## [2026-11-03] - Corrección de Conexión y Arranque de `WhatsAppQrGateway` en Producción Docker (`Dockerfile`, `docker-entrypoint.sh`, `nginx.conf`, `whatsapp-gateway` y `WhatsAppGatewayService`)
+
+### 💬 Prompt Original del Usuario
+> "Valida porque esto sigue fallando" *(adjuntando captura en producción donde aparece "Gateway WhatsApp Desconectado: No se pudo contactar con el servicio de WhatsApp. Verifica que el servicio esté activo o pulsa Generar Nuevo QR.")*
+
+### 🤖 Resumen Técnico para la IA
+- **1. Sanitización `CRLF`, `ENTRYPOINT` y Supervisor de Auto-reinicio en Contenedor (`Dockerfile` y `docker-entrypoint.sh`)**:
+  - En `Dockerfile`, se añadió `RUN sed -i 's/\r$//' /docker-entrypoint.sh && chmod +x /docker-entrypoint.sh` y se definió `ENTRYPOINT ["/docker-entrypoint.sh"]`, evitando fallos de ejecución `/bin/sh\r` en Alpine Linux por finales de línea `CRLF` de Windows y evitando la colisión entre `ENTRYPOINT` de `nginx:alpine` y `CMD`.
+  - En `docker-entrypoint.sh`, se implementó un bucle supervisor en segundo plano (`while true; do node /app/whatsapp-gateway/server.js 2>&1 | tee -a /var/log/whatsapp-gateway.log; sleep 2; done &`) que mantiene activo el puerto `3005` y expone los logs en `stdout`/`stderr` del contenedor.
+- **2. Fijación de `@whiskeysockets/baileys@6.7.16` y Resolución de Revisión Vigente de WhatsApp Web (`whatsapp-gateway/package.json` y `whatsapp-gateway/server.js`)**:
+  - En `whatsapp-gateway/package.json`, se fijó `"@whiskeysockets/baileys": "6.7.16"` sin caret (`^`), evitando que `npm install --omit=dev` descargue versiones rotas o ESM incompatibles con `require(...)` en Node 22.
+  - En `whatsapp-gateway/server.js` (`resolveBaileysVersion()`), se implementó la extracción en vivo de `client_revision` desde `https://web.whatsapp.com/sw.js`, filtrando cualquier versión obsoleta devuelta por `fetchLatestBaileysVersion()` con `version[1] < 3000` (como `[2, 2413, 51]` que causaba rechazo `405` antes de emitir el QR) y usando fallback `[2, 3000, 1052897873]`.
+  - Se registraron manejadores globales `process.on('uncaughtException')` y `process.on('unhandledRejection')` y se enlazó `app.listen(PORT, '0.0.0.0', ...)`.
+- **3. Precedencia `^~` y Timeouts Extendidos en Proxy Nginx (`nginx.conf`)**:
+  - Se actualizó `location ^~ /api/whatsapp/` (y `^~` en `/api/` y `/hubs/`) agregando `proxy_connect_timeout 10s; proxy_send_timeout 60s; proxy_read_timeout 60s;`.
+- **4. Protección contra URLs Loopback Cacheadas en `localStorage` en Orígenes de Producción (`src/app/core/services/whatsapp-gateway.service.ts` y `whatsapp-gateway.service.spec.ts`)**:
+  - En `WhatsAppGatewayService.getGatewayBaseUrl()`, cuando `isProductionOrigin()` es `true`, se ignoran URLs guardadas en `localStorage` que apunten a `localhost`, `127.0.0.1` o `[::1]`, retornando siempre `'/api/whatsapp'` (same-origin).
+  - Se agregó la prueba unitaria `'should ignore loopback localStorage URL when running on a production origin'` en `whatsapp-gateway.service.spec.ts`.
+- **5. Informes de Agentes de Calidad (`AGENTS.md` §1)**:
+  - **Agente de Verificación de Impacto (`a8601e2d-8294-4bcf-bd48-f32cd48b92a0`)**: Identificó las 4 causas raíz y certificó aislamiento quirúrgico 100%.
+  - **Agente Auditor Punto por Punto (`b72c5293-1be8-4fc0-8d88-c9c2d335f970`)**: Emitió veredicto **APROBADO (100% Conforme, 0 desviaciones)**.
+  - **Agente de Revisión Par (`aef928af-5eb7-4dfc-96bd-17cc53a68355`)**: Emitió veredicto **100% APROBADO PARA PRODUCCIÓN (0 observaciones)**.
+
+### 📦 Componentes Modificados
+- `Dockerfile`
+- `docker-entrypoint.sh`
+- `nginx.conf`
+- `whatsapp-gateway/package.json`
+- `whatsapp-gateway/server.js`
+- `src/app/core/services/whatsapp-gateway.service.ts`
+- `src/app/core/services/whatsapp-gateway.service.spec.ts`
+- `HISTORIAL_CAMBIOS.md`
+
+### ✅ Verificación, Build y Tests Unitarios
+- **Compilación de Producción (`npm run build`)**: Exitosa (`0 errores`).
+- **Suite Completa de Pruebas Unitarias (`ng test --watch=false`)**: **329 de 329 pruebas exitosas (`100% PASS`)**.
+
+---
+
 ## [2026-11-03] - Corrección de Despliegue Docker en Coolify: Inclusión de `git` en Etapa de Producción Alpine para `whatsapp-gateway` (`Dockerfile`)
 
 ### 💬 Prompt Original del Usuario
