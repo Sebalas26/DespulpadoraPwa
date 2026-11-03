@@ -4,13 +4,44 @@ const QRCode = require('qrcode');
 const pino = require('pino');
 const fs = require('fs');
 const path = require('path');
-const {
-  default: makeWASocket,
-  useMultiFileAuthState,
-  DisconnectReason,
-  fetchLatestBaileysVersion,
-  downloadMediaMessage
-} = require('@whiskeysockets/baileys');
+
+let makeWASocket = null;
+let useMultiFileAuthState = null;
+let DisconnectReason = { loggedOut: 401, badSession: 500 };
+let downloadMediaMessage = null;
+let baileysLoadPromise = null;
+
+/**
+ * Dynamically loads @whiskeysockets/baileys supporting both CommonJS require and ESM dynamic import.
+ */
+async function ensureBaileysLoaded() {
+  if (makeWASocket && useMultiFileAuthState) {
+    return;
+  }
+  if (baileysLoadPromise) {
+    await baileysLoadPromise;
+    return;
+  }
+  baileysLoadPromise = (async () => {
+    let mod = null;
+    try {
+      mod = require('@whiskeysockets/baileys');
+    } catch (requireErr) {
+      void requireErr;
+      mod = await import('@whiskeysockets/baileys');
+    }
+    const resolved = mod && mod.default && typeof mod.default === 'object' && !mod.useMultiFileAuthState ? mod.default : mod;
+    makeWASocket = (resolved && (resolved.default || resolved.makeWASocket)) || (mod && mod.default);
+    useMultiFileAuthState = (resolved && resolved.useMultiFileAuthState) || (mod && mod.useMultiFileAuthState);
+    DisconnectReason = (resolved && resolved.DisconnectReason) || (mod && mod.DisconnectReason) || DisconnectReason;
+    downloadMediaMessage = (resolved && resolved.downloadMediaMessage) || (mod && mod.downloadMediaMessage);
+  })();
+  try {
+    await baileysLoadPromise;
+  } finally {
+    baileysLoadPromise = null;
+  }
+}
 
 const app = express();
 app.use((req, res, next) => {
@@ -26,7 +57,7 @@ app.use((req, res, next) => {
 app.use(cors());
 app.use(express.json({ limit: '10mb' }));
 
-const PORT = process.env.PORT || 3005;
+const PORT = Number(process.env.WHATSAPP_GATEWAY_PORT) || 3005;
 const AUTH_DIR = path.join(__dirname, 'auth_info_baileys');
 const BOT_CONFIG_FILE = path.join(__dirname, 'bot_config.json');
 const INCOMING_ORDERS_FILE = path.join(__dirname, 'whatsapp_incoming_orders.json');
@@ -1059,7 +1090,7 @@ function clearAuthDirectory() {
 }
 
 /**
- * Resolves the Baileys protocol version with caching and a 4-second timeout fallback.
+ * Resolves the Baileys protocol version with live WhatsApp Web sw.js revision check (1.8s max) and modern fallback.
  */
 async function resolveBaileysVersion() {
   if (cachedBaileysVersion) {
@@ -1068,7 +1099,7 @@ async function resolveBaileysVersion() {
   const fallbackVersion = [2, 3000, 1052897873];
   try {
     const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), 3500);
+    const timer = setTimeout(() => controller.abort(), 1800);
     const swRes = await fetch('https://web.whatsapp.com/sw.js', {
       signal: controller.signal,
       headers: {
@@ -1087,23 +1118,6 @@ async function resolveBaileysVersion() {
           return cachedBaileysVersion;
         }
       }
-    }
-  } catch (err) {
-    void err;
-  }
-  try {
-    const latest = await Promise.race([
-      fetchLatestBaileysVersion(),
-      new Promise((resolve) => setTimeout(() => resolve(null), 4000))
-    ]);
-    if (
-      latest &&
-      Array.isArray(latest.version) &&
-      latest.version.length === 3 &&
-      Number(latest.version[1]) >= 3000
-    ) {
-      cachedBaileysVersion = latest.version;
-      return cachedBaileysVersion;
     }
   } catch (err) {
     void err;
@@ -1137,6 +1151,7 @@ async function connectToWhatsApp(forceFresh = false) {
       gatewayState.lastUpdatedAt = new Date().toISOString();
     }
 
+    await ensureBaileysLoaded();
     const { state, saveCreds } = await useMultiFileAuthState(AUTH_DIR);
     const version = await resolveBaileysVersion();
 
@@ -1311,9 +1326,10 @@ async function connectToWhatsApp(forceFresh = false) {
           if (reconnectTimer) {
             clearTimeout(reconnectTimer);
           }
+          const delayMs = badOrIncompatibleSession || statusCode === 515 ? 250 : 1000;
           reconnectTimer = setTimeout(() => {
             connectToWhatsApp();
-          }, 1200);
+          }, delayMs);
         }
       } catch (eventErr) {
         console.error('Error handling connection.update:', eventErr);
@@ -1332,7 +1348,7 @@ app.get('/api/whatsapp/status', async (_req, res) => {
   try {
     if (!gatewayState.connected && !gatewayState.qrDataUrl) {
       connectToWhatsApp();
-      await waitForQrOrConnection(5500);
+      await waitForQrOrConnection(9000);
     }
     res.json({
       ...gatewayState,
@@ -1505,8 +1521,8 @@ app.post('/api/whatsapp/logout', async (_req, res) => {
     if (sock) {
       try {
         await sock.logout();
-      } catch (_) {
-        /* ignore logout socket error */
+      } catch (logoutErr) {
+        void logoutErr;
       }
     }
     destroyCurrentSocket();
@@ -1520,7 +1536,7 @@ app.post('/api/whatsapp/logout', async (_req, res) => {
       lastUpdatedAt: new Date().toISOString()
     };
     await connectToWhatsApp(true);
-    await waitForQrOrConnection(6000);
+    await waitForQrOrConnection(10000);
     return res.json({ success: true, ...gatewayState });
   } catch (err) {
     return res.status(500).json({ success: false, error: String(err) });
@@ -1541,7 +1557,7 @@ app.post('/api/whatsapp/reconnect', async (_req, res) => {
         lastUpdatedAt: new Date().toISOString()
       };
       await connectToWhatsApp(true);
-      await waitForQrOrConnection(8000);
+      await waitForQrOrConnection(12000);
     }
     return res.json({ success: true, ...gatewayState });
   } catch (err) {
@@ -1551,17 +1567,43 @@ app.post('/api/whatsapp/reconnect', async (_req, res) => {
 
 process.on('uncaughtException', (err) => {
   console.error('[WhatsAppQrGateway] Uncaught exception:', err);
+  if (err && err.code === 'EADDRINUSE') {
+    process.exit(1);
+  }
 });
 
 process.on('unhandledRejection', (reason) => {
   console.error('[WhatsAppQrGateway] Unhandled rejection:', reason);
 });
 
-loadPersistedData();
-refreshCatalogFromBackend();
-resolveBaileysVersion();
+/**
+ * Starts the WhatsAppQrGateway server or runs the build-time smoke test when --smoke-test is passed.
+ */
+async function bootstrapGateway() {
+  if (process.argv.includes('--smoke-test')) {
+    await ensureBaileysLoaded();
+    const sampleQr = await QRCode.toDataURL('smoke-test-qr', { width: 280, margin: 1 });
+    if (typeof makeWASocket !== 'function' || typeof useMultiFileAuthState !== 'function' || !sampleQr.startsWith('data:image/png;base64,')) {
+      console.error('[WhatsAppQrGateway] Smoke test failed: invalid Baileys or QRCode exports');
+      process.exit(1);
+    }
+    console.log('[WhatsAppQrGateway] Smoke test passed: Baileys + QRCode + Express verified.');
+    process.exit(0);
+  }
 
-app.listen(PORT, '0.0.0.0', () => {
-  console.log(`[WhatsAppQrGateway] Listening on 0.0.0.0:${PORT} (/api/whatsapp)`);
-  connectToWhatsApp();
-});
+  loadPersistedData();
+  refreshCatalogFromBackend();
+  resolveBaileysVersion();
+
+  const server = app.listen(PORT, '0.0.0.0', () => {
+    console.log(`[WhatsAppQrGateway] Listening on 0.0.0.0:${PORT} (/api/whatsapp)`);
+    connectToWhatsApp();
+  });
+
+  server.on('error', (err) => {
+    console.error('[WhatsAppQrGateway] HTTP server error:', err);
+    process.exit(1);
+  });
+}
+
+bootstrapGateway();

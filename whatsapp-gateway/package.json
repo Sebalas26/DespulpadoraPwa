@@ -4,7 +4,8 @@
   "description": "Self-hosted WhatsApp Multi-Device QR Gateway for DGL Despulpadora",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js"
+    "start": "node server.js",
+    "smoke-test": "node server.js --smoke-test"
   },
   "dependencies": {
     "@whiskeysockets/baileys": "6.7.16",
@@ -12,5 +13,8 @@
     "express": "^4.21.2",
     "pino": "^9.6.0",
     "qrcode": "^1.5.4"
+  },
+  "overrides": {
+    "@cacheable/node-cache": "1.4.0"
   }
 }

@@ -32,9 +32,9 @@ WORKDIR /app
 # Eliminar configuración por defecto e inyectar nuestra configuración optimizada para SPA/PWA
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 
-# Copiar y desplegar microservicio WhatsAppQrGateway
+# Copiar, desplegar y verificar microservicio WhatsAppQrGateway en tiempo de build
 COPY whatsapp-gateway /app/whatsapp-gateway
-RUN cd /app/whatsapp-gateway && npm install --omit=dev
+RUN cd /app/whatsapp-gateway && npm install --omit=dev && node /app/whatsapp-gateway/server.js --smoke-test
 
 # Limpiar archivos estáticos por defecto de Nginx y copiar el build de Angular
 RUN rm -rf /usr/share/nginx/html/*

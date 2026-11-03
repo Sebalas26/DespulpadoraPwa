@@ -4,6 +4,40 @@ Este documento registra de manera cronológica y estructurada todas las interven
 
 ---
 
+## [2026-11-03] - Solución Definitiva al `502 Bad Gateway` en Producción (Colisión `PORT=80` de Coolify) y Certificación End-to-End de Generación de Código QR (`whatsapp-gateway/server.js`, `whatsapp-gateway/package.json`, `docker-entrypoint.sh` y `Dockerfile`)
+
+### 💬 Prompt Original del Usuario
+> "sigue igual, asegurate que sirva. hazle una prueba exhaustiva para dar con la solucion definitiva de que me genere el codigo QR"
+
+### 🤖 Resumen Técnico para la IA
+- **1. Diagnóstico en Vivo contra Producción (`https://despulpadoraweb.parking-flow.com/api/whatsapp/status`)**:
+  - Se comprobó en vivo que Nginx interno (`nginx/1.31.8`) devolvía `502 Bad Gateway` porque Coolify inyecta la variable de entorno `PORT=80` en el contenedor. Como `whatsapp-gateway/server.js` tenía `const PORT = process.env.PORT || 3005;`, el proceso Node intentaba escuchar en el puerto `80` (ya ocupado por Nginx), lanzaba `EADDRINUSE` y quedaba atrapado sin escuchar en `127.0.0.1:3005`.
+- **2. Aislamiento del Puerto `WHATSAPP_GATEWAY_PORT=3005`, Carga Híbrida CJS/ESM y `--smoke-test` en Build (`whatsapp-gateway/server.js`, `whatsapp-gateway/package.json`, `docker-entrypoint.sh`, `Dockerfile`)**:
+  - En `whatsapp-gateway/server.js`, se reemplazó `process.env.PORT` por `const PORT = Number(process.env.WHATSAPP_GATEWAY_PORT) || 3005;`, se implementó `ensureBaileysLoaded()` con soporte dual `require()` / `await import()`, se optimizó `resolveBaileysVersion()` (`sw.js` con timeout de `1800ms` y fallback inmediato `[2, 3000, 1052897873]`), y se agregó `bootstrapGateway()` con soporte para `--smoke-test` y salida limpia en `EADDRINUSE`.
+  - En `whatsapp-gateway/package.json`, se agregaron `"overrides": { "@cacheable/node-cache": "1.4.0" }` y `"smoke-test": "node server.js --smoke-test"`.
+  - En `Dockerfile`, se añadió `&& node /app/whatsapp-gateway/server.js --smoke-test` tras `npm install --omit=dev` para certificar el gateway durante el `docker build`.
+  - En `docker-entrypoint.sh`, se inyectó `WHATSAPP_GATEWAY_PORT=3005` y una espera de readiness de hasta 5 segundos sobre `http://127.0.0.1:3005/api/whatsapp/bot-config` antes de ceder el primer plano a Nginx.
+- **3. Prueba Real End-to-End de Generación de QR**:
+  - Se ejecutó el gateway con `PORT=80` y `WHATSAPP_GATEWAY_PORT=3005` en el entorno y se invocaron `POST /api/whatsapp/reconnect` y `GET /api/whatsapp/status`, obteniendo `{"status":"QR_READY","hasQr":true,"qrLen":6614}` en menos de 4 segundos.
+- **4. Informes de Agentes de Calidad (`AGENTS.md` §1)**:
+  - **Agente de Verificación de Impacto (`a8601e2d-8294-4bcf-bd48-f32cd48b92a0`)**: Ejecutó la prueba en vivo contra `despulpadoraweb.parking-flow.com` e identificó la colisión `PORT=80`.
+  - **Agente Auditor Punto por Punto (`b72c5293-1be8-4fc0-8d88-c9c2d335f970`)**: Emitió veredicto **APROBADO (100% Conforme, 0 desviaciones)**.
+  - **Agente de Revisión Par (`aef928af-5eb7-4dfc-96bd-17cc53a68355`)**: Emitió veredicto **100% APROBADO PARA PRODUCCIÓN (0 observaciones)**.
+
+### 📦 Componentes Modificados
+- `whatsapp-gateway/server.js`
+- `whatsapp-gateway/package.json`
+- `docker-entrypoint.sh`
+- `Dockerfile`
+- `HISTORIAL_CAMBIOS.md`
+
+### ✅ Verificación, Build y Tests Unitarios
+- **Smoke Test y Prueba E2E de Generación de QR (`node server.js --smoke-test` + `/api/whatsapp/reconnect`)**: Exitosa (`status: "QR_READY"`, `qrDataUrl` PNG Base64 de `6614` caracteres).
+- **Compilación de Producción (`npm run build`)**: Exitosa (`0 errores`).
+- **Suite Completa de Pruebas Unitarias (`ng test --watch=false`)**: **329 de 329 pruebas exitosas (`100% PASS`)**.
+
+---
+
 ## [2026-11-03] - Corrección de Conexión y Arranque de `WhatsAppQrGateway` en Producción Docker (`Dockerfile`, `docker-entrypoint.sh`, `nginx.conf`, `whatsapp-gateway` y `WhatsAppGatewayService`)
 
 ### 💬 Prompt Original del Usuario
