@@ -532,7 +532,9 @@ export class ReportsComponent {
    */
   constructor() {
     try {
-      this.stateService.refreshAll?.();
+      const hasCachedData =
+        this.stateService.orders().length > 0 || this.stateService.fruits().length > 0;
+      this.stateService.refreshAll?.(hasCachedData);
       this.route.queryParams.subscribe((params: Record<string, string | undefined>) => {
         const tab: string | undefined = params['tab'];
         if (tab === 'sales' || tab === 'ventas') {

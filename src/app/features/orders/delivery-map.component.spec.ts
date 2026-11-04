@@ -219,6 +219,8 @@ describe('DeliveryMapComponent', () => {
     expect(component.deliveryStops().length).toBe(1);
     expect(component.deliveryStops()[0].clientPhone).toBe('');
     expect(component.deliveryStops()[0].address).toBe('');
+    expect(component.deliveryStops()[0].lat).toBe(component.plantLocation().lat);
+    expect(component.deliveryStops()[0].lng).toBe(component.plantLocation().lng);
   });
   it('should render the fullscreen fab in bottom-left corner when map is in locked mode', () => {
     component.mapViewMode.set('locked');

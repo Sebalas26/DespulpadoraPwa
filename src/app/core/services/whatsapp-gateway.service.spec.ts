@@ -232,5 +232,19 @@ describe('WhatsAppGatewayService', () => {
     expect(failStatus?.status).toBe('DISCONNECTED');
     expect(failStatus?.qrDataUrl).toBeNull();
     expect(failStatus?.error).toBe('GATEWAY_UNREACHABLE');
+    let failSim: WhatsAppSimulateResponseDto | undefined;
+    service
+      .simulateIncomingOrder({
+        phone: '3101234567',
+        message: 'Pedido de prueba'
+      })
+      .subscribe((res: WhatsAppSimulateResponseDto) => {
+        failSim = res;
+      });
+    const failSimReq = httpMock.expectOne('http://localhost:3005/api/whatsapp/simulate-incoming');
+    failSimReq.error(new ProgressEvent('error'));
+    expect(failSim?.ok).toBeFalse();
+    expect(failSim?.handled).toBeFalse();
+    expect(failSim?.createdOrder).toBeNull();
   });
 });

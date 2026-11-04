@@ -2993,6 +2993,10 @@ body:has(.confirm-modal-overlay) {
   animation: fadeIn 0.22s ease-out;
 }
 
+.dgl-shimmer-wrapper ~ *:not(.modal-backdrop):not(.modal-overlay):not(app-voice-order-modal) {
+  display: none !important;
+}
+
 .shimmer-box,
 .shimmer-line,
 .shimmer-title,

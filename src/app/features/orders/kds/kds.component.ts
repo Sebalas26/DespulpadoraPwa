@@ -15,6 +15,7 @@ import { StateService } from '../../../core/services/state.service';
 import { NotificationService } from '../../../core/services/notification.service';
 import { RealtimeSyncService } from '../../../core/services/realtime-sync.service';
 import { ClientDto, FruitConfig, OrderDto, OrderItemDto, OrderStatus } from '../../../core/models/business.models';
+import { environment } from '../../../../environments/environment';
 import confetti from 'canvas-confetti';
 
 /**
@@ -69,15 +70,17 @@ interface AudioContextWindow extends Window {
         </div>
 
                 <div class="kds-actions-group">
-                    <button
-            type="button"
-            class="btn-kds-simulate"
-            (click)="simulateIncomingOrder()"
-            title="Simula la llegada de un nuevo pedido de restaurante con campanilla y animación"
-          >
-            <span class="sim-pulse"></span>
-            <span>+ Simular Pedido</span>
-          </button>
+                    @if (isSimulationAllowed) {
+                      <button
+                        type="button"
+                        class="btn-kds-simulate"
+                        (click)="simulateIncomingOrder()"
+                        title="Simula la llegada de un nuevo pedido de restaurante con campanilla y animación"
+                      >
+                        <span class="sim-pulse"></span>
+                        <span>+ Simular Pedido</span>
+                      </button>
+                    }
 
                     <button
             type="button"
@@ -271,7 +274,9 @@ interface AudioContextWindow extends Window {
                     <line x1="14" y1="1" x2="14" y2="4"></line>
                   </svg>
                   <p>Sin pedidos por iniciar</p>
-                  <small>Utiliza el botón "+ Simular Pedido" para probar la llegada de órdenes.</small>
+                  @if (isSimulationAllowed) {
+                    <small>Utiliza el botón "+ Simular Pedido" para probar la llegada de órdenes.</small>
+                  }
                 </div>
               }
             </div>
@@ -1184,6 +1189,11 @@ export class KdsComponent implements OnInit, OnDestroy {
   private readonly router = inject(Router);
   readonly realtimeSync = inject(RealtimeSyncService);
 
+  /**
+   * Indicates whether order simulation is enabled in the current non-production environment.
+   */
+  readonly isSimulationAllowed: boolean = !environment.production;
+
   readonly viewMode = signal<'columns' | 'grid'>('columns');
   readonly isDarkTheme = signal<boolean>(false);
   readonly soundEnabled = signal<boolean>(true);
@@ -1446,6 +1456,9 @@ export class KdsComponent implements OnInit, OnDestroy {
    */
   simulateIncomingOrder(): void {
     try {
+      if (!this.isSimulationAllowed) {
+        return;
+      }
       const availableClients: ClientDto[] = this.stateService.clients();
       const availableFruits: FruitConfig[] = this.stateService.fruits();
 

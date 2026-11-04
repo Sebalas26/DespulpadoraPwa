@@ -1,106 +1,250 @@
-<div class="page-container">
-  <header class="page-header" style="display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem; flex-wrap: wrap; margin-bottom: 1.5rem;">
-    <div>
-      <div style="display: flex; align-items: center; gap: 0.65rem; margin-bottom: 0.35rem;">
-        <span class="badge badge-primary">SUPERADMIN / MOTOR NATIVO .SQL</span>
-        <span class="badge badge-success">RETENCIÓN PERMANENTE EN SERVIDOR</span>
+<div class="backups-page">
+  <header class="backups-hero">
+    <div class="backups-hero-content">
+      <div class="backups-badges">
+        <span class="backups-pill backups-pill-primary">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+          </svg>
+          <span>Protección de Información</span>
+        </span>
+        <span class="backups-pill backups-pill-emerald">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+            <polyline points="22 4 12 14.01 9 11.01"></polyline>
+          </svg>
+          <span>Guardado en la Nube y Descarga Directa</span>
+        </span>
       </div>
-      <h1 class="page-title module-inline-title" style="margin: 0; font-size: 1.5rem; font-weight: 700;">
-        Copias de Seguridad de Base de Datos (.SQL)
-      </h1>
-      <p class="page-subtitle" style="margin: 0.25rem 0 0; opacity: 0.8;">
-        Genera respaldos completos en texto plano <code>.sql</code> (estructura DDL + datos transaccionales), almacénalos en el servidor y descárgalos a tu ordenador con un solo clic.
+
+      <h1 class="backups-title">Centro de Copias de Seguridad</h1>
+      <p class="backups-subtitle">
+        Protege la información de tu empresa creando copias de seguridad completas que puedes guardar de forma segura en el servidor o descargar a tu computador cuando lo necesites.
       </p>
     </div>
 
-    <div style="display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap;">
+    <div class="backups-hero-actions">
       <button
         type="button"
-        class="btn btn-outline"
+        class="btn btn-outline backups-btn-secondary"
         (click)="loadBackups()"
         [disabled]="isLoading() || isGenerating()">
-        <span class="material-icons-round" style="font-size: 1.1rem; margin-right: 0.35rem;">refresh</span>
-        Actualizar Lista
+        <svg
+          class="backups-icon"
+          [class.backups-spin]="isLoading()"
+          width="17"
+          height="17"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2.2"
+          stroke-linecap="round"
+          stroke-linejoin="round">
+          <polyline points="23 4 23 10 17 10"></polyline>
+          <polyline points="1 20 1 14 7 14"></polyline>
+          <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+        </svg>
+        <span>Actualizar historial</span>
       </button>
 
       <button
         *appHasPermission="'system.backups.manage'"
         type="button"
-        class="btn btn-primary"
+        class="btn btn-primary backups-btn-primary"
         (click)="generateAndDownloadOneClickBackup()"
         [disabled]="isGenerating()">
-        <span class="material-icons-round" style="font-size: 1.15rem; margin-right: 0.45rem;">backup</span>
         @if (isGenerating()) {
-          Generando y Descargando Copia .SQL...
+          <svg
+            class="backups-icon backups-spin"
+            width="18"
+            height="18"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2.3"
+            stroke-linecap="round"
+            stroke-linejoin="round">
+            <path d="M21 12a9 9 0 1 1-6.219-8.56"></path>
+          </svg>
+          <span>Creando copia de seguridad...</span>
         } @else {
-          Generar y Descargar Copia de Seguridad Ahora (.SQL)
+          <svg
+            class="backups-icon"
+            width="18"
+            height="18"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2.2"
+            stroke-linecap="round"
+            stroke-linejoin="round">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+            <polyline points="7 10 12 15 17 10"></polyline>
+            <line x1="12" y1="15" x2="12" y2="3"></line>
+          </svg>
+          <span>Crear nueva copia de seguridad</span>
         }
       </button>
     </div>
   </header>
 
-  <section style="display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 1rem; margin-bottom: 1.5rem;">
-    <div class="card" style="padding: 1.15rem;">
-      <div style="font-size: 0.8rem; opacity: 0.75; text-transform: uppercase; font-weight: 600;">
-        Copias Alojadas en Servidor
+  <section class="backups-kpi-grid" aria-label="Resumen de copias de seguridad">
+    <article class="backups-kpi-card">
+      <div class="backups-kpi-icon backups-kpi-icon-green">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round">
+          <ellipse cx="12" cy="5" rx="9" ry="3"></ellipse>
+          <path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"></path>
+          <path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"></path>
+        </svg>
       </div>
-      <div style="font-size: 1.65rem; font-weight: 800; margin-top: 0.35rem;">
-        {{ totalBackupsCount() }} archivos .SQL
+      <div class="backups-kpi-body">
+        <span class="backups-kpi-label">Respaldos Guardados</span>
+        <strong class="backups-kpi-value">{{ totalBackupsLabel() }}</strong>
+        <span class="backups-kpi-caption">Almacenamiento seguro en el servidor</span>
       </div>
-      <div style="font-size: 0.8rem; opacity: 0.7; margin-top: 0.2rem;">
-        Directorio persistente: <code>/app/Backups</code>
-      </div>
-    </div>
+    </article>
 
-    <div class="card" style="padding: 1.15rem;">
-      <div style="font-size: 0.8rem; opacity: 0.75; text-transform: uppercase; font-weight: 600;">
-        Espacio Total en Servidor
+    <article class="backups-kpi-card">
+      <div class="backups-kpi-icon backups-kpi-icon-blue">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
+        </svg>
       </div>
-      <div style="font-size: 1.65rem; font-weight: 800; margin-top: 0.35rem;">
-        {{ totalStorageFormatted() }}
+      <div class="backups-kpi-body">
+        <span class="backups-kpi-label">Espacio Utilizado</span>
+        <strong class="backups-kpi-value">{{ totalStorageFormatted() }}</strong>
+        <span class="backups-kpi-caption">Uso actual de almacenamiento</span>
       </div>
-      <div style="font-size: 0.8rem; opacity: 0.7; margin-top: 0.2rem;">
-        Se conservan hasta eliminación manual
-      </div>
-    </div>
+    </article>
 
-    <div class="card" style="padding: 1.15rem;">
-      <div style="font-size: 0.8rem; opacity: 0.75; text-transform: uppercase; font-weight: 600;">
-        Último Respaldo Generado
+    <article class="backups-kpi-card">
+      <div class="backups-kpi-icon backups-kpi-icon-purple">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"></circle>
+          <polyline points="12 6 12 12 16 14"></polyline>
+        </svg>
       </div>
-      @if (latestBackup(); as latest) {
-        <div style="font-size: 1rem; font-weight: 700; margin-top: 0.35rem; word-break: break-all;">
-          {{ latest.fileName }}
-        </div>
-        <div style="font-size: 0.8rem; opacity: 0.7; margin-top: 0.2rem;">
-          {{ latest.createdAtUtc | date:'medium' }} ({{ latest.sizeFormatted }})
-        </div>
-      } @else {
-        <div style="font-size: 1rem; font-weight: 600; margin-top: 0.35rem; opacity: 0.7;">
-          Sin copias registradas aún
-        </div>
-      }
-    </div>
+      <div class="backups-kpi-body">
+        <span class="backups-kpi-label">Última Copia Realizada</span>
+        @if (latestBackup(); as latest) {
+          <strong class="backups-kpi-value backups-kpi-value-md">
+            {{ formatFriendlyDate(latest.createdAtUtc) }}
+          </strong>
+          <span class="backups-kpi-caption" [title]="latest.fileName">
+            {{ getBackupFriendlyTitle(latest) }} ({{ latest.sizeFormatted }})
+          </span>
+        } @else {
+          <strong class="backups-kpi-value backups-kpi-value-md">Sin copias registradas</strong>
+          <span class="backups-kpi-caption">Aún no se ha creado ningún respaldo</span>
+        }
+      </div>
+    </article>
+
+    <article class="backups-kpi-card">
+      <div
+        class="backups-kpi-icon"
+        [class.backups-kpi-icon-green]="protectionStatus().isProtected"
+        [class.backups-kpi-icon-amber]="!protectionStatus().isProtected">
+        @if (protectionStatus().isProtected) {
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+            <polyline points="9 12 11 14 15 10"></polyline>
+          </svg>
+        } @else {
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+            <line x1="12" y1="9" x2="12" y2="13"></line>
+            <line x1="12" y1="17" x2="12.01" y2="17"></line>
+          </svg>
+        }
+      </div>
+      <div class="backups-kpi-body">
+        <span class="backups-kpi-label">Estado de Protección</span>
+        <strong
+          class="backups-kpi-value backups-kpi-value-md"
+          [class.backups-text-success]="protectionStatus().isProtected"
+          [class.backups-text-warning]="!protectionStatus().isProtected">
+          {{ protectionStatus().label }}
+        </strong>
+        <span class="backups-kpi-caption">{{ protectionStatus().subtitle }}</span>
+      </div>
+    </article>
   </section>
 
-  <section class="card" style="padding: 1.25rem;">
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 0.5rem;">
-      <div>
-        <h2 style="margin: 0; font-size: 1.1rem; font-weight: 700;">
-          Historial de Copias de Seguridad en el Servidor
-        </h2>
-        <p style="margin: 0.2rem 0 0; font-size: 0.85rem; opacity: 0.75;">
-          Todas las copias permanecen guardadas en el servidor hasta que decidas eliminarlas manualmente.
+  <section class="card backups-table-card">
+    <div class="backups-toolbar">
+      <div class="backups-toolbar-heading">
+        <h2 class="backups-section-title">Historial de Copias de Seguridad</h2>
+        <p class="backups-section-subtitle">
+          Consulta tus respaldos guardados, descárgalos a tu computador o libera espacio cuando lo requieras.
         </p>
+      </div>
+
+      <div class="backups-toolbar-controls">
+        <div class="backups-search-box">
+          <svg class="backups-search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="11" cy="11" r="8"></circle>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+          </svg>
+          <input
+            type="text"
+            class="backups-search-input"
+            placeholder="Buscar por fecha, nombre o usuario..."
+            [ngModel]="searchQuery()"
+            (ngModelChange)="onSearchChange($event)"
+            aria-label="Buscar copias de seguridad" />
+          @if (searchQuery()) {
+            <button
+              type="button"
+              class="backups-search-clear"
+              (click)="clearSearch()"
+              title="Limpiar búsqueda"
+              aria-label="Limpiar búsqueda">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="18" y1="6" x2="6" y2="18"></line>
+                <line x1="6" y1="6" x2="18" y2="18"></line>
+              </svg>
+            </button>
+          }
+        </div>
+
+        <div class="backups-select-group">
+          <label class="backups-select-label" for="backups-sort-select">Ordenar:</label>
+          <select
+            id="backups-sort-select"
+            class="backups-select"
+            [ngModel]="sortBy()"
+            (ngModelChange)="onSortChange($event)"
+            aria-label="Ordenar copias de seguridad">
+            <option value="newest">Más recientes primero</option>
+            <option value="oldest">Más antiguos primero</option>
+            <option value="largest">Mayor tamaño</option>
+            <option value="smallest">Menor tamaño</option>
+          </select>
+        </div>
+
+        <div class="backups-select-group">
+          <label class="backups-select-label" for="backups-pagesize-select">Mostrar:</label>
+          <select
+            id="backups-pagesize-select"
+            class="backups-select"
+            [ngModel]="pageSize()"
+            (ngModelChange)="onPageSizeChange($event)"
+            aria-label="Cantidad de registros por página">
+            @for (size of pageSizeOptions; track size) {
+              <option [ngValue]="size">{{ size }} por página</option>
+            }
+          </select>
+        </div>
       </div>
     </div>
 
     @if (isLoading()) {
-      <div class="dgl-shimmer-wrapper">
+      <div class="dgl-shimmer-wrapper" style="padding: 1.25rem;">
         <div class="shimmer-table-card" style="border: none; padding: 8px 0; box-shadow: none;">
           @for (row of [1, 2, 3, 4]; track row) {
             <div class="shimmer-table-row">
-              <div class="shimmer-circle" style="width: 34px; height: 34px;"></div>
+              <div class="shimmer-circle" style="width: 38px; height: 38px;"></div>
               <div class="shimmer-line" style="width: 85%;"></div>
               <div class="shimmer-line" style="width: 65%;"></div>
               <div class="shimmer-line" style="width: 60%;"></div>
@@ -110,80 +254,155 @@
         </div>
       </div>
     } @else if (backups().length === 0) {
-      <div style="padding: 2.25rem; text-align: center; opacity: 0.85;">
-        <p style="margin: 0 0 0.75rem; font-weight: 600;">
-          No hay copias de seguridad almacenadas en el servidor todavía.
+      <div class="backups-empty-state">
+        <div class="backups-empty-icon">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+            <line x1="12" y1="8" x2="12" y2="16"></line>
+            <line x1="8" y1="12" x2="16" y2="12"></line>
+          </svg>
+        </div>
+        <h3 class="backups-empty-title">Aún no hay copias de seguridad guardadas</h3>
+        <p class="backups-empty-text">
+          Crea tu primer respaldo con un solo clic para guardar una copia completa de la información en el servidor y descargarla automáticamente a tu computador.
         </p>
-        <p style="margin: 0; font-size: 0.9rem; opacity: 0.75;">
-          Haz clic en <strong>"Generar y Descargar Copia de Seguridad Ahora (.SQL)"</strong> para crear el primer respaldo en el servidor y descargarlo automáticamente a tu ordenador.
+        <button
+          *appHasPermission="'system.backups.manage'"
+          type="button"
+          class="btn btn-primary backups-btn-primary"
+          (click)="generateAndDownloadOneClickBackup()"
+          [disabled]="isGenerating()">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+            <polyline points="7 10 12 15 17 10"></polyline>
+            <line x1="12" y1="15" x2="12" y2="3"></line>
+          </svg>
+          <span>Crear primera copia de seguridad</span>
+        </button>
+      </div>
+    } @else if (filteredBackups().length === 0) {
+      <div class="backups-empty-state">
+        <div class="backups-empty-icon backups-empty-icon-muted">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="11" cy="11" r="8"></circle>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+          </svg>
+        </div>
+        <h3 class="backups-empty-title">No encontramos copias con esa búsqueda</h3>
+        <p class="backups-empty-text">
+          No hay resultados que coincidan con <strong>"{{ searchQuery() }}"</strong>. Intenta con otra palabra o limpia el filtro.
         </p>
+        <button type="button" class="btn btn-outline backups-btn-secondary" (click)="clearSearch()">
+          <span>Mostrar todas las copias</span>
+        </button>
       </div>
     } @else {
-      <div class="table-container">
-        <table class="data-table">
+      <div class="table-container backups-table-wrapper">
+        <table class="data-table backups-table">
           <thead>
             <tr>
-              <th>Archivo (.SQL)</th>
-              <th>Base de Datos</th>
-              <th>Tablas / Filas</th>
-              <th>Tamaño</th>
-              <th>Fecha UTC</th>
-              <th>Generado Por</th>
+              <th>Copia de Seguridad</th>
+              <th>Contenido Respaldado</th>
+              <th>Tamaño del Archivo</th>
+              <th>Fecha y Hora</th>
+              <th>Creado por</th>
               <th style="text-align: right;">Acciones</th>
             </tr>
           </thead>
           <tbody>
-            @for (item of backups(); track item.fileName) {
+            @for (item of paginatedBackups(); track item.fileName) {
               <tr>
-                <td style="font-weight: 600; font-family: monospace;">
-                  {{ item.fileName }}
-                </td>
                 <td>
-                  <span class="badge badge-primary">{{ item.databaseName }}</span>
+                  <div class="backups-file-cell">
+                    <div class="backups-file-badge">
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                        <polyline points="14 2 14 8 20 8"></polyline>
+                        <line x1="16" y1="13" x2="8" y2="13"></line>
+                        <line x1="16" y1="17" x2="8" y2="17"></line>
+                      </svg>
+                    </div>
+                    <div class="backups-file-info">
+                      <span class="backups-file-title">{{ getBackupFriendlyTitle(item) }}</span>
+                      <span class="backups-file-name" [title]="item.fileName">{{ item.fileName }}</span>
+                    </div>
+                  </div>
                 </td>
+
                 <td>
-                  @if (item.tablesCount > 0) {
-                    {{ item.tablesCount }} tablas / {{ item.totalRowsCount }} filas
-                  } @else {
-                    Respaldo SQL Completo
-                  }
+                  <div class="backups-content-cell">
+                    <span class="backups-content-primary">
+                      {{ getBackupContentSummary(item).modulesText }}
+                    </span>
+                    <span class="backups-content-secondary">
+                      {{ getBackupContentSummary(item).recordsText }}
+                    </span>
+                  </div>
                 </td>
-                <td style="font-weight: 600;">
-                  {{ item.sizeFormatted }}
-                </td>
+
                 <td>
-                  {{ item.createdAtUtc | date:'yyyy-MM-dd HH:mm:ss' }}
+                  <span class="backups-size-pill">
+                    {{ item.sizeFormatted }}
+                  </span>
                 </td>
+
                 <td>
-                  {{ item.createdByUsername }}
+                  <div class="backups-date-cell">
+                    <span class="backups-date-primary">{{ formatFriendlyDate(item.createdAtUtc) }}</span>
+                    <span class="backups-date-secondary">{{ formatRelativeTime(item.createdAtUtc) }}</span>
+                  </div>
                 </td>
+
+                <td>
+                  <div class="backups-author-cell">
+                    <span class="backups-author-avatar">
+                      {{ getUserInitials(item.createdByUsername) }}
+                    </span>
+                    <span class="backups-author-name">{{ item.createdByUsername }}</span>
+                  </div>
+                </td>
+
                 <td style="text-align: right;">
-                  <div style="display: inline-flex; gap: 0.5rem; justify-content: flex-end;">
+                  <div class="backups-row-actions">
                     <button
                       type="button"
-                      class="btn btn-outline"
+                      class="backups-action-btn backups-action-download"
                       (click)="downloadBackupToComputer(item.fileName)"
-                      [disabled]="downloadingFileName() === item.fileName">
-                      <span class="material-icons-round" style="font-size: 1rem; margin-right: 0.25rem;">download</span>
+                      [disabled]="downloadingFileName() === item.fileName"
+                      title="Descargar copia de seguridad a tu computador">
                       @if (downloadingFileName() === item.fileName) {
-                        Descargando...
+                        <svg class="backups-spin" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">
+                          <path d="M21 12a9 9 0 1 1-6.219-8.56"></path>
+                        </svg>
+                        <span>Descargando...</span>
                       } @else {
-                        Descargar .SQL al PC
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                          <polyline points="7 10 12 15 17 10"></polyline>
+                          <line x1="12" y1="15" x2="12" y2="3"></line>
+                        </svg>
+                        <span>Descargar</span>
                       }
                     </button>
 
                     <button
                       *appHasPermission="'system.backups.manage'"
                       type="button"
-                      class="btn btn-outline"
-                      style="border-color: #ef4444; color: #ef4444;"
-                      (click)="deleteBackupFromServer(item.fileName)"
-                      [disabled]="deletingFileName() === item.fileName">
-                      <span class="material-icons-round" style="font-size: 1rem; margin-right: 0.25rem;">delete</span>
+                      class="backups-action-btn backups-action-delete"
+                      (click)="requestDeleteBackup(item)"
+                      [disabled]="deletingFileName() === item.fileName"
+                      title="Eliminar copia de seguridad del servidor">
                       @if (deletingFileName() === item.fileName) {
-                        Eliminando...
+                        <svg class="backups-spin" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">
+                          <path d="M21 12a9 9 0 1 1-6.219-8.56"></path>
+                        </svg>
+                        <span>Eliminando...</span>
                       } @else {
-                        Eliminar del Servidor
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                          <polyline points="3 6 5 6 21 6"></polyline>
+                          <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                        </svg>
+                        <span>Eliminar</span>
                       }
                     </button>
                   </div>
@@ -193,7 +412,120 @@
           </tbody>
         </table>
       </div>
+
+      <footer class="backups-pagination" aria-label="Paginación de copias de seguridad">
+        <div class="backups-pagination-summary">
+          Mostrando <strong>{{ paginationStartIndex() }}</strong> a <strong>{{ paginationEndIndex() }}</strong> de
+          <strong>{{ filteredBackups().length }}</strong>
+          {{ filteredBackups().length === 1 ? 'copia de seguridad' : 'copias de seguridad' }}
+        </div>
+
+        <div class="backups-pagination-controls">
+          <button
+            type="button"
+            class="backups-page-btn"
+            (click)="previousPage()"
+            [disabled]="safeCurrentPage() <= 1">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="15 18 9 12 15 6"></polyline>
+            </svg>
+            <span>Anterior</span>
+          </button>
+
+          @for (page of visiblePageNumbers(); track page) {
+            <button
+              type="button"
+              class="backups-page-number"
+              [class.backups-page-number-active]="page === safeCurrentPage()"
+              (click)="goToPage(page)">
+              {{ page }}
+            </button>
+          }
+
+          <button
+            type="button"
+            class="backups-page-btn"
+            (click)="nextPage()"
+            [disabled]="safeCurrentPage() >= totalPages()">
+            <span>Siguiente</span>
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="9 18 15 12 9 6"></polyline>
+            </svg>
+          </button>
+        </div>
+      </footer>
     }
   </section>
 </div>
 
+@if (backupPendingDelete(); as pending) {
+  <div class="modal-overlay backups-modal-overlay">
+    <div class="modal-content backups-modal-card" (click)="$event.stopPropagation()" role="dialog" aria-modal="true" aria-labelledby="backups-delete-modal-title">
+      <div class="backups-modal-header">
+        <div class="backups-modal-icon-danger">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="3 6 5 6 21 6"></polyline>
+            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+            <line x1="10" y1="11" x2="10" y2="17"></line>
+            <line x1="14" y1="11" x2="14" y2="17"></line>
+          </svg>
+        </div>
+        <button
+          type="button"
+          class="backups-modal-close"
+          (click)="cancelDeleteBackup()"
+          aria-label="Cerrar ventana">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+
+      <div class="backups-modal-body">
+        <h3 id="backups-delete-modal-title" class="backups-modal-title">
+          ¿Eliminar esta copia de seguridad?
+        </h3>
+        <p class="backups-modal-description">
+          Estás a punto de retirar del servidor el respaldo <strong>{{ getBackupFriendlyTitle(pending) }}</strong>. Si ya lo descargaste en tu computador, conservarás tu copia local, pero dejará de estar almacenado en la nube del sistema.
+        </p>
+
+        <div class="backups-modal-summary">
+          <div class="backups-modal-summary-row">
+            <span>Archivo de respaldo:</span>
+            <strong>{{ pending.fileName }}</strong>
+          </div>
+          <div class="backups-modal-summary-row">
+            <span>Fecha de creación:</span>
+            <strong>{{ formatFriendlyDate(pending.createdAtUtc) }}</strong>
+          </div>
+          <div class="backups-modal-summary-row">
+            <span>Tamaño ocupado:</span>
+            <strong>{{ pending.sizeFormatted }}</strong>
+          </div>
+        </div>
+      </div>
+
+      <div class="backups-modal-footer">
+        <button
+          type="button"
+          class="btn btn-outline backups-btn-secondary"
+          (click)="cancelDeleteBackup()"
+          [disabled]="deletingFileName() === pending.fileName">
+          <span>Cancelar</span>
+        </button>
+        <button
+          type="button"
+          class="btn backups-btn-danger"
+          (click)="confirmDeleteBackup()"
+          [disabled]="deletingFileName() === pending.fileName">
+          @if (deletingFileName() === pending.fileName) {
+            <span>Eliminando...</span>
+          } @else {
+            <span>Sí, eliminar copia</span>
+          }
+        </button>
+      </div>
+    </div>
+  </div>
+}

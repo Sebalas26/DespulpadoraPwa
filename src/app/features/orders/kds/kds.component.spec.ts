@@ -193,5 +193,6 @@ describe('KdsComponent', () => {
       'signalr'
     );
     expect(component.realtimeSync.lastEvent()?.event).toBe('order_priority_changed');
+    expect(component.isSimulationAllowed).toBeTrue();
   });
 });

@@ -396,4 +396,33 @@ describe('ApiService', () => {
       }
     ]);
   });
+
+  it('should complete a batch via PATCH /api/batches/{id} and fallback safely on 404/405', () => {
+    service.completeBatch(42, 76.5).subscribe(batch => {
+      expect(batch.batchId).toBe(42);
+      expect(batch.pulpProducedKg).toBeCloseTo(76.5, 1);
+      expect(batch.status).toBe('Completed');
+    });
+
+    const patchReq = httpMock.expectOne(`${baseUrl}/batches/42`);
+    expect(patchReq.request.method).toBe('PATCH');
+    expect(patchReq.request.body).toEqual({ pulpProducedKg: 76.5, status: 'Completed' });
+    patchReq.flush({
+      id: 42,
+      fruitId: 1,
+      rawWeightKg: 100,
+      netPulpWeightKg: 76.5,
+      status: 'Completed'
+    });
+
+    service.completeBatch(43, 64.0).subscribe(fallbackBatch => {
+      expect(fallbackBatch.batchId).toBe(43);
+      expect(fallbackBatch.pulpProducedKg).toBeCloseTo(64.0, 1);
+      expect(fallbackBatch.status).toBe('Completed');
+    });
+
+    const fallbackReq = httpMock.expectOne(`${baseUrl}/batches/43`);
+    expect(fallbackReq.request.method).toBe('PATCH');
+    fallbackReq.flush('Method Not Allowed', { status: 405, statusText: 'Method Not Allowed' });
+  });
 });

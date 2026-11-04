@@ -5,10 +5,11 @@ import { DEFAULT_SYSTEM_MODULES_CATALOG, SystemCatalogComponent } from './system
 import { ApiService } from '../../../core/services/api.service';
 import { AuthService } from '../../../core/services/auth.service';
 import { NotificationService } from '../../../core/services/notification.service';
-import { SystemModuleCatalogDto } from '../../../core/models/business.models';
+import { SystemActionCatalogDto, SystemModuleCatalogDto } from '../../../core/models/business.models';
 
 /**
- * Unit tests for SystemCatalogComponent verifying master catalog CRUD without hardcoded fallback catalogs.
+ * Unit tests for SystemCatalogComponent verifying plain-language UX, KPI summaries,
+ * master-detail pagination, and backend CRUD integration without hardcoded fallback data.
  */
 describe('SystemCatalogComponent', () => {
   let component: SystemCatalogComponent;
@@ -43,7 +44,7 @@ describe('SystemCatalogComponent', () => {
       id: 2,
       name: 'Pedidos & Despachos',
       slug: 'orders',
-      icon: 'box',
+      icon: 'truck',
       menuSection: 'OPERACIONES',
       frontendRoute: '/orders',
       displayOrder: 2,
@@ -55,7 +56,7 @@ describe('SystemCatalogComponent', () => {
           name: 'Ver Pedidos',
           slug: 'orders.view',
           httpMethod: 'GET',
-          description: '',
+          description: 'Permite consultar la bandeja de pedidos',
           isActive: true
         },
         {
@@ -64,8 +65,17 @@ describe('SystemCatalogComponent', () => {
           name: 'Crear Pedido',
           slug: 'orders.create',
           httpMethod: 'POST',
-          description: '',
+          description: 'Permite registrar nuevos pedidos',
           isActive: true
+        },
+        {
+          id: 203,
+          moduleId: 2,
+          name: 'Anular Pedido',
+          slug: 'orders.delete',
+          httpMethod: 'DELETE',
+          description: 'Permite anular un pedido',
+          isActive: false
         }
       ]
     }
@@ -74,10 +84,13 @@ describe('SystemCatalogComponent', () => {
   beforeEach(async () => {
     apiServiceSpy = jasmine.createSpyObj<ApiService>('ApiService', [
       'getSystemModules',
+      'getSystemActions',
       'createSystemModule',
       'updateSystemModule',
+      'deleteSystemModule',
       'createSystemAction',
-      'updateSystemAction'
+      'updateSystemAction',
+      'deleteSystemAction'
     ]);
 
     authServiceMock = {
@@ -87,7 +100,9 @@ describe('SystemCatalogComponent', () => {
         mod.frontendRoute === '/calculator' ||
         mod.slug === 'calculator' ||
         mod.name === 'Planta e Inventario' ||
-        mod.name === 'Control de Producción & Mermas'
+        mod.name === 'Control de Producción & Mermas',
+      isRemovedCalculatorActionSlug: (slug: string) =>
+        slug.startsWith('calculator.') || slug.startsWith('batches.')
     };
 
     notificationSpy = jasmine.createSpyObj<NotificationService>('NotificationService', [
@@ -120,10 +135,23 @@ describe('SystemCatalogComponent', () => {
     expect(component.moduleFrontendRoute()).toBe('');
   });
 
-  it('should load catalog modules from ApiService on init and compute totalActionsCount', () => {
+  it('should load catalog modules from ApiService on init and compute KPI summary metrics', () => {
     expect(apiServiceSpy.getSystemModules).toHaveBeenCalledWith(false);
     expect(component.modules().length).toBe(2);
-    expect(component.totalActionsCount()).toBe(3);
+    expect(component.activeModulesCount()).toBe(2);
+    expect(component.hiddenModulesCount()).toBe(0);
+    expect(component.totalActionsCount()).toBe(4);
+    expect(component.activeActionsCount()).toBe(3);
+    expect(component.availableMenuSections()).toEqual(['PRINCIPAL', 'OPERACIONES']);
+  });
+
+  it('should render human-friendly Spanish headings and action labels in the template', () => {
+    const compiled = fixture.nativeElement as HTMLElement;
+    expect(compiled.textContent).toContain('Menú y Pantallas del Sistema');
+    expect(compiled.textContent).toContain('Pantallas del Sistema');
+    expect(compiled.textContent).toContain('Permisos Disponibles en: Dashboard General');
+    expect(compiled.textContent).toContain('+ Nueva Pantalla');
+    expect(compiled.textContent).toContain('+ Agregar Permiso');
   });
 
   it('should keep modules empty when ApiService returns empty array or fails without fallback catalog', () => {
@@ -137,13 +165,88 @@ describe('SystemCatalogComponent', () => {
     expect(notificationSpy.error).toHaveBeenCalled();
   });
 
-  it('should filter modules by searchQuery matching name, slug, route, or actionSlug', () => {
-    component.searchQuery.set('orders.create');
+  it('should filter modules by searchQuery and sectionFilter and reset pagination', () => {
+    component.onSearchQueryChange('orders.create');
     expect(component.filteredModules().length).toBe(1);
     expect(component.filteredModules()[0].slug).toBe('orders');
+    expect(component.modulesCurrentPage()).toBe(1);
 
-    component.searchQuery.set('nonexistent_xyz');
+    component.clearSearchQuery();
+    expect(component.searchQuery()).toBe('');
+    expect(component.filteredModules().length).toBe(2);
+
+    component.selectSectionFilter('OPERACIONES');
+    expect(component.filteredModules().length).toBe(1);
+    expect(component.getSectionModulesCount('OPERACIONES')).toBe(1);
+
+    component.onSearchQueryChange('nonexistent_xyz');
     expect(component.filteredModules().length).toBe(0);
+  });
+
+  it('should paginate screens list and compute sequential numbers accurately', () => {
+    component.modulesPageSize.set(1);
+    expect(component.modulesTotalPages()).toBe(2);
+    expect(component.paginatedModules().length).toBe(1);
+    expect(component.modulesRangeStart()).toBe(1);
+    expect(component.modulesRangeEnd()).toBe(1);
+    expect(component.getSequentialNumber(0)).toBe(1);
+
+    component.nextModulesPage();
+    expect(component.modulesCurrentPage()).toBe(2);
+    expect(component.getSequentialNumber(0)).toBe(2);
+
+    component.prevModulesPage();
+    expect(component.modulesCurrentPage()).toBe(1);
+
+    component.setModulesPage(2);
+    expect(component.modulesCurrentPage()).toBe(2);
+  });
+
+  it('should filter and paginate permissions of the selected screen by query and operation type', () => {
+    component.selectModule(2);
+    expect(component.selectedModule()?.id).toBe(2);
+    expect(component.filteredSelectedModuleActions().length).toBe(3);
+
+    component.selectActionOperationFilter('POST');
+    expect(component.filteredSelectedModuleActions().length).toBe(1);
+    expect(component.filteredSelectedModuleActions()[0].slug).toBe('orders.create');
+
+    component.clearActionFilters();
+    expect(component.filteredSelectedModuleActions().length).toBe(3);
+
+    component.onActionSearchChange('Anular');
+    expect(component.filteredSelectedModuleActions().length).toBe(1);
+    expect(component.filteredSelectedModuleActions()[0].slug).toBe('orders.delete');
+
+    component.clearActionFilters();
+    component.actionsPageSize.set(2);
+    expect(component.actionsTotalPages()).toBe(2);
+    expect(component.paginatedSelectedModuleActions().length).toBe(2);
+
+    component.nextActionsPage();
+    expect(component.actionsCurrentPage()).toBe(2);
+    expect(component.paginatedSelectedModuleActions().length).toBe(1);
+
+    component.prevActionsPage();
+    expect(component.actionsCurrentPage()).toBe(1);
+  });
+
+  it('should translate HTTP verbs into friendly Spanish labels and resolve visual icons', () => {
+    expect(component.getOperationShortLabel('GET')).toBe('Consulta');
+    expect(component.getOperationShortLabel('POST')).toBe('Registro');
+    expect(component.getOperationShortLabel('PUT')).toBe('Modificación');
+    expect(component.getOperationShortLabel('PATCH')).toBe('Modificación');
+    expect(component.getOperationShortLabel('DELETE')).toBe('Eliminación');
+
+    expect(component.getOperationFullLabel('GET')).toBe('Consulta y lectura');
+    expect(component.getOperationFullLabel('POST')).toBe('Creación y registro');
+    expect(component.getOperationFullLabel('PUT')).toBe('Edición y actualización');
+    expect(component.getOperationFullLabel('DELETE')).toBe('Eliminación');
+
+    expect(component.resolveIconType('truck', '/orders', 'orders')).toBe('truck');
+    expect(component.resolveIconType('box', '/inventory', 'inventory')).toBe('box');
+    expect(component.resolveIconType('shield', '/admin/roles', 'roles')).toBe('shield');
+    expect(component.resolveIconType('grid', '/dashboard', 'dashboard')).toBe('grid');
   });
 
   it('should auto-generate slug and frontendRoute when typing moduleName in create mode', () => {
@@ -202,28 +305,49 @@ describe('SystemCatalogComponent', () => {
     expect(component.showModuleModal()).toBeFalse();
   });
 
-  it('should prefill actionSlug with module slug prefix when opening create action modal', () => {
+  it('should update module and toggle module visibility via ApiService', () => {
+    const updatedModule: SystemModuleCatalogDto = {
+      ...mockCatalog[0],
+      name: 'Tablero Principal'
+    };
+    apiServiceSpy.updateSystemModule.and.returnValue(of(updatedModule));
+
+    component.openEditModuleModal(mockCatalog[0]);
+    component.moduleName.set('Tablero Principal');
+    component.saveModule();
+
+    expect(apiServiceSpy.updateSystemModule).toHaveBeenCalled();
+    expect(component.showModuleModal()).toBeFalse();
+
+    const fakeEvent = new Event('click');
+    component.toggleModuleStatus(mockCatalog[0], fakeEvent);
+    expect(apiServiceSpy.updateSystemModule).toHaveBeenCalled();
+  });
+
+  it('should prefill actionSlug with module slug prefix and auto-generate suffix on actionName change', () => {
     const targetModule = mockCatalog[1];
     component.openCreateActionModal(targetModule);
 
     expect(component.actionModuleId()).toBe(2);
     expect(component.actionSlug()).toBe('orders.');
     expect(component.showActionModal()).toBeTrue();
+
+    component.onActionNameChange('Exportar Reporte');
+    expect(component.actionSlug()).toBe('orders.exportar_reporte');
   });
 
   it('should call createSystemAction on ApiService when saving a new action', () => {
     const targetModule = mockCatalog[1];
-    apiServiceSpy.createSystemAction.and.returnValue(
-      of({
-        id: 203,
-        moduleId: 2,
-        name: 'Exportar Pedidos',
-        slug: 'orders.export',
-        httpMethod: 'GET',
-        description: '',
-        isActive: true
-      })
-    );
+    const createdAction: SystemActionCatalogDto = {
+      id: 204,
+      moduleId: 2,
+      name: 'Exportar Pedidos',
+      slug: 'orders.export',
+      httpMethod: 'GET',
+      description: '',
+      isActive: true
+    };
+    apiServiceSpy.createSystemAction.and.returnValue(of(createdAction));
 
     component.openCreateActionModal(targetModule);
     component.actionName.set('Exportar Pedidos');
@@ -240,5 +364,24 @@ describe('SystemCatalogComponent', () => {
     });
     expect(notificationSpy.success).toHaveBeenCalled();
     expect(component.showActionModal()).toBeFalse();
+  });
+
+  it('should update action and toggle action status via ApiService', () => {
+    const existingAction = mockCatalog[1].actions[0];
+    const updatedAction: SystemActionCatalogDto = {
+      ...existingAction,
+      name: 'Consultar Pedidos'
+    };
+    apiServiceSpy.updateSystemAction.and.returnValue(of(updatedAction));
+
+    component.openEditActionModal(existingAction);
+    component.actionName.set('Consultar Pedidos');
+    component.saveAction();
+
+    expect(apiServiceSpy.updateSystemAction).toHaveBeenCalled();
+    expect(component.showActionModal()).toBeFalse();
+
+    component.toggleActionStatus(existingAction);
+    expect(apiServiceSpy.updateSystemAction).toHaveBeenCalled();
   });
 });

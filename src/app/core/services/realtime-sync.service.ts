@@ -8,6 +8,9 @@ import {
 import { Observable, Subject } from 'rxjs';
 import { environment } from '../../../environments/environment';
 
+/**
+ * Supported business domains synchronized in real time across the PWA and mobile app.
+ */
 export type RealtimeDomainType =
   | 'parameters'
   | 'inventory'
@@ -18,69 +21,124 @@ export type RealtimeDomainType =
   | 'courier_location'
   | 'all';
 
+/**
+ * Transport origin of a real-time synchronization event.
+ */
 export type RealtimeEventOrigin = 'local-tab' | 'cross-tab' | 'signalr' | 'websocket';
 
+/**
+ * Normalized GPS telemetry payload for a courier in active transit.
+ */
 export interface CourierRealtimeLocationPayload {
+  /** Unique courier or employee identifier. */
   courierId: string;
+  /** Optional display name of the courier. */
   courierName?: string;
+  /** Current GPS latitude in decimal degrees. */
   latitude: number;
+  /** Current GPS longitude in decimal degrees. */
   longitude: number;
+  /** Optional travel speed in kilometers per hour. */
   speedKmh?: number;
+  /** Optional mobile device battery percentage. */
   batteryLevel?: number;
+  /** Optional compass heading in degrees. */
   heading?: number;
+  /** ISO-8601 timestamp of the GPS reading. */
   timestamp: string;
 }
 
+/**
+ * Envelope for domain events exchanged over WebSocket, BroadcastChannel, or SignalR.
+ */
 export interface RealtimeDomainEvent {
+  /** Unique identifier used for deduplicating events across transports. */
   eventId: string;
+  /** Canonical event name (e.g., `courier_location_update`, `location_update`, `order_updated`). */
   event: string;
+  /** Target business domain category. */
   domain: RealtimeDomainType;
+  /** Specific mutation or action performed. */
   action: string;
+  /** Transport origin that delivered the event. */
   origin: RealtimeEventOrigin;
+  /** Identifier of the originating browser tab or transport. */
   senderTabId: string;
+  /** Optional courier identifier associated with the event. */
   courierId?: string;
+  /** Optional user identifier associated with the event. */
   userId?: string;
+  /** Optional list of order identifiers affected by the event. */
   orderIds?: string[];
+  /** Optional structured event payload. */
   data?: Record<string, unknown>;
+  /** ISO-8601 timestamp when the event was created. */
   timestamp: string;
 }
 
+/**
+ * Extended Window interface for detecting Karma test execution context.
+ */
 interface WindowWithKarma extends Window {
+  /** Present when running inside the Karma test runner. */
   __karma__?: unknown;
 }
 
 /**
- * Central real-time synchronization service combining SignalR Hub (/hubs/operations),
- * continuous WebSocket stream (/ws) for Flutter courier app interoperability,
- * and BroadcastChannel / storage events for instant multi-tab and KDS synchronization.
+ * Central real-time synchronization service combining native WebSocket stream (`/ws`)
+ * for Flutter courier app interoperability, BroadcastChannel / storage events for instant
+ * multi-tab and KDS synchronization, and optional SignalR fallback.
  */
 @Injectable({
   providedIn: 'root'
 })
 export class RealtimeSyncService implements OnDestroy {
+  /** Optional SignalR hub connection instance. */
   private hubConnection: HubConnection | null = null;
+  /** Active native WebSocket connection to `/ws`. */
   private webSocket: WebSocket | null = null;
+  /** Cross-tab BroadcastChannel instance. */
   private broadcastChannel: BroadcastChannel | null = null;
+  /** Timer reference for scheduled WebSocket reconnections. */
   private wsReconnectTimer: ReturnType<typeof setTimeout> | null = null;
+  /** Interval reference for WebSocket keep-alive pings. */
   private wsPingInterval: ReturnType<typeof setInterval> | null = null;
+  /** Window storage event listener reference for cross-tab synchronization. */
   private storageListener: ((event: StorageEvent) => void) | null = null;
+  /** Flag preventing repeated 404 attempts against `/hubs/operations` when native `/ws` is used. */
+  private signalRUnavailable = true;
 
+  /** Unique identifier for the current browser tab. */
   private readonly tabId: string = `pwa_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+  /** Bounded set of recently processed event IDs for deduplication. */
   private readonly processedEventIds = new Set<string>();
+  /** Internal subject emitting normalized domain events. */
   private readonly domainEventsSubject = new Subject<RealtimeDomainEvent>();
+  /** Internal subject emitting live courier GPS location updates. */
   private readonly courierLocationSubject = new Subject<CourierRealtimeLocationPayload>();
 
+  /** Reactive signal indicating whether the optional SignalR hub is connected. */
   readonly isSignalRConnected = signal<boolean>(false);
+  /** Reactive signal indicating whether the native `/ws` WebSocket is connected. */
   readonly isWebSocketConnected = signal<boolean>(false);
+  /** Reactive signal indicating whether any real-time transport is active. */
   readonly isConnected = signal<boolean>(false);
+  /** Reactive signal reporting the active primary transport mode. */
   readonly transportMode = signal<'signalr' | 'websocket' | 'broadcast'>('broadcast');
+  /** Reactive signal holding the most recent domain event processed. */
   readonly lastEvent = signal<RealtimeDomainEvent | null>(null);
+  /** Reactive signal holding the most recent courier GPS telemetry payload. */
   readonly latestCourierLocation = signal<CourierRealtimeLocationPayload | null>(null);
 
+  /** Observable stream of normalized domain synchronization events. */
   readonly domainEvents$: Observable<RealtimeDomainEvent> = this.domainEventsSubject.asObservable();
+  /** Observable stream of live courier GPS coordinates received from `/ws`. */
   readonly courierLocations$: Observable<CourierRealtimeLocationPayload> =
     this.courierLocationSubject.asObservable();
 
+  /**
+   * Initializes cross-tab listeners and starts the real-time WebSocket stream outside Karma tests.
+   */
   constructor() {
     this.initializeCrossTabListeners();
     if (!this.isKarmaTestEnvironment()) {
@@ -89,7 +147,7 @@ export class RealtimeSyncService implements OnDestroy {
   }
 
   /**
-   * Starts both the SignalR Hub connection (/hubs/operations) and the WebSocket (/ws) stream.
+   * Starts the native WebSocket (`/ws`) stream and cross-tab listeners without spamming 404 requests to `/hubs/operations`.
    */
   connect(): void {
     try {
@@ -97,8 +155,10 @@ export class RealtimeSyncService implements OnDestroy {
       if (this.isKarmaTestEnvironment()) {
         return;
       }
-      this.connectSignalRHub();
       this.connectWebSocketStream();
+      if (!this.signalRUnavailable && !this.isWebSocketConnected()) {
+        this.connectSignalRHub();
+      }
     } catch {
       return;
     }
@@ -238,8 +298,15 @@ export class RealtimeSyncService implements OnDestroy {
           ? (rawPayload['data'] as Record<string, unknown>)
           : rawPayload;
 
-      if (rawEventName === 'courier_location_update' || rawPayload['domain'] === 'courier_location') {
-        const locationPayload = this.extractCourierLocation(dataObj);
+      if (
+        rawEventName === 'courier_location_update' ||
+        rawEventName === 'location_update' ||
+        rawPayload['domain'] === 'courier_location'
+      ) {
+        const locationPayload = this.extractCourierLocation({
+          ...rawPayload,
+          ...dataObj
+        });
         if (locationPayload) {
           this.latestCourierLocation.set(locationPayload);
           this.courierLocationSubject.next(locationPayload);
@@ -366,10 +433,21 @@ export class RealtimeSyncService implements OnDestroy {
   }
 
   /**
-   * Connects to the backend SignalR Hub (/hubs/operations) with automatic exponential reconnect.
+   * Connects to the optional backend SignalR Hub (`/hubs/operations`) only when enabled and native `/ws` is not active,
+   * disabling retries immediately if the endpoint returns 404.
    */
   private connectSignalRHub(): void {
     try {
+      if (
+        this.signalRUnavailable ||
+        this.isWebSocketConnected() ||
+        (this.webSocket &&
+          (this.webSocket.readyState === WebSocket.OPEN ||
+            this.webSocket.readyState === WebSocket.CONNECTING))
+      ) {
+        return;
+      }
+
       if (
         this.hubConnection &&
         (this.hubConnection.state === HubConnectionState.Connected ||
@@ -386,8 +464,7 @@ export class RealtimeSyncService implements OnDestroy {
         .withUrl(hubUrl, {
           accessTokenFactory: () => this.getActiveAccessToken()
         })
-        .withAutomaticReconnect([0, 2000, 5000, 10000, 30000])
-        .configureLogging(LogLevel.Warning)
+        .configureLogging(LogLevel.None)
         .build();
 
       const hubEvents: Array<{ name: string; domain: RealtimeDomainType; event: string }> = [
@@ -477,6 +554,7 @@ export class RealtimeSyncService implements OnDestroy {
           this.updateConnectionSignals();
         })
         .catch(() => {
+          this.signalRUnavailable = true;
           this.isSignalRConnected.set(false);
           this.updateConnectionSignals();
         });

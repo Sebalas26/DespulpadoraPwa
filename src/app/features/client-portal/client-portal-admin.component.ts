@@ -377,7 +377,7 @@ export interface EditableCardDraft {
       </div>
 
       @if (showCardModal() && activeDraft()) {
-        <div class="modal-backdrop" (click)="closeCardModal()">
+        <div class="modal-backdrop">
           <div class="card-edit-modal" (click)="$event.stopPropagation()">
             <div class="modal-header">
               <div>

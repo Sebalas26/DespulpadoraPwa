@@ -88,25 +88,33 @@ import { ConfirmDialogService } from '../../../core/services/confirm-dialog.serv
   `
 })
 export class ConfirmDialogComponent {
-  readonly dialogService = inject(ConfirmDialogService);
+  /**
+   * Injected confirmation dialog state service.
+   */
+  readonly dialogService: ConfirmDialogService = inject(ConfirmDialogService);
 
   /**
    * Closes the dialog with rejection when the Escape key is pressed.
    */
   @HostListener('window:keydown.escape')
   onEscapeKey(): void {
-    if (this.dialogService.state().isOpen) {
-      this.cancel();
+    try {
+      if (this.dialogService.state().isOpen) {
+        this.cancel();
+      }
+    } catch (error: unknown) {
+      console.error('Error handling Escape key in ConfirmDialogComponent:', error);
     }
   }
 
   /**
-   * Handles clicking on the backdrop area to cancel and close the modal.
+   * Prevents closing the modal when clicking on the backdrop area so the user must explicitly press Cancel or Confirm.
    */
   onBackdropClick(event: MouseEvent): void {
-    const target = event.target as HTMLElement;
-    if (target.classList.contains('confirm-modal-overlay')) {
-      this.cancel();
+    try {
+      event.stopPropagation();
+    } catch (error: unknown) {
+      console.error('Error handling backdrop click in ConfirmDialogComponent:', error);
     }
   }
 
@@ -114,14 +122,21 @@ export class ConfirmDialogComponent {
    * Accepts the prompt and resolves the promise with true.
    */
   accept(): void {
-    this.dialogService.accept();
+    try {
+      this.dialogService.accept();
+    } catch (error: unknown) {
+      console.error('Error accepting ConfirmDialogComponent:', error);
+    }
   }
 
   /**
    * Rejects the prompt and resolves the promise with false.
    */
   cancel(): void {
-    this.dialogService.cancel();
+    try {
+      this.dialogService.cancel();
+    } catch (error: unknown) {
+      console.error('Error cancelling ConfirmDialogComponent:', error);
+    }
   }
 }
-

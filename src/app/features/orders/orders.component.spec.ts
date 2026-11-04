@@ -21,6 +21,8 @@ describe('OrdersComponent', () => {
   let updateOrderSpy: jasmine.Spy;
   let updateOrderStatusSpy: jasmine.Spy;
   let createClientSpy: jasmine.Spy;
+  let refreshAllSpy: jasmine.Spy;
+  const mockIsLoading = signal<boolean>(false);
 
   const mockFruits = signal<FruitConfig[]>([
     {
@@ -198,9 +200,13 @@ describe('OrdersComponent', () => {
     updateOrderSpy = jasmine.createSpy('updateOrder');
     updateOrderStatusSpy = jasmine.createSpy('updateOrderStatus');
     createClientSpy = jasmine.createSpy('createClient');
+    refreshAllSpy = jasmine.createSpy('refreshAll');
+    mockIsLoading.set(false);
     mockProductVariants.set([]);
 
     const stateServiceMock: Partial<StateService> = {
+      isLoading: mockIsLoading,
+      refreshAll: refreshAllSpy,
       fruits: mockFruits,
       productVariants: mockProductVariants,
       employees: mockEmployees,
@@ -1205,5 +1211,25 @@ describe('OrdersComponent', () => {
     fixture.detectChanges();
 
     expect(component.tabOrders().length).toBe(0);
+  });
+
+  it('should call refreshAll silently when cached orders exist and hide sibling picking content when shimmer skeleton is active', () => {
+    expect(refreshAllSpy).toHaveBeenCalledWith(true);
+    const compiled: HTMLElement = fixture.nativeElement as HTMLElement;
+    expect(compiled.querySelector('.dgl-shimmer-wrapper')).toBeNull();
+
+    mockIsLoading.set(true);
+    fixture.detectChanges();
+
+    const shimmerEl: HTMLElement | null = compiled.querySelector('.dgl-shimmer-wrapper');
+    const pickingHeaderEl: HTMLElement | null = compiled.querySelector('.picking-page-header');
+    expect(shimmerEl).not.toBeNull();
+    if (pickingHeaderEl) {
+      expect(window.getComputedStyle(pickingHeaderEl).display).toBe('none');
+    }
+
+    mockIsLoading.set(false);
+    fixture.detectChanges();
+    expect(compiled.querySelector('.dgl-shimmer-wrapper')).toBeNull();
   });
 });

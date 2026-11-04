@@ -858,7 +858,7 @@
 </div>
 
 @if (showNewEmployeeModal()) {
-<div class="modal-overlay" (click)="showNewEmployeeModal.set(false)">
+<div class="modal-overlay">
   <div class="modal-content" style="max-width: 600px;" (click)="$event.stopPropagation()">
     <div class="modal-header">
       <h3 class="modal-title">Registrar Nuevo Integrante del Personal</h3>
@@ -959,7 +959,7 @@
 }
 
 @if (showSettlementModal()) {
-<div class="modal-overlay" (click)="showSettlementModal.set(false)">
+<div class="modal-overlay">
   <div class="modal-content" style="max-width: 540px;" (click)="$event.stopPropagation()">
     <div class="modal-header">
       <h3 class="modal-title">Liquidación de Nómina Quincenal</h3>
@@ -1018,7 +1018,7 @@
 }
 
 @if (showPayslipModal() && selectedEmployee()) {
-<div class="modal-overlay" (click)="showPayslipModal.set(false)">
+<div class="modal-overlay">
   <div class="modal-content" style="max-width: 540px;" (click)="$event.stopPropagation()">
     <div class="modal-header no-print">
       <h3 class="modal-title">Comprobante de Pago de Nómina</h3>

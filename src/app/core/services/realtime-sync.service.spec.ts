@@ -133,6 +133,26 @@ describe('RealtimeSyncService', () => {
     expect(locations[1].speedKmh).toBeCloseTo(24.6, 1);
     expect(locations[1].batteryLevel).toBe(78);
 
+    service.handleIncomingRawEvent(
+      {
+        eventId: 'flutter_ws_pkt_3',
+        event: 'location_update',
+        courierId: '9',
+        courierName: 'Domi Norte',
+        latitude: 4.6815,
+        longitude: -74.0954,
+        speedKmh: 31.2,
+        batteryLevel: 92,
+        timestamp: '2026-10-30T19:55:10.000Z'
+      },
+      'websocket'
+    );
+
+    expect(locations.length).toBe(3);
+    expect(locations[2].courierId).toBe('9');
+    expect(locations[2].latitude).toBeCloseTo(4.6815, 4);
+    expect(locations[2].longitude).toBeCloseTo(-74.0954, 4);
+
     sub.unsubscribe();
   });
 });

@@ -291,7 +291,7 @@
 </div>
 
 @if (showCreateRoleModal()) {
-<div class="modal-overlay" (click)="showCreateRoleModal.set(false)">
+<div class="modal-overlay">
   <div class="modal-content" style="max-width: 440px;" (click)="$event.stopPropagation()">
     <div class="modal-header">
       <h3 class="modal-title">Crear Nuevo Rol de Usuario</h3>
@@ -345,7 +345,7 @@
 }
 
 @if (showEditRoleModal()) {
-<div class="modal-overlay" (click)="closeEditRoleModal()">
+<div class="modal-overlay">
   <div class="modal-content" style="max-width: 440px;" (click)="$event.stopPropagation()">
     <div class="modal-header">
       <h3 class="modal-title">Modificar Nombre del Rol</h3>

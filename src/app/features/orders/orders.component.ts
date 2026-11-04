@@ -827,7 +827,9 @@ export class OrdersComponent {
    */
   constructor() {
     try {
-      this.stateService.refreshAll?.();
+      const hasCachedData =
+        this.stateService.orders().length > 0 || this.stateService.fruits().length > 0;
+      this.stateService.refreshAll?.(hasCachedData);
       this.route.queryParams.subscribe(params => {
         const tab = params['tab'] as 'picking' | 'facturacion' | 'despachos' | undefined;
         if (tab && ['picking', 'facturacion', 'despachos'].includes(tab)) {

@@ -58,7 +58,9 @@ export class AccountingComponent {
    */
   constructor() {
     try {
-      this.stateService.refreshAll?.();
+      const hasCachedData =
+        this.stateService.clients().length > 0 || this.stateService.orders().length > 0;
+      this.stateService.refreshAll?.(hasCachedData);
     } catch {
       return;
     }

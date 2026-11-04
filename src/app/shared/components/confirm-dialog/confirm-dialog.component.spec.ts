@@ -90,7 +90,7 @@ describe('ConfirmDialogComponent', () => {
     expect(service.cancel).toHaveBeenCalledTimes(1);
   });
 
-  it('should cancel dialog when clicking on backdrop overlay', () => {
+  it('should not cancel dialog when clicking on backdrop overlay', () => {
     spyOn(service, 'cancel');
     service.confirm({
       title: 'Click fuera',
@@ -101,7 +101,7 @@ describe('ConfirmDialogComponent', () => {
     const overlay = fixture.nativeElement.querySelector('.confirm-modal-overlay') as HTMLElement;
     overlay.click();
 
-    expect(service.cancel).toHaveBeenCalledTimes(1);
+    expect(service.cancel).not.toHaveBeenCalled();
+    expect(service.state().isOpen).toBeTrue();
   });
 });
-

@@ -559,7 +559,7 @@
 </div>
 
 @if (showEditTargetModal()) {
-  <div class="modal-overlay" (click)="showEditTargetModal.set(false)">
+  <div class="modal-overlay">
     <div class="modal-content" style="max-width: 440px;" (click)="$event.stopPropagation()">
       <div class="modal-header">
         <div style="display: flex; align-items: center; gap: 8px;">
@@ -605,7 +605,7 @@
 }
 
 @if (selectedKpiCard(); as activeCard) {
-  <div class="modal-overlay" (click)="closeKpiDetail()">
+  <div class="modal-overlay">
     <div class="modal-content kpi-detail-modal" (click)="$event.stopPropagation()">
 
       @if (activeCard === 'billing') {

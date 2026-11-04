@@ -195,7 +195,9 @@ export class ShiftsComponent implements OnInit, OnDestroy {
    */
   ngOnInit(): void {
     try {
-      this.stateService.refreshAll?.();
+      const hasCachedData =
+        this.stateService.shifts().length > 0 || this.stateService.employees().length > 0;
+      this.stateService.refreshAll?.(hasCachedData);
       this.loadSystemUsers();
     } catch {
       return;
@@ -207,7 +209,14 @@ export class ShiftsComponent implements OnInit, OnDestroy {
    */
   loadSystemUsers(): void {
     try {
-      this.isLoadingUsers.set(true);
+      const cachedUsers =
+        typeof this.stateService.users === 'function' ? this.stateService.users() : [];
+      if (cachedUsers.length > 0 && this.systemUsers().length === 0) {
+        this.systemUsers.set(cachedUsers);
+      }
+      if (this.systemUsers().length === 0 && this.stateService.employees().length === 0) {
+        this.isLoadingUsers.set(true);
+      }
       this.apiService.getUsers().subscribe({
         next: (users: UserAdminDto[]) => {
           this.isLoadingUsers.set(false);

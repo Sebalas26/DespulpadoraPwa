@@ -1,5 +1,5 @@
 import { TestBed } from '@angular/core/testing';
-import { of } from 'rxjs';
+import { of, throwError } from 'rxjs';
 import { StateService } from './state.service';
 import { ApiService } from './api.service';
 import { AuthService } from './auth.service';
@@ -254,7 +254,8 @@ describe('StateService', () => {
     expect(service.orders()).toEqual([]);
   });
 
-  it('should deduct packed stock automatically when transitioning an order to DISPATCHED', () => {
+  it('should deduct packed stock once on createOrder without duplicate adjustStock calls when transitioning to DISPATCHED', () => {
+    apiSpy.adjustStock.calls.reset();
     service.fruits.set([
       {
         id: 'mango',
@@ -280,9 +281,74 @@ describe('StateService', () => {
       items: [{ fruitName: 'Mango', grammage: 250, quantity: 5, unitPrice: 3500 }]
     });
 
+    expect(service.fruits()[0].stock.g250).toBe(15);
+    expect(apiSpy.adjustStock).not.toHaveBeenCalled();
+
     service.updateOrderStatus(order.orderId, 'DISPATCHED');
 
     expect(service.fruits()[0].stock.g250).toBe(15);
+    expect(apiSpy.adjustStock).not.toHaveBeenCalled();
+  });
+
+  it('should avoid double stock deduction in dispatchCourierRoute and restore stock on CANCELLED or deleteOrder without calling adjustStock', () => {
+    apiSpy.adjustStock.calls.reset();
+    apiSpy.getFruits.calls.reset();
+    service.fruits.set([
+      {
+        id: 'mora',
+        fruitId: 2,
+        name: 'Mora',
+        scientificName: '',
+        color: '',
+        bgColor: '',
+        borderColor: '',
+        emoji: '',
+        yieldRate: 0.7,
+        waterAdditionDefault: 0,
+        freshStockKg: 40,
+        stock: { g140: 10, g250: 30, g500: 15, g1000: 8 },
+        minStock: { g140: 0, g250: 0, g500: 0, g1000: 0 },
+        prices: { g140: 2500, g250: 4000, g500: 7000, g1000: 13000 },
+        category: 'PULPAS'
+      }
+    ]);
+
+    const firstOrder = service.createOrder({
+      clientName: 'Cliente Ruta Sin Doble Descuento',
+      items: [{ fruitName: 'Mora', grammage: 250, quantity: 6, unitPrice: 4000 }]
+    });
+
+    expect(service.fruits()[0].stock.g250).toBe(24);
+    expect(apiSpy.adjustStock).not.toHaveBeenCalled();
+    expect(apiSpy.getFruits).toHaveBeenCalled();
+
+    service.dispatchCourierRoute({
+      courierId: 12,
+      courierName: 'Mensajero Ruta',
+      routeCode: 'RUT-12',
+      orderIds: [firstOrder.orderId]
+    });
+
+    expect(service.fruits()[0].stock.g250).toBe(24);
+    expect(apiSpy.adjustStock).not.toHaveBeenCalled();
+
+    service.updateOrderStatus(firstOrder.orderId, 'CANCELLED');
+
+    expect(service.fruits()[0].stock.g250).toBe(30);
+    expect(apiSpy.adjustStock).not.toHaveBeenCalled();
+
+    const secondOrder = service.createOrder({
+      clientName: 'Cliente Eliminar Pedido',
+      items: [{ fruitName: 'Mora', grammage: 500, quantity: 4, unitPrice: 7000 }]
+    });
+
+    expect(service.fruits()[0].stock.g500).toBe(11);
+    expect(apiSpy.adjustStock).not.toHaveBeenCalled();
+
+    service.deleteOrder(secondOrder.orderId);
+
+    expect(service.fruits()[0].stock.g500).toBe(15);
+    expect(apiSpy.adjustStock).not.toHaveBeenCalled();
   });
 
   it('should calculate real elapsed hours when closing a work shift', () => {
@@ -1316,5 +1382,71 @@ describe('StateService', () => {
       status: 'DELIVERED',
       isBilled: true
     });
+  });
+
+  it('should handle HTTP mutation errors via handleMutationError without throwing and notify on server failure', () => {
+    apiSpy.createClient.and.returnValue(throwError(() => ({ status: 500, message: 'Internal Server Error' })));
+    notificationSpy.warning.calls.reset();
+
+    const createdClient = service.createClient({
+      fullName: 'Cliente Resiliente',
+      identificationNumber: '900555666',
+      phone: '3150001122'
+    });
+
+    expect(createdClient.fullName).toBe('Cliente Resiliente');
+    expect(service.clients().length).toBe(1);
+    expect(notificationSpy.warning).toHaveBeenCalledWith(
+      'Sincronización Pendiente',
+      jasmine.stringContaining('No se pudo registrar el cliente en el servidor')
+    );
+
+    const shift = service.startWorkShift(1, 'MORNING', 'Inicio turno');
+    expect(service.shifts().length).toBe(1);
+    service.endWorkShift(shift.shiftId, 'Fin turno');
+    expect(service.shifts()[0].status).toBe('CLOSED');
+
+    service.addExpense({ categoryName: 'Insumos', description: 'Bolsas empaque', amount: 15000 });
+    expect(service.expenses().length).toBe(1);
+    service.deleteExpense(service.expenses()[0].expenseId);
+    expect(service.expenses().length).toBe(0);
+  });
+
+  it('should include overtime in the 4% health and pension taxable base (IBC) and apply 2847000/200000 transport allowance cap in settlePayroll', () => {
+    service.employees.set([
+      {
+        employeeId: 50,
+        firstName: 'Marta',
+        lastName: 'Rojas',
+        fullName: 'Marta Rojas',
+        identificationNumber: '52000111',
+        baseSalary: 2000000,
+        hireDate: '2026-01-01',
+        isActive: true
+      }
+    ]);
+
+    const settlement = service.settlePayroll({
+      periodId: 1,
+      employeeId: 50,
+      daysWorked: 15,
+      overtimeAmount: 100000
+    });
+
+    expect(settlement.baseSalaryEarned).toBe(1000000);
+    expect(settlement.transportAllowanceEarned).toBe(100000);
+    expect(settlement.healthDeduction).toBe(44000);
+    expect(settlement.pensionDeduction).toBe(44000);
+  });
+
+  it('should not set isLoading to true on subsequent refreshAll calls when initial refresh has completed or data is already hydrated', () => {
+    service.refreshAll(false);
+    expect(service.isLoading()).toBeFalse();
+
+    const setSpy = spyOn(service.isLoading, 'set').and.callThrough();
+    service.refreshAll(false);
+
+    expect(setSpy).not.toHaveBeenCalledWith(true);
+    expect(service.isLoading()).toBeFalse();
   });
 });

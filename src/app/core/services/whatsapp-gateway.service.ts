@@ -164,7 +164,14 @@ export interface WhatsAppSimulateResponseDto {
   error?: string;
 }
 
+/**
+ * Default local development base URL for the self-hosted WhatsApp Gateway.
+ */
 const DEFAULT_GATEWAY_BASE_URL = 'http://localhost:3005/api/whatsapp';
+
+/**
+ * LocalStorage key used to persist a custom WhatsApp Gateway base URL.
+ */
 const GATEWAY_URL_STORAGE_KEY = 'despulpadora_whatsapp_gateway_url';
 
 /**
@@ -174,7 +181,10 @@ const GATEWAY_URL_STORAGE_KEY = 'despulpadora_whatsapp_gateway_url';
   providedIn: 'root'
 })
 export class WhatsAppGatewayService {
-  private readonly http = inject(HttpClient);
+  /**
+   * Injected Angular HTTP client for communicating with the WhatsApp Gateway REST API.
+   */
+  private readonly http: HttpClient = inject(HttpClient);
 
   /**
    * Determines whether the current runtime environment is a remote production host or HTTPS origin.
@@ -429,7 +439,7 @@ export class WhatsAppGatewayService {
    */
   simulateIncomingMessage(payload: WhatsAppSimulatePayload): Observable<WhatsAppSimulateResponseDto> {
     try {
-      const baseUrl = this.getGatewayBaseUrl();
+      const baseUrl: string = this.getGatewayBaseUrl();
       return this.http
         .post<WhatsAppSimulateResponseDto>(`${baseUrl}/simulate-incoming`, payload)
         .pipe(
@@ -437,6 +447,7 @@ export class WhatsAppGatewayService {
             of({
               ok: false,
               handled: false,
+              createdOrder: null,
               error: 'No se pudo conectar con el Gateway de WhatsApp para simular el pedido.'
             })
           )
@@ -445,6 +456,23 @@ export class WhatsAppGatewayService {
       return of({
         ok: false,
         handled: false,
+        createdOrder: null,
+        error: 'Error inesperado al simular pedido de WhatsApp.'
+      });
+    }
+  }
+
+  /**
+   * Alias for `simulateIncomingMessage` that dispatches a simulated incoming order message to the Gateway without synthetic fallbacks.
+   */
+  simulateIncomingOrder(payload: WhatsAppSimulatePayload): Observable<WhatsAppSimulateResponseDto> {
+    try {
+      return this.simulateIncomingMessage(payload);
+    } catch {
+      return of({
+        ok: false,
+        handled: false,
+        createdOrder: null,
         error: 'Error inesperado al simular pedido de WhatsApp.'
       });
     }

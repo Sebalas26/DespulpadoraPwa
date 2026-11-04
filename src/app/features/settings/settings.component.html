@@ -1032,7 +1032,7 @@
 
     
     @if (showInvoicePreviewModal()) {
-      <div class="modal-overlay" (click)="showInvoicePreviewModal.set(false)">
+      <div class="modal-overlay">
         <div class="modal-content modal-lg invoice-preview-modal-dialog" (click)="$event.stopPropagation()">
           <div class="modal-header invoice-preview-modal-header">
             <div style="display: flex; align-items: center; gap: 12px; min-width: 0; flex: 1;">
@@ -2546,7 +2546,7 @@
 
 
 @if (showSettingsModal()) {
-  <div class="modal-overlay" (click)="showSettingsModal.set(false)">
+  <div class="modal-overlay">
     <div class="modal-content modal-lg" (click)="$event.stopPropagation()">
       <div class="modal-header">
         <div style="display: flex; align-items: center; gap: 10px;">
@@ -2958,7 +2958,7 @@
 
 
 @if (showNewVariantModal()) {
-  <div class="modal-overlay" (click)="showNewVariantModal.set(false)">
+  <div class="modal-overlay">
     <div class="modal-content" style="max-width: 540px;" (click)="$event.stopPropagation()">
       <div class="modal-header">
         <h3 class="modal-title">+ Nueva Presentación de Producto</h3>
@@ -3097,7 +3097,7 @@
 }
 
 @if (showFruitModal()) {
-  <div class="modal-overlay" (click)="showFruitModal.set(false)">
+  <div class="modal-overlay">
     <div class="modal-content" style="max-width: 480px;" (click)="$event.stopPropagation()">
       <div class="modal-header">
         <h3 class="modal-title">
@@ -3176,7 +3176,7 @@
 
 
 @if (showEditVariantModal() && editingVariant(); as editItem) {
-  <div class="modal-overlay" (click)="showEditVariantModal.set(false)">
+  <div class="modal-overlay">
     <div class="modal-content" style="max-width: 500px;" (click)="$event.stopPropagation()">
       <div class="modal-header">
         <h3 class="modal-title">Editar Presentación: {{ editItem.name }}</h3>
@@ -3287,7 +3287,7 @@
 
 
 @if (showAdjustModal() && selectedFruitForAdjust()) {
-  <div class="modal-overlay" (click)="showAdjustModal.set(false)">
+  <div class="modal-overlay">
     <div class="modal-content" style="max-width: 440px;" (click)="$event.stopPropagation()">
       <div class="modal-header">
         <h3 class="modal-title">Ajuste de Stock: {{ selectedFruitForAdjust()?.name }}</h3>
@@ -3343,7 +3343,7 @@
 
 
 @if (showPaymentMethodModal()) {
-  <div class="modal-overlay" (click)="closePaymentMethodModal()">
+  <div class="modal-overlay">
     <div class="modal-content" style="max-width: 500px;" (click)="$event.stopPropagation()">
       <div class="modal-header">
         <div style="display: flex; align-items: center; gap: 10px;">
@@ -3406,7 +3406,7 @@
 }
 
 @if (confirmDialogState().isOpen) {
-  <div class="modal-overlay confirm-modal-overlay" (click)="closeConfirmDialog()">
+  <div class="modal-overlay confirm-modal-overlay">
     <div class="modal-content confirm-modal-box" (click)="$event.stopPropagation()">
       <div class="confirm-modal-icon-wrap" [class.danger]="confirmDialogState().isDanger" [class.warning]="!confirmDialogState().isDanger">
         @if (confirmDialogState().isDanger) {
@@ -3449,7 +3449,7 @@
 }
 
 @if (showNewGrammageModal()) {
-  <div class="modal-overlay" (click)="closeNewGrammageModal()">
+  <div class="modal-overlay">
     <div class="modal-content" style="max-width: 480px;" (click)="$event.stopPropagation()">
       <div class="modal-header">
         <h3 class="modal-title">Registrar Nueva Presentación / Kilo</h3>
@@ -3524,7 +3524,7 @@
 }
 
 @if (showNewCategoryModal()) {
-  <div class="modal-overlay" (click)="closeNewCategoryModal()">
+  <div class="modal-overlay">
     <div class="modal-content" style="max-width: 480px;" (click)="$event.stopPropagation()">
       <div class="modal-header">
         <h3 class="modal-title">Registrar Nueva Línea / Categoría</h3>
@@ -3571,7 +3571,7 @@
 }
 
 @if (showShiftScheduleModal()) {
-  <div class="modal-overlay" (click)="closeShiftScheduleModal()">
+  <div class="modal-overlay">
     <div class="modal-content" style="max-width: 480px;" (click)="$event.stopPropagation()">
       <div class="modal-header">
         <h3 class="modal-title">
@@ -3644,7 +3644,7 @@
 }
 
 @if (showInventoryHistoryModal()) {
-  <div class="modal-overlay" (click)="closeInventoryHistoryModal()">
+  <div class="modal-overlay">
     <div class="modal-content modal-lg inv-history-modal" (click)="$event.stopPropagation()">
       <div class="modal-header">
         <div style="display: flex; align-items: center; gap: 10px;">

@@ -887,7 +887,7 @@
 </div>
 
 @if (showWhatsAppModal()) {
-<div class="modal-overlay" (click)="showWhatsAppModal.set(false)">
+<div class="modal-overlay">
   <div class="modal-content" style="max-width: 580px;" (click)="$event.stopPropagation()">
     <div class="modal-header">
       <div style="display: flex; align-items: center; gap: 10px;">
@@ -929,7 +929,7 @@
 }
 
 @if (showNewOrderModal()) {
-<div class="modal-overlay" (click)="showNewOrderModal.set(false)">
+<div class="modal-overlay">
   <div class="modal-content" style="max-width: 680px;" (click)="$event.stopPropagation()">
     <div class="modal-header">
       <div>
@@ -1201,7 +1201,7 @@
 }
 
 @if (showAddressMapPickerModal()) {
-<div class="map-picker-backdrop" (click)="closeMapAddressPicker()">
+<div class="map-picker-backdrop">
   <div class="map-picker-container" (click)="$event.stopPropagation()">
         <div class="map-picker-header">
       <div class="map-picker-header-left">
@@ -1285,7 +1285,7 @@
 }
 
 @if (showInvoiceModal() && selectedOrderForInvoice(); as modalOrder) {
-<div class="modal-overlay invoice-modal-overlay" (click)="showInvoiceModal.set(false)">
+<div class="modal-overlay invoice-modal-overlay">
   <div class="modal-content invoice-modal-container" style="max-width: 880px;" (click)="$event.stopPropagation()">
     <div class="modal-header no-print" style="flex-wrap: wrap; gap: 12px;">
       <div style="display: flex; align-items: center; gap: 12px;">
@@ -1475,7 +1475,7 @@
 }
 
 @if (showOrderViewModal() && selectedOrderForView(); as viewOrder) {
-<div class="modal-overlay" (click)="showOrderViewModal.set(false)">
+<div class="modal-overlay">
   <div class="modal-content modal-lg" style="max-width: 720px; width: 100%; max-height: 90dvh; display: flex; flex-direction: column; border-radius: 18px; overflow: hidden;"
     (click)="$event.stopPropagation()">
     <div class="modal-header"
@@ -1668,7 +1668,7 @@
 }
 
 @if (showOrderItemsModal() && selectedOrderForItemsModal(); as itemsOrder) {
-<div class="modal-overlay" (click)="closeOrderItemsModal()">
+<div class="modal-overlay">
   <div class="modal-content order-items-dialog-box" (click)="$event.stopPropagation()">
     <div class="modal-header order-items-dialog-header">
       <div class="order-items-dialog-title-group">

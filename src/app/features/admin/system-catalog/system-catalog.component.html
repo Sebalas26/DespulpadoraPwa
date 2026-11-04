@@ -277,7 +277,7 @@
 </div>
 
 @if (showModuleModal()) {
-  <div class="modal-overlay" (click)="showModuleModal.set(false)">
+  <div class="modal-overlay">
     <div class="modal-content" style="max-width: 540px;" (click)="$event.stopPropagation()">
       <div class="modal-header">
         <h3 class="modal-title">
@@ -381,7 +381,7 @@
 }
 
 @if (showActionModal()) {
-  <div class="modal-overlay" (click)="showActionModal.set(false)">
+  <div class="modal-overlay">
     <div class="modal-content" style="max-width: 500px;" (click)="$event.stopPropagation()">
       <div class="modal-header">
         <h3 class="modal-title">

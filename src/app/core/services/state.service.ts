@@ -68,35 +68,139 @@ import { catchError, tap } from 'rxjs/operators';
   providedIn: 'root'
 })
 export class StateService {
+  /**
+   * Backend REST API service instance.
+   */
   private readonly api = inject(ApiService);
+
+  /**
+   * Authentication and session state service instance.
+   */
   private readonly auth = inject(AuthService);
+
+  /**
+   * UI notification and toast service instance.
+   */
   private readonly notification = inject(NotificationService);
+
+  /**
+   * Real-time domain synchronization service instance.
+   */
   readonly realtimeSync = inject(RealtimeSyncService);
+
+  /**
+   * Flag preventing feedback loops while applying external real-time domain events.
+   */
   private isApplyingExternalRealtimeEvent = false;
 
+  /**
+   * Flag indicating whether the initial global API synchronization has completed at least once.
+   */
+  private hasCompletedInitialRefresh = false;
+
+  /**
+   * Reactive signal containing the active fruit catalog and stock levels.
+   */
   readonly fruits = signal<FruitConfig[]>(this.loadFruitsFromStorage());
+
+  /**
+   * Reactive signal containing production batches.
+   */
   readonly batches = signal<BatchDto[]>(this.loadBatchesFromStorage());
+
+  /**
+   * Reactive signal containing commercial orders.
+   */
   readonly orders = signal<OrderDto[]>(this.loadOrdersFromStorage());
+
+  /**
+   * Reactive signal containing company employees.
+   */
   readonly employees = signal<EmployeeDto[]>(this.loadEmployeesFromStorage());
+
+  /**
+   * Reactive signal containing administrative and courier users.
+   */
   readonly users = signal<UserAdminDto[]>(this.loadUsersFromStorage());
+
+  /**
+   * Reactive signal containing security roles and permissions.
+   */
   readonly roles = signal<UserRoleDto[]>(this.loadRolesFromStorage());
+
+  /**
+   * Reactive signal containing operational expenses.
+   */
   readonly expenses = signal<ExpenseDto[]>(this.loadExpensesFromStorage());
+
+  /**
+   * Reactive signal containing registered clients.
+   */
   readonly clients = signal<ClientDto[]>(this.loadClientsFromStorage());
+
+  /**
+   * Reactive signal containing employee work shifts.
+   */
   readonly shifts = signal<WorkShiftDto[]>(this.loadShiftsFromStorage());
 
+  /**
+   * Reactive signal containing packed pulp product variants.
+   */
   readonly productVariants = signal<ProductVariantDto[]>(this.loadVariantsFromStorage());
+
+  /**
+   * Reactive signal containing monthly commercial sales targets.
+   */
   readonly salesTargets = signal<SalesTargetDto[]>(this.loadSalesTargetsFromStorage());
+
+  /**
+   * Reactive signal containing fortnightly payroll periods.
+   */
   readonly payrollPeriods = signal<PayrollPeriodDto[]>(this.loadPayrollPeriodsFromStorage());
+
+  /**
+   * Reactive signal containing fortnightly payroll settlements.
+   */
   readonly payrollSettlements = signal<PayrollSettlementDto[]>(this.loadPayrollSettlementsFromStorage());
+
+  /**
+   * Reactive signal containing company legal and operational settings.
+   */
   readonly companyInfo = signal<CompanyConfig>(this.loadCompanyInfoFromStorage());
+
+  /**
+   * Reactive signal containing client portal CMS configuration.
+   */
   readonly portalCmsConfig = signal<PortalCmsConfig>(this.loadPortalCmsConfigFromStorage());
+
+  /**
+   * Reactive signal containing payment methods.
+   */
   readonly paymentMethods = signal<PaymentMethodDto[]>(this.loadPaymentMethodsFromStorage());
 
+  /**
+   * Reactive signal containing presentation grammages configuration.
+   */
   readonly grammagesConfig = signal<InventoryGrammageConfig[]>(this.loadGrammagesConfigFromStorage());
+
+  /**
+   * Reactive signal containing product categories configuration.
+   */
   readonly categoriesConfig = signal<InventoryCategoryConfig[]>(this.loadCategoriesConfigFromStorage());
+
+  /**
+   * Reactive signal containing parametric shift schedules configuration.
+   */
   readonly shiftSchedulesConfig = signal<ShiftScheduleConfig[]>(this.loadShiftSchedulesFromStorage());
+
+  /**
+   * Reactive signal containing historical kardex inventory movements.
+   */
   readonly inventoryMovements = signal<InventoryMovementRecordDto[]>(this.loadInventoryMovementsFromStorage());
 
+  /**
+   * Computed signal returning only active payment methods.
+   */
   readonly activePaymentMethods = computed<PaymentMethodDto[]>(() => {
     try {
       return this.paymentMethods().filter(p => p.isActive);
@@ -105,6 +209,9 @@ export class StateService {
     }
   });
 
+  /**
+   * Computed signal returning only active presentation grammages.
+   */
   readonly activeGrammages = computed<InventoryGrammageConfig[]>(() => {
     try {
       return this.grammagesConfig().filter(g => g.isActive);
@@ -113,6 +220,9 @@ export class StateService {
     }
   });
 
+  /**
+   * Computed signal returning only active product categories.
+   */
   readonly activeCategories = computed<InventoryCategoryConfig[]>(() => {
     try {
       return this.categoriesConfig().filter(c => c.isActive);
@@ -121,6 +231,9 @@ export class StateService {
     }
   });
 
+  /**
+   * Computed signal returning only active shift schedules.
+   */
   readonly activeShiftSchedules = computed<ShiftScheduleConfig[]>(() => {
     try {
       return this.shiftSchedulesConfig().filter(s => s.isActive);
@@ -129,9 +242,24 @@ export class StateService {
     }
   });
 
+  /**
+   * Reactive signal indicating whether a global API synchronization is in progress.
+   */
   readonly isLoading = signal<boolean>(false);
+
+  /**
+   * Reactive signal indicating browser network connectivity status.
+   */
   readonly isOnline = signal<boolean>(typeof navigator !== 'undefined' ? navigator.onLine : true);
+
+  /**
+   * Reactive signal indicating whether the navigation sidebar is collapsed.
+   */
   readonly isSidebarCollapsed = signal<boolean>(false);
+
+  /**
+   * Reactive signal storing the active visual theme (`dark` or `light`).
+   */
   readonly activeTheme = signal<'dark' | 'light'>(
     (localStorage.getItem('despulpadora_theme') as 'dark' | 'light') || 'light'
   );
@@ -150,6 +278,9 @@ export class StateService {
     }
   }
 
+  /**
+   * Computed signal returning the total packed pulp inventory in kilograms.
+   */
   readonly totalStockKg = computed<number>(() => {
     try {
       const variants = this.productVariants();
@@ -182,6 +313,9 @@ export class StateService {
     }
   });
 
+  /**
+   * Computed signal returning the total fresh fruit inventory in kilograms.
+   */
   readonly totalFreshStockKg = computed<number>(() => {
     try {
       return this.fruits().reduce((sum, f) => sum + (f.freshStockKg || 0), 0);
@@ -190,6 +324,9 @@ export class StateService {
     }
   });
 
+  /**
+   * Computed signal returning the count of orders in PENDING or PICKING status.
+   */
   readonly pendingOrdersCount = computed<number>(() => {
     try {
       return this.orders().filter(o => o.status === 'PENDING' || o.status === 'PICKING').length;
@@ -198,6 +335,9 @@ export class StateService {
     }
   });
 
+  /**
+   * Computed signal returning the count of orders in BILLED or PICKING status.
+   */
   readonly billingOrdersCount = computed<number>(() => {
     try {
       return this.orders().filter(o => o.status === 'BILLED' || o.status === 'PICKING').length;
@@ -206,6 +346,9 @@ export class StateService {
     }
   });
 
+  /**
+   * Computed signal returning the count of orders currently in DISPATCHED status.
+   */
   readonly dispatchedOrdersCount = computed<number>(() => {
     try {
       return this.orders().filter(o => o.status === 'DISPATCHED').length;
@@ -214,6 +357,9 @@ export class StateService {
     }
   });
 
+  /**
+   * Computed signal returning the count of production batches created today.
+   */
   readonly todayBatchesCount = computed<number>(() => {
     try {
       const todayStr = new Date().toISOString().substring(0, 10);
@@ -223,6 +369,9 @@ export class StateService {
     }
   });
 
+  /**
+   * Computed signal returning the count of currently active work shifts.
+   */
   readonly activeShiftsCount = computed<number>(() => {
     try {
       return this.shifts().filter(s => s.status === 'ACTIVE').length;
@@ -231,6 +380,9 @@ export class StateService {
     }
   });
 
+  /**
+   * Computed signal returning total non-cancelled revenue generated today.
+   */
   readonly todayRevenue = computed<number>(() => {
     try {
       const todayStr = new Date().toISOString().substring(0, 10);
@@ -242,6 +394,9 @@ export class StateService {
     }
   });
 
+  /**
+   * Computed signal returning the count of fruits with stock at or below minimum threshold.
+   */
   readonly lowStockFruitsCount = computed<number>(() => {
     try {
       return this.fruits().filter(f => {
@@ -257,6 +412,9 @@ export class StateService {
     }
   });
 
+  /**
+   * Computed signal returning monthly commercial sales performance KPIs.
+   */
   readonly salesPerformance = computed<SalesPerformanceKpiDto>(() => {
     try {
       const orders = this.orders().filter(o => o.status !== 'CANCELLED');
@@ -362,6 +520,9 @@ export class StateService {
     }
   });
 
+  /**
+   * Computed signal returning ideal versus real pulp yield and billing audit rows.
+   */
   readonly idealVsRealLossAudit = computed<IdealVsRealAuditDto[]>(() => {
     try {
       const batches = this.batches();
@@ -629,9 +790,6 @@ export class StateService {
   }
 
   /**
-   * Loads employees from localStorage.
-   */
-    /**
    * Loads users from localStorage.
    */
   private loadUsersFromStorage(): UserAdminDto[] {
@@ -683,7 +841,10 @@ export class StateService {
     }
   }
 
-private loadEmployeesFromStorage(): EmployeeDto[] {
+  /**
+   * Loads employees from localStorage.
+   */
+  private loadEmployeesFromStorage(): EmployeeDto[] {
     try {
       const data = localStorage.getItem('despulpadora_employees');
       return data ? JSON.parse(data) : INITIAL_EMPLOYEES_SAMPLE;
@@ -764,7 +925,7 @@ private loadEmployeesFromStorage(): EmployeeDto[] {
   }
 
   /**
-   * Loads product variants from localStorage and purges any deprecated legacy mock entries.
+   * Loads product variants from localStorage and purges deprecated legacy mock entries.
    */
   private loadVariantsFromStorage(): ProductVariantDto[] {
     try {
@@ -789,7 +950,7 @@ private loadEmployeesFromStorage(): EmployeeDto[] {
 
   /**
    * Synchronizes user-created product variants with the active fruits catalog from the database,
-   * hydrating any fruit grammage presentations with stock or price configured in the backend API.
+   * hydrating fruit grammage presentations with stock or price configured in the backend API.
    */
   private syncVariantsWithFruits(fruits: FruitConfig[]): void {
     try {
@@ -1006,7 +1167,9 @@ private loadEmployeesFromStorage(): EmployeeDto[] {
     try {
       this.companyInfo.update(prev => ({ ...prev, ...updates }));
       this.saveAllToStorage();
-      this.api.updateCompanySettings(this.companyInfo()).subscribe({ error: () => {} });
+      this.api.updateCompanySettings?.(this.companyInfo())?.subscribe({
+        error: this.handleMutationError('No se pudo sincronizar la configuración de la empresa con el servidor')
+      });
       this.notification.success('Configuración Guardada', 'Información de la empresa actualizada exitosamente.');
     } catch {
       return;
@@ -1052,8 +1215,8 @@ private loadEmployeesFromStorage(): EmployeeDto[] {
       };
       this.paymentMethods.update(list => [...list, item]);
       this.saveAllToStorage();
-      this.api.createPaymentMethod({ name: item.name, requiresReference: item.type !== 'cash' }).subscribe({
-        error: () => {}
+      this.api.createPaymentMethod?.({ name: item.name, requiresReference: item.type !== 'cash' })?.subscribe({
+        error: this.handleMutationError('No se pudo crear el método de pago en el servidor')
       });
       this.notification.success(
         'Método de Pago Creado',
@@ -1072,7 +1235,9 @@ private loadEmployeesFromStorage(): EmployeeDto[] {
     try {
       this.paymentMethods.update(list => list.map(p => (p.paymentMethodId === id ? { ...p, ...changes } : p)));
       this.saveAllToStorage();
-      this.api.updatePaymentMethod(id, changes).subscribe({ error: () => {} });
+      this.api.updatePaymentMethod?.(id, changes)?.subscribe({
+        error: this.handleMutationError('No se pudo actualizar el método de pago en el servidor')
+      });
       this.notification.success('Método de Pago Actualizado', 'Los cambios han sido guardados.');
     } catch {
       return;
@@ -1087,7 +1252,9 @@ private loadEmployeesFromStorage(): EmployeeDto[] {
       const target = this.paymentMethods().find(p => p.paymentMethodId === id);
       this.paymentMethods.update(list => list.filter(p => p.paymentMethodId !== id));
       this.saveAllToStorage();
-      this.api.deletePaymentMethod(id).subscribe({ error: () => {} });
+      this.api.deletePaymentMethod?.(id)?.subscribe({
+        error: this.handleMutationError('No se pudo eliminar el método de pago en el servidor')
+      });
       if (target) {
         this.notification.info('Método de Pago Eliminado', `${target.name} fue retirado de las opciones.`);
       }
@@ -1193,7 +1360,13 @@ private loadEmployeesFromStorage(): EmployeeDto[] {
         return;
       }
 
-      if (!silent) {
+      const hasHydratedData =
+        this.orders().length > 0 ||
+        this.fruits().length > 0 ||
+        this.clients().length > 0 ||
+        this.employees().length > 0;
+      const shouldShowSkeleton = !silent && !this.hasCompletedInitialRefresh && !hasHydratedData;
+      if (shouldShowSkeleton) {
         this.isLoading.set(true);
       }
       const branchId = this.auth.selectedBranch()?.branchId;
@@ -1218,6 +1391,7 @@ private loadEmployeesFromStorage(): EmployeeDto[] {
           : of(null as UserRoleDto[] | null))
       }).subscribe({
         next: res => {
+          this.hasCompletedInitialRefresh = true;
           this.isLoading.set(false);
 
           if (Array.isArray(res.users)) {
@@ -1570,10 +1744,12 @@ private loadEmployeesFromStorage(): EmployeeDto[] {
         .subscribe({
           next: apiBatch => {
             if (apiBatch?.batchId) {
-              this.api.completeBatch(apiBatch.batchId, pulpKg).subscribe({ error: () => {} });
+              this.api.completeBatch(apiBatch.batchId, pulpKg).subscribe({
+                error: this.handleMutationError('No se pudo completar el lote de producción en el servidor')
+              });
             }
           },
-          error: () => {}
+          error: this.handleMutationError('No se pudo registrar el lote de producción en el servidor')
         });
 
       return newBatch;
@@ -1647,7 +1823,9 @@ private loadEmployeesFromStorage(): EmployeeDto[] {
             quantityDelta: delta,
             reason: 'Ajuste operativo en planta'
           })
-          .subscribe({ error: () => {} });
+          .subscribe({
+            error: this.handleMutationError('No se pudo sincronizar el ajuste de stock de pulpa con el servidor')
+          });
       }
       this.notification.info('Stock Actualizado', `${fruitName} (${grammage}): ${delta > 0 ? '+' : ''}${delta} uds`);
     } catch {
@@ -1693,7 +1871,9 @@ private loadEmployeesFromStorage(): EmployeeDto[] {
       }
       this.saveAllToStorage();
       if (targetFruitId > 0) {
-        this.api.adjustFruitStock(targetFruitId, { rawStockKgDelta: deltaKg }).subscribe({ error: () => {} });
+        this.api.adjustFruitStock?.(targetFruitId, { rawStockKgDelta: deltaKg })?.subscribe({
+          error: this.handleMutationError('No se pudo sincronizar el stock de fruta fresca con el servidor')
+        });
       }
       this.notification.info(
         'Inventario de Fruta Actualizado',
@@ -1782,12 +1962,16 @@ private loadEmployeesFromStorage(): EmployeeDto[] {
               yieldPercentage: Math.round((updatedFruit.yieldRate || 0) * 100),
               expectedYieldPercentage: Math.round((updatedFruit.yieldRate || 0) * 100)
             })
-            ?.subscribe({ error: () => {} });
+            ?.subscribe({
+              error: this.handleMutationError('No se pudo actualizar la fruta en el servidor')
+            });
 
           if (deltaKg !== 0) {
             this.api
               .adjustFruitStock?.(existing.fruitId, { rawStockKgDelta: deltaKg })
-              ?.subscribe({ error: () => {} });
+              ?.subscribe({
+                error: this.handleMutationError('No se pudo sincronizar el ajuste de fruta fresca con el servidor')
+              });
           }
         }
 
@@ -1869,11 +2053,13 @@ private loadEmployeesFromStorage(): EmployeeDto[] {
               if (weightKg > 0 && (createdDto.rawStockKg ?? 0) === 0) {
                 this.api
                   .adjustFruitStock?.(createdDto.fruitId, { rawStockKgDelta: weightKg })
-                  ?.subscribe({ error: () => {} });
+                  ?.subscribe({
+                    error: this.handleMutationError('No se pudo sincronizar el stock inicial de fruta fresca con el servidor')
+                  });
               }
             }
           },
-          error: () => {}
+          error: this.handleMutationError('No se pudo registrar la nueva fruta en el servidor')
         });
 
       this.notification.success(
@@ -1909,7 +2095,9 @@ private loadEmployeesFromStorage(): EmployeeDto[] {
       );
       this.saveAllToStorage();
       if (target.fruitId && target.fruitId > 0) {
-        this.api.deleteFruit?.(target.fruitId)?.subscribe({ error: () => {} });
+        this.api.deleteFruit?.(target.fruitId)?.subscribe({
+          error: this.handleMutationError('No se pudo eliminar la fruta en el servidor')
+        });
       }
       this.notification.info(
         'Fruta Eliminada',
@@ -1927,6 +2115,201 @@ private loadEmployeesFromStorage(): EmployeeDto[] {
     const days = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
     const idx = date instanceof Date && !Number.isNaN(date.getTime()) ? date.getDay() : new Date().getDay();
     return days[idx] ?? 'Lunes';
+  }
+
+  /**
+   * Applies a local stock delta for order items and records the corresponding kardex movement without calling `POST /api/Fruits/adjust-pulp-stock`.
+   */
+  private applyLocalOrderStockDelta(
+    items: {
+      fruitId?: number;
+      fruitName?: string;
+      grammage: number;
+      quantity: number;
+    }[],
+    direction: 1 | -1,
+    reason: string
+  ): void {
+    try {
+      if (!Array.isArray(items) || items.length === 0) {
+        return;
+      }
+      for (const item of items) {
+        const qty: number = Math.abs(Number(item.quantity || 0));
+        if (qty <= 0) {
+          continue;
+        }
+        const delta: number = qty * direction;
+        const gramKey: 'g140' | 'g250' | 'g500' | 'g1000' = `g${item.grammage}` as
+          | 'g140'
+          | 'g250'
+          | 'g500'
+          | 'g1000';
+        const itemNameLower: string = (item.fruitName || '').trim().toLowerCase();
+        let targetFruitId: number = Number(item.fruitId || 0);
+        let matchedFruitName: string = item.fruitName || '';
+        let prevStockVal: number = 0;
+        let nextStockVal: number = 0;
+
+        this.fruits.update((list: FruitConfig[]) =>
+          list.map((f: FruitConfig) => {
+            const nameMatches: boolean =
+              itemNameLower.length > 0 &&
+              (f.name.toLowerCase() === itemNameLower || itemNameLower.includes(f.name.toLowerCase()));
+            const idMatches: boolean = targetFruitId > 0 && f.fruitId === targetFruitId;
+            if (idMatches || nameMatches) {
+              targetFruitId = f.fruitId || targetFruitId;
+              matchedFruitName = f.name;
+              const current: number = f.stock[gramKey] || 0;
+              const nextVal: number = Math.max(0, current + delta);
+              prevStockVal = current;
+              nextStockVal = nextVal;
+              return {
+                ...f,
+                stock: { ...f.stock, [gramKey]: nextVal }
+              };
+            }
+            return f;
+          })
+        );
+
+        const numericGram: number = Number(item.grammage);
+        this.productVariants.update((variants: ProductVariantDto[]) =>
+          variants.map((v: ProductVariantDto) => {
+            if (
+              v.grammage === numericGram &&
+              ((targetFruitId > 0 && v.fruitId === targetFruitId) ||
+                (matchedFruitName.length > 0 &&
+                  (v.fruitName.toLowerCase() === matchedFruitName.toLowerCase() ||
+                    v.name.toLowerCase().includes(matchedFruitName.toLowerCase()))))
+            ) {
+              return { ...v, currentStock: Math.max(0, (v.currentStock || 0) + delta) };
+            }
+            return v;
+          })
+        );
+
+        this.recordInventoryMovement({
+          category: 'PULP',
+          movementType: delta > 0 ? 'IN' : 'OUT',
+          itemId: String(targetFruitId || matchedFruitName),
+          itemName: `Pulpa ${matchedFruitName}`,
+          presentation: `${numericGram}g`,
+          quantity: qty,
+          previousStock: prevStockVal,
+          newStock: nextStockVal,
+          unit: 'uds',
+          reason
+        });
+      }
+      this.syncVariantsWithFruits(this.fruits());
+    } catch {
+      return;
+    }
+  }
+
+  /**
+   * Synchronizes packed and fresh fruit stock from `GET /api/fruits` without triggering duplicate stock adjustment mutations.
+   */
+  private syncFruitsStockFromBackend(): void {
+    try {
+      if (!this.api || typeof this.api.getFruits !== 'function') {
+        return;
+      }
+      this.api
+        .getFruits()
+        .pipe(catchError(() => of([] as FruitDto[])))
+        .subscribe((apiFruits: FruitDto[]) => {
+          try {
+            if (!Array.isArray(apiFruits) || apiFruits.length === 0) {
+              return;
+            }
+            const existingList: FruitConfig[] = this.fruits();
+            const mappedFruits: FruitConfig[] = apiFruits.map((apiFruit: FruitDto) => {
+              const existing: FruitConfig | undefined = existingList.find(
+                (f: FruitConfig) =>
+                  f.fruitId === apiFruit.fruitId ||
+                  f.name.toLowerCase() === apiFruit.name.toLowerCase()
+              );
+              const color: string = apiFruit.colorHex || apiFruit.pulpColor || existing?.color || '';
+              const apiRawStock: number = Number(apiFruit.rawStockKg ?? 0);
+              const resolvedFreshStockKg: number =
+                apiFruit.rawStockKg !== undefined ? apiRawStock : (existing?.freshStockKg ?? 0);
+              const apiYieldRate: number =
+                (apiFruit.yieldPercentage || apiFruit.expectedYieldPercentage || 0) / 100;
+              return {
+                id:
+                  existing?.id ||
+                  (apiFruit.code || apiFruit.name || String(apiFruit.fruitId))
+                    .toLowerCase()
+                    .replace(/\s+/g, '_'),
+                fruitId: apiFruit.fruitId,
+                name: apiFruit.name,
+                scientificName: existing?.scientificName || '',
+                description: existing?.description || '',
+                imageUrl: existing?.imageUrl || '',
+                isVisibleInPortal: existing?.isVisibleInPortal ?? true,
+                color,
+                bgColor: existing?.bgColor || '',
+                borderColor: existing?.borderColor || color,
+                emoji: '',
+                yieldRate: apiYieldRate > 0 ? apiYieldRate : (existing?.yieldRate ?? 0),
+                waterAdditionDefault: existing?.waterAdditionDefault ?? 0,
+                freshStockKg: resolvedFreshStockKg,
+                stock: {
+                  g140: apiFruit.stock100g ?? existing?.stock.g140 ?? 0,
+                  g250: apiFruit.stock250g ?? existing?.stock.g250 ?? 0,
+                  g500: apiFruit.stock500g ?? existing?.stock.g500 ?? 0,
+                  g1000: apiFruit.stock1000g ?? existing?.stock.g1000 ?? 0
+                },
+                minStock: existing?.minStock ?? { g140: 0, g250: 0, g500: 0, g1000: 0 },
+                prices: {
+                  g140:
+                    apiFruit.price140g ??
+                    apiFruit.price100g ??
+                    apiFruit.unitPrice ??
+                    existing?.prices.g140 ??
+                    0,
+                  g250: apiFruit.price250g ?? existing?.prices.g250 ?? 0,
+                  g500: apiFruit.price500g ?? existing?.prices.g500 ?? 0,
+                  g1000: apiFruit.price1000g ?? existing?.prices.g1000 ?? 0
+                },
+                category: apiFruit.category || existing?.category || ''
+              };
+            });
+
+            this.fruits.set(mappedFruits);
+            this.productVariants.update((variants: ProductVariantDto[]) =>
+              variants.map((v: ProductVariantDto) => {
+                const matched: FruitConfig | undefined = mappedFruits.find(
+                  (f: FruitConfig) =>
+                    (f.fruitId && v.fruitId === f.fruitId) ||
+                    f.name.toLowerCase() === (v.fruitName || '').toLowerCase() ||
+                    v.name.toLowerCase().includes(f.name.toLowerCase())
+                );
+                if (!matched) {
+                  return v;
+                }
+                const gramKey: 'g140' | 'g250' | 'g500' | 'g1000' = `g${v.grammage}` as
+                  | 'g140'
+                  | 'g250'
+                  | 'g500'
+                  | 'g1000';
+                return {
+                  ...v,
+                  currentStock: matched.stock[gramKey] ?? v.currentStock
+                };
+              })
+            );
+            this.syncVariantsWithFruits(mappedFruits);
+            this.saveAllToStorage('inventory', 'stock_synced');
+          } catch {
+            return;
+          }
+        });
+    } catch {
+      return;
+    }
   }
 
   /**
@@ -2006,6 +2389,11 @@ private loadEmployeesFromStorage(): EmployeeDto[] {
         })
       };
 
+      this.applyLocalOrderStockDelta(
+        newOrder.items,
+        -1,
+        `Reserva / Salida por pedido #${newOrder.orderNumber}`
+      );
       this.orders.update(list => [newOrder, ...list]);
       this.saveAllToStorage();
       this.api
@@ -2053,8 +2441,9 @@ private loadEmployeesFromStorage(): EmployeeDto[] {
               );
               this.saveAllToStorage();
             }
+            this.syncFruitsStockFromBackend();
           },
-          error: () => {}
+          error: this.handleMutationError('No se pudo sincronizar el nuevo pedido con el servidor')
         });
       this.notification.success(
         'Pedido Creado',
@@ -2247,7 +2636,9 @@ private loadEmployeesFromStorage(): EmployeeDto[] {
               unitPrice: i.unitPrice
             }))
           })
-          .subscribe({ error: () => {} });
+          .subscribe({
+            error: this.handleMutationError('No se pudo actualizar el pedido en el servidor')
+          });
       }
       if (!orderData.silent) {
         this.notification.success(
@@ -2273,7 +2664,7 @@ private loadEmployeesFromStorage(): EmployeeDto[] {
       this.orders.update(list => list.map(o => (o.orderId === orderId ? { ...o, scheduledDay: dayName } : o)));
       this.saveAllToStorage();
       this.api.updateOrderStatus({ orderId, status: target.status, scheduledDay: dayName }).subscribe({
-        error: () => {}
+        error: this.handleMutationError('No se pudo actualizar el día de alistamiento en el servidor')
       });
       this.notification.success(
         'Día de Alistamiento Actualizado',
@@ -2291,8 +2682,20 @@ private loadEmployeesFromStorage(): EmployeeDto[] {
     try {
       const target = this.orders().find(o => o.orderId === orderId);
       this.orders.update(list => list.filter(o => o.orderId !== orderId));
+      if (target && target.status !== 'CANCELLED' && Array.isArray(target.items) && target.items.length > 0) {
+        this.applyLocalOrderStockDelta(
+          target.items,
+          1,
+          `Reintegro de stock por eliminación de pedido #${target.orderNumber}`
+        );
+      }
       this.saveAllToStorage();
-      this.api.deleteOrder(orderId).subscribe({ error: () => {} });
+      this.api.deleteOrder(orderId).subscribe({
+        next: () => {
+          this.syncFruitsStockFromBackend();
+        },
+        error: this.handleMutationError('No se pudo eliminar el pedido en el servidor')
+      });
       if (target) {
         this.notification.info('Pedido Eliminado', `La orden #${target.orderNumber} fue retirada.`);
       }
@@ -2306,14 +2709,14 @@ private loadEmployeesFromStorage(): EmployeeDto[] {
    */
   updateOrderStatus(orderId: number, newStatus: OrderStatus): void {
     try {
+      let orderItemsToRestore: OrderDto['items'] = [];
+      let restoredOrderNumber = '';
       this.orders.update(list =>
         list.map(o => {
           if (o.orderId === orderId) {
-            if (newStatus === 'DISPATCHED' && o.status !== 'DISPATCHED' && o.status !== 'DELIVERED') {
-              o.items.forEach(item => {
-                const gramKey = `g${item.grammage}` as 'g140' | 'g250' | 'g500' | 'g1000';
-                this.adjustStock(item.fruitName || '', gramKey, -item.quantity);
-              });
+            if (newStatus === 'CANCELLED' && o.status !== 'CANCELLED') {
+              orderItemsToRestore = o.items || [];
+              restoredOrderNumber = o.orderNumber || String(orderId);
             }
             const deliveredAtUtc: string | undefined =
               newStatus === 'DELIVERED' ? o.deliveredAtUtc || new Date().toISOString() : o.deliveredAtUtc;
@@ -2322,6 +2725,14 @@ private loadEmployeesFromStorage(): EmployeeDto[] {
           return o;
         })
       );
+
+      if (orderItemsToRestore.length > 0) {
+        this.applyLocalOrderStockDelta(
+          orderItemsToRestore,
+          1,
+          `Reintegro de stock por cancelación de pedido #${restoredOrderNumber}`
+        );
+      }
 
       this.saveAllToStorage('orders', 'status');
       const changedOrder = this.orders().find(o => o.orderId === orderId);
@@ -2356,7 +2767,12 @@ private loadEmployeesFromStorage(): EmployeeDto[] {
       this.notification.info('Estado Actualizado', `Pedido pasó a: ${statusLabels[newStatus]}`);
 
       this.api.updateOrderStatus({ orderId, status: newStatus }).subscribe({
-        error: () => {}
+        next: () => {
+          if (newStatus === 'DISPATCHED' || newStatus === 'CANCELLED') {
+            this.syncFruitsStockFromBackend();
+          }
+        },
+        error: this.handleMutationError('No se pudo actualizar el estado del pedido en el servidor')
       });
     } catch {
       return;
@@ -2409,7 +2825,7 @@ private loadEmployeesFromStorage(): EmployeeDto[] {
       );
 
       this.api.updateOrderStatus({ orderId, status: 'PICKING', scheduledDay }).subscribe({
-        error: () => {}
+        error: this.handleMutationError('No se pudo enviar el pedido a facturación en el servidor')
       });
     } catch {
       return;
@@ -2436,16 +2852,6 @@ private loadEmployeesFromStorage(): EmployeeDto[] {
       this.orders.update((list: OrderDto[]) =>
         list.map((o: OrderDto) => {
           if (orderIdSet.has(o.orderId)) {
-            if (o.status !== 'DISPATCHED' && o.status !== 'DELIVERED') {
-              o.items.forEach(item => {
-                const gramKey: 'g140' | 'g250' | 'g500' | 'g1000' = `g${item.grammage}` as
-                  | 'g140'
-                  | 'g250'
-                  | 'g500'
-                  | 'g1000';
-                this.adjustStock(item.fruitName || '', gramKey, -item.quantity);
-              });
-            }
             const seqIndex: number = activeOrderIds.indexOf(o.orderId) + 1;
             return {
               ...o,
@@ -2514,7 +2920,10 @@ private loadEmployeesFromStorage(): EmployeeDto[] {
             orderIds: validInt32OrderIds.length > 0 ? validInt32OrderIds : activeOrderIds
           })
           ?.subscribe({
-            error: () => {}
+            next: () => {
+              this.syncFruitsStockFromBackend();
+            },
+            error: this.handleMutationError('No se pudo despachar la ruta en el servidor')
           });
       }
 
@@ -2530,7 +2939,7 @@ private loadEmployeesFromStorage(): EmployeeDto[] {
   }
 
   /**
-   * Resolves local timestamp orderIds (> Int32.MaxValue) against the backend database (creating any missing orders) and dispatches the route.
+   * Resolves local timestamp orderIds (> Int32.MaxValue) against the backend database (creating missing orders) and dispatches the route.
    */
   private syncTimestampOrdersAndDispatchRoute(dto: DispatchCourierRouteDto, timestampIds: number[]): void {
     try {
@@ -2581,7 +2990,9 @@ private loadEmployeesFromStorage(): EmployeeDto[] {
                     ...(dto.routeCode !== undefined ? { routeCode: dto.routeCode } : {}),
                     orderIds: resolvedIds
                   })
-                  ?.subscribe({ error: () => {} });
+                  ?.subscribe({
+                    error: this.handleMutationError('No se pudo despachar la ruta sincronizada en el servidor')
+                  });
               }
               return;
             }
@@ -2636,7 +3047,9 @@ private loadEmployeesFromStorage(): EmployeeDto[] {
                           ...(dto.routeCode !== undefined ? { routeCode: dto.routeCode } : {}),
                           orderIds: resolvedIds
                         })
-                        ?.subscribe({ error: () => {} });
+                        ?.subscribe({
+                          error: this.handleMutationError('No se pudo despachar la ruta en el servidor')
+                        });
                     }
                   },
                   error: () => {
@@ -2649,7 +3062,9 @@ private loadEmployeesFromStorage(): EmployeeDto[] {
                           ...(dto.routeCode !== undefined ? { routeCode: dto.routeCode } : {}),
                           orderIds: resolvedIds
                         })
-                        ?.subscribe({ error: () => {} });
+                        ?.subscribe({
+                          error: this.handleMutationError('No se pudo despachar la ruta en el servidor')
+                        });
                     }
                   }
                 });
@@ -2658,7 +3073,7 @@ private loadEmployeesFromStorage(): EmployeeDto[] {
             return;
           }
         },
-        error: () => {}
+        error: this.handleMutationError('No se pudieron consultar los pedidos para sincronizar la ruta')
       });
     } catch {
       return;
@@ -2704,7 +3119,9 @@ private loadEmployeesFromStorage(): EmployeeDto[] {
       );
       this.saveAllToStorage('orders', 'picking');
       if (targetItemId > 0) {
-        this.api.updateOrderItemPicking(orderId, targetItemId, pickedQty)?.subscribe({ error: () => {} });
+        this.api.updateOrderItemPicking(orderId, targetItemId, pickedQty)?.subscribe({
+          error: this.handleMutationError('No se pudo actualizar la cantidad alistada en el servidor')
+        });
       }
       if (resolvedNextStatus !== null && orderId > 0 && this.api.updateOrderStatus) {
         this.api
@@ -2713,7 +3130,9 @@ private loadEmployeesFromStorage(): EmployeeDto[] {
             status: resolvedNextStatus,
             isBilled: resolvedNextStatus === 'BILLED'
           })
-          ?.subscribe({ error: () => {} });
+          ?.subscribe({
+            error: this.handleMutationError('No se pudo actualizar el estado de alistamiento en el servidor')
+          });
       }
     } catch {
       return;
@@ -2756,7 +3175,9 @@ private loadEmployeesFromStorage(): EmployeeDto[] {
         );
       }
       if (this.api.toggleOrderPriority) {
-        this.api.toggleOrderPriority(orderId, resolvedPriority).subscribe({ error: () => {} });
+        this.api.toggleOrderPriority(orderId, resolvedPriority).subscribe({
+          error: this.handleMutationError('No se pudo actualizar la prioridad del pedido en el servidor')
+        });
       }
     } catch {
       return;
@@ -2818,8 +3239,32 @@ private loadEmployeesFromStorage(): EmployeeDto[] {
           receiptNumber: newExpense.receiptNumber
         })
         .subscribe({
-          error: () => {}
+          error: this.handleMutationError('No se pudo registrar el gasto operativo en el servidor')
         });
+    } catch {
+      return;
+    }
+  }
+
+  /**
+   * Deletes an operational expense locally and synchronizes with the backend API if available.
+   */
+  deleteExpense(expenseId: number): void {
+    try {
+      const target = this.expenses().find(e => e.expenseId === expenseId);
+      this.expenses.update(list => list.filter(e => e.expenseId !== expenseId));
+      this.saveAllToStorage();
+      const apiWithDelete = this.api as unknown as {
+        deleteExpense?: (id: number) => Observable<unknown>;
+      };
+      if (typeof apiWithDelete.deleteExpense === 'function') {
+        apiWithDelete.deleteExpense(expenseId)?.subscribe({
+          error: this.handleMutationError('No se pudo eliminar el gasto operativo en el servidor')
+        });
+      }
+      if (target) {
+        this.notification.info('Gasto Eliminado', `El registro "${target.description}" fue retirado.`);
+      }
     } catch {
       return;
     }
@@ -2862,7 +3307,7 @@ private loadEmployeesFromStorage(): EmployeeDto[] {
       }));
       this.saveAllToStorage();
       this.api.updateCompanySettings?.(this.companyInfo())?.subscribe({
-        error: () => {}
+        error: this.handleMutationError('No se pudo sincronizar la meta comercial con el servidor')
       });
       this.notification.success(
         'Meta Actualizada',
@@ -2887,7 +3332,8 @@ private loadEmployeesFromStorage(): EmployeeDto[] {
       const baseDaily = employee.baseSalary / 30;
       const baseSalaryEarned = Math.round(baseDaily * days);
 
-      const transportAllowanceTotal = employee.transportAllowance ?? 0;
+      const transportAllowanceTotal =
+        employee.transportAllowance ?? (employee.baseSalary <= 2847000 ? 200000 : 0);
       const transportDaily = transportAllowanceTotal / 30;
       const transportAllowanceEarned = Math.round(transportDaily * days);
 
@@ -2899,8 +3345,8 @@ private loadEmployeesFromStorage(): EmployeeDto[] {
       const totalEarnings =
         baseSalaryEarned + transportAllowanceEarned + deliveryBonuses + overtime + otherBonuses;
 
-      const healthDeduction = Math.round(baseSalaryEarned * 0.04);
-      const pensionDeduction = Math.round(baseSalaryEarned * 0.04);
+      const healthDeduction = Math.round((baseSalaryEarned + overtime) * 0.04);
+      const pensionDeduction = Math.round((baseSalaryEarned + overtime) * 0.04);
       const otherDeductions = dto.otherDeductions || 0;
       const totalDeductions = healthDeduction + pensionDeduction + otherDeductions;
 
@@ -3010,7 +3456,9 @@ private loadEmployeesFromStorage(): EmployeeDto[] {
               quantityDelta: delta,
               reason: delta > 0 ? 'Ingreso rápido de pulpa empacada' : 'Salida rápida de pulpa empacada'
             })
-            ?.subscribe({ error: () => {} });
+            ?.subscribe({
+              error: this.handleMutationError('No se pudo sincronizar el stock de la presentación con el servidor')
+            });
         }
         this.recordInventoryMovement({
           category: 'PULP',
@@ -3080,7 +3528,9 @@ private loadEmployeesFromStorage(): EmployeeDto[] {
             price500g: Number(syncedFruit.prices.g500) || 0,
             price1000g: Number(syncedFruit.prices.g1000) || 0
           })
-          ?.subscribe({ error: () => {} });
+          ?.subscribe({
+            error: this.handleMutationError('No se pudo actualizar el precio de la presentación en el servidor')
+          });
       }
       if ((newVariant.currentStock || 0) > 0) {
         if (
@@ -3097,7 +3547,9 @@ private loadEmployeesFromStorage(): EmployeeDto[] {
               quantityDelta: newVariant.currentStock,
               reason: 'Creación de nueva presentación de pulpa'
             })
-            ?.subscribe({ error: () => {} });
+            ?.subscribe({
+              error: this.handleMutationError('No se pudo sincronizar el stock inicial de la presentación con el servidor')
+            });
         }
         this.recordInventoryMovement({
           category: 'PULP',
@@ -3188,7 +3640,9 @@ private loadEmployeesFromStorage(): EmployeeDto[] {
               price500g: Number(syncedFruit.prices.g500) || 0,
               price1000g: Number(syncedFruit.prices.g1000) || 0
             })
-            ?.subscribe({ error: () => {} });
+            ?.subscribe({
+              error: this.handleMutationError('No se pudo actualizar la presentación en el servidor')
+            });
         }
         if (changes.currentStock !== undefined && nextStock !== prevStock) {
           const diff = nextStock - prevStock;
@@ -3209,7 +3663,9 @@ private loadEmployeesFromStorage(): EmployeeDto[] {
                     ? 'Edición de existencias de pulpa (+)'
                     : 'Edición de existencias de pulpa (-)'
               })
-              ?.subscribe({ error: () => {} });
+              ?.subscribe({
+                error: this.handleMutationError('No se pudo sincronizar la edición de existencias con el servidor')
+              });
           }
           this.recordInventoryMovement({
             category: 'PULP',
@@ -3280,7 +3736,9 @@ private loadEmployeesFromStorage(): EmployeeDto[] {
                 quantityDelta: -(existing.currentStock || 0),
                 reason: 'Eliminación de presentación de pulpa'
               })
-              ?.subscribe({ error: () => {} });
+              ?.subscribe({
+                error: this.handleMutationError('No se pudo descontar el stock de la presentación eliminada en el servidor')
+              });
           }
           if (syncedFruit && (existing.basePrice || 0) > 0) {
             this.api
@@ -3293,7 +3751,9 @@ private loadEmployeesFromStorage(): EmployeeDto[] {
                 price500g: Number(syncedFruit.prices.g500) || 0,
                 price1000g: Number(syncedFruit.prices.g1000) || 0
               })
-              ?.subscribe({ error: () => {} });
+              ?.subscribe({
+                error: this.handleMutationError('No se pudo limpiar el precio de la presentación eliminada en el servidor')
+              });
           }
         }
         this.notification.info('Presentación Eliminada', `${existing.name} retirada del inventario.`);
@@ -3338,7 +3798,9 @@ private loadEmployeesFromStorage(): EmployeeDto[] {
 
       this.clients.update(list => [newClient, ...list]);
       this.saveAllToStorage();
-      this.api.createClient(dto).subscribe({ error: () => {} });
+      this.api.createClient?.(dto)?.subscribe({
+        error: this.handleMutationError('No se pudo registrar el cliente en el servidor')
+      });
       this.notification.success('Cliente Creado', `${newClient.fullName} fue registrado exitosamente.`);
       return newClient;
     } catch (error: unknown) {
@@ -3353,7 +3815,9 @@ private loadEmployeesFromStorage(): EmployeeDto[] {
     try {
       this.clients.update(list => list.map(c => (c.clientId === clientId ? { ...c, ...changes } : c)));
       this.saveAllToStorage();
-      this.api.updateClient(clientId, changes).subscribe({ error: () => {} });
+      this.api.updateClient?.(clientId, changes)?.subscribe({
+        error: this.handleMutationError('No se pudo actualizar el cliente en el servidor')
+      });
       this.notification.success('Cliente Actualizado', 'Los datos del cliente han sido guardados.');
     } catch {
       return;
@@ -3368,7 +3832,9 @@ private loadEmployeesFromStorage(): EmployeeDto[] {
       const target = this.clients().find(c => c.clientId === clientId);
       this.clients.update(list => list.filter(c => c.clientId !== clientId));
       this.saveAllToStorage();
-      this.api.deleteClient(clientId).subscribe({ error: () => {} });
+      this.api.deleteClient?.(clientId)?.subscribe({
+        error: this.handleMutationError('No se pudo eliminar el cliente en el servidor')
+      });
       if (target) {
         this.notification.info('Cliente Eliminado', `${target.fullName} fue retirado del directorio.`);
       }
@@ -3404,13 +3870,15 @@ private loadEmployeesFromStorage(): EmployeeDto[] {
       this.shifts.update(list => [newShift, ...list]);
       this.saveAllToStorage();
       this.api
-        .startShift({
+        .startShift?.({
           employeeId,
           branchId,
           shiftType,
           notes: newShift.notes
         })
-        .subscribe({ error: () => {} });
+        ?.subscribe({
+          error: this.handleMutationError('No se pudo iniciar el turno laboral en el servidor')
+        });
       return newShift;
     } catch (error: unknown) {
       throw error;
@@ -3439,7 +3907,20 @@ private loadEmployeesFromStorage(): EmployeeDto[] {
         })
       );
       this.saveAllToStorage();
-      this.api.closeShift({ shiftId, notes }).subscribe({ error: () => {} });
+      this.api.closeShift?.({ shiftId, notes })?.subscribe({
+        error: this.handleMutationError('No se pudo cerrar el turno laboral en el servidor')
+      });
+    } catch {
+      return;
+    }
+  }
+
+  /**
+   * Alias for `closeWorkShift` that ends an active work shift and syncs with the backend API.
+   */
+  endWorkShift(shiftId: number, notes?: string): void {
+    try {
+      this.closeWorkShift(shiftId, notes);
     } catch {
       return;
     }
@@ -3478,11 +3959,25 @@ private loadEmployeesFromStorage(): EmployeeDto[] {
   createEmployee(dto: Partial<EmployeeDto>): Observable<EmployeeDto> {
     try {
       return this.api.createEmployee(dto).pipe(
-        tap((created: EmployeeDto) => {
-          this.employees.update(list => [created, ...list]);
-          this.saveAllToStorage();
+        tap({
+          next: (created: EmployeeDto) => {
+            this.employees.update(list => [created, ...list]);
+            this.saveAllToStorage();
+          },
+          error: this.handleMutationError('No se pudo registrar el empleado en el servidor')
         })
       );
+    } catch (error: unknown) {
+      throw error;
+    }
+  }
+
+  /**
+   * Alias for `createEmployee` that registers a new employee and updates reactive state.
+   */
+  addEmployee(dto: Partial<EmployeeDto>): Observable<EmployeeDto> {
+    try {
+      return this.createEmployee(dto);
     } catch (error: unknown) {
       throw error;
     }
@@ -3494,11 +3989,14 @@ private loadEmployeesFromStorage(): EmployeeDto[] {
   updateEmployee(employeeId: number, dto: Partial<EmployeeDto>): Observable<EmployeeDto> {
     try {
       return this.api.updateEmployee(employeeId, dto).pipe(
-        tap((updated: EmployeeDto) => {
-          this.employees.update(list =>
-            list.map(e => (e.employeeId === employeeId || e.id === employeeId ? updated : e))
-          );
-          this.saveAllToStorage();
+        tap({
+          next: (updated: EmployeeDto) => {
+            this.employees.update(list =>
+              list.map(e => (e.employeeId === employeeId || e.id === employeeId ? updated : e))
+            );
+            this.saveAllToStorage();
+          },
+          error: this.handleMutationError('No se pudo actualizar el empleado en el servidor')
         })
       );
     } catch (error: unknown) {
@@ -3514,7 +4012,9 @@ private loadEmployeesFromStorage(): EmployeeDto[] {
       const target = this.employees().find(e => e.employeeId === employeeId);
       this.employees.update(list => list.filter(e => e.employeeId !== employeeId));
       this.saveAllToStorage();
-      this.api.deleteEmployee(employeeId).subscribe({ error: () => {} });
+      this.api.deleteEmployee?.(employeeId)?.subscribe({
+        error: this.handleMutationError('No se pudo eliminar el empleado en el servidor')
+      });
       if (target) {
         this.notification.info('Personal Eliminado', `${target.fullName} fue retirado del personal de la empresa.`);
       }
@@ -3609,7 +4109,9 @@ private loadEmployeesFromStorage(): EmployeeDto[] {
             price500g: updatedFruit.prices.g500,
             price1000g: updatedFruit.prices.g1000
           })
-          .subscribe({ error: () => {} });
+          .subscribe({
+            error: this.handleMutationError('No se pudo actualizar la tarjeta del catálogo en el servidor')
+          });
       }
 
       this.saveAllToStorage();
@@ -3689,7 +4191,9 @@ private loadEmployeesFromStorage(): EmployeeDto[] {
           price500g: newCard.prices.g500,
           price1000g: newCard.prices.g1000
         })
-        .subscribe({ error: () => {} });
+        .subscribe({
+          error: this.handleMutationError('No se pudo crear la tarjeta del catálogo en el servidor')
+        });
       this.notification.success('Nueva Card Creada', `"${newCard.name}" ya está publicada en el Portal Clientes.`);
       return newCard;
     } catch (error: unknown) {
@@ -3717,7 +4221,9 @@ private loadEmployeesFromStorage(): EmployeeDto[] {
       }
       this.saveAllToStorage();
       if (target?.fruitId) {
-        this.api.deleteFruit(target.fruitId).subscribe({ error: () => {} });
+        this.api.deleteFruit(target.fruitId).subscribe({
+          error: this.handleMutationError('No se pudo eliminar la tarjeta del catálogo en el servidor')
+        });
       }
       if (target) {
         this.notification.info('Card Eliminada', `"${target.name}" fue retirada del catálogo.`);
@@ -3725,6 +4231,38 @@ private loadEmployeesFromStorage(): EmployeeDto[] {
     } catch {
       return;
     }
+  }
+
+  /**
+   * Handles backend HTTP mutation errors in a controlled manner, executing an optional state rollback
+   * or synchronization callback and notifying when a real server failure occurs.
+   */
+  private handleMutationError(
+    contextMessage: string,
+    rollbackFn?: () => void
+  ): (error: unknown) => void {
+    return (error: unknown): void => {
+      try {
+        if (rollbackFn) {
+          rollbackFn();
+          this.saveAllToStorage();
+        }
+        const status =
+          typeof (error as Record<string, unknown>)?.['status'] === 'number'
+            ? Number((error as Record<string, unknown>)['status'])
+            : error instanceof Error
+              ? 500
+              : 0;
+        if (this.isOnline() && status >= 400) {
+          this.notification.warning(
+            'Sincronización Pendiente',
+            `${contextMessage}. Los cambios se conservan localmente.`
+          );
+        }
+      } catch {
+        return;
+      }
+    };
   }
 
   /**

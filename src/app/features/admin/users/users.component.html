@@ -173,7 +173,7 @@
 </div>
 
 @if (showCreateModal()) {
-  <div class="modal-overlay" (click)="showCreateModal.set(false)">
+  <div class="modal-overlay">
     <div class="modal-content" style="max-width: 500px;" (click)="$event.stopPropagation()">
       <div class="modal-header">
         <h3 class="modal-title">Crear Nuevo Usuario</h3>
@@ -251,7 +251,7 @@
 }
 
 @if (showEditModal()) {
-  <div class="modal-overlay" (click)="closeEditModal()">
+  <div class="modal-overlay">
     <div class="modal-content" style="max-width: 500px;" (click)="$event.stopPropagation()">
       <div class="modal-header">
         <h3 class="modal-title">Editar Usuario (&#64;{{ editUsername() }})</h3>

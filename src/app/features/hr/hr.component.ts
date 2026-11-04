@@ -153,7 +153,9 @@ export class HrComponent implements OnInit, OnDestroy {
    */
   ngOnInit(): void {
     try {
-      this.stateService.refreshAll?.();
+      const hasCachedData =
+        this.stateService.employees().length > 0 || this.stateService.shifts().length > 0;
+      this.stateService.refreshAll?.(hasCachedData);
       this.route.queryParams.subscribe(params => {
         const tab = params['tab'] as HrTabType | undefined;
         if (tab && ['employees', 'shifts', 'certificates', 'payroll'].includes(tab)) {
@@ -525,7 +527,7 @@ export class HrComponent implements OnInit, OnDestroy {
    */
   calculateTransportAllowance(salary: number): number {
     try {
-      return salary <= 2600000 ? 162000 : 0;
+      return salary <= 2847000 ? 200000 : 0;
     } catch {
       return 0;
     }
@@ -534,9 +536,9 @@ export class HrComponent implements OnInit, OnDestroy {
   /**
    * Calculates the 4% statutory health contribution deduction.
    */
-  calculateHealthDeduction(salary: number): number {
+  calculateHealthDeduction(salary: number, overtime: number = 0): number {
     try {
-      return Math.round(salary * 0.04);
+      return Math.round((salary + overtime) * 0.04);
     } catch {
       return 0;
     }
@@ -545,9 +547,9 @@ export class HrComponent implements OnInit, OnDestroy {
   /**
    * Calculates the 4% statutory pension contribution deduction.
    */
-  calculatePensionDeduction(salary: number): number {
+  calculatePensionDeduction(salary: number, overtime: number = 0): number {
     try {
-      return Math.round(salary * 0.04);
+      return Math.round((salary + overtime) * 0.04);
     } catch {
       return 0;
     }
@@ -556,9 +558,9 @@ export class HrComponent implements OnInit, OnDestroy {
   /**
    * Calculates the estimated net monthly pay after statutory allowances and deductions.
    */
-  calculateNetPay(salary: number): number {
+  calculateNetPay(salary: number, overtime: number = 0): number {
     try {
-      return salary + this.calculateTransportAllowance(salary) - this.calculateHealthDeduction(salary) - this.calculatePensionDeduction(salary);
+      return salary + overtime + this.calculateTransportAllowance(salary) - this.calculateHealthDeduction(salary, overtime) - this.calculatePensionDeduction(salary, overtime);
     } catch {
       return 0;
     }

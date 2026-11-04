@@ -930,7 +930,9 @@ export class DashboardComponent {
    */
   constructor() {
     try {
-      this.stateService.refreshAll?.();
+      const hasCachedData =
+        this.stateService.orders().length > 0 || this.stateService.fruits().length > 0;
+      this.stateService.refreshAll?.(hasCachedData);
       this.route.queryParams.subscribe(params => {
         if (params['focus'] === 'goals') {
           setTimeout(() => {

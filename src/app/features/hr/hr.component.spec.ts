@@ -212,8 +212,12 @@ describe('HrComponent', () => {
     });
     expect(closeWorkShiftSpy).toHaveBeenCalledWith(10, 'Salida registrada satisfactoriamente');
 
+    expect(component.calculateTransportAllowance(2847000)).toBe(200000);
+    expect(component.calculateTransportAllowance(2847001)).toBe(0);
     expect(component.calculateHealthDeduction(1000000)).toBe(40000);
     expect(component.calculatePensionDeduction(1000000)).toBe(40000);
+    expect(component.calculateHealthDeduction(1000000, 200000)).toBe(48000);
+    expect(component.calculatePensionDeduction(1000000, 200000)).toBe(48000);
   });
 
   it('should prompt confirmation dialog and delete employee from stateStore when confirmed', async () => {

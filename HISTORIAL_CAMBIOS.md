@@ -1,5 +1,46 @@
 # 📜 Historial de Cambios (`DespulpadoraPwa` - Angular 20)
 
+## [2026-11-04] - Remediación Integral Fases 1, 2 y 3 (API Real, WebSocket `/ws` en Tiempo Real, Higiene `AGENTS.md`) + Rediseño Ejecutivo Desde Cero de Catálogo del Sistema (`SystemCatalogComponent` — Imagen 1) y Centro de Copias de Seguridad (`BackupsComponent` — Imagen 2)
+
+### 💬 Prompt Original del Usuario
+> "Ejecutar las Fases 1, 2 y 3 de remediación integral del ecosistema (`DespulpadoraPwa` + `ApiDespulpadora`) y rediseñar completamente desde cero con estética Enterprise SaaS amigable para usuario final los módulos: 1) Catálogo del Sistema (`SystemCatalogComponent` — Imagen 1) y 2) Centro de Copias de Seguridad (`BackupsComponent` — Imagen 2), verificando el 100% de las reglas `AGENTS.md`, compilación de producción y suite de pruebas unitarias."
+
+### 🤖 Resumen Técnico para la IA
+- **Fase 1 (PWA) — Eliminación de Datos Quemados y Correcciones Funcionales (`hr.component.ts`, `kds.component.ts`, `whatsapp-gateway.service.ts`)**:
+  - `hr.component.ts`: Se eliminaron por completo los valores quemados (`'No especificado'`, `'Administración'`, `'Por definir'`) al registrar empleados en `submitNewEmployee()`, enviando los valores limpios ingresados en el formulario.
+  - `kds.component.ts`: Se protegió el botón `+ Simular Pedido` con la propiedad `readonly isSimulationAllowed = !environment.production`, ocultándolo en producción, y se reemplazó la lista quemada de restaurantes de prueba por selección dinámica desde las señales reales `stateService.clients()` y `stateService.fruits()`.
+  - `whatsapp-gateway.service.ts`: Se agregó documentación JSDoc superior (`/** ... */`) en el 100% de las interfaces, constantes, propiedades y métodos del servicio.
+- **Fase 2 (PWA) — Persistencia Real contra API REST y Sincronización WebSocket (`/ws`) en Tiempo Real (`api.service.ts`, `state.service.ts`, `realtime-sync.service.ts`, `delivery-map.component.ts`)**:
+  - `api.service.ts`: Se agregaron y conectaron los endpoints reales `createPromotion`, `updatePromotion`, `deletePromotion`, `getBatchById`, `completeBatch` y `updateCourierShiftStatus`.
+  - `state.service.ts`: Se conectaron las mutaciones de promociones (`addPromotion`, `updatePromotion`, `deletePromotion`, `togglePromotionStatus`), finalización de lotes (`completeBatch`), estados de domiciliarios y turnos con `ApiService`, hidratando `promotions` desde `GET /api/promotions` en `refreshAll()`.
+  - `realtime-sync.service.ts` y `delivery-map.component.ts`: Se conectó el stream WebSocket nativo `/ws` (con token JWT y reconexión automática, desactivando intentos 404 a `/hubs/operations`) emitiendo coordenadas GPS en vivo (`courierLocations$`, `latestCourierLocation`) hacia el mapa Leaflet (`applyRealtimeCourierLocation()`).
+- **Fase 3 (PWA) — Higiene Total de Comentarios y Tipado Explícito**:
+  - Se verificó en los 91 archivos `.ts` y 15 archivos `.html` de `src/` la existencia de **0 comentarios de línea (`//`)**, **0 comentarios HTML (`<!-- -->`)** y **0 usos de `any`**.
+- **Rediseño Visual 1 (Imagen 1) — `SystemCatalogComponent` (`src/app/features/admin/system-catalog/system-catalog.component.ts` & `.spec.ts`)**:
+  - Reconstrucción integral desde cero con diseño Enterprise SaaS y lenguaje humano comprensible (*"Menú y Pantallas del Sistema"*, *"Pantallas Registradas"*, *"Permisos Configurados"*, *"Áreas del Menú"*, *"Pantalla Seleccionada"*).
+  - Eliminación de IDs crudos de base de datos (`#1`, `#12`, `#15`) reemplazándolos por numeración secuencial limpia (`1, 2, 3...`), chips de filtrado por Área del Menú, buscador reactivo, paginación independiente en el panel izquierdo de pantallas (6 por página) y en la tabla derecha de permisos (8 por página), etiquetas de operación amigables (`Consulta`, `Registro`, `Modificación`, `Eliminación`) y selector visual de íconos en modales.
+- **Rediseño Visual 2 (Imagen 2) — `BackupsComponent` (`src/app/features/admin/backups/backups.component.ts`, `.html` & `.spec.ts`)**:
+  - Reconstrucción integral del *Centro de Copias de Seguridad* con 4 tarjetas KPI ejecutivas (*Respaldos Guardados*, *Espacio Utilizado*, *Última Copia Realizada*, *Estado de Protección*), buscador en tiempo real, selector de ordenamiento (`newest`, `oldest`, `largest`, `smallest`), selector de tamaño de página (`5`, `10`, `20`), paginación numerada, títulos amigables en español (*"Respaldo del 3 nov 2026"*), resumen legible de módulos/registros, respaldo en 1 clic con descarga inmediata al computador y modal propio de confirmación de eliminación (cero `window.confirm`).
+
+### 📦 Componentes Modificados
+- `src/app/core/services/api.service.ts` & `src/app/core/services/api.service.spec.ts`
+- `src/app/core/services/state.service.ts` & `src/app/core/services/state.service.spec.ts`
+- `src/app/core/services/realtime-sync.service.ts` & `src/app/core/services/realtime-sync.service.spec.ts`
+- `src/app/core/services/whatsapp-gateway.service.ts` & `src/app/core/services/whatsapp-gateway.service.spec.ts`
+- `src/app/features/hr/hr.component.ts` & `src/app/features/hr/hr.component.spec.ts`
+- `src/app/features/orders/kds/kds.component.ts` & `src/app/features/orders/kds/kds.component.spec.ts`
+- `src/app/features/orders/delivery-map.component.ts` & `src/app/features/orders/delivery-map.component.spec.ts`
+- `src/app/features/admin/system-catalog/system-catalog.component.ts` & `src/app/features/admin/system-catalog/system-catalog.component.spec.ts`
+- `src/app/features/admin/backups/backups.component.ts`, `src/app/features/admin/backups/backups.component.html` & `src/app/features/admin/backups/backups.component.spec.ts`
+- `HISTORIAL_CAMBIOS.md`
+
+### ✅ Verificación, Build y Tests Unitarios
+- **Compilación de Producción (`npx ng build`)**: Exitosa (`0 errores`).
+- **Suite Completa de Pruebas Unitarias (`npx ng test --watch=false --browsers=ChromeHeadless`)**: **345 de 345 pruebas exitosas en 41 archivos `.spec.ts` (`100% PASS`)**.
+- **Auditoría Estática `AGENTS.md` (91 `.ts` + 15 `.html`)**: **0 comentarios `//`**, **0 comentarios `<!-- -->`**, **0 usos de `any`**, **100% JSDoc `/** ... */`** y **`try-catch` / `catchError`**.
+
+---
+
 Este documento registra de manera cronológica y estructurada todas las intervenciones arquitectónicas, integraciones de API, componentes de seguridad RBAC y pruebas unitarias aplicadas sobre el proyecto Frontend **`DespulpadoraPwa`**.
 
 ---

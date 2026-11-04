@@ -988,7 +988,7 @@
 </div>
 
 @if (showEditOrderModal()) {
-  <div class="modal-overlay" (click)="showEditOrderModal.set(false)">
+  <div class="modal-overlay">
     <div class="modal-content" style="max-width: 680px;" (click)="$event.stopPropagation()">
       <div class="modal-header">
         <div>
@@ -1182,7 +1182,7 @@
 }
 
 @if (showInvoiceModal() && selectedOrderForInvoice(); as modalOrder) {
-  <div class="modal-overlay invoice-modal-overlay" (click)="showInvoiceModal.set(false)">
+  <div class="modal-overlay invoice-modal-overlay">
     <div
       class="modal-content invoice-modal-container"
       style="max-width: 880px;"
@@ -1384,7 +1384,7 @@
 }
 
 @if (showItemsListModal() && selectedOrderForItems(); as modalOrder) {
-  <div class="modal-overlay" (click)="showItemsListModal.set(false)">
+  <div class="modal-overlay">
     <div class="modal-content" style="max-width: 540px; border-radius: 16px; overflow: hidden; box-shadow: 0 20px 40px rgba(0,0,0,0.2);" (click)="$event.stopPropagation()">
       <div class="modal-header" style="background: #ffffff; padding: 18px 22px; border-bottom: 1px solid #e2e8f0; display: flex; align-items: center; justify-content: space-between;">
         <div style="display: flex; align-items: center; gap: 12px;">

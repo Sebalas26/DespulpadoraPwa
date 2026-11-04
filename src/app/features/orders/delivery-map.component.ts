@@ -1091,7 +1091,7 @@ export const MAP_STYLES: MapStyleOption[] = [
       
       
       @if (showPointOrderModal()) {
-        <div class="modal-backdrop" (click)="cancelPointCreation()">
+        <div class="modal-backdrop">
           <div class="modal-card" (click)="$event.stopPropagation()" style="max-width: 580px;">
             <div class="modal-header">
               <div class="modal-title-group">
@@ -1229,7 +1229,7 @@ export const MAP_STYLES: MapStyleOption[] = [
       
       
       @if (showPlannerModal()) {
-        <div class="modal-backdrop" (click)="showPlannerModal.set(false)">
+        <div class="modal-backdrop">
           <div class="modal-card modal-lg" (click)="$event.stopPropagation()">
             <div class="modal-header">
               <div class="modal-title-group">
@@ -1419,7 +1419,7 @@ export const MAP_STYLES: MapStyleOption[] = [
       
       
       @if (showReceiveModal() && receivingCourier()) {
-        <div class="modal-backdrop" (click)="closeReceiveCourierModal()">
+        <div class="modal-backdrop">
           <div class="modal-card modal-lg settlement-modal" (click)="$event.stopPropagation()">
             
             <div class="modal-header" style="background: linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 100%); border-bottom: 1px solid #bbf7d0;">
@@ -1748,7 +1748,7 @@ export const MAP_STYLES: MapStyleOption[] = [
       }
 
       @if (showConfirmCreateRouteModal() && pendingRouteCourier(); as routeCourier) {
-        <div class="modal-backdrop" (click)="cancelConfirmCreateRoute()">
+        <div class="modal-backdrop">
           <div class="modal-card confirm-route-modal" (click)="$event.stopPropagation()" style="max-width: 440px;">
             <div class="modal-header">
               <div class="modal-title-group">
@@ -1797,7 +1797,7 @@ export const MAP_STYLES: MapStyleOption[] = [
       }
 
       @if (showConfirmAssignToActiveRouteModal() && pendingActiveRouteAssignment(); as pendingAssign) {
-        <div class="modal-backdrop" (click)="cancelAssignToActiveRoute()">
+        <div class="modal-backdrop">
           <div class="modal-card confirm-update-active-route-modal" (click)="$event.stopPropagation()" style="max-width: 440px;">
             <div class="modal-header">
               <div class="modal-title-group">
@@ -5425,6 +5425,14 @@ export class DeliveryMapComponent implements OnInit, AfterViewInit, OnDestroy {
 
   readonly plantLat = signal<number>(PLANTA_MATRIZ_LAT);
   readonly plantLng = signal<number>(PLANTA_MATRIZ_LNG);
+
+  /**
+   * Computed signal returning the configured central plant coordinates.
+   */
+  readonly plantLocation = computed<{ lat: number; lng: number }>(() => ({
+    lat: this.plantLat() || PLANTA_MATRIZ_LAT,
+    lng: this.plantLng() || PLANTA_MATRIZ_LNG
+  }));
   private plantMarker?: L.Marker;
   private lastSyncedPlantAddressKey = '';
 
@@ -9216,8 +9224,8 @@ export class DeliveryMapComponent implements OnInit, AfterViewInit, OnDestroy {
         return;
       }
 
-      let lat = 4.6765 + (Math.random() - 0.5) * 0.04;
-      let lng = -74.0538 + (Math.random() - 0.5) * 0.04;
+      let lat = this.plantLocation().lat;
+      let lng = this.plantLocation().lng;
       let zone = this.detectBogotaZone(lat, lng);
 
       try {
@@ -9320,8 +9328,14 @@ export class DeliveryMapComponent implements OnInit, AfterViewInit, OnDestroy {
     try {
       const courierId = this.drawerNewCourierId() || '';
       const courierObj = courierId ? this.couriers().find((c: Courier) => c.id === courierId) : undefined;
-      let lat = 4.665 + (Math.random() - 0.5) * 0.04;
-      let lng = -74.065 + (Math.random() - 0.5) * 0.04;
+      let lat =
+        order.latitude !== undefined && Number.isFinite(order.latitude) && Math.abs(order.latitude) > 0.0001
+          ? order.latitude
+          : this.plantLocation().lat;
+      let lng =
+        order.longitude !== undefined && Number.isFinite(order.longitude) && Math.abs(order.longitude) > 0.0001
+          ? order.longitude
+          : this.plantLocation().lng;
       let zone = this.detectBogotaZone(lat, lng);
 
       if (order.clientAddress && order.clientAddress.trim().length >= 4) {
@@ -9751,7 +9765,7 @@ export class DeliveryMapComponent implements OnInit, AfterViewInit, OnDestroy {
   private isPollingCourierLocations = false;
 
   /**
-   * Starts continuous 1-second interval polling of the backend for live courier GPS telemetry from the Flutter app.
+   * Starts continuous 5-second interval backup polling of the backend for live courier GPS telemetry from the Flutter app.
    */
   private startRealCourierPolling(): void {
     try {
@@ -9766,7 +9780,7 @@ export class DeliveryMapComponent implements OnInit, AfterViewInit, OnDestroy {
       this.pollRealCourierLocations();
       this.liveCourierPollTimer = setInterval(() => {
         this.pollRealCourierLocations();
-      }, 1000);
+      }, 5000);
     } catch (error: unknown) {
       console.error('Error starting real courier polling:', error);
     }

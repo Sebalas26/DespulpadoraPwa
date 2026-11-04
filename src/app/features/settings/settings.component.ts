@@ -568,7 +568,9 @@ export class SettingsComponent {
   constructor() {
     try {
       this.realtimeSync.connect();
-      this.stateService.refreshAll?.();
+      const hasCachedData =
+        this.stateService.fruits().length > 0 || this.stateService.productVariants().length > 0;
+      this.stateService.refreshAll?.(hasCachedData);
       this.refreshWhatsAppGatewayStatus();
       effect(() => {
         try {

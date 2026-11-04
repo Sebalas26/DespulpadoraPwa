@@ -473,7 +473,7 @@ interface AudioContextWindow extends Window {
       </footer>
 
             @if (showNumpadModal()) {
-        <div class="modal-backdrop" (click)="closeNumpad()">
+        <div class="modal-backdrop">
           <div class="numpad-modal" (click)="$event.stopPropagation()">
             <div class="numpad-header">
               <div>

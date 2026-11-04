@@ -171,7 +171,7 @@
 </div>
 
 @if (showClientForm()) {
-  <div class="modal-overlay client-modal-backdrop" (click)="closeClientForm()">
+  <div class="modal-overlay client-modal-backdrop">
     <div class="modal-content client-modal-card" style="max-width: 520px;" (click)="$event.stopPropagation()">
       <div class="modal-header client-modal-header">
         <div>
@@ -281,7 +281,7 @@
 }
 
 @if (selectedHistoryClient(); as client) {
-  <div class="modal-overlay client-modal-backdrop" (click)="closeClientSalesHistory()">
+  <div class="modal-overlay client-modal-backdrop">
     <div class="modal-content client-modal-card sales-history-modal" style="max-width: 720px;" (click)="$event.stopPropagation()">
       <div class="modal-header client-modal-header">
         <div>

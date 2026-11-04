@@ -306,7 +306,7 @@ export interface CartItem {
       </button>
 
             @if (showCartDrawer()) {
-        <div class="drawer-backdrop" (click)="showCartDrawer.set(false)">
+        <div class="drawer-backdrop">
           <div class="cart-drawer" (click)="$event.stopPropagation()">
                         <div class="drawer-header">
               @if (cartDrawerStep() === 'checkout') {

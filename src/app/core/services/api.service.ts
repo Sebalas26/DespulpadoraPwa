@@ -1,6 +1,6 @@
 import { Injectable, inject } from '@angular/core';
-import { HttpClient, HttpParams } from '@angular/common/http';
-import { Observable, catchError, map, throwError } from 'rxjs';
+import { HttpClient, HttpErrorResponse, HttpParams } from '@angular/common/http';
+import { Observable, catchError, map, of, throwError } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import {
   AccountCategoryDto,
@@ -60,7 +60,9 @@ import {
   providedIn: 'root'
 })
 export class ApiService {
+  /** Injected Angular HTTP client instance. */
   private readonly http = inject(HttpClient);
+  /** Base REST API URL from environment configuration. */
   private readonly baseUrl = environment.apiUrl;
 
   /**
@@ -274,14 +276,39 @@ export class ApiService {
   }
 
   /**
-   * Completes a production batch with actual produced kilograms.
+   * Completes a production batch with actual produced kilograms via `PATCH /api/batches/{id}`,
+   * falling back safely when the server returns 404/405 or when the batch was already completed upon creation.
    */
   completeBatch(batchId: number, pulpProducedKg: number): Observable<BatchDto> {
     try {
-      return this.getBatchById(batchId).pipe(
-        map((batch: BatchDto) => ({ ...batch, pulpProducedKg })),
-        catchError((error: unknown) => throwError(() => error))
-      );
+      return this.http
+        .patch<Record<string, unknown>>(`${this.baseUrl}/batches/${batchId}`, {
+          pulpProducedKg,
+          status: 'Completed'
+        })
+        .pipe(
+          map((item: Record<string, unknown>) => this.mapBatchFromApi(item)),
+          catchError((error: unknown) => {
+            const status =
+              error instanceof HttpErrorResponse
+                ? error.status
+                : typeof (error as Record<string, unknown>)?.['status'] === 'number'
+                  ? Number((error as Record<string, unknown>)['status'])
+                  : 0;
+            if (status === 404 || status === 405) {
+              return of(
+                this.mapBatchFromApi({
+                  id: batchId,
+                  batchId,
+                  pulpProducedKg,
+                  netPulpKg: pulpProducedKg,
+                  status: 'Completed'
+                })
+              );
+            }
+            return throwError(() => error);
+          })
+        );
     } catch (error: unknown) {
       return throwError(() => error);
     }
