@@ -199,8 +199,8 @@ async function refreshCatalogFromBackend() {
       botConfig.lastSyncedAt = new Date().toISOString();
       saveBotConfigToDisk();
     }
-  } catch (_) {
-    /* keep existing catalog in memory */
+  } catch (catalogErr) {
+    void catalogErr;
   }
 }
 
@@ -537,44 +537,85 @@ async function analyzeWithGemini(options) {
       parts.push({ text: `Mensaje del cliente: "${options.text || ''}"` });
     }
 
-    const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${encodeURIComponent(
-      apiKey
-    )}`;
-    const response = await fetch(endpoint, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents: [{ parts }],
-        generationConfig: {
-          temperature: 0.1,
-          responseMimeType: 'application/json'
-        }
-      })
+    const isVertexExpressKey = apiKey.startsWith('AQ.');
+    const candidateModels = [
+      'gemini-2.5-flash',
+      'gemini-2.0-flash',
+      'gemini-2.5-flash-lite',
+      'gemini-1.5-flash'
+    ];
+    const endpointBuilders = isVertexExpressKey
+      ? [
+          (model) =>
+            `https://aiplatform.googleapis.com/v1/publishers/google/models/${model}:generateContent?key=${encodeURIComponent(
+              apiKey
+            )}`,
+          (model) =>
+            `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(
+              apiKey
+            )}`
+        ]
+      : [
+          (model) =>
+            `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(
+              apiKey
+            )}`,
+          (model) =>
+            `https://aiplatform.googleapis.com/v1/publishers/google/models/${model}:generateContent?key=${encodeURIComponent(
+              apiKey
+            )}`
+        ];
+
+    const requestBody = JSON.stringify({
+      contents: [{ role: 'user', parts }],
+      generationConfig: {
+        temperature: 0.1,
+        responseMimeType: 'application/json'
+      }
     });
 
-    if (!response.ok) {
-      return null;
+    for (const buildUrl of endpointBuilders) {
+      for (const modelName of candidateModels) {
+        try {
+          const response = await fetch(buildUrl(modelName), {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'x-goog-api-key': apiKey
+            },
+            body: requestBody
+          });
+
+          if (!response.ok) {
+            continue;
+          }
+
+          const result = await response.json();
+          const rawCandidate =
+            result &&
+            result.candidates &&
+            result.candidates[0] &&
+            result.candidates[0].content &&
+            result.candidates[0].content.parts &&
+            result.candidates[0].content.parts[0] &&
+            result.candidates[0].content.parts[0].text;
+
+          if (!rawCandidate) {
+            continue;
+          }
+
+          const cleanedJson = String(rawCandidate)
+            .replace(/^```json/i, '')
+            .replace(/```$/i, '')
+            .trim();
+          return JSON.parse(cleanedJson);
+        } catch (attemptErr) {
+          void attemptErr;
+        }
+      }
     }
 
-    const result = await response.json();
-    const rawCandidate =
-      result &&
-      result.candidates &&
-      result.candidates[0] &&
-      result.candidates[0].content &&
-      result.candidates[0].content.parts &&
-      result.candidates[0].content.parts[0] &&
-      result.candidates[0].content.parts[0].text;
-
-    if (!rawCandidate) {
-      return null;
-    }
-
-    const cleanedJson = String(rawCandidate)
-      .replace(/^```json/i, '')
-      .replace(/```$/i, '')
-      .trim();
-    return JSON.parse(cleanedJson);
+    return null;
   } catch (err) {
     console.error('Error calling Gemini API:', err);
     return null;
@@ -587,7 +628,9 @@ async function analyzeWithGemini(options) {
 function buildItemsFromHistoricalOrder(historicalOrder, extraItems = []) {
   const baseItems = (historicalOrder.items || []).map((item) => {
     const matchedFruit = contextStore.fruits.find(
-      (f) => normalizeText(f.name) === normalizeText(item.fruitName)
+      (f) =>
+        (item.fruitName && normalizeText(f.name) === normalizeText(item.fruitName)) ||
+        (Number(item.fruitId) > 0 && Number(f.fruitId) === Number(item.fruitId))
     );
     const grammage = Number(item.grammage || item.presentationGrams || 500);
     const unitPrice = resolveFruitPrice(matchedFruit, grammage, item.unitPrice);
@@ -743,7 +786,7 @@ async function processCustomerOrderInteraction({
   let detectedSourceType = audioBase64 ? 'AUDIO' : 'TEXTO';
   let aiAnalysis = null;
 
-  if (audioBase64) {
+  if (audioBase64 && audioBase64 !== 'AUDIO_DOWNLOAD_FAILED') {
     aiAnalysis = await analyzeWithGemini({
       audioBase64,
       mimeType: mimeType || 'audio/ogg',
@@ -1001,10 +1044,24 @@ async function processCustomerOrderInteraction({
   }
 
   if (audioBase64 && !botConfig.geminiApiKey) {
+    const catalogNames = contextStore.fruits.map((f) => f.name).join(', ');
+    const catalogHint = catalogNames ? ` (Frutas disponibles: *${catalogNames}*)` : '';
     return {
-      handled: false,
+      handled: true,
       reason: 'AUDIO_REQUIRES_GEMINI_KEY',
-      replyText: null,
+      replyText: `🎙️ Recibimos tu nota de voz, pero la transcripción por audio aún no está activa. Por favor escríbenos tu pedido en texto${catalogHint}.`,
+      createdOrder: null
+    };
+  }
+
+  if (audioBase64) {
+    const catalogNames = contextStore.fruits.map((f) => f.name).join(', ');
+    const catalogHint = catalogNames ? ` (*${catalogNames}*)` : '';
+    const heardNote = incomingText ? ` Escuchamos: _"${incomingText}"_.` : '';
+    return {
+      handled: true,
+      reason: 'AUDIO_UNMATCHED_ITEMS',
+      replyText: `🎙️ Recibimos tu nota de voz (${customer.clientName}).${heardNote} Por favor indícanos la cantidad, fruta${catalogHint} y presentación (140g, 250g, 500g o 1000g), o escribe *"deme el pedido de qué días"*.`,
       createdOrder: null
     };
   }
@@ -1018,6 +1075,37 @@ async function processCustomerOrderInteraction({
 }
 
 /**
+ * Unwraps nested WhatsApp message containers (ephemeral, viewOnce, documentWithCaption) to access inner text or audio.
+ */
+function unwrapWhatsAppMessage(rawMessage) {
+  let current = rawMessage || {};
+  for (let depth = 0; depth < 4; depth++) {
+    if (current.ephemeralMessage && current.ephemeralMessage.message) {
+      current = current.ephemeralMessage.message;
+      continue;
+    }
+    if (current.viewOnceMessage && current.viewOnceMessage.message) {
+      current = current.viewOnceMessage.message;
+      continue;
+    }
+    if (current.viewOnceMessageV2 && current.viewOnceMessageV2.message) {
+      current = current.viewOnceMessageV2.message;
+      continue;
+    }
+    if (current.viewOnceMessageV2Extension && current.viewOnceMessageV2Extension.message) {
+      current = current.viewOnceMessageV2Extension.message;
+      continue;
+    }
+    if (current.documentWithCaptionMessage && current.documentWithCaptionMessage.message) {
+      current = current.documentWithCaptionMessage.message;
+      continue;
+    }
+    break;
+  }
+  return current || {};
+}
+
+/**
  * Resolves all pending promises waiting for a QR code or an active connection.
  */
 function notifyQrWaiters() {
@@ -1025,8 +1113,8 @@ function notifyQrWaiters() {
   for (const resolve of waiters) {
     try {
       resolve(gatewayState);
-    } catch (_) {
-      /* ignore waiter error */
+    } catch (waiterErr) {
+      void waiterErr;
     }
   }
 }
@@ -1069,8 +1157,8 @@ function destroyCurrentSocket() {
         sock.ev.removeAllListeners('messages.upsert');
       }
       sock.end(undefined);
-    } catch (_) {
-      /* ignore socket close error */
+    } catch (closeErr) {
+      void closeErr;
     }
     sock = null;
   }
@@ -1199,12 +1287,18 @@ async function connectToWhatsApp(forceFresh = false) {
             continue;
           }
 
-          const messageContent = msg.message || {};
+          const messageContent = unwrapWhatsAppMessage(msg.message);
           const textBody =
             messageContent.conversation ||
             (messageContent.extendedTextMessage && messageContent.extendedTextMessage.text) ||
             '';
-          const audioMsg = messageContent.audioMessage || null;
+          const audioMsg =
+            messageContent.audioMessage ||
+            (messageContent.documentMessage &&
+            messageContent.documentMessage.mimetype &&
+            String(messageContent.documentMessage.mimetype).startsWith('audio/')
+              ? messageContent.documentMessage
+              : null);
 
           if (!textBody && !audioMsg) {
             continue;
@@ -1214,7 +1308,19 @@ async function connectToWhatsApp(forceFresh = false) {
           let mimeType = 'audio/ogg';
           if (audioMsg && typeof downloadMediaMessage === 'function') {
             try {
-              const buffer = await downloadMediaMessage(msg, 'buffer', {});
+              const normalizedMsg = {
+                ...msg,
+                message: messageContent
+              };
+              const buffer = await downloadMediaMessage(
+                normalizedMsg,
+                'buffer',
+                {},
+                {
+                  logger: pino({ level: 'silent' }),
+                  reuploadRequest: activeSock.updateMediaMessage
+                }
+              );
               if (buffer && Buffer.isBuffer(buffer)) {
                 audioBase64 = buffer.toString('base64');
                 mimeType = audioMsg.mimetype ? String(audioMsg.mimetype).split(';')[0] : 'audio/ogg';
@@ -1224,12 +1330,17 @@ async function connectToWhatsApp(forceFresh = false) {
             }
           }
 
-          const senderDigits = remoteJid.split('@')[0];
+          const altJid = String(
+            msg.key.senderPn || msg.key.remoteJidAlt || msg.key.participant || ''
+          );
+          const phoneSourceJid =
+            remoteJid.endsWith('@lid') && altJid ? altJid : remoteJid;
+          const senderDigits = phoneSourceJid.split(':')[0].split('@')[0];
           const interactionResult = await processCustomerOrderInteraction({
             rawPhone: senderDigits,
             pushName: msg.pushName || '',
             text: textBody,
-            audioBase64,
+            audioBase64: audioBase64 || (audioMsg ? 'AUDIO_DOWNLOAD_FAILED' : null),
             mimeType,
             autoConfirm: false
           });

@@ -4,6 +4,39 @@ Este documento registra de manera cronológica y estructurada todas las interven
 
 ---
 
+## [2026-11-03] - Soporte Completo de Notas de Voz (Audios) en WhatsApp con Claves Vertex AI Express (`AQ.A...`) y Google AI Studio (`AIza...`), Desempaquetado Multi-Device y Respuesta Garantizada (`whatsapp-gateway/server.js`)
+
+### 💬 Prompt Original del Usuario
+> "ya hice esto pero le envio el audii y no em respondio" *(adjuntando captura con `ACTIVA (AQ.A••••OANW)` en Clave Google Gemini AI Studio)*
+> "ejecutalo"
+
+### 🤖 Resumen Técnico para la IA
+- **1. Soporte Dual en `analyzeWithGemini()` para Claves `AQ.A...` (Google Cloud Vertex AI Express Mode) y `AIza...` (Google AI Studio) con Fallback Multi-Modelo (`whatsapp-gateway/server.js`)**:
+  - Se detecta si la clave inicia con `AQ.` para consultar `https://aiplatform.googleapis.com/v1/publishers/google/models/${model}:generateContent?key=...` (con fallback a `generativelanguage.googleapis.com` y viceversa), incluyendo `role: 'user'` en `contents: [{ role: 'user', parts }]` y el header `'x-goog-api-key': apiKey`.
+  - Se iteran los modelos `['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-2.5-flash-lite', 'gemini-1.5-flash']`.
+- **2. Desempaquetado de Mensajes Anidados (`unwrapWhatsAppMessage`), Descarga PTT y Resolución de Remitente `@lid` (`whatsapp-gateway/server.js`)**:
+  - Se implementó `unwrapWhatsAppMessage(rawMessage)` para extraer `audioMessage` y `textBody` incluso cuando el chat tiene mensajes temporales (`ephemeralMessage`), `viewOnceMessage` o `documentWithCaptionMessage`.
+  - Se pasó `{ logger: pino({ level: 'silent' }), reuploadRequest: activeSock.updateMediaMessage }` a `downloadMediaMessage`.
+  - Se resolvió el número telefónico real del cliente desde `msg.key.senderPn || msg.key.remoteJidAlt || msg.key.participant` cuando `remoteJid` termina en `@lid`.
+- **3. Respuesta Garantizada ante Notas de Voz y Fallback por `fruitId` en Historial (`whatsapp-gateway/server.js`)**:
+  - En `processCustomerOrderInteraction()`, cuando se recibe `audioBase64` y no se detectan frutas del catálogo o falla la transcripción, el bot responde siempre en el chat orientando al cliente con las frutas activas en catálogo (`contextStore.fruits`).
+  - En `buildItemsFromHistoricalOrder()`, se añadió fallback por `Number(f.fruitId) === Number(item.fruitId)`.
+- **4. Informes de Agentes de Calidad (`AGENTS.md` §1)**:
+  - **Agente de Verificación de Impacto (`6bae9d2b-9cfe-4009-ac5a-396bea17c4c3`)**: Diagnosticó el formato de clave Vertex AI Express (`AQ.A...`) y el desempaquetado de audio en Multi-Device.
+  - **Agente Auditor Punto por Punto (`5f14e295-6c6d-416b-a0c8-8aec6461611b`)**: Emitió veredicto **CUMPLE AL 100%**.
+  - **Agente de Revisión Par (`2ebc4a0d-70d4-4dac-b8c8-e704c76a401b`)**: Emitió veredicto **100% APPROVED FOR PRODUCTION — NO CORRECTIVE PLAN REQUIRED**.
+
+### 📦 Componentes Modificados
+- `whatsapp-gateway/server.js`
+- `HISTORIAL_CAMBIOS.md`
+
+### ✅ Verificación, Build y Tests Unitarios
+- **Verificación de Sintaxis (`node --check whatsapp-gateway/server.js`)**: Exitosa (`0 errores`).
+- **Compilación de Producción (`npm run build`)**: Exitosa (`0 errores`).
+- **Suite Completa de Pruebas Unitarias (`ng test --watch=false`)**: **329 de 329 pruebas exitosas (`100% PASS`)**.
+
+---
+
 ## [2026-11-03] - Solución Definitiva al `502 Bad Gateway` en Producción (Colisión `PORT=80` de Coolify) y Certificación End-to-End de Generación de Código QR (`whatsapp-gateway/server.js`, `whatsapp-gateway/package.json`, `docker-entrypoint.sh` y `Dockerfile`)
 
 ### 💬 Prompt Original del Usuario
