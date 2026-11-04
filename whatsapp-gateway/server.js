@@ -308,7 +308,7 @@ function resolveFruitPrice(fruitObj, grammage, fallbackUnitPrice = 0) {
 }
 
 /**
- * Converts Spanish number words into numeric quantities.
+ * Converts Spanish number words into numeric quantities, ignoring presentation grammage numbers.
  */
 function parseSpanishQuantityTokens(textSegment) {
   const wordMap = {
@@ -327,18 +327,34 @@ function parseSpanishQuantityTokens(textSegment) {
     once: 11,
     doce: 12,
     docena: 12,
+    trece: 13,
+    catorce: 14,
     quince: 15,
     veinte: 20,
-    treinta: 30
+    veinticinco: 25,
+    treinta: 30,
+    cuarenta: 40,
+    cincuenta: 50,
+    sesenta: 60,
+    setenta: 70,
+    ochenta: 80,
+    noventa: 90,
+    cien: 100
   };
-  const digitMatch = textSegment.match(/\b(\d{1,3})\b/);
+  const strippedGrammage = String(textSegment || '').replace(
+    /\b(140|250|500|1000)\s*(g|gr|gramos|kilo|kilos|kg)?\b/gi,
+    ' '
+  );
+  const digitMatch = strippedGrammage.match(/\b(\d{1,3})\b/);
   if (digitMatch) {
     const val = parseInt(digitMatch[1], 10);
     if (val > 0 && val <= 500) {
       return val;
     }
   }
-  const tokens = normalizeText(textSegment).split(/\s+/);
+  const tokens = normalizeText(strippedGrammage)
+    .replace(/[.,;!?¡¿]/g, ' ')
+    .split(/\s+/);
   for (const token of tokens) {
     if (wordMap[token]) {
       return wordMap[token];
@@ -351,17 +367,17 @@ function parseSpanishQuantityTokens(textSegment) {
  * Detects the requested presentation grammage (140, 250, 500, 1000) in a phrase.
  */
 function parseGrammageFromSegment(textSegment) {
-  const norm = normalizeText(textSegment);
-  if (/\b(1000|1000g|1000gr|1\s*kg|1\s*kilo|kilo|kilos|kl)\b/.test(norm)) {
+  const norm = normalizeText(textSegment).replace(/[.,;!?¡¿]/g, ' ');
+  if (/\b(1000|1000g|1000gr|mil\s*gramos|un\s*kilo|1\s*kg|1\s*kilo|kilo|kilos|kl)\b/.test(norm)) {
     return 1000;
   }
-  if (/\b(250|250g|250gr|media\s*libra)\b/.test(norm)) {
+  if (/\b(250|250g|250gr|doscientos\s*cincuenta|media\s*libra)\b/.test(norm)) {
     return 250;
   }
-  if (/\b(500|500g|500gr|libra|libras|lb)\b/.test(norm)) {
+  if (/\b(500|500g|500gr|quinientos\s*gramos|quinientos|medio\s*kilo|libra|libras|lb)\b/.test(norm)) {
     return 500;
   }
-  if (/\b(140|140g|140gr|personal|pequena|pequeno)\b/.test(norm)) {
+  if (/\b(140|140g|140gr|ciento\s*cuarenta|personal|pequena|pequeno)\b/.test(norm)) {
     return 140;
   }
   return 500;
@@ -448,8 +464,11 @@ function isRepeatOrderIntent(rawText) {
  * Checks if the message is a short confirmation ("SÍ", "CONFIRMO", "DALE").
  */
 function isConfirmationMessage(rawText) {
-  const norm = normalizeText(rawText).replace(/[!.¡¿?]/g, '').trim();
-  return /^(si|sii+|confirmo|confirmar|confirmado|dale|listo|de una|ok|hagale|envielo|si por favor|por supuesto)$/.test(
+  const norm = normalizeText(rawText)
+    .replace(/[.,;!:¡¿?"']/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+  return /^(si|sii+|si\s+senor|si\s+claro|si\s+confirmo|confirmo|confirmar|confirmado|confirmelo|dale|listo|listo\s+hagale|de\s+una|ok|hagale|envielo|si\s+por\s+favor|por\s+supuesto|correcto|asi\s+esta\s+bien)$/.test(
     norm
   );
 }
@@ -458,8 +477,11 @@ function isConfirmationMessage(rawText) {
  * Checks if the message is a cancellation ("NO", "CANCELAR").
  */
 function isCancellationMessage(rawText) {
-  const norm = normalizeText(rawText).replace(/[!.¡¿?]/g, '').trim();
-  return /^(no|cancelar|cancela|olvide|no gracias)$/.test(norm);
+  const norm = normalizeText(rawText)
+    .replace(/[.,;!:¡¿?"']/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+  return /^(no|cancelar|cancela|cancelalo|olvide|no\s+gracias)$/.test(norm);
 }
 
 /**
@@ -620,6 +642,110 @@ async function analyzeWithGemini(options) {
     console.error('Error calling Gemini API:', err);
     return null;
   }
+}
+
+/**
+ * Transcribes a WhatsApp voice note (base64 OGG/Opus) using OpenAI Whisper Large-V3 Gradio endpoints without requiring an API key.
+ */
+async function transcribeAudioWithWhisperFallback(audioBase64, mimeType = 'audio/ogg') {
+  if (!audioBase64 || audioBase64 === 'AUDIO_DOWNLOAD_FAILED') {
+    return null;
+  }
+
+  const audioBuffer = Buffer.from(audioBase64, 'base64');
+  if (!audioBuffer || audioBuffer.length === 0) {
+    return null;
+  }
+
+  const endpoints = [
+    {
+      base: 'https://hf-audio-whisper-large-v3.hf.space',
+      fnPath: 'transcribe',
+      buildData: (uploadedPath) => [
+        { path: uploadedPath, meta: { _type: 'gradio.FileData' } },
+        'transcribe'
+      ]
+    },
+    {
+      base: 'https://openai-whisper.hf.space',
+      fnPath: 'predict',
+      buildData: (uploadedPath) => [
+        { path: uploadedPath, meta: { _type: 'gradio.FileData' } },
+        'transcribe'
+      ]
+    }
+  ];
+
+  for (const ep of endpoints) {
+    try {
+      const form = new FormData();
+      const cleanMime = String(mimeType || 'audio/ogg').split(';')[0].trim() || 'audio/ogg';
+      const blob = new Blob([audioBuffer], { type: cleanMime });
+      form.append('files', blob, 'voice.ogg');
+
+      const uploadCtrl = new AbortController();
+      const uploadTimer = setTimeout(() => uploadCtrl.abort(), 8000);
+      const uploadRes = await fetch(`${ep.base}/gradio_api/upload`, {
+        method: 'POST',
+        body: form,
+        signal: uploadCtrl.signal
+      });
+      clearTimeout(uploadTimer);
+
+      if (!uploadRes.ok) {
+        continue;
+      }
+
+      const uploadedFiles = await uploadRes.json();
+      const uploadedPath = Array.isArray(uploadedFiles) ? uploadedFiles[0] : null;
+      if (!uploadedPath) {
+        continue;
+      }
+
+      const callCtrl = new AbortController();
+      const callTimer = setTimeout(() => callCtrl.abort(), 8000);
+      const callRes = await fetch(`${ep.base}/gradio_api/call/${ep.fnPath}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ data: ep.buildData(uploadedPath) }),
+        signal: callCtrl.signal
+      });
+      clearTimeout(callTimer);
+
+      if (!callRes.ok) {
+        continue;
+      }
+
+      const callJson = await callRes.json();
+      const eventId = callJson && callJson.event_id;
+      if (!eventId) {
+        continue;
+      }
+
+      const streamCtrl = new AbortController();
+      const streamTimer = setTimeout(() => streamCtrl.abort(), 14000);
+      const streamRes = await fetch(`${ep.base}/gradio_api/call/${ep.fnPath}/${eventId}`, {
+        signal: streamCtrl.signal
+      });
+      const sseText = await streamRes.text();
+      clearTimeout(streamTimer);
+
+      const lines = sseText.split('\n');
+      for (let i = 0; i < lines.length; i++) {
+        if (lines[i].startsWith('event: complete') && lines[i + 1] && lines[i + 1].startsWith('data: ')) {
+          const parsedData = JSON.parse(lines[i + 1].slice(6));
+          const transcript = Array.isArray(parsedData) && parsedData[0] ? String(parsedData[0]).trim() : '';
+          if (transcript) {
+            return transcript;
+          }
+        }
+      }
+    } catch (whisperErr) {
+      void whisperErr;
+    }
+  }
+
+  return null;
 }
 
 /**
@@ -794,7 +920,16 @@ async function processCustomerOrderInteraction({
       recentOrders: customer.recentOrders
     });
     if (aiAnalysis && aiAnalysis.transcript) {
-      incomingText = aiAnalysis.transcript;
+      incomingText = String(aiAnalysis.transcript).trim();
+    }
+    if (!incomingText) {
+      const whisperTranscript = await transcribeAudioWithWhisperFallback(
+        audioBase64,
+        mimeType || 'audio/ogg'
+      );
+      if (whisperTranscript) {
+        incomingText = whisperTranscript;
+      }
     }
   }
 
@@ -1031,7 +1166,7 @@ async function processCustomerOrderInteraction({
     pendingDraftsByPhone.set(phoneKey, draft);
     const header =
       detectedSourceType === 'AUDIO'
-        ? `🎙️ *Escuchamos tu nota de voz (${customer.clientName}). ¿Confirmas tu pedido?*`
+        ? `🎙️ *Escuchamos tu nota de voz (${customer.clientName}):*\n_"${incomingText}"_\n\n*¿Confirmas tu pedido?*`
         : `🍓 *¡Hola ${customer.clientName}! Armamos tu pedido así:*`;
     const replyText = formatDraftConfirmationReply(draft, header);
     return {
@@ -1043,17 +1178,6 @@ async function processCustomerOrderInteraction({
     };
   }
 
-  if (audioBase64 && !botConfig.geminiApiKey) {
-    const catalogNames = contextStore.fruits.map((f) => f.name).join(', ');
-    const catalogHint = catalogNames ? ` (Frutas disponibles: *${catalogNames}*)` : '';
-    return {
-      handled: true,
-      reason: 'AUDIO_REQUIRES_GEMINI_KEY',
-      replyText: `🎙️ Recibimos tu nota de voz, pero la transcripción por audio aún no está activa. Por favor escríbenos tu pedido en texto${catalogHint}.`,
-      createdOrder: null
-    };
-  }
-
   if (audioBase64) {
     const catalogNames = contextStore.fruits.map((f) => f.name).join(', ');
     const catalogHint = catalogNames ? ` (*${catalogNames}*)` : '';
@@ -1061,7 +1185,7 @@ async function processCustomerOrderInteraction({
     return {
       handled: true,
       reason: 'AUDIO_UNMATCHED_ITEMS',
-      replyText: `🎙️ Recibimos tu nota de voz (${customer.clientName}).${heardNote} Por favor indícanos la cantidad, fruta${catalogHint} y presentación (140g, 250g, 500g o 1000g), o escribe *"deme el pedido de qué días"*.`,
+      replyText: `🎙️ Recibimos tu nota de voz (${customer.clientName}).${heardNote} Por favor indícanos la cantidad, fruta${catalogHint} y presentación (140g, 250g, 500g o 1000g), o di *"deme el pedido de qué días"*.`,
       createdOrder: null
     };
   }
@@ -1562,19 +1686,19 @@ app.get('/api/whatsapp/incoming-orders', (_req, res) => {
 
 app.post('/api/whatsapp/simulate-incoming', async (req, res) => {
   try {
-    const { phone, pushName, message, autoConfirm } = req.body || {};
-    if (!phone || !message) {
+    const { phone, pushName, message, audioBase64, mimeType, autoConfirm } = req.body || {};
+    if (!phone || (!message && !audioBase64)) {
       return res.status(400).json({
         ok: false,
-        error: 'Se requieren los campos phone y message para simular un pedido.'
+        error: 'Se requieren los campos phone y message (o audioBase64) para simular un pedido.'
       });
     }
     const result = await processCustomerOrderInteraction({
       rawPhone: phone,
       pushName: pushName || '',
-      text: message,
-      audioBase64: null,
-      mimeType: null,
+      text: message || '',
+      audioBase64: audioBase64 || null,
+      mimeType: mimeType || 'audio/ogg',
       autoConfirm: Boolean(autoConfirm)
     });
     return res.json({
