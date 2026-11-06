@@ -536,14 +536,15 @@ export const MAP_STYLES: MapStyleOption[] = [
           @if (showDeliveriesDrawer()) {
             <div
               class="deliveries-drawer"
+              [class.is-dragging]="isDraggingDrawer"
               [style.height]="drawerHeightStyle()"
+              [style.--drawer-height]="drawerHeightStyle()"
               (click)="$event.stopPropagation()"
             >
               
               <div
                 class="drawer-drag-handle-zone"
                 (pointerdown)="startDrawerResize($event)"
-                (click)="toggleDrawerExpandPreset()"
                 title="Desliza o toca para ajustar el tamaño"
               >
                 <div class="drawer-drag-pill"></div>
@@ -3869,6 +3870,10 @@ export const MAP_STYLES: MapStyleOption[] = [
         box-shadow: 0 -8px 32px rgba(15, 23, 42, 0.22) !important;
         z-index: 1280;
         transition: height 0.16s cubic-bezier(0.16, 1, 0.3, 1);
+
+        &.is-dragging {
+          transition: none !important;
+        }
       }
 
       .drawer-drag-handle-zone {
@@ -3912,7 +3917,7 @@ export const MAP_STYLES: MapStyleOption[] = [
 
     @media (max-width: 768px) {
       .map-canvas-card.map-fullscreen-active .deliveries-drawer {
-        height: var(--drawer-height, 38vh) !important;
+        height: var(--drawer-height, 38vh);
         max-height: 82vh !important;
       }
     }
@@ -5506,10 +5511,10 @@ export class DeliveryMapComponent implements OnInit, AfterViewInit, OnDestroy {
     }
   });
 
-  private isDraggingDrawer = false;
-  private dragStartY = 0;
-  private dragStartHeight = 0;
-  private dragMoved = false;
+  isDraggingDrawer: boolean = false;
+  private dragStartY: number = 0;
+  private dragStartHeight: number = 0;
+  private dragMoved: boolean = false;
 
   /**
    * Starts pointer-based vertical resizing of the mobile deliveries drawer.

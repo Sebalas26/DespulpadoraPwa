@@ -1305,4 +1305,24 @@ describe('DeliveryMapComponent', () => {
       'Liquidación completa'
     );
   });
+
+  it('should expand and resize mobile deliveries drawer in fullscreen mode via toggleDrawerExpandPreset without duplicate click handler', () => {
+    spyOnProperty(window, 'innerWidth', 'get').and.returnValue(390);
+    component.enterAllDeliveriesMode();
+    component.isMapFullscreen.set(true);
+    fixture.detectChanges();
+
+    expect(component.drawerHeightPreset()).toBe('half');
+    expect(component.drawerHeightStyle()).toBe('38vh');
+
+    const drawerEl: HTMLElement | null = fixture.nativeElement.querySelector('.deliveries-drawer');
+    expect(drawerEl).not.toBeNull();
+    expect(drawerEl?.style.getPropertyValue('--drawer-height')).toBe('38vh');
+
+    component.toggleDrawerExpandPreset();
+    fixture.detectChanges();
+    expect(component.drawerHeightPreset()).toBe('expanded');
+    expect(component.drawerHeightStyle()).toBe('76vh');
+    expect(drawerEl?.style.getPropertyValue('--drawer-height')).toBe('76vh');
+  });
 });

@@ -1232,4 +1232,70 @@ describe('OrdersComponent', () => {
     fixture.detectChanges();
     expect(compiled.querySelector('.dgl-shimmer-wrapper')).toBeNull();
   });
+
+  it('should apply status-specific color classes on top mobile pill, omit order-notes-chip in route cards, and render responsive product item rows in manual order modal', () => {
+    const todayStr: string = new Date().toISOString().substring(0, 10);
+    mockOrders.set([
+      {
+        orderId: 901,
+        orderNumber: 'ORD-0901',
+        branchId: 1,
+        clientId: 1,
+        clientName: 'Cliente Facturado',
+        clientPhone: '3101112233',
+        status: 'BILLED',
+        isBilled: true,
+        orderDate: todayStr,
+        createdAt: `${todayStr}T10:00:00.000Z`,
+        totalAmount: 250000,
+        isPaid: false,
+        notes: 'Pedido recibido por Nota de Voz',
+        items: [{ fruitId: 1, fruitName: 'Mora', grammage: 140, quantity: 10, unitPrice: 25000, subtotal: 250000 }]
+      },
+      {
+        orderId: 902,
+        orderNumber: 'ORD-0902',
+        branchId: 1,
+        clientId: 2,
+        clientName: 'Cliente Pendiente',
+        clientPhone: '3104445566',
+        status: 'PENDING',
+        orderDate: todayStr,
+        createdAt: `${todayStr}T11:00:00.000Z`,
+        totalAmount: 400000,
+        isPaid: false,
+        notes: 'Pedido recibido por WhatsApp',
+        items: [{ fruitId: 1, fruitName: 'Mora', grammage: 140, quantity: 16, unitPrice: 25000, subtotal: 400000 }]
+      }
+    ]);
+
+    component.activeSubTab.set('despachos');
+    fixture.detectChanges();
+
+    const compiled: HTMLElement = fixture.nativeElement as HTMLElement;
+    const statusPills: NodeListOf<HTMLElement> = compiled.querySelectorAll('.ledger-row-item .ms-status-pill');
+    expect(statusPills.length).toBe(2);
+    const billedPill: HTMLElement | undefined = Array.from(statusPills).find(el =>
+      el.textContent?.trim() === 'Facturado'
+    );
+    const pendingPill: HTMLElement | undefined = Array.from(statusPills).find(el =>
+      el.textContent?.trim() === 'Sin Gestionar'
+    );
+    expect(billedPill?.classList.contains('pill-billed')).toBeTrue();
+    expect(pendingPill?.classList.contains('pill-pending')).toBeTrue();
+
+    expect(compiled.querySelectorAll('.ledger-row-item .order-notes-chip').length).toBe(0);
+    expect(compiled.querySelectorAll('.ledger-cell.cell-status.cell-status-badge-only').length).toBe(2);
+
+    component.openEditOrderModal(mockOrders()[0]);
+    fixture.detectChanges();
+    const itemRow: HTMLElement | null = compiled.querySelector('.manual-order-item-row');
+    expect(itemRow).not.toBeNull();
+    expect(itemRow?.querySelector('.item-col-fruit')).not.toBeNull();
+    expect(itemRow?.querySelector('.item-col-grammage')).not.toBeNull();
+    expect(itemRow?.querySelector('.item-col-qty')).not.toBeNull();
+    expect(itemRow?.querySelector('.item-col-price')).not.toBeNull();
+    expect(itemRow?.querySelector('.item-col-subtotal')).not.toBeNull();
+    expect(itemRow?.querySelector('.item-col-remove')).not.toBeNull();
+  });
 });
