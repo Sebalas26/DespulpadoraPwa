@@ -892,4 +892,24 @@ describe('SettingsComponent', () => {
     expect(component.whatsAppGatewayStatus().error).toBe('GATEWAY_UNREACHABLE');
     expect(notificationSpy.warning).toHaveBeenCalled();
   });
+
+  it('should render only the initial Ver Vista Previa de Factura button and omit redundant DIAN and footer invoice preview buttons', () => {
+    component.activeTab.set('general');
+    component.mobileConfigModuleSelected.set(true);
+    fixture.detectChanges();
+
+    const compiled: HTMLElement = fixture.nativeElement as HTMLElement;
+    const allButtons: HTMLButtonElement[] = Array.from(compiled.querySelectorAll('button'));
+    const redundantDianBtn = allButtons.find(btn => btn.textContent?.trim() === 'Previsualizar Factura');
+    const redundantFooterBtn = allButtons.find(btn => btn.textContent?.trim() === 'Visualizar Modelo de Factura');
+    const initialPreviewBtns = allButtons.filter(btn => btn.textContent?.trim() === 'Ver Vista Previa de Factura');
+
+    expect(redundantDianBtn).toBeUndefined();
+    expect(redundantFooterBtn).toBeUndefined();
+    expect(initialPreviewBtns.length).toBeGreaterThan(0);
+
+    initialPreviewBtns[0].click();
+    fixture.detectChanges();
+    expect(component.showInvoicePreviewModal()).toBeTrue();
+  });
 });

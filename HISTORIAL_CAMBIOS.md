@@ -72,6 +72,53 @@
 
 ---
 
+## [2026-11-05] - 6 Ajustes de UI/UX Mobile: Paginación Unificada, Limpieza y Semántica de Cards en Rutas, Arrastre de Bottomsheet en Mapa Fullscreen, Ítems Responsivos en Modal de Pedido, Supresión de Etiqueta "ACCIONES" y Limpieza de Botones Redundantes de Previsualización de Factura
+
+### 💬 Prompt Original del Usuario
+> "ayudame a que en la pwa version mobile, se vea bien eñ diseño de la paginacion en todos los modulos
+> - en la version mobile, ayudame a que en las cards de las rutas se elimine el estado que tache en la X roja pero que ese color quede en el estado de arriba, en la foto se ve "facturado", dejale el estilo de arriba pero con el color de cada estado difretnete, asi mism elimina el cuadro que dice el mensaje de wpp quue fue recibido
+> - al agrandar el mapa , el bottomsheet no permite subirse desde el iconode --  en la version mobile
+> -en la version mobile , al modificar  pedido, los productos del pedido se ve cortado los campos , ajustalo para que se vea resposive en la mobile
+> - Revisa las card de la version mobile, que los que tienen ese texto de acciones en esa esquina izquierda de abajo, lo borres porque mo  tienen ningun fin
+> - Dejame solamente el boton inicial para previsualizar la factura, estos 2 botones que te señale eliminalos porque son rebundantes"
+
+### 🤖 Resumen Técnico para la IA
+- **1. Diseño y Contraste de Paginación en Todos los Módulos (`src/styles.scss`, `src/app/features/settings/settings.component.scss`)**:
+  - Se declaró `--primary: #1e5e3a;` en `:root` de `src/styles.scss` y se estandarizó globalmente el sistema de paginación (`.pagination-bar`, `.history-pagination-bar`, `.backups-pagination`, `.sc-pagination-bar` y sus botones `.page-btn`, `.history-page-btn`, `.backups-pagination-btn`, `.sc-page-btn`), asegurando botón `.active` en verde corporativo `#1e5e3a` con texto `#ffffff`, botones inactivos con fondo `#ffffff` y borde `#cbd5e1`, y diseño centrado tipo card en `@media (max-width: 768px)`.
+- **2. Cards de Rutas en Mobile (`src/app/features/orders/orders.component.html`, `src/app/features/orders/orders.component.scss`, `src/styles.scss`)**:
+  - Se asignaron clases semánticas de color por estado al pill superior `.ms-status-pill` (`.pill-billed`, `.pill-pending`, `.pill-picking`, `.pill-transit`, `.pill-delivered`).
+  - Se ocultó en mobile el badge de estado duplicado inferior (`.ledger-cell.cell-status.cell-status-badge-only`) reajustando el `grid-template-areas` a `"guide guide order"`, y se eliminó el chip `.order-notes-chip` de las cards de ruta.
+- **3. Bottomsheet del Mapa en Pantalla Completa en Mobile (`src/app/features/orders/delivery-map.component.ts`)**:
+  - Se vinculó `[style.--drawer-height]="drawerHeightStyle()"` y `[class.is-dragging]="isDraggingDrawer"` en `.deliveries-drawer`, se removió el `!important` que bloqueaba `height` en `.map-canvas-card.map-fullscreen-active .deliveries-drawer` y se eliminó el evento `(click)="toggleDrawerExpandPreset()"` duplicado en `.drawer-drag-handle-zone`.
+- **4. Modal de Crear / Modificar Pedido en Mobile (`src/app/features/orders/orders.component.html`, `src/app/features/orders/orders.component.scss`)**:
+  - Se añadieron las clases `.manual-order-client-grid`, `.manual-order-payment-grid`, `.manual-order-items-head` y `.manual-order-item-row` (`.item-col-fruit`, `.item-col-grammage`, `.item-col-qty`, `.item-col-price`, `.item-col-subtotal`, `.item-col-remove`), organizando cada producto en una tarjeta responsiva de 2 filas en `@media (max-width: 768px)`.
+- **5. Eliminación del Texto `"ACCIONES"` en Cards Mobile (`src/styles.scss`)**:
+  - En `@media (max-width: 768px)`, se suprimió el pseudo-elemento `::before` en `tbody td[data-label='Acciones']`, `'ACCIONES'`, `'Acción'`, `'Opciones'`, `td.actions-cell` y `td.sc-cell-options` y se alineó la barra inferior de acciones a la derecha (`justify-content: flex-end !important;`).
+- **6. Eliminación de Botones Redundantes de Previsualizar Factura (`src/app/features/settings/settings.component.html`)**:
+  - Se eliminaron los botones redundantes `"Previsualizar Factura"` (sección DIAN) y `"Visualizar Modelo de Factura"` (pie de formulario), conservando únicamente el botón inicial `"Ver Vista Previa de Factura"`.
+- **7. Informes de Agentes de Calidad (`AGENTS.md` §1)**:
+  - **Agente de Verificación de Impacto (`477ee3cc-69ba-4938-b923-725f8a099f95`)**: Auditó todas las hojas de estilo y componentes confirmando cero regresiones.
+  - **Agente Auditor Punto por Punto (`ca125707-701f-4be7-8bb9-7e0713c561be`)**: Emitió veredicto **APROBADO SIN DESVIACIONES (100% COMPLIANT)**.
+  - **Agente de Revisión Par (`faaca0b6-3a60-4aa2-b028-8ac513d04efb`)**: Emitió veredicto **APROBADO (100% CONFORME — 0 OBSERVACIONES)**.
+
+### 📦 Componentes Modificados
+- `src/styles.scss`
+- `src/app/features/settings/settings.component.scss`
+- `src/app/features/settings/settings.component.html`
+- `src/app/features/settings/settings.component.spec.ts`
+- `src/app/features/orders/orders.component.html`
+- `src/app/features/orders/orders.component.scss`
+- `src/app/features/orders/orders.component.spec.ts`
+- `src/app/features/orders/delivery-map.component.ts`
+- `src/app/features/orders/delivery-map.component.spec.ts`
+- `HISTORIAL_CAMBIOS.md`
+
+### ✅ Verificación, Build y Tests Unitarios
+- **Compilación de Producción (`npm run build`)**: Exitosa (`0 errores`).
+- **Suite Completa de Pruebas Unitarias (`ng test --watch=false`)**: **350 de 350 pruebas exitosas (`100% PASS`)**.
+
+---
+
 ## [2026-11-04] - Transcripción Automática de Notas de Voz de WhatsApp con OpenAI Whisper Large-V3 (Sin Requerir API Key) y Parser de Voz en Español (`whatsapp-gateway/server.js`)
 
 ### 💬 Prompt Original del Usuario
