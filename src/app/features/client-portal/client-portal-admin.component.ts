@@ -362,6 +362,18 @@ export interface EditableCardDraft {
               <div class="card-footer-actions">
                 <button
                   type="button"
+                  class="btn-delete-card-inline"
+                  (click)="deleteCardInline(fruit)"
+                  title="Eliminar esta card del Portal de Ventas"
+                >
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                    <polyline points="3 6 5 6 21 6"></polyline>
+                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                  </svg>
+                  <span>Eliminar Card</span>
+                </button>
+                <button
+                  type="button"
                   class="btn-save-card-inline"
                   (click)="notifyCardSaved(fruit)"
                 >
@@ -1100,9 +1112,35 @@ export interface EditableCardDraft {
     .card-footer-actions {
       margin-top: auto;
       padding-top: 4px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .btn-delete-card-inline {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      padding: 9px 12px;
+      background: #fef2f2;
+      color: #dc2626;
+      border: 1.5px solid #fecaca;
+      border-radius: 10px;
+      font-size: 0.78rem;
+      font-weight: 800;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      white-space: nowrap;
+
+      &:hover {
+        background: #fee2e2;
+        border-color: #fca5a5;
+      }
     }
 
     .btn-save-card-inline {
+      flex: 1;
       width: 100%;
       display: flex;
       align-items: center;
@@ -1913,7 +1951,7 @@ export class ClientPortalAdminComponent {
   }
 
   /**
-   * Deletes the currently edited card from the catalog.
+   * Deletes the currently edited card from the catalog via modal action.
    */
   deleteActiveCard(): void {
     try {
@@ -1921,8 +1959,25 @@ export class ClientPortalAdminComponent {
       if (!draft) {
         return;
       }
-      this.stateService.deleteFruitCatalogCard(draft.id);
+      this.stateService.deleteFruitCatalogCard(draft.id, draft.fruitId, draft.name);
       this.closeCardModal();
+    } catch {
+      return;
+    }
+  }
+
+  /**
+   * Deletes a fruit catalog card directly from the inline card editor in Web or Mobile view.
+   */
+  deleteCardInline(fruit: FruitConfig): void {
+    try {
+      if (!fruit) {
+        return;
+      }
+      this.stateService.deleteFruitCatalogCard(fruit.id, fruit.fruitId, fruit.name);
+      if (this.activeDraft()?.id === fruit.id) {
+        this.closeCardModal();
+      }
     } catch {
       return;
     }

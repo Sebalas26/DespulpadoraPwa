@@ -1404,7 +1404,9 @@ export class StateService {
           }
 
           const existingList = this.fruits();
-          const mappedFruits: FruitConfig[] = (res.fruits || []).map((apiFruit: FruitDto) => {
+          const mappedFruits: FruitConfig[] = (res.fruits || [])
+            .filter((apiFruit: FruitDto) => !this.isPortalFruitDeleted(apiFruit.fruitId, apiFruit.name))
+            .map((apiFruit: FruitDto) => {
             const existing = existingList.find(
               f => f.fruitId === apiFruit.fruitId || f.name.toLowerCase() === apiFruit.name.toLowerCase()
             );
@@ -2012,6 +2014,7 @@ export class StateService {
         category: 'PULPAS'
       };
 
+      this.unmarkPortalFruitDeleted(cleanName);
       this.fruits.update(list => [resolvedFruit, ...list]);
       if (weightKg > 0) {
         this.recordInventoryMovement({
@@ -2225,7 +2228,9 @@ export class StateService {
               return;
             }
             const existingList: FruitConfig[] = this.fruits();
-            const mappedFruits: FruitConfig[] = apiFruits.map((apiFruit: FruitDto) => {
+            const mappedFruits: FruitConfig[] = apiFruits
+              .filter((apiFruit: FruitDto) => !this.isPortalFruitDeleted(apiFruit.fruitId, apiFruit.name))
+              .map((apiFruit: FruitDto) => {
               const existing: FruitConfig | undefined = existingList.find(
                 (f: FruitConfig) =>
                   f.fruitId === apiFruit.fruitId ||
@@ -4056,6 +4061,69 @@ export class StateService {
   }
 
   /**
+   * Reads the persisted list of deleted portal catalog fruit identifiers and normalized names.
+   */
+  private readDeletedPortalFruits(): string[] {
+    try {
+      const raw = localStorage.getItem('despulpadora_deleted_catalog_fruits');
+      if (!raw) {
+        return [];
+      }
+      const parsed: unknown = JSON.parse(raw);
+      return Array.isArray(parsed) ? parsed.map(item => String(item).trim().toLowerCase()).filter(Boolean) : [];
+    } catch {
+      return [];
+    }
+  }
+
+  /**
+   * Persists the list of deleted portal catalog fruit identifiers and normalized names.
+   */
+  private saveDeletedPortalFruits(keys: string[]): void {
+    try {
+      const unique = Array.from(new Set(keys.map(k => String(k).trim().toLowerCase()).filter(Boolean)));
+      localStorage.setItem('despulpadora_deleted_catalog_fruits', JSON.stringify(unique));
+    } catch {
+      return;
+    }
+  }
+
+  /**
+   * Checks whether a fruit was explicitly deleted from the catalog by the user.
+   */
+  private isPortalFruitDeleted(fruitId?: number, fruitName?: string, id?: string): boolean {
+    const deleted = this.readDeletedPortalFruits();
+    if (deleted.length === 0) {
+      return false;
+    }
+    if (fruitId !== undefined && fruitId > 0 && deleted.includes(`id:${fruitId}`)) {
+      return true;
+    }
+    if (id && deleted.includes(`slug:${id.trim().toLowerCase()}`)) {
+      return true;
+    }
+    if (fruitName && deleted.includes(`name:${fruitName.trim().toLowerCase()}`)) {
+      return true;
+    }
+    return false;
+  }
+
+  /**
+   * Removes a fruit name from the deleted portal catalog registry when re-created by the user.
+   */
+  private unmarkPortalFruitDeleted(fruitName: string, fruitId?: number): void {
+    const deleted = this.readDeletedPortalFruits();
+    if (deleted.length === 0) {
+      return;
+    }
+    const cleanNameKey = `name:${fruitName.trim().toLowerCase()}`;
+    const cleanIdKey = fruitId !== undefined ? `id:${fruitId}` : '';
+    this.saveDeletedPortalFruits(
+      deleted.filter(entry => entry !== cleanNameKey && (!cleanIdKey || entry !== cleanIdKey))
+    );
+  }
+
+  /**
    * Updates a fruit catalog card in state, synchronizes variants, and persists to `PUT /api/fruits/{id}`.
    */
   updateFruitCatalogCard(idOrFruitId: string | number, updates: Partial<FruitConfig>, silent: boolean = false): void {
@@ -4064,7 +4132,11 @@ export class StateService {
 
       this.fruits.update(list =>
         list.map(f => {
-          if (f.id === idOrFruitId || f.fruitId === idOrFruitId) {
+          if (
+            f.id === idOrFruitId ||
+            f.fruitId === idOrFruitId ||
+            String(f.fruitId) === String(idOrFruitId)
+          ) {
             updatedFruit = {
               ...f,
               ...updates,
@@ -4148,7 +4220,7 @@ export class StateService {
           .replace(/[^a-z0-9]+/g, '_')
           .replace(/^_|_$/g, '') || `fruit_${nextFruitId}`;
 
-      const newCard: FruitConfig = {
+      let newCard: FruitConfig = {
         id: `${slug}_${nextFruitId}`,
         fruitId: nextFruitId,
         name: payload.name.trim(),
@@ -4175,6 +4247,7 @@ export class StateService {
         category: payload.category.trim()
       };
 
+      this.unmarkPortalFruitDeleted(newCard.name);
       this.fruits.update(list => [newCard, ...list]);
       this.saveAllToStorage();
       this.api
@@ -4192,6 +4265,20 @@ export class StateService {
           price1000g: newCard.prices.g1000
         })
         .subscribe({
+          next: (createdDto: FruitDto) => {
+            if (createdDto && createdDto.fruitId) {
+              this.unmarkPortalFruitDeleted(newCard.name, createdDto.fruitId);
+              newCard = { ...newCard, fruitId: createdDto.fruitId };
+              this.fruits.update(list =>
+                list.map(f =>
+                  f.id === newCard.id || f.name.toLowerCase() === newCard.name.toLowerCase()
+                    ? { ...f, fruitId: createdDto.fruitId }
+                    : f
+                )
+              );
+              this.saveAllToStorage();
+            }
+          },
           error: this.handleMutationError('No se pudo crear la tarjeta del catálogo en el servidor')
         });
       this.notification.success('Nueva Card Creada', `"${newCard.name}" ya está publicada en el Portal Clientes.`);
@@ -4204,29 +4291,67 @@ export class StateService {
   /**
    * Deletes a fruit catalog card locally and syncs to `DELETE /api/fruits/{id}`.
    */
-  deleteFruitCatalogCard(id: string): void {
+  deleteFruitCatalogCard(id: string, fruitId?: number, fruitName?: string): void {
     try {
-      const target = this.fruits().find(f => f.id === id);
-      this.fruits.update(list => list.filter(f => f.id !== id));
-      if (target) {
-        this.productVariants.update(variants =>
-          variants.filter(
-            v =>
-              !(
-                (target.fruitId && v.fruitId === target.fruitId) ||
-                v.fruitName.toLowerCase() === target.name.toLowerCase()
-              )
-          )
-        );
+      const normalizedName = (fruitName || '').trim().toLowerCase();
+      const target = this.fruits().find(
+        f =>
+          f.id === id ||
+          (fruitId !== undefined && fruitId > 0 && f.fruitId === fruitId) ||
+          String(f.fruitId) === String(id) ||
+          (normalizedName.length > 0 && f.name.trim().toLowerCase() === normalizedName)
+      );
+
+      const resolvedFruitId = target?.fruitId || fruitId;
+      const resolvedName = (target?.name || fruitName || '').trim();
+      const resolvedId = target?.id || id;
+
+      const deletedKeys = this.readDeletedPortalFruits();
+      if (resolvedId) {
+        deletedKeys.push(`slug:${resolvedId.toLowerCase()}`);
       }
+      if (resolvedFruitId && resolvedFruitId > 0) {
+        deletedKeys.push(`id:${resolvedFruitId}`);
+      }
+      if (resolvedName) {
+        deletedKeys.push(`name:${resolvedName.toLowerCase()}`);
+      }
+      this.saveDeletedPortalFruits(deletedKeys);
+
+      this.fruits.update(list =>
+        list.filter(
+          f =>
+            !(
+              f.id === resolvedId ||
+              f.id === id ||
+              (resolvedFruitId && f.fruitId === resolvedFruitId) ||
+              (resolvedName && f.name.trim().toLowerCase() === resolvedName.toLowerCase())
+            )
+        )
+      );
+
+      this.productVariants.update(variants =>
+        variants.filter(
+          v =>
+            !(
+              (resolvedFruitId && v.fruitId === resolvedFruitId) ||
+              (resolvedName && v.fruitName.trim().toLowerCase() === resolvedName.toLowerCase())
+            )
+        )
+      );
+
       this.saveAllToStorage();
-      if (target?.fruitId) {
-        this.api.deleteFruit(target.fruitId).subscribe({
-          error: this.handleMutationError('No se pudo eliminar la tarjeta del catálogo en el servidor')
+
+      if (resolvedFruitId && resolvedFruitId > 0) {
+        this.api.deleteFruit(resolvedFruitId).subscribe({
+          error: () => {
+            return;
+          }
         });
       }
-      if (target) {
-        this.notification.info('Card Eliminada', `"${target.name}" fue retirada del catálogo.`);
+
+      if (target || resolvedName) {
+        this.notification.info('Card Eliminada', `"${resolvedName || id}" fue retirada del catálogo.`);
       }
     } catch {
       return;
@@ -4270,6 +4395,7 @@ export class StateService {
    */
   resetPortalCatalogToDefault(): void {
     try {
+      localStorage.removeItem('despulpadora_deleted_catalog_fruits');
       this.fruits.set(INITIAL_FRUITS);
       this.productVariants.set(INITIAL_PRODUCT_VARIANTS);
       this.portalCmsConfig.set(DEFAULT_PORTAL_CMS_CONFIG);

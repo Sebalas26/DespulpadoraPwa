@@ -30,6 +30,14 @@ export class NotificationService {
     duration: number = 4000
   ): void {
     try {
+      const alreadyVisible = this.toasts().some(
+        (existing: ToastItem) =>
+          existing.type === type && existing.title === title && existing.message === message
+      );
+      if (alreadyVisible) {
+        return;
+      }
+
       const id = Math.random().toString(36).substring(2, 9);
       const toast: ToastItem = { id, type, title, message, duration };
 

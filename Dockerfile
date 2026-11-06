@@ -24,8 +24,8 @@ RUN npm run build
 # ==========================================
 FROM nginx:alpine AS production
 
-# Instalar Node.js, npm y git en Alpine para instalar y ejecutar WhatsAppQrGateway en segundo plano
-RUN apk add --no-cache nodejs npm git
+# Instalar Node.js, npm, git y ffmpeg en Alpine para instalar y ejecutar WhatsAppQrGateway y transcripción de voz
+RUN apk add --no-cache nodejs npm git ffmpeg
 
 WORKDIR /app
 

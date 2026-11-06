@@ -106,6 +106,18 @@ describe('ClientPortalAdminComponent', () => {
     expect(component.showCardModal()).toBeTrue();
     component.deleteActiveCard();
     expect(stateService.fruits().length).toBe(0);
+
+    const secondCard = stateService.createFruitCatalogCard({
+      name: 'Maracuya Especial',
+      scientificName: 'Passiflora edulis',
+      description: 'Pulpa natural',
+      category: 'PULPAS',
+      color: '#1e5e3a',
+      prices: { g140: 2000, g250: 3500, g500: 6500, g1000: 12000 }
+    });
+    expect(stateService.fruits().length).toBe(1);
+    component.deleteCardInline(secondCard);
+    expect(stateService.fruits().length).toBe(0);
   });
 
   it('should navigate to live portal on openLivePortal', () => {

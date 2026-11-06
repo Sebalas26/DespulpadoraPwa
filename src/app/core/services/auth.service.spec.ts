@@ -160,17 +160,21 @@ describe('AuthService', () => {
     });
   });
 
-  it('should clear session state and navigate to /login on logout', () => {
+  it('should clear session state and navigate to /login on logout without duplicating notifications on repeated calls', () => {
     const navigateSpy = spyOn(router, 'navigate');
     service.persistLoginSession(sampleLoginResponse, false);
 
     service.logout();
+    service.logout();
+    service.logout();
 
-    const logoutReq = httpMock.expectOne(`${environment.apiUrl}/auth/logout`);
-    logoutReq.flush({});
+    const logoutReqs = httpMock.match(`${environment.apiUrl}/auth/logout`);
+    expect(logoutReqs.length).toBe(1);
+    logoutReqs[0].flush({});
 
     expect(service.isAuthenticated()).toBeFalse();
     expect(service.user()).toBeNull();
+    expect(navigateSpy).toHaveBeenCalledTimes(1);
     expect(navigateSpy).toHaveBeenCalledWith(['/login']);
   });
 

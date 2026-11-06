@@ -39,6 +39,7 @@ export class AuthService {
   private readonly NAV_MODULES_KEY = `${environment.storagePrefix}nav_modules`;
   private readonly SESSION_KEY = `${environment.storagePrefix}user`;
   private readonly BRANCH_KEY = `${environment.storagePrefix}active_branch`;
+  private isLoggingOut: boolean = false;
 
   readonly accessToken = signal<string | null>(this.readStorageString(this.ACCESS_TOKEN_KEY));
   readonly refreshToken = signal<string | null>(this.readStorageString(this.REFRESH_TOKEN_KEY));
@@ -252,6 +253,7 @@ export class AuthService {
    */
   persistLoginSession(response: LoginResponseDto, notifyUser: boolean = false): AuthResponseDto {
     try {
+      this.isLoggingOut = false;
       const rawRecord = response as unknown as Record<string, unknown>;
       const resolvedUser: AuthenticatedUserDto = response.user ?? {
         id: Number(rawRecord['userId'] ?? 0),
@@ -567,11 +569,25 @@ export class AuthService {
   }
 
   /**
-   * Clears all authentication state and redirects the user to `/login`.
+   * Clears all authentication state and redirects the user to `/login`, ensuring single-shot notification delivery.
    */
   logout(): void {
     try {
       const currentRefresh = this.refreshToken();
+      const hadActiveSession = Boolean(
+        this.accessToken() ||
+          currentRefresh ||
+          this.currentUser() ||
+          this.user() ||
+          this.readStorageString(this.ACCESS_TOKEN_KEY)
+      );
+
+      if (this.isLoggingOut) {
+        return;
+      }
+
+      this.isLoggingOut = true;
+
       if (currentRefresh) {
         this.http
           .post(`${environment.apiUrl}/auth/logout`, { refreshToken: currentRefresh })
@@ -595,9 +611,15 @@ export class AuthService {
       localStorage.removeItem(this.SESSION_KEY);
       localStorage.removeItem(this.BRANCH_KEY);
 
-      this.notification.info('Sesión finalizada', 'Ha cerrado sesión correctamente');
+      if (hadActiveSession) {
+        this.notification.info('Sesión finalizada', 'Ha cerrado sesión correctamente');
+      }
       this.router.navigate(['/login']);
+      setTimeout(() => {
+        this.isLoggingOut = false;
+      }, 300);
     } catch {
+      this.isLoggingOut = false;
       this.router.navigate(['/login']);
     }
   }

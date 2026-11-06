@@ -1,5 +1,77 @@
 # 📜 Historial de Cambios (`DespulpadoraPwa` - Angular 20)
 
+## [2026-11-06] - Cierre de Sesión Único sin Alertas Repetidas, Pestaña Inicial de Frutas y Textos Limpios en Inventario, y Eliminación de Cards en Edición del Portal de Ventas (Web y Mobile)
+
+### 💬 Prompt Original del Usuario
+> "Ayudame ahora con estas cosas para la pwa en version web y mobile
+> - Estoy viendo que cunado un usuario tiene la sesion activa y le cierra la sesion, se ven varias alerta de cierre, evita eso proque se ve feo
+> - Valida que al ingresar al modulo de inventario, me deje siempre en el de frutas, adicional elimina el texto ivenntario y stock de los modulos de frutas y pulpas
+> - Ayudame a validar que en el portal de ventas, las cards que se creen permitan eliminarsen cuando las edite"
+
+### 🤖 Resumen Técnico para la IA
+- **1. Cierre de Sesión Único sin Alertas Duplicadas (`auth.service.ts`, `auth.interceptor.ts`, `notification.service.ts`)**:
+  - En `AuthService.logout()`, se agregó la guarda reentrante `private isLoggingOut: boolean = false` y la validación `hadActiveSession` para garantizar que ante múltiples respuestas `401` concurrentes (como las 11 peticiones de `StateService.refreshAll()`) el cierre de sesión, la llamada `POST /api/auth/logout` y la alerta `'Sesión finalizada / Ha cerrado sesión correctamente'` se ejecuten **una única vez**.
+  - En `authInterceptor`, se evitó volver a invocar `authService.logout()` cuando la sesión ya fue limpiada por `refreshSession()` o por otra petición concurrente.
+  - En `NotificationService.show()`, se agregó deduplicación de notificaciones activas con el mismo `type`, `title` y `message`.
+- **2. Módulo de Inventario: Pestaña Inicial en Frutas y Eliminación de Palabras `"Inventario"` y `"Stock"` (`settings.component.ts`, `settings.component.html`, `kds-inventory.component.ts`)**:
+  - En `SettingsComponent`, se inicializó `inventorySubTab = signal<'variants' | 'fruits'>('fruits')` y se ajustó la suscripción a `queryParams` para que al navegar a `/settings?tab=inventory` desde Web o Mobile posicione siempre al usuario en la pestaña de **Frutas (`'fruits'`)**.
+  - En `settings.component.html` y `kds-inventory.component.ts`, se actualizaron los selectores y encabezados de los módulos de Frutas y Pulpas a **`"Fruta Disponible"`** y **`"Pulpas Hechas"`**, eliminando los prefijos `"Inventario · "` y `"Stock · "` para una visualización limpia en Web y Mobile.
+- **3. Eliminación de Cards Creadas al Editarlas en el Portal de Ventas (`client-portal-admin.component.ts`, `state.service.ts`)**:
+  - En `ClientPortalAdminComponent`, se agregó el botón **`Eliminar Card`** (`.btn-delete-card-inline`) directamente en el pie de edición inline (`.card-footer-actions`) junto a `Guardar Card` para Web y Mobile, además del botón en el modal de edición completa (`deleteActiveCard()`).
+  - En `StateService.createFruitCatalogCard()`, se sincronizó el `fruitId` real devuelto por `POST /api/fruits` (`createdDto.fruitId`).
+  - En `StateService.deleteFruitCatalogCard()`, se implementó búsqueda resiliente por `id`, `fruitId` o nombre normalizado y persistencia en `despulpadora_deleted_catalog_fruits` para que ninguna card eliminada vuelva a aparecer tras recargar o sincronizar con el backend.
+- **4. Informes de Agentes de Calidad (`AGENTS.md` §1)**:
+  - **Agente de Verificación de Impacto (`96bece9b-c824-4fc1-8e54-2c93a8fbf63c`)**: Identificó las causas raíz en `AuthService`/`authInterceptor`/`NotificationService`, `SettingsComponent` y `ClientPortalAdminComponent`/`StateService`.
+  - **Agente Auditor Punto por Punto (`fef76d34-185b-4061-aa24-dd0c4106788e`)**: Emitió veredicto **CUMPLIDO AL 100% (0 desviaciones detectadas)**.
+  - **Agente de Revisión Par (`b7160037-e660-4dad-92ed-b7315bd1946c`)**: Emitió veredicto **APROBADO AL 100% (0 anomalías, 0 regresiones)**.
+
+### 📦 Componentes Modificados
+- `src/app/core/services/auth.service.ts` & `src/app/core/services/auth.service.spec.ts`
+- `src/app/core/interceptors/auth.interceptor.ts`
+- `src/app/core/services/notification.service.ts` & `src/app/core/services/notification.service.spec.ts`
+- `src/app/features/settings/settings.component.ts`, `src/app/features/settings/settings.component.html` & `src/app/features/settings/settings.component.spec.ts`
+- `src/app/features/inventory/kds/kds-inventory.component.ts`
+- `src/app/core/services/state.service.ts`
+- `src/app/features/client-portal/client-portal-admin.component.ts` & `src/app/features/client-portal/client-portal-admin.component.spec.ts`
+- `HISTORIAL_CAMBIOS.md`
+
+### ✅ Verificación, Build y Tests Unitarios
+- **Compilación de Producción (`npm run build`)**: Exitosa (`0 errores`).
+- **Suite Completa de Pruebas Unitarias (`npx ng test --watch=false --browsers=ChromeHeadless`)**: **348 de 348 pruebas exitosas (`100% PASS`)**.
+
+---
+
+## [2026-11-06] - Transcripción de Voz (`ffmpeg` + Google Speech V2 `es-CO`) y Extracción Posicional Multi-Fruta en Notas de Voz de WhatsApp (`Dockerfile`, `whatsapp-gateway/server.js`)
+
+### 💬 Prompt Original del Usuario
+> "Estoy viendo que si desde el audio le digo que me envíe mas de una pulpa ejemplo, dame 50 de mora y 30 de maracuya, no me lo toma y dice 'recibimos tu nota de voz porfabor indicanos la cantodad'"
+
+### 🤖 Resumen Técnico para la IA
+- **1. Conversión Rápida `.ogg` Opus a PCM 16kHz Mono con `ffmpeg` y Google Speech V2 (`es-CO`) (`Dockerfile`, `whatsapp-gateway/server.js`)**:
+  - Se agregó `ffmpeg` en la imagen de producción Alpine (`RUN apk add --no-cache nodejs npm git ffmpeg` en `Dockerfile`).
+  - Se implementó `transcribeAudioWithGoogleSpeechV2(audioBuffer)` como motor primario en `transcribeAudioWithWhisperFallback()`, convirtiendo en memoria el audio `.ogg` Opus de WhatsApp a `s16le` 16kHz mono y transcribiéndolo en ~1.3s contra Google Speech Recognition V2 (`lang=es-CO` / `lang=es-419`), manteniendo los endpoints Gradio Whisper como respaldo secundario.
+  - En `analyzeWithGemini()`, se agregó fast-fail (`break`) ante códigos HTTP `400`, `401` o `403` para no retrasar el fallback cuando no se cuenta con una clave válida de AI Studio.
+- **2. Extracción Posicional Multi-Fruta y Normalización Fonética (`whatsapp-gateway/server.js`)**:
+  - Se creó `normalizeVoiceOrderTranscript()` para corregir fusiones fonéticas de dictado por voz (`"demora"` $\rightarrow$ `"de mora"`, `"demaracuya"` $\rightarrow$ `"de maracuya"`, números pegados a palabras como `"50de"` $\rightarrow$ `"50 de"`, y plurales de frutas del catálogo como `"moras"` $\rightarrow$ `"mora"`, `"maracuyas"` $\rightarrow$ `"maracuya"`).
+  - Se rediseñó `parseOrderItemsLocally()` con escaneo posicional de todas las ocurrencias de frutas en el mensaje (`occurrences` ordenadas por posición `start`), permitiendo extraer 2, 3 o más frutas en una misma nota de voz o texto (con o sin conjunción `"y"` o comas, p. ej. *"dame 50 de mora y 30 de maracuyá"*, *"50 demora de 140 g y 30 de maracuyá de 250 g"*, *"dame 50 de mora 30 de maracuyá"*).
+  - Se actualizaron `parseSpanishQuantityTokens(textSegment, preferLast)` para tomar la cantidad inmediatamente anterior a cada fruta (`preferLast = true`), `resolveDefaultFruitGrammage(fruitObj)` para seleccionar automáticamente la presentación con precio activo de la fruta cuando el audio no menciona gramaje, y `resolveFruitPrice(fruitObj, grammage, fallbackUnitPrice)` con respaldo entre presentaciones activas e historial de pedidos.
+- **3. Informes de Agentes de Calidad (`AGENTS.md` §1)**:
+  - **Agente de Verificación de Impacto (`6bae9d2b-9cfe-4009-ac5a-396bea17c4c3`)**: Diagnosticó el bloqueo ZeroGPU de HuggingFace y validó la transcripción `es-CO` con `ffmpeg` + extracción multi-fruta.
+  - **Agente Auditor Punto por Punto (`0b5f6133-0845-4b1e-8bfe-17baf28ec4ab`)**: Emitió veredicto **APROBADO SIN OBSERVACIONES (5/5 Puntos Verificados)**.
+  - **Agente de Revisión Par (`a31ffc56-996a-4e5a-833b-55134d2fc8ad`)**: Emitió veredicto **APROBADO SIN OBSERVACIONES (0 Anomalías / 0 Regresiones)**.
+
+### 📦 Componentes Modificados
+- `Dockerfile`
+- `whatsapp-gateway/server.js`
+- `HISTORIAL_CAMBIOS.md`
+
+### ✅ Verificación, Build y Tests Unitarios
+- **Verificación de Sintaxis (`node --check whatsapp-gateway/server.js`)**: Exitosa (`0 errores`).
+- **Compilación de Producción (`npm run build`)**: Exitosa (`0 errores`).
+- **Suite Completa de Pruebas Unitarias (`npx ng test --watch=false --browsers=ChromeHeadless`)**: **347 de 347 pruebas exitosas (`100% PASS`)**.
+
+---
+
 ## [2026-11-04] - Transcripción Automática de Notas de Voz de WhatsApp con OpenAI Whisper Large-V3 (Sin Requerir API Key) y Parser de Voz en Español (`whatsapp-gateway/server.js`)
 
 ### 💬 Prompt Original del Usuario

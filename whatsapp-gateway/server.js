@@ -4,6 +4,7 @@ const QRCode = require('qrcode');
 const pino = require('pino');
 const fs = require('fs');
 const path = require('path');
+const { spawnSync } = require('child_process');
 
 let makeWASocket = null;
 let useMultiFileAuthState = null;
@@ -293,7 +294,23 @@ function findCustomerContext(rawPhone, pushName) {
 }
 
 /**
- * Resolves the current unit price of a fruit and grammage from the synchronized catalog.
+ * Resolves the default active grammage presentation for a fruit based on its configured catalog prices.
+ */
+function resolveDefaultFruitGrammage(fruitObj) {
+  if (!fruitObj || !fruitObj.prices) {
+    return 500;
+  }
+  const preferredOrder = [500, 250, 140, 1000];
+  for (const gram of preferredOrder) {
+    if (Number(fruitObj.prices[`g${gram}`] || 0) > 0) {
+      return gram;
+    }
+  }
+  return 500;
+}
+
+/**
+ * Resolves the current unit price of a fruit and grammage from the synchronized catalog or historical orders.
  */
 function resolveFruitPrice(fruitObj, grammage, fallbackUnitPrice = 0) {
   if (!fruitObj || !fruitObj.prices) {
@@ -304,13 +321,39 @@ function resolveFruitPrice(fruitObj, grammage, fallbackUnitPrice = 0) {
   if (price > 0) {
     return price;
   }
-  return Number(fallbackUnitPrice || fruitObj.prices.g250 || fruitObj.prices.g500 || 0);
+  const catalogFallback = Number(
+    fallbackUnitPrice ||
+      fruitObj.prices.g250 ||
+      fruitObj.prices.g500 ||
+      fruitObj.prices.g140 ||
+      fruitObj.prices.g1000 ||
+      0
+  );
+  if (catalogFallback > 0) {
+    return catalogFallback;
+  }
+  const normFruitName = normalizeText(fruitObj.name);
+  for (const order of contextStore.orders) {
+    if (!order || !Array.isArray(order.items)) {
+      continue;
+    }
+    for (const item of order.items) {
+      if (
+        item &&
+        normalizeText(item.fruitName) === normFruitName &&
+        Number(item.unitPrice || 0) > 0
+      ) {
+        return Number(item.unitPrice);
+      }
+    }
+  }
+  return 0;
 }
 
 /**
- * Converts Spanish number words into numeric quantities, ignoring presentation grammage numbers.
+ * Converts Spanish number words or digits into numeric quantities, ignoring presentation grammage numbers.
  */
-function parseSpanishQuantityTokens(textSegment) {
+function parseSpanishQuantityTokens(textSegment, preferLast = false) {
   const wordMap = {
     un: 1,
     una: 1,
@@ -330,43 +373,85 @@ function parseSpanishQuantityTokens(textSegment) {
     trece: 13,
     catorce: 14,
     quince: 15,
+    dieciseis: 16,
+    diecisiete: 17,
+    dieciocho: 18,
+    diecinueve: 19,
     veinte: 20,
     veinticinco: 25,
     treinta: 30,
+    treintaicinco: 35,
     cuarenta: 40,
+    cuarentaicinco: 45,
     cincuenta: 50,
     sesenta: 60,
     setenta: 70,
     ochenta: 80,
     noventa: 90,
-    cien: 100
+    cien: 100,
+    ciento: 100
   };
   const strippedGrammage = String(textSegment || '').replace(
     /\b(140|250|500|1000)\s*(g|gr|gramos|kilo|kilos|kg)?\b/gi,
     ' '
   );
-  const digitMatch = strippedGrammage.match(/\b(\d{1,3})\b/);
-  if (digitMatch) {
-    const val = parseInt(digitMatch[1], 10);
-    if (val > 0 && val <= 500) {
-      return val;
-    }
-  }
   const tokens = normalizeText(strippedGrammage)
-    .replace(/[.,;!?¡¿]/g, ' ')
-    .split(/\s+/);
-  for (const token of tokens) {
+    .replace(/[.,;!?¡¿:()"-]/g, ' ')
+    .split(/\s+/)
+    .filter(Boolean);
+
+  const matchedQuantities = [];
+  for (let i = 0; i < tokens.length; i++) {
+    const token = tokens[i];
+    if (/^\d{1,3}$/.test(token)) {
+      const val = parseInt(token, 10);
+      if (val > 0 && val <= 500) {
+        matchedQuantities.push(val);
+      }
+      continue;
+    }
+    if (
+      wordMap[token] &&
+      tokens[i + 1] === 'y' &&
+      tokens[i + 2] &&
+      wordMap[tokens[i + 2]] &&
+      wordMap[token] >= 20 &&
+      wordMap[tokens[i + 2]] < 10
+    ) {
+      matchedQuantities.push(wordMap[token] + wordMap[tokens[i + 2]]);
+      i += 2;
+      continue;
+    }
     if (wordMap[token]) {
-      return wordMap[token];
+      matchedQuantities.push(wordMap[token]);
     }
   }
-  return 1;
+
+  if (matchedQuantities.length > 0) {
+    return preferLast
+      ? matchedQuantities[matchedQuantities.length - 1]
+      : matchedQuantities[0];
+  }
+  return null;
+}
+
+/**
+ * Checks whether a text segment explicitly specifies a presentation grammage (140, 250, 500, 1000).
+ */
+function hasExplicitGrammageInSegment(textSegment) {
+  const norm = normalizeText(textSegment).replace(/[.,;!?¡¿]/g, ' ');
+  return (
+    /\b(1000|1000g|1000gr|mil\s*gramos|un\s*kilo|1\s*kg|1\s*kilo|kilo|kilos|kl)\b/.test(norm) ||
+    /\b(250|250g|250gr|doscientos\s*cincuenta|media\s*libra)\b/.test(norm) ||
+    /\b(500|500g|500gr|quinientos\s*gramos|quinientos|medio\s*kilo|libra|libras|lb)\b/.test(norm) ||
+    /\b(140|140g|140gr|ciento\s*cuarenta|personal|pequena|pequeno)\b/.test(norm)
+  );
 }
 
 /**
  * Detects the requested presentation grammage (140, 250, 500, 1000) in a phrase.
  */
-function parseGrammageFromSegment(textSegment) {
+function parseGrammageFromSegment(textSegment, defaultGrammage = 500) {
   const norm = normalizeText(textSegment).replace(/[.,;!?¡¿]/g, ' ');
   if (/\b(1000|1000g|1000gr|mil\s*gramos|un\s*kilo|1\s*kg|1\s*kilo|kilo|kilos|kl)\b/.test(norm)) {
     return 1000;
@@ -380,14 +465,39 @@ function parseGrammageFromSegment(textSegment) {
   if (/\b(140|140g|140gr|ciento\s*cuarenta|personal|pequena|pequeno)\b/.test(norm)) {
     return 140;
   }
-  return 500;
+  return defaultGrammage;
 }
 
 /**
- * Parses natural-language Colombian Spanish order text against the live fruit catalog.
+ * Normalizes common Spanish voice-recognition phonetic variants for fruit names and quantities.
+ */
+function normalizeVoiceOrderTranscript(rawText) {
+  let norm = normalizeText(rawText)
+    .replace(/(\d+)([a-z]+)/g, '$1 $2')
+    .replace(/\bdemora\b/g, 'de mora')
+    .replace(/\bdemoras\b/g, 'de mora')
+    .replace(/\bdemaracuya\b/g, 'de maracuya')
+    .replace(/\bdeguanabana\b/g, 'de guanabana')
+    .replace(/\bdelulo\b/g, 'de lulo')
+    .replace(/\bdemango\b/g, 'de mango')
+    .replace(/\bdefresa\b/g, 'de fresa');
+
+  for (const fruit of contextStore.fruits) {
+    const normFruit = normalizeText(fruit && fruit.name);
+    if (!normFruit) {
+      continue;
+    }
+    const pluralRegex = new RegExp(`\\b${normFruit}s\\b`, 'g');
+    norm = norm.replace(pluralRegex, normFruit);
+  }
+  return norm;
+}
+
+/**
+ * Parses natural-language Colombian Spanish order text or voice transcript against the live fruit catalog, supporting single and multi-fruit requests.
  */
 function parseOrderItemsLocally(rawText) {
-  const normFull = normalizeText(rawText);
+  const normFull = normalizeVoiceOrderTranscript(rawText);
   if (!normFull || contextStore.fruits.length === 0) {
     return [];
   }
@@ -396,41 +506,95 @@ function parseOrderItemsLocally(rawText) {
     .filter((f) => f && f.name)
     .sort((a, b) => b.name.length - a.name.length);
 
-  const clauses = normFull
-    .split(/(?:,|;|\+|\by\b|\be\b|\n)+/)
-    .map((s) => s.trim())
-    .filter(Boolean);
+  const occurrences = [];
+  for (const fruit of sortedFruits) {
+    const normFruit = normalizeText(fruit.name);
+    if (!normFruit) {
+      continue;
+    }
+    const escaped = normFruit.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const regex = new RegExp(`\\b${escaped}\\b`, 'g');
+    let match = regex.exec(normFull);
+    while (match !== null) {
+      const start = match.index;
+      const end = start + normFruit.length;
+      const overlapsExisting = occurrences.some(
+        (occ) => start < occ.end && end > occ.start
+      );
+      if (!overlapsExisting) {
+        occurrences.push({
+          fruit,
+          normFruit,
+          start,
+          end
+        });
+      }
+      match = regex.exec(normFull);
+    }
+  }
+
+  if (occurrences.length === 0) {
+    return [];
+  }
+
+  occurrences.sort((a, b) => a.start - b.start);
+
+  const sharedExplicitGrammage = hasExplicitGrammageInSegment(normFull)
+    ? parseGrammageFromSegment(normFull, 500)
+    : null;
 
   const extractedMap = new Map();
 
-  for (const clause of clauses) {
-    for (const fruit of sortedFruits) {
-      const normFruit = normalizeText(fruit.name);
-      if (!normFruit) {
-        continue;
-      }
-      if (clause.includes(normFruit)) {
-        const beforeFruit = clause.split(normFruit)[0] || clause;
-        const quantity = parseSpanishQuantityTokens(beforeFruit || clause);
-        const grammage = parseGrammageFromSegment(clause);
-        const unitPrice = resolveFruitPrice(fruit, grammage, 0);
-        const mapKey = `${fruit.name.toLowerCase()}_${grammage}`;
-        const existing = extractedMap.get(mapKey);
-        if (existing) {
-          existing.quantity += quantity;
-          existing.subtotal = existing.quantity * existing.unitPrice;
-        } else {
-          extractedMap.set(mapKey, {
-            fruitId: Number(fruit.fruitId || 0),
-            fruitName: fruit.name,
-            grammage,
-            quantity,
-            unitPrice,
-            subtotal: quantity * unitPrice
-          });
-        }
-        break;
-      }
+  for (let i = 0; i < occurrences.length; i++) {
+    const current = occurrences[i];
+    const prevEnd = i === 0 ? 0 : occurrences[i - 1].end;
+    const nextStart = i + 1 < occurrences.length ? occurrences[i + 1].start : normFull.length;
+
+    const rawBeforeSegment = normFull.slice(prevEnd, current.start);
+    const rawAfterSegment = normFull.slice(current.end, nextStart);
+
+    const beforeClauses = rawBeforeSegment.split(/(?:,|;|\+|\by\b|\be\b|\n)+/);
+    const immediateBefore = beforeClauses[beforeClauses.length - 1] || rawBeforeSegment;
+
+    const afterClauses = rawAfterSegment.split(/(?:,|;|\+|\by\b|\be\b|\n)+/);
+    const immediateAfter = afterClauses[0] || '';
+
+    let quantity = parseSpanishQuantityTokens(immediateBefore, true);
+    if (quantity === null) {
+      quantity = parseSpanishQuantityTokens(rawBeforeSegment, true);
+    }
+    if (quantity === null) {
+      quantity = parseSpanishQuantityTokens(immediateAfter, false);
+    }
+    if (quantity === null) {
+      quantity = 1;
+    }
+
+    const localClause = `${immediateBefore} ${current.normFruit} ${immediateAfter}`;
+    const defaultFruitGrammage = resolveDefaultFruitGrammage(current.fruit);
+    let grammage = defaultFruitGrammage;
+
+    if (hasExplicitGrammageInSegment(localClause)) {
+      grammage = parseGrammageFromSegment(localClause, defaultFruitGrammage);
+    } else if (sharedExplicitGrammage !== null) {
+      grammage = sharedExplicitGrammage;
+    }
+
+    const unitPrice = resolveFruitPrice(current.fruit, grammage, 0);
+    const mapKey = `${current.fruit.name.toLowerCase()}_${grammage}`;
+    const existing = extractedMap.get(mapKey);
+    if (existing) {
+      existing.quantity += quantity;
+      existing.subtotal = existing.quantity * existing.unitPrice;
+    } else {
+      extractedMap.set(mapKey, {
+        fruitId: Number(current.fruit.fruitId || 0),
+        fruitName: current.fruit.name,
+        grammage,
+        quantity,
+        unitPrice,
+        subtotal: quantity * unitPrice
+      });
     }
   }
 
@@ -609,6 +773,13 @@ async function analyzeWithGemini(options) {
           });
 
           if (!response.ok) {
+            if (
+              response.status === 400 ||
+              response.status === 401 ||
+              response.status === 403
+            ) {
+              break;
+            }
             continue;
           }
 
@@ -645,7 +816,129 @@ async function analyzeWithGemini(options) {
 }
 
 /**
- * Transcribes a WhatsApp voice note (base64 OGG/Opus) using OpenAI Whisper Large-V3 Gradio endpoints without requiring an API key.
+ * Resolves the ffmpeg executable path, preferring system ffmpeg in Alpine/Linux and falling back to ffmpeg-static if available.
+ */
+function resolveFfmpegExecutable() {
+  const probe = spawnSync('ffmpeg', ['-version'], { timeout: 2500 });
+  if (!probe.error && probe.status === 0) {
+    return 'ffmpeg';
+  }
+  try {
+    const staticPath = require('ffmpeg-static');
+    if (staticPath) {
+      return staticPath;
+    }
+  } catch (staticErr) {
+    void staticErr;
+  }
+  return 'ffmpeg';
+}
+
+/**
+ * Transcribes a WhatsApp voice note buffer using ffmpeg PCM conversion and Google Speech Recognition V2 (es-CO).
+ */
+async function transcribeAudioWithGoogleSpeechV2(audioBuffer) {
+  try {
+    const ffmpegBin = resolveFfmpegExecutable();
+    const ffResult = spawnSync(
+      ffmpegBin,
+      [
+        '-hide_banner',
+        '-loglevel',
+        'error',
+        '-i',
+        'pipe:0',
+        '-f',
+        's16le',
+        '-acodec',
+        'pcm_s16le',
+        '-ac',
+        '1',
+        '-ar',
+        '16000',
+        'pipe:1'
+      ],
+      {
+        input: audioBuffer,
+        maxBuffer: 15 * 1024 * 1024,
+        timeout: 8000
+      }
+    );
+
+    if (ffResult.error || ffResult.status !== 0 || !ffResult.stdout || ffResult.stdout.length === 0) {
+      return null;
+    }
+
+    const speechEndpoints = [
+      'https://www.google.com/speech-api/v2/recognize?output=json&lang=es-CO&key=AIzaSyBOti4mM-6x9WDnZIjIeyEU21OpBXqWBgw',
+      'https://www.google.com/speech-api/v2/recognize?output=json&lang=es-419&key=AIzaSyBOti4mM-6x9WDnZIjIeyEU21OpBXqWBgw'
+    ];
+
+    for (const url of speechEndpoints) {
+      try {
+        const ctrl = new AbortController();
+        const timer = setTimeout(() => ctrl.abort(), 8000);
+        const res = await fetch(url, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'audio/l16; rate=16000'
+          },
+          body: ffResult.stdout,
+          signal: ctrl.signal
+        });
+        clearTimeout(timer);
+
+        if (!res.ok) {
+          continue;
+        }
+
+        const rawText = await res.text();
+        const lines = rawText
+          .split('\n')
+          .map((l) => l.trim())
+          .filter(Boolean);
+
+        const candidateTranscripts = [];
+        for (const line of lines) {
+          try {
+            const parsed = JSON.parse(line);
+            const results = Array.isArray(parsed && parsed.result) ? parsed.result : [];
+            for (const entry of results) {
+              const alternatives = Array.isArray(entry && entry.alternative) ? entry.alternative : [];
+              for (const alt of alternatives) {
+                if (alt && typeof alt.transcript === 'string' && alt.transcript.trim()) {
+                  candidateTranscripts.push(alt.transcript.trim());
+                }
+              }
+            }
+          } catch (lineErr) {
+            void lineErr;
+          }
+        }
+
+        if (candidateTranscripts.length > 0) {
+          for (const candidate of candidateTranscripts) {
+            const items = parseOrderItemsLocally(candidate);
+            if (items.length > 0) {
+              return candidate;
+            }
+          }
+          return candidateTranscripts[0];
+        }
+      } catch (reqErr) {
+        void reqErr;
+      }
+    }
+
+    return null;
+  } catch (err) {
+    void err;
+    return null;
+  }
+}
+
+/**
+ * Transcribes a WhatsApp voice note (base64 OGG/Opus) using Google Speech V2 (es-CO) as primary engine and Whisper Gradio endpoints as fallback.
  */
 async function transcribeAudioWithWhisperFallback(audioBase64, mimeType = 'audio/ogg') {
   if (!audioBase64 || audioBase64 === 'AUDIO_DOWNLOAD_FAILED') {
@@ -655,6 +948,11 @@ async function transcribeAudioWithWhisperFallback(audioBase64, mimeType = 'audio
   const audioBuffer = Buffer.from(audioBase64, 'base64');
   if (!audioBuffer || audioBuffer.length === 0) {
     return null;
+  }
+
+  const primaryTranscript = await transcribeAudioWithGoogleSpeechV2(audioBuffer);
+  if (primaryTranscript) {
+    return primaryTranscript;
   }
 
   const endpoints = [

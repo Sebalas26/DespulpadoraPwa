@@ -295,7 +295,7 @@ interface AudioContextWindow extends Window {
                   </svg>
                 </span>
                 <div>
-                  <h2 class="sec-title">Inventario de Fruta Disponible en Planta</h2>
+                  <h2 class="sec-title">Fruta Disponible en Planta</h2>
                   <p class="sec-subtitle">Alimentación directa de entradas de cosecha y salidas a despulpadora (Kg)</p>
                 </div>
               </div>
@@ -373,7 +373,7 @@ interface AudioContextWindow extends Window {
                   </svg>
                 </span>
                 <div>
-                  <h2 class="sec-title">Stock de Pulpas Hechas en Inventario</h2>
+                  <h2 class="sec-title">Pulpas Hechas</h2>
                   <p class="sec-subtitle">Alimentación directa de producción sellada y salidas de despacho (Uds)</p>
                 </div>
               </div>

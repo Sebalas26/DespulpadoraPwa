@@ -47,4 +47,12 @@ describe('NotificationService', () => {
     service.clear();
     expect(service.toasts().length).toBe(0);
   });
+
+  it('should deduplicate identical active toast notifications', () => {
+    service.info('Sesión finalizada', 'Ha cerrado sesión correctamente');
+    service.info('Sesión finalizada', 'Ha cerrado sesión correctamente');
+    service.info('Sesión finalizada', 'Ha cerrado sesión correctamente');
+
+    expect(service.toasts().length).toBe(1);
+  });
 });

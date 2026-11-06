@@ -123,7 +123,7 @@ export class SettingsComponent {
   readonly whatsAppSimulatorLastReply = signal<string>('');
 
   readonly activeTab = signal<'general' | 'inventory' | 'users' | 'roles' | 'catalog' | 'parameters'>('general');
-  readonly inventorySubTab = signal<'variants' | 'fruits'>('variants');
+  readonly inventorySubTab = signal<'variants' | 'fruits'>('fruits');
   readonly parametersSubTab = signal<'paymentMethods' | 'grammages' | 'categories' | 'shifts'>('paymentMethods');
   readonly mobileConfigModuleSelected = signal<boolean>(false);
 
@@ -590,7 +590,7 @@ export class SettingsComponent {
         if (tab === 'inventory' || tab === 'cava' || tab === 'variants' || tab === 'fruits' || tab === 'stock') {
           this.activeTab.set('inventory');
           this.mobileConfigModuleSelected.set(false);
-          if (tab === 'variants' || tab === 'cava' || tab === 'stock' || tab === 'inventory') {
+          if (tab === 'variants' || tab === 'cava' || tab === 'stock') {
             this.inventorySubTab.set('variants');
           } else {
             this.inventorySubTab.set('fruits');

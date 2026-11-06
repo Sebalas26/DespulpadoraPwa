@@ -46,13 +46,17 @@ export const authInterceptor: HttpInterceptorFn = (
                 return next(retryReq);
               }),
               catchError((refreshErr: unknown) => {
-                authService.logout();
+                if (authService.accessToken() || authService.refreshToken()) {
+                  authService.logout();
+                }
                 return throwError(() => refreshErr);
               })
             );
           }
 
-          authService.logout();
+          if (token || authService.accessToken()) {
+            authService.logout();
+          }
         }
 
         return throwError(() => error);

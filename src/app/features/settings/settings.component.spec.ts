@@ -435,16 +435,20 @@ describe('SettingsComponent', () => {
   });
 
   it('should render modern segmented inventory sub-navigation buttons with SVG icons and badges and switch tabs', () => {
+    expect(component.inventorySubTab()).toBe('fruits');
     component.activeTab.set('inventory');
-    component.inventorySubTab.set('fruits');
     fixture.detectChanges();
 
     const compiled: HTMLElement = fixture.nativeElement as HTMLElement;
     const navButtons: NodeListOf<HTMLButtonElement> = compiled.querySelectorAll('.dgl-subnav-bar .dgl-subnav-btn');
     expect(navButtons.length).toBe(2);
     expect(navButtons[0].classList.contains('active')).toBeTrue();
+    expect(navButtons[0].textContent).toContain('Fruta Disponible');
+    expect(navButtons[0].textContent).not.toContain('Inventario');
     expect(navButtons[0].querySelector('svg')).not.toBeNull();
     expect(navButtons[0].querySelector('.dgl-subnav-badge')?.textContent).toContain('Kg');
+    expect(navButtons[1].textContent).toContain('Pulpas Hechas');
+    expect(navButtons[1].textContent).not.toContain('Stock');
     expect(navButtons[1].querySelector('svg')).not.toBeNull();
     expect(navButtons[1].querySelector('.dgl-subnav-badge')?.textContent).toContain('uds');
 
